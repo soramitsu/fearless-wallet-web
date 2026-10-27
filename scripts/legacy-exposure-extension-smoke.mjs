@@ -139,10 +139,14 @@ async function launch(profileDir) {
     return sessionId;
   }
 
+  const running = () => chrome.exitCode === null && chrome.signalCode === null;
+
+  // Chrome can drop the connection without answering Browser.close (one run waited over 10 minutes), or be gone
+  // already when a failure closes it a second time.
   async function close() {
-    await send('Browser.close').catch(() => undefined);
-    await Promise.race([new Promise((resolve) => chrome.once('exit', resolve)), sleep(5_000)]);
-    if (chrome.exitCode === null) chrome.kill('SIGKILL');
+    if (running()) await Promise.race([send('Browser.close').catch(() => undefined), sleep(5_000)]);
+    if (running()) await Promise.race([new Promise((resolve) => chrome.once('exit', resolve)), sleep(5_000)]);
+    if (running()) chrome.kill('SIGKILL');
     socket.close();
   }
 
@@ -303,64 +307,102 @@ async function main() {
     }
     log('Recover funds and Settings scroll to their last row above the tab bar, below the banners');
 
-    const banner = await eventually(
-      () => browser.evaluate(page, 'document.querySelector("[data-testid=legacyExposureBanner]")?.innerText'),
-      'the reminder'
-    );
-    assert.match(banner, /3 wallets from before this update may be exposed/u);
-    await shot('03-reminder');
+    // An old wallet carries one warning: its recovery banner, which opens the guide. The exposure reminder steps aside
+    // while that banner shows (Main.vue), and in the extension every wallet the reminder is about, from before the
+    // update or imported since, is recovery-only. So here the reminder only has to stay away; its own rules, closing
+    // it included, are covered by tests/unit/legacy-exposure-screens.spec.ts.
+    const warnings = () => browser.evaluate(page, `({
+      wallet: document.querySelector('[data-testid=walletNameHeader]')?.textContent.trim(),
+      recoveryBanner: !!document.querySelector('[data-testid=walletRecoveryBanner]'),
+      reminder: !!document.querySelector('[data-testid=legacyExposureBanner]'),
+    })`);
+    // The reminder asks the background before it shows, so its absence is watched for a while once the wallet is up.
+    const expectWarnings = async (wallet, recoveryBanner) => {
+      await eventually(async () => {
+        const state = await warnings();
 
-    await click('legacyExposureBannerDismiss');
-    assert.equal(await browser.evaluate(page, '!!document.querySelector("[data-testid=legacyExposureBanner]")'), false);
+        return state.wallet === wallet && state.recoveryBanner === recoveryBanner;
+      }, `${wallet} ${recoveryBanner ? 'with' : 'without'} the recovery banner`);
+      for (let check = 0; check < 8; check += 1) {
+        assert.deepEqual(await warnings(), { wallet, recoveryBanner, reminder: false });
+        await sleep(250);
+      }
+    };
+    // The wallet 3.0.5 had open, a TON wallet.
+    const oldWallet = master305.storage['fwcurrent_account:CurrentAccountInfo'].name;
+
+    await expectWarnings(oldWallet, true);
+    assert.match(
+      await browser.evaluate(page, 'document.querySelector("[data-testid=walletRecoveryBanner]").innerText'),
+      /recovery-only/u
+    );
+    await shot('03-recovery-banner');
+    await click('walletRecoveryGuide');
+    await eventually(async () => (await route()).startsWith('#/security-notice/guide'), 'the guide from the recovery banner');
+    await browser.evaluate(page, 'location.hash = "#/fearless/settings", true');
+    const guideEntry = await eventually(
+      () => browser.evaluate(page, 'document.querySelector("[data-testid=settings-legacy-exposure]")?.innerText'),
+      'the guide in Settings'
+    );
+    assert.match(guideEntry, /3 old wallets still to move/u);
+    log('an old wallet shows only its recovery banner, which opens the guide; Settings counts the wallets to move');
+
+    // The recovery banner has no close button: a reopened wallet window shows it again, still without the reminder.
     page = await browser.openPopup('#/fearless/settings');
     await eventually(() => browser.evaluate(page, '!!document.querySelector("[data-testid=settings-legacy-exposure]")'), 'Settings guide after reopening')
       .catch(async (error) => { throw new Error(`${error.message} Route: ${await route()}`); });
-    assert.equal(await browser.evaluate(page, '!!document.querySelector("[data-testid=legacyExposureBanner]")'), false);
+    await expectWarnings(oldWallet, true);
     await click('settings-legacy-exposure');
     await eventually(async () => (await route()).startsWith('#/security-notice/guide'), 'guide from Settings');
-    log('dismissal survives reopening; the guide remains reachable from Settings');
+    log('reopening brings the recovery banner back without the reminder; the guide remains reachable from Settings');
+
+    // A newly selected wallet takes the window to the portfolio (App.vue), which opens on All wallets. Once it got
+    // there, Settings names the selected wallet in the header.
+    const settingsOfSelected = async (description) => {
+      await eventually(async () => (await route()).startsWith('#/fearless/portfolio'), `the portfolio of ${description}`);
+      await browser.evaluate(page, 'location.hash = "#/fearless/settings", true');
+      await eventually(async () => (await route()) === '#/fearless/settings', `Settings of ${description}`);
+    };
 
     const generatedPhrase = await browser.message(page, 'pri(keyring.generateMnemonic)', { walletEcosystem: 'substrate', wordCount: 12 });
     const freshAddress = await browser.message(page, 'pri(accounts.create)', {
       suri: generatedPhrase, type: 'sr25519', walletEcosystem: 'substrate',
       meta: { name: 'Created after update' }, requireFreshGeneration: true,
     });
-    await browser.evaluate(page, 'location.hash = "#/fearless/settings", true');
-    await eventually(async () => (await route()) === '#/fearless/settings', 'fresh wallet Settings');
+    await settingsOfSelected('the created wallet');
     await eventually(async () => {
       const status = await browser.message(page, 'pri(security.legacyExposure.status)');
       return status.newWallets.some(({ address }) => address === freshAddress);
     }, 'the generated wallet classified as new');
-    assert.equal(await browser.evaluate(page, '!!document.querySelector("[data-testid=legacyExposureBanner]")'), false);
+    await expectWarnings('Created after update', false);
     await shot('04-created-wallet');
 
-    // Public test phrase, used only in this isolated offline profile.
+    // Public test phrase, used only in this isolated offline profile. The background drops the import's claim to a
+    // fresh generation, so the imported key is recovery-only like the old wallets and gets their one warning.
     const importedAddress = await browser.message(page, 'pri(accounts.create)', {
       suri: 'legal winner thank year wave sausage worth useful legal winner thank yellow',
       type: 'sr25519', walletEcosystem: 'substrate',
       meta: { name: 'Imported after update', walletSecurityGeneration: 1 },
     });
-    await browser.evaluate(page, 'location.hash = "#/fearless/portfolio", true');
-    const importedBanner = await eventually(
-      () => browser.evaluate(page, 'document.querySelector("[data-testid=legacyExposureBanner]")?.innerText'),
-      'the imported-wallet reminder'
-    );
-    assert.match(importedBanner, /imported key/u);
+    await settingsOfSelected('the imported wallet');
+    await expectWarnings('Imported after update', true);
     const importedStatus = await browser.message(page, 'pri(security.legacyExposure.status)');
     assert.ok(importedStatus.importedWallets.some(({ address }) => address === importedAddress));
     assert.ok(!importedStatus.newWallets.some(({ address }) => address === importedAddress));
     await shot('05-imported-wallet');
     await browser.message(page, 'pri(accounts.update.current)', { address: freshAddress, walletEcosystem: 'substrate' });
-    await eventually(() => browser.evaluate(page, '!document.querySelector("[data-testid=legacyExposureBanner]")'), 'no reminder when switching back to the generated wallet');
-    log('created wallets stay quiet; imported keys are reminded and excluded as fresh destinations');
+    await settingsOfSelected('the created wallet again');
+    await expectWarnings('Created after update', false);
+    log('created wallets stay quiet; imported keys get the recovery banner, not the reminder, and are no fresh destination');
 
     // The integrated dashboard can show all holdings without changing the selected wallet.
+    await browser.evaluate(page, 'location.hash = "#/fearless/portfolio", true');
     await eventually(() => browser.evaluate(page, '!!document.querySelector("[data-testid=portfolioDashboard]")'), 'the integrated portfolio dashboard');
     await click('walletNameHeader');
     await eventually(() => browser.evaluate(page, '!!document.querySelector("[data-testid=allWalletsRow]")'), 'the All wallets picker row');
     await click('allWalletsRow');
     await eventually(() => browser.evaluate(page, '!!document.querySelector("[data-testid=allWalletsPanel]")'), 'the All wallets view');
-    assert.equal(await browser.evaluate(page, '!!document.querySelector("[data-testid=legacyExposureBanner]")'), false);
+    await expectWarnings('All wallets', false);
     await shot('06-all-wallets-fresh-selected');
 
     const pickWallet = async (name) => {
@@ -375,11 +417,21 @@ async function main() {
       })()`);
       await eventually(() => browser.evaluate(page, `document.querySelector('[data-testid="walletNameHeader"]')?.textContent.trim() === ${JSON.stringify(name)}`), 'the selected wallet header');
     };
-    await pickWallet('Imported after update');
-    await eventually(() => browser.evaluate(page, 'document.querySelector("[data-testid=legacyExposureBanner]")?.innerText.includes("imported key")'), 'the reminder after selecting the imported wallet');
-    await pickWallet('Created after update');
-    await eventually(() => browser.evaluate(page, '!document.querySelector("[data-testid=legacyExposureBanner]")'), 'no reminder after selecting the generated wallet');
-    log('dashboard All wallets and the wallet picker preserve per-wallet reminder behavior');
+    // Each wallet chosen in the picker decides the warning again: the imported key and every 3.0.5 wallet get the
+    // recovery banner, the created wallet nothing. A linked EVM account is part of its parent's row.
+    const otherOldWallets = record.accounts
+      .filter(({ linkedParentAddress, name }) => !linkedParentAddress && name !== oldWallet)
+      .map(({ name }) => name);
+    assert.equal(otherOldWallets.length, 2);
+    for (const [name, recoveryBanner] of [
+      ['Imported after update', true],
+      ...otherOldWallets.map((name) => [name, true]),
+      ['Created after update', false],
+    ]) {
+      await pickWallet(name);
+      await expectWarnings(name, recoveryBanner);
+    }
+    log('All wallets and the wallet picker: old and imported wallets show only the recovery banner, the created one nothing');
     await browser.close();
 
     // A 2.6.3 profile nobody unlocked in 3.0.x holds nothing 3.0.x could have sent: no notice.

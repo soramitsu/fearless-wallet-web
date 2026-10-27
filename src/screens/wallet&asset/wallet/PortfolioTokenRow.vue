@@ -32,16 +32,19 @@
           </span>
 
           <span v-if="isGroup" class="token-subtitle">{{ row.name }}</span>
-          <span v-else class="token-subtitle">
-            <span data-testid="tokenNetwork">{{ single.asset.networkName }}</span>
-            <span v-if="roleLabel(single.role)" class="role-chip" data-testid="memberRole">{{ roleLabel(single.role) }}</span>
-            <span v-if="single.asset.isTestnet" class="row-badge" data-testid="testnetBadge">{{ t('portfolioPage.testnetBadge') }}</span>
-          </span>
+          <!-- The badges share the network's line, so a hidden token in Manage stays two lines tall like the rest. -->
+          <span v-else class="token-meta">
+            <span class="token-subtitle">
+              <span data-testid="tokenNetwork">{{ single.asset.networkName }}</span>
+              <span v-if="roleLabel(single.role)" class="role-chip" data-testid="memberRole">{{ roleLabel(single.role) }}</span>
+              <span v-if="single.asset.isTestnet" class="row-badge" data-testid="testnetBadge">{{ t('portfolioPage.testnetBadge') }}</span>
+            </span>
 
-          <span v-if="!isGroup && single.asset.hidden" class="asset-badges">
-            <span class="row-badge" data-testid="hiddenBadge">{{ t('portfolioPage.hiddenBadge') }}</span>
-            <span v-if="single.asset.preferenceSource === 'legacy305'" class="row-badge legacy" data-testid="hiddenPreviousVersion">
-              {{ t('portfolioPage.hiddenPreviousVersion') }}
+            <span v-if="single.asset.hidden" class="asset-badges">
+              <span class="row-badge" data-testid="hiddenBadge">{{ t('portfolioPage.hiddenBadge') }}</span>
+              <span v-if="single.asset.preferenceSource === 'legacy305'" class="row-badge legacy" data-testid="hiddenPreviousVersion">
+                {{ t('portfolioPage.hiddenPreviousVersion') }}
+              </span>
             </span>
           </span>
         </span>
@@ -412,6 +415,20 @@ const rowSwitchLabel = computed(() =>
   align-items: flex-end;
   text-align: right;
   overflow-wrap: anywhere;
+}
+
+// The network line of a single row: the subtitle dims with a hidden row, its badges keep full contrast.
+.token-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin-top: 4px;
+
+  .token-subtitle,
+  .asset-badges {
+    margin-top: 0;
+  }
 }
 
 .network-meta,

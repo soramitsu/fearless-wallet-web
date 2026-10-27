@@ -70,12 +70,14 @@ vi.mock('@/router/routes', () => ({ Components: { SendForm: 'SendForm', ReceiveF
 
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 
-const mountPortfolio = () =>
+const mountPortfolio = (refreshSlotId = '') =>
   mount(Currencies, {
+    attachTo: refreshSlotId ? document.body : undefined,
     props: {
       balances: [],
       filterValue: '',
       showAssetsManagementForm: false,
+      refreshSlotId,
     },
     global: {
       mocks: {
@@ -127,5 +129,26 @@ describe('Portfolio manual refresh', () => {
 
     expect(refresh.attributes('aria-busy')).toBe('false');
     expect(refresh.text()).toBe('Refresh');
+  });
+
+  it('puts Refresh in the toolbar place the wallet screen keeps for it, leaving no empty row above the list', async () => {
+    mocks.forceAssetDiscoverySweep.mockResolvedValue(undefined);
+    mocks.fetchNfts.mockResolvedValue(undefined);
+    mocks.networksStore.loadIndexerNetworkBalance.mockResolvedValue(undefined);
+    const slot = Object.assign(document.createElement('span'), { id: 'portfolio-refresh-test' });
+    document.body.append(slot);
+
+    const wrapper = mountPortfolio('portfolio-refresh-test');
+    await flushPromises();
+
+    const refresh = slot.querySelector<HTMLButtonElement>('[data-testid="portfolioRefresh"]');
+    expect(refresh?.textContent?.trim()).toBe('Refresh');
+    expect(wrapper.get('.portfolio-actions').element.querySelector('button')).toBeNull();
+    refresh?.click();
+    expect(mocks.forceAssetDiscoverySweep).toHaveBeenCalledTimes(1);
+
+    wrapper.unmount();
+    expect(slot.querySelector('[data-testid="portfolioRefresh"]')).toBeNull();
+    slot.remove();
   });
 });

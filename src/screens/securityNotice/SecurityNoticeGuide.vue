@@ -58,6 +58,13 @@
           <h2 class="exposure-guide__step-title">{{ t('exposureNotice.guide.moveTitle') }}</h2>
           <p class="exposure-guide__text">{{ t('exposureNotice.guide.moveText') }}</p>
           <p class="exposure-guide__text">{{ t('exposureNotice.guide.moveNotListed') }}</p>
+          <a
+            class="exposure-guide__link"
+            data-testid="securityNoticeMigration"
+            :href="URLS.POLKASWAP_MIGRATION"
+            target="_blank"
+            rel="noopener noreferrer"
+          >{{ t('exposureNotice.guide.migrateLink') }}</a>
 
           <p class="exposure-guide__progress" role="status" data-testid="securityNoticeProgress">
             {{
@@ -210,6 +217,7 @@ import Checkbox from '@/components/Checkbox.vue';
 import FButton from '@/components/FButton.vue';
 import { hasMasterPassword, updateCurrentAccount } from '@/extension/messaging';
 import { getLegacyExposureStatus, updateLegacyExposure } from '@/extension/messaging/legacy-exposure';
+import { URLS } from '@/consts/urls';
 import { cut } from '@/helpers';
 import { WalletEcosystem } from '@/interfaces';
 import { useI18n } from '@/locales/useI18n';
@@ -390,6 +398,19 @@ const leave = () => router.replace(redirect.value ?? { name: Components.Wallet }
     margin: 0;
     color: $grayish-white;
     line-height: 1.5;
+  }
+
+  // The same Polkaswap request the security popup links to, for a SORA account; it opens in a new tab.
+  &__link {
+    align-self: flex-start;
+    color: $pink-lavender-color;
+    font-weight: 600;
+    line-height: 1.5;
+
+    &:focus-visible {
+      outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
+      outline-offset: 2px;
+    }
   }
 
   &__steps {

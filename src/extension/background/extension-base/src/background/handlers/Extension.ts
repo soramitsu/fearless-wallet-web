@@ -502,7 +502,7 @@ export default class Extension extends FWExtensionBase {
 
     const substrateTransformedAddresses = this.convertAccounts(this.state.keyringService.addressSubject.value);
     const substrateTransformedAccounts = this.convertAccounts(this.state.keyringService.accountSubject.value);
-    const tonTransformedAccounts = this.convertAccounts(this.state.keyringService.tonKeyring.accountSubject.value);
+    const tonTransformedAccounts = this.convertAccounts(this.state.keyringService.tonKeyring.accountSubject.value, WalletEcosystem.Ton);
 
     const substrateAddressesSubscription = this.state.keyringService.addressSubject.subscribe(
       (addresses: SubjectInfo): void => {

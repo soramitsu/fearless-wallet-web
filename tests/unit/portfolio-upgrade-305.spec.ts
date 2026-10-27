@@ -379,6 +379,8 @@ describe('zero-balance networks', () => {
 
     await wrapper.setProps({ filterValue: 'kusama' });
     expect(wrapper.get('.zero-header').attributes('aria-expanded')).toBe('true');
+    // The search holds the block open, so its header cannot be clicked into changing the remembered choice.
+    expect(wrapper.get('.zero-header').attributes('disabled')).toBeDefined();
     // Search exposes every verified catalog match, including KSM on other mainnets and assets on a named
     // Kusama network. It is not restricted to the utility tokens that the normal zero-balance rule shows.
     expect(rows(wrapper).sort()).toEqual([
@@ -395,6 +397,7 @@ describe('zero-balance networks', () => {
 
     await wrapper.setProps({ filterValue: '' });
     expect(wrapper.get('.zero-header').attributes('aria-expanded')).toBe('false');
+    expect(wrapper.get('.zero-header').attributes('disabled')).toBeUndefined();
     expect(rows(wrapper)).toEqual(['Polkadot:DOT']);
 
     wrapper.unmount();

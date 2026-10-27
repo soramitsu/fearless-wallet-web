@@ -218,6 +218,15 @@ describe('the guide to a new wallet', () => {
     expect(mocks.push).toHaveBeenLastCalledWith({ name: 'AddWallet', params: { type: 'create', walletEcosystem: 'ton' } });
   });
 
+  it('links to Polkaswap\'s migration request for a SORA account, in a new tab', async () => {
+    const wrapper = await mountGuide(status());
+    const link = wrapper.get('[data-testid="securityNoticeMigration"]');
+
+    expect(link.attributes()).toMatchObject({ href: 'https://polkaswap.io/#/migration', target: '_blank', rel: 'noopener noreferrer' });
+    // The words come from walletUpgradeMessages (pinned in wallet-upgrade-locales.spec.ts); here i18n returns keys.
+    expect(link.text()).toBe('exposureNotice.guide.migrateLink');
+  });
+
   it('asks for a password first on a profile that has none', async () => {
     mocks.hasMasterPassword.mockResolvedValue(false);
     const wrapper = await mountGuide(status({ wallets: [{ address: TON, walletEcosystem: 'ton', name: 'TON', present: true }] } as never));

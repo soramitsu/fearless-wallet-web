@@ -15,6 +15,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { extensionIdFromManifestKey } from './upgrade-e2e/browser-diagnostics.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const extensionDir = path.join(root, 'dist/extension/chrome');
@@ -48,6 +49,7 @@ async function eventually(producer, description) {
 }
 
 async function launch(profileDir) {
+  const expectedId = extensionIdFromManifestKey(JSON.parse(await fs.readFile(path.join(extensionDir, 'manifest.json'), 'utf8')).key);
   const chrome = spawn(
     chromeBinary,
     [
@@ -115,7 +117,7 @@ async function launch(profileDir) {
   const worker = await eventually(
     async () =>
       (await send('Target.getTargets')).targetInfos.find(
-        ({ type, url }) => type === 'service_worker' && url.startsWith('chrome-extension://') && url.endsWith('/background.js')
+        ({ type, url }) => type === 'service_worker' && url === `chrome-extension://${expectedId}/background.js`
       ),
     'the extension service worker'
   );
@@ -218,6 +220,7 @@ async function main() {
   const master305 = await readFixture('chrome-3.0.5-master-password');
   const passwords263 = await readFixture('chrome-2.6.3-account-passwords');
   const profileDir = await fs.mkdtemp(path.join(os.tmpdir(), 'fearless-legacy-exposure-'));
+  const profiles = [profileDir];
   let browser;
 
   try {
@@ -435,17 +438,20 @@ async function main() {
     await browser.close();
 
     // A 2.6.3 profile nobody unlocked in 3.0.x holds nothing 3.0.x could have sent: no notice.
-    browser = await launch(profileDir);
+    // Keep this independent fixture out of the previous worker's cached wallets and exposure record.
+    const quietProfileDir = await fs.mkdtemp(path.join(os.tmpdir(), 'fearless-legacy-exposure-263-'));
+    profiles.push(quietProfileDir);
+    browser = await launch(quietProfileDir);
     await replaceStorage(browser, passwords263.storage);
     await browser.close();
-    browser = await launch(profileDir);
+    browser = await launch(quietProfileDir);
     const quiet = await browser.openPopup();
     const quietRecord = await eventually(() => storedRecord(browser, quiet), 'the record of the 2.6.3 profile');
     assert.deepEqual({ evidence: quietRecord.evidence, accounts: quietRecord.accounts }, { evidence: [], accounts: [] });
     log('2.6.3 profile: nothing to tell');
   } finally {
     await browser?.close().catch(() => undefined);
-    await fs.rm(profileDir, { force: true, recursive: true });
+    for (const profile of profiles) await fs.rm(profile, { force: true, recursive: true });
   }
 
   console.info('Legacy exposure extension smoke passed');

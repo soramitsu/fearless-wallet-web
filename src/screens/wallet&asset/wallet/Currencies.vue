@@ -72,6 +72,7 @@
             v-if="splitTokenRows.zeroOnly.length"
             :label="zeroTokensLabel"
             :expanded="zeroNetworksExpanded"
+            :locked="zeroNetworksLocked"
             @toggle="setZeroNetworksExpanded"
           >
             <PortfolioTokenRow
@@ -115,6 +116,7 @@
           v-if="splitSections.zeroOnly.length"
           :label="zeroNetworksLabel"
           :expanded="zeroNetworksExpanded"
+          :locked="zeroNetworksLocked"
           @toggle="setZeroNetworksExpanded"
         >
           <PortfolioNetworkSection
@@ -407,8 +409,11 @@ export default defineComponent({
         : this.$t('portfolioPage.zeroNetworks', count, { count });
     },
     // A search or the Hidden filter opens the block, so a match or a hidden asset with no balance is never tucked away.
+    zeroNetworksLocked(): boolean {
+      return this.searching || this.hiddenOnly;
+    },
     zeroNetworksExpanded(): boolean {
-      return this.searching || this.hiddenOnly || this.viewSettings.zeroNetworksExpanded;
+      return this.zeroNetworksLocked || this.viewSettings.zeroNetworksExpanded;
     },
     hiddenOnly(): boolean {
       return this.showAssetsManagementForm && this.manageHiddenOnly;

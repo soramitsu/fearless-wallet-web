@@ -1,8 +1,14 @@
 <template>
   <section class="zero-networks" data-testid="portfolioZeroNetworks">
-    <button class="zero-header" type="button" :aria-expanded="expanded" @click="$emit('toggle', !expanded)">
+    <button
+      class="zero-header"
+      type="button"
+      :aria-expanded="expanded"
+      :disabled="locked"
+      @click="$emit('toggle', !expanded)"
+    >
       <span class="zero-label">{{ label }}</span>
-      <Icon :icon="expanded ? 'down' : 'chevron-right'" className="chevron" :hover="false" />
+      <Icon v-if="!locked" :icon="expanded ? 'down' : 'chevron-right'" className="chevron" :hover="false" />
     </button>
 
     <div v-if="expanded" class="zero-list">
@@ -15,6 +21,11 @@
 defineProps<{
   label: string;
   expanded: boolean;
+  /**
+   * Held open by a search or the Hidden filter: the header then only names the block, so a click can neither seem
+   * to do nothing nor quietly change the choice the normal list remembers.
+   */
+  locked?: boolean;
 }>();
 
 defineEmits<{ (event: 'toggle', expanded: boolean): void }>();
@@ -41,6 +52,10 @@ defineEmits<{ (event: 'toggle', expanded: boolean): void }>();
   font-size: 0.8rem;
   text-align: left;
   cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+  }
 
   &:focus-visible {
     outline: 2px solid palette($pink-lavender-color, var(--fw-focus));

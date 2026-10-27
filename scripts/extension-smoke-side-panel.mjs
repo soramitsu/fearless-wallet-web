@@ -86,9 +86,14 @@ export async function checkSidePanel({
     console.info(`[extension-smoke] side panel screenshot ${file}`);
   };
   const SWITCH = '[data-testid="settings-toolbar-surface"]';
-  // The header's gear opens the Settings page; the switch is under Preferences.
+  // The dock's Settings opens the Settings page (the header keeps its gear only where no dock is shown); the switch is
+  // under Preferences.
   const openSettings = async (sessionId) => {
-    await evaluate(cdp, sessionId, `(document.querySelector('[data-testid="settings"] button').click(), true)`);
+    await evaluate(
+      cdp,
+      sessionId,
+      `((document.querySelector('nav.menu [data-destination=settings]') ?? document.querySelector('[data-testid="settings"] button')).click(), true)`
+    );
     await waitForExpression(cdp, sessionId, `Boolean(document.querySelector('${SWITCH}'))`, 'the toolbar switch in settings');
     await evaluate(cdp, sessionId, `(document.querySelector('${SWITCH}').scrollIntoView({ block: 'center' }), true)`);
 

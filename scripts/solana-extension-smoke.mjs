@@ -25,6 +25,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const productionPopupOnly = process.argv.includes('--production-popup');
 // `--portfolio-screenshots [dir]`: seed the test wallet, then capture the portfolio at the popup size, offline.
+// PORTFOLIO_SMOKE_WIDTH=1280 runs it in a full tab that wide instead: popup.html, as the expand button opens it.
 const portfolioScreenshotsArg = process.argv.indexOf('--portfolio-screenshots');
 const portfolioScreenshotsDir =
   portfolioScreenshotsArg === -1
@@ -515,6 +516,7 @@ async function main() {
     }
 
     if (portfolioScreenshotsDir) {
+      const fullTabWidth = Number(process.env.PORTFOLIO_SMOKE_WIDTH || 0);
       const shots = await capturePortfolioScreenshots({
         cdp,
         extensionId,
@@ -524,6 +526,7 @@ async function main() {
         password: TEST_PASSWORD,
         walletAddress: substrateAddress,
         helpers: { evaluate, waitForExpression, extensionSend, sleep },
+        surface: fullTabWidth ? { page: 'popup.html', width: fullTabWidth, height: 800, name: 'full tab' } : undefined,
       });
 
       console.info(JSON.stringify({ extensionId, substrateAddress, screenshots: shots }, null, 2));

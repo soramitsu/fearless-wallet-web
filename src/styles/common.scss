@@ -53,6 +53,27 @@ $extension-width: 561px;
 $extension-height: 600px;
 $default-height-page: 100%;
 
+// `@media (max-width: $width)` for the wallet column rather than the window. The web app's column follows the window.
+// The extension's column is at most $extension-width wide (App.vue) in the popup, the side panel and a full tab, so a
+// wider breakpoint always holds there, however wide the panel or tab.
+@mixin column-max-width($width) {
+  @media (max-width: $width) {
+    @content;
+  }
+
+  @if $width >= $extension-width {
+    @if & {
+      .fw-extension & {
+        @content;
+      }
+    } @else {
+      .fw-extension {
+        @content;
+      }
+    }
+  }
+}
+
 @function toRem($value) {
     $remValue: math.div($value, 16) * 1rem;
     @return $remValue;

@@ -394,7 +394,7 @@ export default defineComponent({ name: 'SelectInput' ,
   &:disabled { cursor: default; border-color: $gray-color; color: $gray-color; }
 }
 .select .right-column .max-button-active { background: $pink-purple-color; color: $plain-white; }
-@media (max-width: 620px) {
+@include column-max-width(620px) {
   .select { flex-direction: column; }
   .select .column { max-width: none; }
   .select .right-column { flex-direction: row; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }

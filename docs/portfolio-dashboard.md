@@ -43,7 +43,7 @@ route name and spreads in the route behind the literal flag test. `Header.vue` s
 | Piece | Where |
 |---|---|
 | Hero: total, 24 h change, what is not included, how we count, sync chip, legend, Swap with the Polkaswap mark | `src/screens/portfolio/PortfolioHero.vue` |
-| Winged sun in four depth layers plus the 100-ray allocation fan (static: no parallax yet). The wings run off the hero card's edges: past the shoulder each wing stretches sideways until its tip runs off its own edge, and where it passes behind the text it is veiled to 35% (`--sky-veil`) | `PortfolioSky.vue`, `skyGeometry.ts`, `src/assets/brand/portfolio-sun/` |
+| Winged sun in four depth layers plus the 100-ray allocation fan (static: no parallax yet). The wings run off the hero card's edges: past the shoulder each wing stretches sideways until its tip runs off its own edge, and where it passes behind the text it is veiled to 25% (`--sky-veil`) | `PortfolioSky.vue`, `skyGeometry.ts`, `src/assets/brand/portfolio-sun/` |
 | All wallets scope: Tokens, Networks and Wallets lenses, read only, every holding names its wallet | `PortfolioAllWallets.vue` |
 | All wallets row in the wallet picker; the header names it on the portfolio | `PortfolioScopeRow.vue`, `SelectWalletPopup.vue`, `Header.vue` |
 | How we count and balance status sheets | `PortfolioCountingSheet.vue`, `PortfolioSyncSheet.vue`, `PortfolioSheet.vue` |

@@ -156,8 +156,8 @@ export function wingsLayer(
   };
 }
 
-/** How wide the veil fades in across each edge of the sky, in px. */
-const VEIL_FADE = 30;
+/** How far inside the sky the veil fades out, in px. Beside the sky, where the hero text runs, a wing is fully veiled. */
+const VEIL_FADE = 60;
 
 /**
  * The wings layer's mask. Where a wing leaves the sky's own box it may run behind text, so the host veils it there with
@@ -168,8 +168,8 @@ export function wingsVeil(layer: { left: number; width: number }, geometry: SkyG
   const end = start + geometry.w;
   const veil = 'rgb(0 0 0 / var(--sky-veil, 1))';
   const stops = [
-    ...(start > 1 ? [`${veil} ${start - VEIL_FADE}px`, `#000 ${start + VEIL_FADE}px`] : ['#000 0']),
-    ...(layer.width - end > 1 ? [`#000 ${end - VEIL_FADE}px`, `${veil} ${end + VEIL_FADE}px`] : ['#000 100%']),
+    ...(start > 1 ? [`${veil} ${start}px`, `#000 ${start + VEIL_FADE}px`] : ['#000 0']),
+    ...(layer.width - end > 1 ? [`#000 ${end - VEIL_FADE}px`, `${veil} ${end}px`] : ['#000 100%']),
   ];
 
   return `linear-gradient(to right, ${stops.join(', ')})`;

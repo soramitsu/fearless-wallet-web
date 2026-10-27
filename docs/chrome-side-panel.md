@@ -18,10 +18,12 @@ Switch to popup goes back to the popup, and Switch to side panel returns.
 
 In probe mode, the first click after this update, the click reaches `action.onClicked`. The worker opens the panel
 synchronously, while the click still counts as a user gesture. The panel page records `working` as it starts, which
-switches the toolbar to Chrome's own toggle. If the panel cannot open, or its page has not reported within 10 s, the
-worker records `unavailable`, sets the popup and opens it (a popup window where `action.openPopup` is missing, before
+switches the toolbar to Chrome's own toggle. If the panel opens but its page has not reported within 10 s, the worker
+records `unavailable`, sets the popup and opens it (a popup window where `action.openPopup` is missing, before
 Chrome 127). Some Chromium browsers (Arc and Vivaldi have been reported) expose the API without showing a panel; there
-the button falls back to the popup instead of doing nothing. Clicks while a check runs share it, so the popup opens
+the button falls back to the popup instead of doing nothing. If Chrome refuses to open the panel, which can be about
+that one window (it is closing, or of a kind without a panel), only that click gets the popup and nothing is recorded,
+so the next click tries the panel again. Clicks while a check runs share it, so the popup opens
 once. An open panel records `working` again if a check that timed out as it loaded wrote `unavailable`.
 
 Switch to side panel opens the panel in the current window from the click and switches the toolbar only once Chrome

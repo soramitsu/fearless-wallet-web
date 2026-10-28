@@ -390,7 +390,6 @@ describe('selection races through actual mobile pairing', () => {
     const { state, dapp, callback, address } = await pairing();
     const oldSoraPair = { json: null, pair: { address: first.address } };
     Object.assign(apiSora, { account: oldSoraPair });
-    Object.assign(apiSora.bridgeProxy.sub, { account: oldSoraPair });
     fixture.failSelectionRollback = true;
     const cancelled = observe(dapp.abortPairingAttempt('public-selection-race'));
     fixture.holdWrite = false;
@@ -400,7 +399,6 @@ describe('selection races through actual mobile pairing', () => {
     expect(state.poolsService.unsubscribePools).toHaveBeenCalled();
     expect(state.updateServiceInfo).toHaveBeenCalled();
     expect((apiSora as unknown as { account: unknown }).account).toBeUndefined();
-    expect((apiSora.bridgeProxy.sub as unknown as { account: unknown }).account).toBeUndefined();
     expect(fixture.data[key]).toMatchObject({ address });
     expect(callback).not.toHaveBeenCalledWith({ status: true });
     fixture.failSelectionRollback = false;

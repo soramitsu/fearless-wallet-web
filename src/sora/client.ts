@@ -1,10 +1,9 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { decodeAddress, encodeAddress } from '@polkadot/util-crypto';
-import { u8aToHex } from '@polkadot/util';
 import { FPNumber } from './number';
 import { amount, codec, slippageFactor, text, unwrap, XOR, VAL, type Runtime } from './runtime';
 export { amount, codec, observe, slippageFactor, text, unwrap, XOR, VAL, type Runtime } from './runtime';
-import { Operation, SubNetworkId, type Asset, type AccountAsset, type NetworkFeesObject } from './types';
+import { Operation, type Asset, type AccountAsset, type NetworkFeesObject } from './types';
 import { SoraPools } from './pools';
 import { SoraStaking } from './staking';
 import { SoraSubmissionUnknownError } from './submission';
@@ -160,29 +159,6 @@ export class SoraClient {
       await this.submit(this.api.tx.liquidityProxy.swap(dexId, a.address, b.address, variant, source ? [source] : [], source ? 'AllowSelected' : 'Disabled'));
     },
   };
-  bridgeProxy = { sub: {
-    account: null as { json: unknown; pair: KeyringPair } | null,
-    getNetworkFee: async (asset: Asset, network: SubNetworkId) => this.fee(this.bridgeExtrinsic(asset, encodeAddress(new Uint8Array(32), 69), '0', network)),
-    transfer: async (asset: Asset, recipient: string, value: string, network: SubNetworkId) => {
-      amount(value, asset.decimals);
-      await this.submit(this.bridgeExtrinsic(asset, recipient, value, network));
-    },
-  } };
-  private bridgeExtrinsic(asset: Asset, recipient: string, value: string, network: SubNetworkId): Runtime {
-    const id = u8aToHex(decodeAddress(recipient));
-    const parachains: Partial<Record<SubNetworkId, number>> = { [SubNetworkId.PolkadotAcala]: 2000, [SubNetworkId.PolkadotAstar]: 2006 };
-    let destination: Runtime;
-    let relay = network;
-    if (network === SubNetworkId.Liberland) destination = { Liberland: id };
-    else {
-      const paraId = parachains[network];
-      if (paraId) relay = SubNetworkId.Polkadot;
-      if (![SubNetworkId.Polkadot, SubNetworkId.Kusama, SubNetworkId.Rococo].includes(relay)) throw new Error('Unsupported SORA bridge destination');
-      const account = { AccountId32: { network: null, id } };
-      destination = { Parachain: { V3: { parents: 1, interior: paraId ? { X2: [{ Parachain: paraId }, account] } : { X1: account } } } };
-    }
-    return this.api.tx.bridgeProxy.burn({ Sub: relay }, asset.address, destination, new FPNumber(value, asset.decimals).toCodecString());
-  }
   async calcStaticNetworkFees(): Promise<void> {
     const api = this.api;
     const registry = api.registry;

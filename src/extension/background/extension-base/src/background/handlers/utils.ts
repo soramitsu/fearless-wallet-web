@@ -18,7 +18,11 @@ export function isNativeEVMNetwork(network: string) {
 }
 
 export function getUtilityProps(_network: NetworkName, state: State) {
-  return state.networkService.networksGithub.find(({ name }) => isSameString(name, _network))!.assets[0];
+  const utility = state.networkService.networksGithub.find(({ name }) => isSameString(name, _network))?.assets[0];
+  // The remote registry may not have been fetched yet; say so instead of failing on an undefined row.
+  if (!utility) throw new Error('network_registry_unavailable');
+
+  return utility;
 }
 
 export function getNativeAssetName(asset: AssetName = '') {

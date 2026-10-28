@@ -634,9 +634,6 @@ export default class State {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
       apiSora.account = soraAccount;
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      //@ts-ignore
-      apiSora.bridgeProxy.sub.account = soraAccount;
       this.updateServiceInfo();
     };
     await this.keyringService.setCurrentAccount(data, (committed) => {

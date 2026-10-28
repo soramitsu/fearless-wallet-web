@@ -17,10 +17,6 @@ export type DemeterAccountPool = { isFarm: boolean; baseAsset: string; poolAsset
 export type AccountLockedPool = { poolTokens: FPNumber; unlockingTimestamp: number; assetA: string; assetB: string };
 export enum DexId { XOR = 0, XSTUSD = 1, KSUD = 2 }
 export enum LiquiditySourceTypes { Default = '', XYKPool = 'XYKPool', MulticollateralBondingCurvePool = 'MulticollateralBondingCurvePool', XSTPool = 'XSTPool', OrderBook = 'OrderBook' }
-export enum SubNetworkId { Mainnet = 'Mainnet', Polkadot = 'Polkadot', Kusama = 'Kusama', Rococo = 'Rococo', PolkadotAstar = 'PolkadotAstar', PolkadotAcala = 'PolkadotAcala', Liberland = 'Liberland' }
-export type SubNetwork = SubNetworkId;
-export enum LiberlandAssetType { LLD = 'LLD', Asset = 'Asset' }
-export enum BridgeAccountType { Sora = 'Sora', Liberland = 'Liberland', Parachain = 'Parachain', Evm = 'EVM' }
 export enum Operation {
   StakingBondExtra = 'StakingBondExtra', StakingRebond = 'StakingRebond', StakingUnbond = 'StakingUnbond',
   StakingSetController = 'StakingSetController', StakingWithdrawUnbonded = 'StakingWithdrawUnbonded', StakingSetPayee = 'StakingSetPayee',

@@ -49,6 +49,12 @@ describe('transfer error locale mapping', () => {
     expect(getTransferErrorLocaleKey('cross_chain_runtime_call_index_mismatch')).toBe('assets.crossChainRouteUnavailable');
   });
 
+  it('explains a route refused because the node encoded the call differently or the fee asset is not confirmed', () => {
+    expect(getTransferErrorLocaleKey('cross_chain_call_layout_mismatch')).toBe('assets.crossChainRouteUnavailable');
+    expect(getTransferErrorLocaleKey('cross_chain_call_layout_not_reviewed')).toBe('assets.crossChainRouteUnavailable');
+    expect(getTransferErrorLocaleKey('cross_chain_fee_asset_unavailable')).toBe('assets.crossChainRouteUnavailable');
+  });
+
   it('falls back to the generic fee error for unknown or missing transfer errors', () => {
     expect(getTransferErrorLocaleKey(undefined)).toBe('common.estimateFeeError');
     expect(getTransferErrorLocaleKey('invalid_iroha_amount')).toBe('common.estimateFeeError');

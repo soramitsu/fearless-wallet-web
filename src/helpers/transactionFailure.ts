@@ -37,6 +37,8 @@ const KNOWN_MESSAGE_KEYS = new Map<string, string>([
   ['iroha_node_protocol_unsupported', 'assets.irohaTransfersDisabled'],
   ['unsupported_solana_asset', 'assets.unsupportedSolanaTokenTransfer'],
   ['cross_chain_send_in_progress', 'assets.transactionPending'],
+  // Nothing was sent: the origin node could not report its head, so the send could not be recorded.
+  ['cross_chain_send_record_unavailable', 'assets.crossChainRuntimeUnavailable'],
   // Nothing was sent; the quote must be confirmed again.
   ['cross_chain_fee_changed', 'assets.transferFeeApprovalRequired'],
   ['cross_chain_destination_fee_changed', 'assets.transferFeeApprovalRequired'],

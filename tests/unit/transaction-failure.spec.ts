@@ -22,6 +22,7 @@ describe('transaction failure presentation', () => {
 
   it.each([
     ['cross_chain_send_in_progress', 'assets.transactionPending'],
+    ['cross_chain_send_record_unavailable', 'assets.crossChainRuntimeUnavailable'],
     ['cross_chain_fee_changed', 'assets.transferFeeApprovalRequired'],
     ['cross_chain_destination_fee_changed', 'assets.transferFeeApprovalRequired'],
     ['cross_chain_quote_token_required', 'assets.transferFeeApprovalRequired'],

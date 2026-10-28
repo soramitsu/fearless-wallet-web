@@ -19,6 +19,7 @@ import { validateReviewedCrossChainRequest } from '@/cross-chain/requestValidati
 import { createCrossChainQuoteFingerprint } from '@/cross-chain/quoteFingerprint';
 import { connectedSubstrateApi } from '@/cross-chain/runtimeConnection';
 import {
+  CROSS_CHAIN_EXTRINSIC_INVALID,
   normalizeExtrinsicHash,
   sendAndTrackExtrinsic,
   type TrackableExtrinsic,
@@ -261,6 +262,22 @@ export async function assertCrossChainSendAvailable(
 
 type SignedExtrinsic = CrossChainQuote['extrinsic'];
 
+/** The current head of the origin chain, read twice at most. */
+async function originHead(api: CrossChainSendResolutionApi): Promise<number> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const head = (await api.rpc.chain.getHeader()).number.toNumber();
+      if (Number.isSafeInteger(head) && head >= 0) return head;
+    } catch {
+      // Read it once more below.
+    }
+  }
+
+  // Recorded without its expiry, a mortal extrinsic that never lands would keep the route blocked until the account
+  // sends something else on this chain. Nothing has been sent yet, so the send stops here instead.
+  throw new Error('cross_chain_send_record_unavailable');
+}
+
 async function sendRecordFor(
   props: MakeCrossChainProps,
   address: string,
@@ -270,13 +287,8 @@ async function sendRecordFor(
   let expiresAtBlock: number | null = null;
 
   if (extrinsic.era.isMortalEra) {
-    try {
-      // The signing header is at or before this head, so the extrinsic dies no later than one period after it.
-      const head = (await api.rpc.chain.getHeader()).number.toNumber();
-      expiresAtBlock = head + extrinsic.era.asMortalEra.period.toNumber();
-    } catch {
-      // Without a head the record is resolved by the nonce alone.
-    }
+    // The signing header is at or before this head, so the extrinsic dies no later than one period after it.
+    expiresAtBlock = (await originHead(api)) + extrinsic.era.asMortalEra.period.toNumber();
   }
 
   return {
@@ -288,6 +300,15 @@ async function sendRecordFor(
     expiresAtBlock,
     recordedAt: Date.now(),
   };
+}
+
+/**
+ * Whether an outcome settles the journal record: the extrinsic reached a block, or the node refused it outright. An
+ * unknown outcome does not, and neither does a pool `Invalid` (CROSS_CHAIN_EXTRINSIC_INVALID): the record stays until
+ * the nonce moves or the mortality passes, at most one mortal period.
+ */
+export function settlesCrossChainSendRecord(outcome: TrackedSendOutcome): boolean {
+  return outcome.kind === 'included' || (outcome.kind === 'failed' && outcome.reason !== CROSS_CHAIN_EXTRINSIC_INVALID);
 }
 
 export function crossChainSendResponse(outcome: TrackedSendOutcome): BasicTxResponse {
@@ -384,7 +405,7 @@ async function signAndTrackCrossChain(
   await ledger.record(record);
 
   const outcome = await sendAndTrackExtrinsic(extrinsic as unknown as TrackableExtrinsic);
-  if (outcome.kind !== 'unknown') {
+  if (settlesCrossChainSendRecord(outcome)) {
     await ledger.clear(address, props.routeId, record.hash).catch((error: unknown) => {
       // The record stays and is resolved from the chain on the next send of this route.
       console.warn('Unable to clear a resolved cross-chain send record', error);

@@ -6,7 +6,6 @@ import type { CrossChainProps, MakeCrossChainProps } from '@extension-base/api/s
 import type State from '@extension-base/background/handlers/State';
 import type { KeyringPair } from '@subwallet/keyring/types';
 import { FPNumber } from '@/sora/number';
-import { getUtilityProps } from '@/extension/background/extension-base/src/background/handlers/utils';
 import {
   createReviewedCrossChainExtrinsic,
   createReviewedExecutionFingerprint,
@@ -14,6 +13,7 @@ import {
   type ReviewedExecutionApi,
 } from '@/cross-chain/reviewedExecution';
 import { assertReviewedRuntimeAuthority } from '@/cross-chain/reviewedRuntimeAuthority';
+import { assertReviewedFeeAsset } from '@/cross-chain/reviewedRuntimes';
 import { assertOriginExecutes, type DryRunApi } from '@/cross-chain/originDryRun';
 import { validateReviewedCrossChainRequest } from '@/cross-chain/requestValidation';
 import { createCrossChainQuoteFingerprint } from '@/cross-chain/quoteFingerprint';
@@ -118,6 +118,11 @@ function assertReviewedRouteAndAccount(props: MakeCrossChainProps, state: State)
   return { apiProps, tokenBalance, validation };
 }
 
+/** The origin fee asset is pinned per reviewed runtime; the registry row of the origin network must agree with it. */
+function reviewedOriginFeeAsset({ execution, originNet }: Pick<CrossChainProps, 'execution' | 'originNet'>, state: State) {
+  return assertReviewedFeeAsset(execution.originChainId, state.networkService.networkMap[originNet]);
+}
+
 function parseExpected(value: string, error: string): FPNumber {
   // FPNumber reads an empty string as zero; a missing confirmation is not a confirmed zero fee.
   if (typeof value !== 'string' || !value.trim()) throw new Error(error);
@@ -148,7 +153,7 @@ function assertConfirmedQuote(props: MakeCrossChainProps, quote: CrossChainQuote
   if (amount.lt(quote.minimum)) throw new Error('cross_chain_amount_below_runtime_minimum');
 
   const substrateAddress = state.keyringService.getSubstrateAddress(props.from);
-  const utility = getUtilityProps(props.originNet, state);
+  const utility = reviewedOriginFeeAsset(props, state);
   const utilityGroup = state.balanceService.getTokenBalance(substrateAddress, utility.id, props.relayChain);
   const rows = utilityGroup?.balances.filter(({ name }) => name.toLowerCase() === props.originNet.toLowerCase()) ?? [];
   if (rows.length !== 1) throw new Error('cross_chain_fee_balance_unavailable');
@@ -188,8 +193,8 @@ export async function estimateCrossChainQuote(props: CrossChainProps, state: Sta
   if (!resolved.extrinsic) throw new Error('cross_chain_runtime_execution_drift');
   await assertOriginExecutes(execution, originApi as unknown as DryRunApi, resolved.extrinsic, substrateAddress);
 
+  const utility = reviewedOriginFeeAsset(props, state);
   const paymentInfo = await resolved.extrinsic.paymentInfo(substrateAddress);
-  const utility = getUtilityProps(originNet, state);
   const originFee = FPNumber.fromCodecValue(paymentInfo.partialFee.toString(), utility.precision);
   if (!originFee.isFinity() || !originFee.isGteZero()) throw new Error('cross_chain_fee_unavailable');
 

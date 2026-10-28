@@ -15,6 +15,7 @@ import {
   type ReviewedCrossChainExecution,
   type ReviewedRuntimeCall,
 } from '@/cross-chain/reviewedRoutes';
+import { REVIEWED_RPC_HOSTS } from '@/cross-chain/reviewedEndpoints';
 import { REVIEWED_RUNTIMES } from '@/cross-chain/reviewedRuntimes';
 import { VALID_SUBSTRATE_ADDRESS } from '@/consts/networks';
 
@@ -111,15 +112,18 @@ const authorityApi = (
   chainId: string,
   query: BridgeRuntimeApi['query'] = {},
   consts: BridgeRuntimeApi['consts'] = {}
-): BridgeRuntimeApi => ({
-  consts,
-  createType: vi.fn((_type: string, value: unknown) => ({ toHex: () => String(value) })),
-  genesisHash: { toHex: () => `0x${chainId}` },
-  isConnected: true,
-  isReadyOrError: Promise.resolve(),
-  query,
-  tx: {},
-});
+): BridgeRuntimeApi =>
+  ({
+    consts,
+    createType: vi.fn((_type: string, value: unknown) => ({ toHex: () => String(value) })),
+    genesisHash: { toHex: () => `0x${chainId}` },
+    isConnected: true,
+    isReadyOrError: Promise.resolve(),
+    query,
+    tx: {},
+    // Connected to the first reviewed host of the chain, as polkadot-js records it.
+    _rpcCore: { provider: { endpoint: `wss://${REVIEWED_RPC_HOSTS[chainId]?.[0] ?? 'unreviewed.invalid'}` } },
+  }) as BridgeRuntimeApi;
 
 const authorityState = (entries: Array<{ chainId: string; name: string; api: BridgeRuntimeApi }>) =>
   ({

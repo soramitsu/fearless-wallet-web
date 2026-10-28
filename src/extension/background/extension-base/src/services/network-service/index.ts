@@ -6,6 +6,7 @@ import { EvmApiHandler } from '@extension-base/services/network-service/handlers
 import { SubstrateApiHandler } from '@extension-base/services/network-service/handlers/SubstrateApiHandler';
 import { logger as createLogger } from '@polkadot/util';
 import { TonApiHandler } from './handlers/TonApiHandler';
+import { withAcceptedRegistryNodes } from './nodeUrlPolicy';
 import { nodePreferences, sameNodePreferences, type NodePreferences } from './preferences';
 import { migrateRetiredBuiltinProviders } from './retiredProviders';
 import type { KeyringService } from '@extension-base/services';
@@ -58,6 +59,15 @@ function usableNetwork(value: unknown): value is NetworkJson {
 /** Remote discovery requires a usable node as well as the validated cached-network shape. */
 export function isUsableRegistryNetwork(value: unknown): value is NetworkJson {
   return usableNetwork(value) && value.nodes.length > 0;
+}
+
+/**
+ * A production build connects only to registry nodes reached over TLS, wss:// for Substrate RPC (see nodeUrlPolicy).
+ * The registry is fetched unsigned, so a plain ws:// or http:// node it lists is dropped, and a row left without any
+ * node is skipped. Development and test builds keep every node of the development registry.
+ */
+export function productionRegistryNetwork(network: NetworkJson, isProduction = IS_PRODUCTION): NetworkJson | undefined {
+  return isProduction ? withAcceptedRegistryNodes(network) : network;
 }
 
 export class NetworkService {
@@ -185,11 +195,15 @@ export class NetworkService {
     try {
       const { data } = await axios.get<unknown>(URLS.CHAINS, { timeout: 10000 });
       if (!Array.isArray(data)) throw new Error('The network registry is not a list');
-      const rows = data.filter((network, index): network is NetworkJson => {
-        if (isUsableRegistryNetwork(network)) return true;
+      const rows = data.flatMap((network, index): NetworkJson[] => {
         const name = network && typeof network.name === 'string' ? network.name : `#${index}`;
-        this.logger.warn(`Skipping malformed network registry entry ${name}`);
-        return false;
+        if (!isUsableRegistryNetwork(network)) {
+          this.logger.warn(`Skipping malformed network registry entry ${name}`);
+          return [];
+        }
+        const accepted = productionRegistryNetwork(network);
+        if (!accepted) this.logger.warn(`Skipping network registry entry ${name}: none of its nodes uses TLS`);
+        return accepted ? [accepted] : [];
       });
       if (!rows.length) throw new Error('No usable registry networks');
       networks = rows.map((network) => withoutUntrustedPrices(network));
@@ -198,7 +212,9 @@ export class NetworkService {
     } catch (error) {
       console.warn('Network registry unavailable; using cached and bundled networks', error);
       // Cached custom networks are usable locally but never become an authoritative discovery registry.
+      // A cache written by an earlier build may still list plain-text registry nodes.
       networks = Object.values({ ...networksFromStorage, ...this.networkMap }).filter(usableNetwork)
+        .flatMap((network) => productionRegistryNetwork(network) ?? [])
         .map((network) => withoutUntrustedPrices(network));
     }
     this.registryAvailable = remote;

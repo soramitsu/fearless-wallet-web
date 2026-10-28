@@ -303,6 +303,73 @@ describe('makeCrossChain', () => {
     await expect(makeCrossChain(h.props(), h.state, ledger)).resolves.toEqual({ status: true, transactionHash: HASH });
   });
 
+  it('keeps the record when the pool reports the extrinsic invalid, until the chain settles it', async () => {
+    const { ledger, stored } = memoryLedger();
+    const h = harness({
+      send: async (callback) => {
+        callback({
+          status: { type: 'Invalid', isInBlock: false, isFinalized: false, isDropped: false, isInvalid: true, isUsurped: false },
+        });
+
+        return () => undefined;
+      },
+    });
+
+    // Still reported as a failure, without a hash to look up.
+    await expect(makeCrossChain(h.props(), h.state, ledger)).resolves.toEqual({
+      status: false,
+      errors: [{ code: TransferErrorCode.CROSSCHAIN_ERROR, message: 'cross_chain_extrinsic_invalid' }],
+    });
+    expect(stored()?.[crossChainSendRecordKey(ADDRESS, ROUTE)]).toMatchObject({ hash: HASH, expiresAtBlock: 1_064 });
+
+    // Another node or fork may still include it: the route stays blocked and nothing is signed again.
+    mocks.signExtrinsic.mockClear();
+    await expect(makeCrossChain(h.props(), h.state, ledger)).rejects.toMatchObject({ transactionHash: HASH });
+    expect(mocks.signExtrinsic).not.toHaveBeenCalled();
+
+    // The mortal window passed with the nonce unused: it can never be included.
+    h.chain.head = 1_064;
+    h.extrinsic.send.mockImplementation(included);
+    await expect(makeCrossChain(h.props(), h.state, ledger)).resolves.toEqual({ status: true, transactionHash: HASH });
+    expect(stored()).toEqual({});
+  });
+
+  it('does not send a mortal extrinsic whose expiry cannot be recorded', async () => {
+    const { ledger, store } = memoryLedger();
+    const h = harness();
+    h.api.rpc.chain.getHeader.mockRejectedValue(new Error('WebSocket is not connected'));
+
+    await expect(makeCrossChain(h.props(), h.state, ledger)).rejects.toThrow('cross_chain_send_record_unavailable');
+    expect(h.api.rpc.chain.getHeader).toHaveBeenCalledTimes(2);
+    expect(store.save).not.toHaveBeenCalled();
+    expect(h.extrinsic.send).not.toHaveBeenCalled();
+  });
+
+  it('reads the head once more before giving up on the expiry', async () => {
+    const { ledger, store } = memoryLedger();
+    const h = harness();
+    h.api.rpc.chain.getHeader.mockRejectedValueOnce(new Error('No response received from RPC endpoint in 60s'));
+
+    await expect(makeCrossChain(h.props(), h.state, ledger)).resolves.toEqual({ status: true, transactionHash: HASH });
+    expect(store.save.mock.calls[0][0][crossChainSendRecordKey(ADDRESS, ROUTE)]).toMatchObject({ expiresAtBlock: 1_064 });
+  });
+
+  it('records an immortal extrinsic without reading the head', async () => {
+    const { ledger, store } = memoryLedger();
+    const h = harness({ send: async () => new Promise<() => void>(() => undefined) });
+    Object.assign(h.extrinsic.era, { isMortalEra: false });
+    vi.useFakeTimers();
+
+    const pending = makeCrossChain(h.props(), h.state, ledger);
+    await vi.waitFor(() => expect(store.save).toHaveBeenCalled());
+
+    expect(store.save.mock.calls[0][0][crossChainSendRecordKey(ADDRESS, ROUTE)]).toMatchObject({ expiresAtBlock: null });
+    expect(h.api.rpc.chain.getHeader).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(180_000);
+    await pending;
+    vi.useRealTimers();
+  });
+
   it('runs one send per account at a time', async () => {
     const { ledger } = memoryLedger();
     const h = harness();

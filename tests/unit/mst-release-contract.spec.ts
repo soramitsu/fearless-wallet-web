@@ -6,10 +6,10 @@ import { NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
 
 const dwellirNetwork = (): NetworkJson =>
   ({
-    currentProvider: 'wss://manual.dwellir.example',
+    currentProvider: 'wss://manual.dwellir.com',
     isManual: false,
     name: 'Dwellir Test',
-    nodes: [{ name: 'default', url: 'wss://provider.dwellir.example' }],
+    nodes: [{ name: 'default', url: 'wss://provider.dwellir.com' }],
   }) as unknown as NetworkJson;
 
 describe('MST release compatibility contract', () => {
@@ -39,11 +39,29 @@ describe('MST release compatibility contract', () => {
     const handler = new SubstrateApiHandler({} as never, {} as never);
 
     process.env.FL_WEB_DWELLIR_API_KEY = 'new-key';
-    expect(handler.getListeners(dwellirNetwork()).currentProvider).toBe('wss://provider.dwellir.example/new-key');
+    expect(handler.getListeners(dwellirNetwork()).currentProvider).toBe('wss://provider.dwellir.com/new-key');
 
     delete process.env.FL_WEB_DWELLIR_API_KEY;
     process.env.FL_DWELLIR_API_KEY = 'old-key';
-    expect(handler.getListeners(dwellirNetwork()).currentProvider).toBe('wss://provider.dwellir.example/old-key');
+    expect(handler.getListeners(dwellirNetwork()).currentProvider).toBe('wss://provider.dwellir.com/old-key');
+  });
+
+  it('sends the Dwellir API key only to Dwellir hosts', () => {
+    const handler = new SubstrateApiHandler({} as never, {} as never);
+    const withNode = (url: string) => ({ ...dwellirNetwork(), nodes: [{ name: 'default', url }] });
+    process.env.FL_WEB_DWELLIR_API_KEY = 'new-key';
+
+    expect(handler.getListeners(withNode('wss://dwellir.com')).currentProvider).toBe('wss://dwellir.com/new-key');
+    for (const url of [
+      'wss://rpc.example/dwellir',
+      'wss://provider.dwellir.example',
+      'wss://dwellir.com.example',
+      'wss://evil-dwellir.com',
+      'wss://api.dwellir.com@rpc.example',
+      'not a url dwellir.com',
+    ]) {
+      expect(handler.getListeners(withNode(url)).currentProvider, url).toBe(url);
+    }
   });
 
   it('exposes authorized page messages for MST cosigner crypto requests', () => {

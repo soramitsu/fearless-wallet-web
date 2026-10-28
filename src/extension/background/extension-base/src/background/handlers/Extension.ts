@@ -85,6 +85,7 @@ import {
   createSubstrateSigningRegistry,
   validateSubstrateSigningContext,
 } from '@extension-base/services/request-service/handlers/substrateSigningContext';
+import { CrossChainDestinationRetiredError } from '@extension-base/services/request-service/handlers/substrateCallReview';
 import {
   assertEvmExternalSignature,
   assertSubstrateExternalSignature,
@@ -916,6 +917,8 @@ export default class Extension extends FWExtensionBase {
     } catch (error) {
       if (this.state.requestService.getSignRequest(id, 'substrate') === queued)
         queued.reject(error instanceof Error ? error : new Error('Unable to sign Substrate request'));
+      // The popup names this refusal: the request sends funds to a destination that cannot deliver them.
+      if (error instanceof CrossChainDestinationRetiredError) throw error;
       return false;
     } finally {
       this.pendingSiteApprovals.delete(queued);

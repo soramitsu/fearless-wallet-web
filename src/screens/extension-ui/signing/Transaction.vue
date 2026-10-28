@@ -45,7 +45,12 @@
           </div>
         </section>
         <template v-if="siteStatus !== 'flagged'">
-          <div v-for="(action, index) in review.actions" :key="index" class="signing-action">
+          <div
+            v-for="(action, index) in review.actions"
+            :key="index"
+            class="signing-action"
+            :class="{ 'signing-action--danger': action.refusal || action.highRisk }"
+          >
             <p v-if="action.transactionIndex" class="signing-method">
               {{ t('assets.transaction') }} {{ action.transactionIndex }}
             </p>
@@ -58,26 +63,56 @@
                       ? 'walletConnect.requestFields.message'
                       : action.kind === 'typedData'
                         ? 'signingReview.typedData'
-                        : 'signingReview.unknownAction'
+                        : action.kind === 'crossChain'
+                          ? 'signingReview.crossChainTitle'
+                          : 'signingReview.unknownAction'
                 )
               }}
             </h2>
-            <p v-if="action.amount" class="signing-amount">{{ action.amount }}</p>
-            <dl v-if="action.from || action.to || action.asset" class="signing-fields">
-              <template v-if="action.from"
-                ><dt>{{ t('historyDetails.from') }}</dt>
-                <dd dir="ltr">{{ action.from }}</dd></template
-              >
-              <template v-if="action.to"
-                ><dt>{{ t('historyDetails.to') }}</dt>
-                <dd dir="ltr">{{ action.to }}</dd></template
-              >
-              <template v-if="action.asset"
-                ><dt>{{ t('crossChainPage.asset') }}</dt>
-                <dd dir="ltr">{{ action.asset }}</dd></template
-              >
-            </dl>
-            <pre v-if="action.text" class="signing-message" dir="auto">{{ action.text }}</pre>
+            <template v-if="action.kind === 'crossChain'">
+              <p class="signing-cross-chain">{{ t('signingReview.crossChainNotice') }}</p>
+              <p class="signing-method" dir="ltr">{{ action.call }}</p>
+              <dl class="signing-fields">
+                <template v-if="action.destination"
+                  ><dt>{{ t('crossChainPage.destinationNetwork') }}</dt>
+                  <dd dir="ltr">{{ destinationLabel(action.destination) }}</dd></template
+                >
+                <template v-if="action.to"
+                  ><dt>{{ t('historyDetails.to') }}</dt>
+                  <dd dir="ltr">{{ action.to }}</dd></template
+                >
+                <template v-for="(item, assetIndex) in action.assets" :key="assetIndex"
+                  ><dt>{{ t('crossChainPage.asset') }}</dt>
+                  <dd dir="ltr">{{ item.asset }}</dd>
+                  <dt>{{ t('historyDetails.amount') }}</dt>
+                  <dd dir="ltr">{{ item.amount }}</dd></template
+                >
+              </dl>
+              <p v-if="action.refusal" role="alert" class="signing-warning signing-warning--danger">
+                {{ t(REFUSAL_REASONS[action.refusal]) }}
+              </p>
+              <p v-else-if="action.highRisk" role="alert" class="signing-warning signing-warning--danger">
+                {{ t('signingReview.crossChainHighRisk') }}
+              </p>
+            </template>
+            <template v-else>
+              <p v-if="action.amount" class="signing-amount">{{ action.amount }}</p>
+              <dl v-if="action.from || action.to || action.asset" class="signing-fields">
+                <template v-if="action.from"
+                  ><dt>{{ t('historyDetails.from') }}</dt>
+                  <dd dir="ltr">{{ action.from }}</dd></template
+                >
+                <template v-if="action.to"
+                  ><dt>{{ t('historyDetails.to') }}</dt>
+                  <dd dir="ltr">{{ action.to }}</dd></template
+                >
+                <template v-if="action.asset"
+                  ><dt>{{ t('crossChainPage.asset') }}</dt>
+                  <dd dir="ltr">{{ action.asset }}</dd></template
+                >
+              </dl>
+              <pre v-if="action.text" class="signing-message" dir="auto">{{ action.text }}</pre>
+            </template>
           </div>
           <dl class="signing-fields signing-context">
             <dt>{{ t('common.network') }}</dt>
@@ -111,7 +146,10 @@
               }}
             </dd>
           </dl>
-          <p v-if="review.blocked" role="alert" class="signing-warning">{{ t('signingReview.invalidRequest') }}</p>
+          <p v-if="review.refused" role="alert" class="signing-warning signing-warning--danger">
+            {{ t('signingReview.crossChainRefused') }}
+          </p>
+          <p v-else-if="review.blocked" role="alert" class="signing-warning">{{ t('signingReview.invalidRequest') }}</p>
           <p v-else-if="review.blind" role="alert" class="signing-warning">
             {{ t('signingReview.blindWarning', { origin }) }}
           </p>
@@ -126,6 +164,14 @@
             :value="acknowledged"
             :disabled="!!pending"
             @change="onAcknowledge"
+          />
+          <Checkbox
+            v-if="review.highRisk && !review.blocked"
+            data-testid="crossChainHighRiskAcknowledge"
+            :label="t('signingReview.crossChainHighRiskAcknowledge')"
+            :value="highRiskAcknowledged"
+            :disabled="!!pending"
+            @change="onHighRiskAcknowledge"
           />
           <p v-if="pending === 'approve'" role="status">
             {{ t(isMobile ? 'mobileConnector.signMobile' : 'irohaConnectPage.signing') }}
@@ -176,6 +222,8 @@ import { signingRequester } from './requester';
 import { signingRequestKind, signingReview, type ReviewRequest } from './review';
 import { walletConnectReview } from './walletConnectReview';
 import WalletInfo from './WalletInfo.vue';
+import type { RetiredDestinationCode } from '@/cross-chain/reviewedRoutes';
+import { CROSS_CHAIN_DESTINATION_RETIRED, type CrossChainCallDestination } from '@/cross-chain/dappCrossChainCalls';
 import { useI18n } from '@/locales/useI18n';
 import { useNotify } from '@/plugins/soramitsuUI';
 import { Components } from '@/router/routes';
@@ -229,6 +277,23 @@ const actionError = ref(false);
 const actionErrorElement = ref<HTMLElement | null>(null);
 const rawExpanded = ref(false);
 const acknowledged = ref(false);
+const highRiskAcknowledged = ref(false);
+const REFUSAL_REASONS: Readonly<Record<RetiredDestinationCode, string>> = {
+  'retired-chain': 'signingReview.crossChainReason.retiredChain',
+  'sora-parachain-halted': 'signingReview.crossChainReason.soraParachainHalted',
+  'sora-to-liberland-stalled': 'signingReview.crossChainReason.soraToLiberlandStalled',
+  'asset-hub-migration': 'signingReview.crossChainReason.assetHubMigration',
+};
+const destinationLabel = ({ network, relay, paraId, raw }: CrossChainCallDestination): string => {
+  const parachain =
+    paraId === undefined
+      ? ''
+      : [relay, t('signingReview.crossChainParachain', { paraId: String(paraId) })].filter(Boolean).join(' · ');
+
+  if (network) return parachain ? `${network} (${parachain})` : network;
+
+  return parachain || raw || '';
+};
 const rawDetails = ref<HTMLDetailsElement | null>(null);
 const controls = ref<HTMLElement | null>(null);
 let active = true;
@@ -240,11 +305,15 @@ const cannotApprove = computed(
     siteStatus.value !== 'unverified' ||
     !review.value ||
     review.value.blocked ||
-    (review.value.blind && (!rawExpanded.value || !acknowledged.value))
+    (review.value.blind && (!rawExpanded.value || !acknowledged.value)) ||
+    (review.value.highRisk && !highRiskAcknowledged.value)
 );
 const isRendered = () => active && !!request.value && renderedRequestKey === requestKey.value;
 const onAcknowledge = (value: boolean) => {
   if (isRendered() && !pending.value) acknowledged.value = value;
+};
+const onHighRiskAcknowledge = (value: boolean) => {
+  if (isRendered() && !pending.value) highRiskAcknowledged.value = value;
 };
 const onRawToggle = (event: Event) => {
   if (isRendered() && event.target === rawDetails.value) rawExpanded.value = rawDetails.value?.open ?? false;
@@ -311,7 +380,10 @@ const act = async (action: 'approve' | 'reject') => {
         });
       else notify({ title: t('addWallet.google.somethingWrong'), message: '', type: 'error' });
     }
-  } catch {
+  } catch (error) {
+    // The background refused a transfer to a destination that cannot deliver it, and the request is gone: say why.
+    if (error instanceof Error && error.message.startsWith(CROSS_CHAIN_DESTINATION_RETIRED))
+      notify({ title: t('signingReview.crossChainRefused'), message: '', type: 'error' });
     if (active && key === requestKey.value) {
       actionError.value = true;
       await nextTick();
@@ -332,6 +404,7 @@ watch(
     faviconFailed.value = false;
     rawExpanded.value = false;
     acknowledged.value = false;
+    highRiskAcknowledged.value = false;
     actionError.value = false;
     void checkSite();
     leaveEmpty();
@@ -468,6 +541,14 @@ onBeforeUnmount(() => {
   border-radius: 12px;
   padding: 16px;
   color: var(--fw-text-1);
+}
+.signing-warning--danger,
+.signing-action--danger {
+  border-color: var(--fw-danger);
+}
+.signing-cross-chain {
+  margin: 0 0 8px;
+  font-weight: 700;
 }
 .signing-caution {
   color: var(--fw-text-2);

@@ -1436,7 +1436,19 @@
     "flagged": "Flagged as phishing",
     "checking": "Checking requester…",
     "signed": "Signed for {origin}",
-    "submitted": "Submitted for {origin}"
+    "submitted": "Submitted for {origin}",
+    "crossChainTitle": "Transfer to another network",
+    "crossChainNotice": "This moves funds to another network.",
+    "crossChainParachain": "Parachain {paraId}",
+    "crossChainHighRisk": "These are raw cross-network instructions. Fearless cannot show what they do on the other network, and they can move any asset of this account.",
+    "crossChainHighRiskAcknowledge": "I understand these instructions can move funds to another network.",
+    "crossChainRefused": "Fearless will not sign this request: it sends funds where they cannot arrive. Reject it.",
+    "crossChainReason": {
+      "retiredChain": "The destination network has shut down and no longer receives transfers.",
+      "soraParachainHalted": "The SORA parachains have stopped producing blocks, so this transfer cannot be delivered.",
+      "soraToLiberlandStalled": "SORA to Liberland transfers are not being delivered.",
+      "assetHubMigration": "DOT and KSM moved from the relay chains to Asset Hub, so this relay-chain transfer cannot be delivered."
+    }
   },
   "accountAccess": {
     "title": "Account access",

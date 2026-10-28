@@ -288,6 +288,8 @@ const chain = Object.freeze({
   bifrost: '9f28c6a68e0fc9646eff64935684f6eeeece527e37bbe1f213d22caa1d9d6bed',
   astar: '9eb76c5184c4ab8679d2d5d819fdf90b9c001403e9e17da2e14b6d8aec4029c6',
   sora: '7e4e32d0feafd4f9c9414b0be86373f9a1efa904809b683453a9af6856d38ad5',
+  soraPolkadotParachain: 'e92d165ad41e41e215d09713788173aecfdbe34d3bed29409d33a2ef03980738',
+  soraKusamaParachain: '6d8d9f145c2177fa83512492cdd80a71e29f22473f4a8943a6292149ac319fb9',
   liberland: '6bd89e052d67a45bb60a9a23e8581053d5e0d619f15cb9865946937e690c42d6',
 });
 
@@ -317,6 +319,14 @@ const PARACHAIN_RELAY: Readonly<Record<string, RelayNetwork>> = Object.freeze({
   [chain.bifrost]: 'Kusama',
   [chain.moonriver]: 'Kusama',
 });
+
+/** The relay network a chain belongs to, when the bundle knows it: a relay chain itself or a parachain listed above. */
+export function bundledRelayNetwork(chainId: string): RelayNetwork | undefined {
+  if (chainId === chain.polkadot) return 'Polkadot';
+  if (chainId === chain.kusama) return 'Kusama';
+
+  return PARACHAIN_RELAY[chainId];
+}
 
 export function relayExecutionSharesRelay(
   execution: Pick<ReviewedRelayExecution, 'relayNetwork' | 'originChainId' | 'destinationChainId'>
@@ -371,10 +381,43 @@ const relayChainIds: ReadonlySet<string> = new Set([chain.polkadot, chain.kusama
  * Every route that touches SORA other than Liberland to SORA is therefore retired until the operators confirm
  * delivery and funded evidence exists.
  */
-const SORA_PARACHAIN_HALTED =
+export const SORA_PARACHAIN_HALTED =
   'The SORA parachains for Polkadot and Kusama have stopped producing blocks, so SORA bridge transfers to or from those networks cannot be delivered.';
-const SORA_TO_LIBERLAND_STALLED =
+export const SORA_TO_LIBERLAND_STALLED =
   'SORA to Liberland transfers are not being delivered: the latest ones are still pending after several months.';
+export const ASSET_HUB_MIGRATION_RETIRED =
+  'DOT and KSM moved to Asset Hub in the Asset Hub Migration; this relay-chain route is retired until it is re-qualified.';
+
+/** Why a destination is known not to deliver, for a message the user can read in their language. */
+export type RetiredDestinationCode =
+  | 'retired-chain'
+  | 'sora-parachain-halted'
+  | 'sora-to-liberland-stalled'
+  | 'asset-hub-migration';
+
+export type DeadParachain = Readonly<{
+  relay: RelayNetwork;
+  paraId: number;
+  chainId: string;
+  code: RetiredDestinationCode;
+  reason: string;
+}>;
+
+/**
+ * The chains above that can be addressed by para id, as XCM locations do: the retired chains and the halted SORA
+ * parachains (para 2025 on Polkadot, para 2011 on Kusama). Anything sent there cannot be delivered.
+ */
+export const DEAD_PARACHAINS: readonly DeadParachain[] = Object.freeze(
+  (
+    [
+      ['Polkadot', 2004, chain.moonbeam, 'retired-chain', RETIRED_CROSS_CHAIN_CHAINS[chain.moonbeam]],
+      ['Polkadot', 2012, chain.parallel, 'retired-chain', RETIRED_CROSS_CHAIN_CHAINS[chain.parallel]],
+      ['Kusama', 2023, chain.moonriver, 'retired-chain', RETIRED_CROSS_CHAIN_CHAINS[chain.moonriver]],
+      ['Polkadot', 2025, chain.soraPolkadotParachain, 'sora-parachain-halted', SORA_PARACHAIN_HALTED],
+      ['Kusama', 2011, chain.soraKusamaParachain, 'sora-parachain-halted', SORA_PARACHAIN_HALTED],
+    ] as const
+  ).map(([relay, paraId, chainId, code, reason]) => Object.freeze({ relay, paraId, chainId, code, reason }))
+);
 
 export function retiredCrossChainRouteReason(
   input: Pick<DefinitionInput, 'originChainId' | 'destinationChainId' | 'symbol' | 'execution'>
@@ -397,9 +440,7 @@ export function retiredCrossChainRouteReason(
     input.execution.call === 'limitedTeleportAssets' &&
     relayAssetHubTeleportPairs.get(input.originChainId) === input.destinationChainId;
 
-  if (movesRelayAsset && touchesRelay && !isAssetHubTeleport) {
-    return 'DOT and KSM moved to Asset Hub in the Asset Hub Migration; this relay-chain route is retired until it is re-qualified.';
-  }
+  if (movesRelayAsset && touchesRelay && !isAssetHubTeleport) return ASSET_HUB_MIGRATION_RETIRED;
 
   return undefined;
 }

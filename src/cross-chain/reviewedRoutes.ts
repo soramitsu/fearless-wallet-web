@@ -291,6 +291,9 @@ const chain = Object.freeze({
   liberland: '6bd89e052d67a45bb60a9a23e8581053d5e0d619f15cb9865946937e690c42d6',
 });
 
+/** Genesis hashes (without 0x) of the chains the reviewed routes and the retirement rules name. */
+export const REVIEWED_CHAIN_IDS = chain;
+
 type RelayNetwork = ReviewedRelayExecution['relayNetwork'];
 
 const RELAY_CHAIN_IDS: Readonly<Record<RelayNetwork, string>> = Object.freeze({

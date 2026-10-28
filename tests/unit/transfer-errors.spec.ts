@@ -55,6 +55,10 @@ describe('transfer error locale mapping', () => {
     expect(getTransferErrorLocaleKey('cross_chain_fee_asset_unavailable')).toBe('assets.crossChainRouteUnavailable');
   });
 
+  it('explains a route refused because the connected node is not a reviewed host', () => {
+    expect(getTransferErrorLocaleKey('cross_chain_rpc_endpoint_not_reviewed')).toBe('assets.crossChainRouteUnavailable');
+  });
+
   it('falls back to the generic fee error for unknown or missing transfer errors', () => {
     expect(getTransferErrorLocaleKey(undefined)).toBe('common.estimateFeeError');
     expect(getTransferErrorLocaleKey('invalid_iroha_amount')).toBe('common.estimateFeeError');

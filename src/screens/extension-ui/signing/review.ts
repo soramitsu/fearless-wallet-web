@@ -4,6 +4,8 @@ import type { SigningRequest } from '@extension-base/background/types/types';
 import type { EvmRequestPayload, SolanaRequestPayload } from '@extension-base/services/request-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { SigningRequestKind } from '@extension-base/services/request-service/signingRequestId';
+import type { CrossChainCallAsset, CrossChainCallDestination } from '@/cross-chain/dappCrossChainCalls';
+import type { RetiredDestinationCode } from '@/cross-chain/reviewedRoutes';
 import { evmMessageBytes } from '@/util/evmMessageBytes';
 import { evmTransaction } from '@/util/evmTransaction';
 import { evmTypedData } from '@/util/evmTypedData';
@@ -12,13 +14,19 @@ import { parseSolanaSerializedTransaction } from '@/util/solanaTransaction';
 export type ReviewRequest = SigningRequest | EvmRequestPayload | SolanaRequestPayload;
 export type ReviewAction = {
   transactionIndex?: number;
-  kind: 'message' | 'transfer' | 'typedData' | 'unknown';
+  kind: 'message' | 'transfer' | 'typedData' | 'unknown' | 'crossChain';
   text?: string;
   amount?: string;
   from?: string;
   to?: string;
   asset?: string;
   program?: string;
+  /** A transfer to another network: the decoded pallet call, where the funds go and why the wallet refuses it. */
+  call?: string;
+  destination?: CrossChainCallDestination;
+  assets?: CrossChainCallAsset[];
+  highRisk?: boolean;
+  refusal?: RetiredDestinationCode;
 };
 export type SigningReview = {
   protocol: 'Ethereum' | 'Solana' | 'Substrate';
@@ -30,6 +38,10 @@ export type SigningReview = {
   actions: ReviewAction[];
   blind: boolean;
   blocked: boolean;
+  /** The wallet will not sign: the request sends funds to a destination that cannot deliver them. */
+  refused: boolean;
+  /** Raw cross-network instructions, which need their own confirmation. */
+  highRisk: boolean;
   raw: string;
 };
 
@@ -224,6 +236,8 @@ export function signingReview(request: ReviewRequest, _networks: NetworkJson[] =
     actions: [{ kind: 'unknown' }],
     blind: true,
     blocked: false,
+    refused: false,
+    highRisk: false,
     raw: '',
   };
   try {
@@ -244,7 +258,25 @@ export function signingReview(request: ReviewRequest, _networks: NetworkJson[] =
         if (!request.network || request.network.genesisHash.toLowerCase() !== payload.genesisHash.toLowerCase())
           throw new Error('Substrate signing network context is missing');
         result.network = request.network.name;
-        result.actions = [{ kind: 'unknown', text: reviewJson(payload) }];
+        // The background decoded the call with the wallet's own runtime; the rest of it stays raw data.
+        const crossChain = request.callReview?.status === 'decoded' ? request.callReview.crossChain : [];
+        result.actions = [
+          ...crossChain.map(
+            (item): ReviewAction => ({
+              kind: 'crossChain',
+              call: item.call,
+              destination: item.destination,
+              to: item.beneficiary,
+              assets: item.assets,
+              highRisk: item.highRisk,
+              refusal: item.blocked?.code,
+            })
+          ),
+          { kind: 'unknown', text: reviewJson(payload) },
+        ];
+        result.highRisk = crossChain.some((item) => item.highRisk);
+        result.refused = crossChain.some((item) => item.blocked);
+        result.blocked = result.refused;
       }
     }
   } catch {

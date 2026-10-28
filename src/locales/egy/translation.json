@@ -1436,7 +1436,19 @@
     "flagged": "𓋴𓈙𓅱 𓅓 𓈖𓅱 𓅓 𓎼𓂋𓎼",
     "checking": "𓋴𓇋𓊪 𓋴 𓂧𓃀𓎛…",
     "signed": "𓐍𓏏𓅓𓏏𓅱 𓈖 {origin}",
-    "submitted": "𓉔𓄿𓃀𓏏𓅱 𓈖 {origin}"
+    "submitted": "𓉔𓄿𓃀𓏏𓅱 𓈖 {origin}",
+    "crossChainTitle": "𓋴𓍿𓄿 𓂋 𓄡𓈖𓅓𓏥 𓎡𓇌",
+    "crossChainNotice": "𓋴𓍿𓄿 𓊪𓈖 𓇋𓐍𓏏𓏥 𓂋 𓄡𓈖𓅓𓏥 𓎡𓇌.",
+    "crossChainParachain": "𓈙𓈖𓏥 𓄡𓈖𓅓 {paraId}",
+    "crossChainHighRisk": "𓅱𓆓𓏥 𓅓 𓄡𓈖𓅓𓏥 𓂋 𓄡𓈖𓅓𓏥 𓊪𓈖. 𓈖 𓂋𓐍 Fearless 𓈙𓂧 𓅱𓆓𓏥 𓊪𓈖 𓅓 𓄡𓈖𓅓𓏥 𓎡𓇌. 𓋴𓅓𓅱𓈖 𓋴𓍿𓄿𓋴𓈖 𓇋𓐍𓏏𓏥 𓎟𓏏 𓅓 𓇋𓊪𓏥 𓈖 𓂋𓈖 𓊪𓈖.",
+    "crossChainHighRiskAcknowledge": "𓇋𓅱𓇋 𓂋𓐍: 𓋴𓅓𓅱𓈖 𓋴𓍿𓄿 𓅱𓆓𓏥 𓊪𓈖 𓇋𓐍𓏏𓏥 𓂋 𓄡𓈖𓅓𓏥 𓎡𓇌.",
+    "crossChainRefused": "𓈖 𓐍𓏏𓅓 Fearless 𓂧𓃀𓎛 𓊪𓈖 · 𓈖 𓊪𓎛 𓇋𓐍𓏏𓏥 𓊪𓎛𓅱𓇌 𓄡𓈖𓅓𓏥 · 𓐍𓋴𓆑 𓋴𓅱 ·",
+    "crossChainReason": {
+      "retiredChain": "𓊪𓎛𓅱𓇌 𓄡𓈖𓅓𓏥 𓈖𓈖 𓅱𓈖𓆑 · 𓈖 𓈙𓋴𓊪𓆑 𓋴𓍿𓄿𓏥 ·",
+      "soraParachainHalted": "𓈙𓈖𓏥 𓄡𓈖𓅓 𓈖 SORA 𓊵𓏏𓊪𓅱 · 𓈖 𓊪𓎛 𓋴𓍿𓄿 𓊪𓈖 ·",
+      "soraToLiberlandStalled": "𓋴𓍿𓄿𓏥 𓅓 SORA 𓂋 𓄡𓈖𓅓𓏥 𓊪𓈖 𓈖 𓊪𓎛 ·",
+      "assetHubMigration": "𓇋𓐍𓏏𓏥 𓈖 𓄡𓈖𓅓𓏥 𓂝𓄿 𓉔𓄿𓃀𓅱𓏏 𓂋 𓄡𓈖𓅓𓏥 𓎡𓇌 · 𓈖 𓊪𓎛 𓋴𓍿𓄿 𓊪𓈖 ·"
+    }
   },
   "accountAccess": {
     "title": "𓃹𓈖 𓇋𓊪𓏥 𓈖 𓂋𓈖",

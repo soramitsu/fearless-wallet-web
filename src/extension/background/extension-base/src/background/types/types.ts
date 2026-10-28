@@ -115,6 +115,8 @@ export type AccountAuthType = 'substrate' | 'evm' | 'solana' | 'iroha' | 'both' 
 export interface SigningRequest {
   account: AccountJson;
   network?: SubstrateNetworkSnapshot;
+  /** The call as the wallet's own runtime decodes it, with every cross-chain transfer in it. */
+  callReview?: import('@extension-base/services/request-service/handlers/substrateCallReview').SubstrateCallReview;
   id: string;
   request: Pick<RequestSign, 'payload'>;
   url: string;

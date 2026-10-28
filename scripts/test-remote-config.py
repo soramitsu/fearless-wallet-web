@@ -137,18 +137,18 @@ class ContentTests(unittest.TestCase):
         self.web_config({"fiat": {"ramp": True}, "actions": {"polkaswap": False, "crossChainXcm": False}})
         self.assertEqual(check.validate(self.root)["actionConfigs"], 1)
 
-    def test_action_true_fails_in_every_container_and_tree(self):
+    def test_action_true_lifting_a_veto_passes(self):
+        self.web_config({"actions": {"polkaswap": True, "crossChainXcm": True}})
+        self.assertEqual(check.validate(self.root)["actionConfigs"], 1)
+
+    def test_non_boolean_action_fails_in_every_container_and_tree(self):
         for tree in ("production", "development"):
             for container in check.ACTION_CONTAINERS:
-                self.web_config({container: {"crossChainXcm": True}}, tree=tree)
-                with self.assertRaisesRegex(ValueError, container + ".crossChainXcm may only be false"):
-                    check.validate(self.root)
+                for flag in ("false", 0, None, {"enabled": False}):
+                    self.web_config({container: {"crossChainXcm": flag}}, tree=tree)
+                    with self.assertRaisesRegex(ValueError, container + ".crossChainXcm must be true or false"):
+                        check.validate(self.root)
                 self.web_config({}, tree=tree)
-
-    def test_non_boolean_action_fails(self):
-        self.web_config({"actions": {"crossChainLiberland": "false"}})
-        with self.assertRaisesRegex(ValueError, "may only be false"):
-            check.validate(self.root)
 
     def test_non_object_action_container_fails(self):
         self.web_config({"actions": ["crossChainXcm"]})

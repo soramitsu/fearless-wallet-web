@@ -8,7 +8,8 @@ URLs the content is checked against what the bundle allows:
   other nodes TLS (wss:// or https://), no node URL carries credentials, and xcm blocks list only the pairs of the
   bundled routes. Development lists feed development and test builds, which may need other nodes, and are not
   checked for content;
-- every web_config.json: remote capabilities are veto-only, so an action key may only be false.
+- every web_config.json: remote capabilities are veto-only, so an action key must be a boolean: false vetoes and
+  true lifts a remembered veto (docs/send-kill-switch.md); neither can enable an action the build compiles off.
 """
 import json
 from pathlib import Path
@@ -96,8 +97,8 @@ def check_action_config(value, source, failures):
             failures.append(source + ": " + container + " must be an object")
             continue
         for key, flag in actions.items():
-            if flag is not False:
-                failures.append(source + ": " + container + "." + key + " may only be false (remote capabilities are veto-only)")
+            if not isinstance(flag, bool):
+                failures.append(source + ": " + container + "." + key + " must be true or false (remote capabilities are veto-only)")
 
 
 def validate(root):

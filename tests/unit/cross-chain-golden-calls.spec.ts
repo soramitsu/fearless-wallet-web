@@ -4,6 +4,7 @@ import { gunzipSync } from 'node:zlib';
 import { Metadata, TypeRegistry, expandMetadata } from '@polkadot/types';
 import { u8aToHex } from '@polkadot/util';
 import { blake2AsHex, decodeAddress } from '@polkadot/util-crypto';
+import { assertReviewedCallLayout, expectedReviewedCall } from '@/cross-chain/reviewedCallLayout';
 import { createReviewedCrossChainExtrinsic, type ReviewedExecutionApi } from '@/cross-chain/reviewedExecution';
 import { BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES, type ReviewedCrossChainExecution } from '@/cross-chain/reviewedRoutes';
 import { REVIEWED_RUNTIMES } from '@/cross-chain/reviewedRuntimes';
@@ -77,6 +78,26 @@ const snapshotBytes = (chainId: string) => gunzipSync(readFileSync(resolve(FIXTU
 
 const runtimes = new Map<string, { api: ReviewedExecutionApi; registry: TypeRegistry }>();
 
+type DecoratedCall = ((...args: unknown[]) => { toHex(): string }) & { meta: unknown; callIndex: Uint8Array };
+
+/** Like `api.tx`: every call method returns an unsigned extrinsic whose `method` is the encoded call. */
+function submittableTx(registry: TypeRegistry, decorated: Record<string, Record<string, DecoratedCall>>) {
+  return Object.fromEntries(
+    Object.entries(decorated).map(([section, methods]) => [
+      section,
+      Object.fromEntries(
+        Object.entries(methods).map(([name, call]) => [
+          name,
+          Object.assign((...args: unknown[]) => registry.createType('Extrinsic', call(...args)), {
+            meta: call.meta,
+            callIndex: call.callIndex,
+          }),
+        ])
+      ),
+    ])
+  ) as unknown as ReviewedExecutionApi['tx'];
+}
+
 /** An API shaped like the live one, but decorated from the saved metadata of the reviewed runtime. */
 function snapshotRuntime(chainId: string) {
   const cached = runtimes.get(chainId);
@@ -90,7 +111,7 @@ function snapshotRuntime(chainId: string) {
     registry,
     api: {
       isReadyOrError: Promise.resolve(),
-      tx: expandMetadata(registry, metadata).tx as unknown as ReviewedExecutionApi['tx'],
+      tx: submittableTx(registry, expandMetadata(registry, metadata).tx as unknown as Record<string, Record<string, DecoratedCall>>),
       createType: (type: string, value: unknown) => registry.createType(type, value),
       genesisHash: { toHex: () => `0x${chainId}` },
       runtimeVersion: {
@@ -106,7 +127,12 @@ function snapshotRuntime(chainId: string) {
 
 const routeFor = (symbol: string) => BUNDLED_REVIEWED_CROSS_CHAIN_ROUTES.find((route) => route.symbol === symbol)!;
 
-async function buildCall(execution: Readonly<ReviewedCrossChainExecution>, to: string, amount: string) {
+async function buildCall(
+  execution: Readonly<ReviewedCrossChainExecution>,
+  to: string,
+  amount: string,
+  api: ReviewedExecutionApi = snapshotRuntime(execution.originChainId).api
+) {
   const built = await createReviewedCrossChainExtrinsic({
     execution,
     originChainId: execution.originChainId,
@@ -114,10 +140,10 @@ async function buildCall(execution: Readonly<ReviewedCrossChainExecution>, to: s
     xcmAssetId: execution.assetXcmId,
     to,
     precisionAmount: amount,
-    api: snapshotRuntime(execution.originChainId).api,
+    api,
   });
 
-  return (built.extrinsic as unknown as { toHex(): string }).toHex();
+  return (built.extrinsic as unknown as { method: { toHex(): string } }).method.toHex();
 }
 
 describe('golden encoded calls of the bundled cross-chain executions', () => {
@@ -178,6 +204,55 @@ describe('golden encoded calls of the bundled cross-chain executions', () => {
       expect(args.asset_id).toEqual(expectedAsset[symbol as keyof typeof expectedAsset]);
       expect(u8aToHex(decodeAddress((args.recipient as { sora: string }).sora))).toBe(ALICE);
       expect(BigInt(args.amount as string | number)).toBe(BigInt(amount));
+    }
+  });
+
+  it.each(GOLDEN)('writes the $symbol call out independently of the node metadata', ({ symbol, to, amount, call }) => {
+    expect(expectedReviewedCall(routeFor(symbol).execution!, to, amount)).toBe(call);
+  });
+
+  it('refuses a call that a node with altered type definitions encoded differently', async () => {
+    const dot = GOLDEN[0];
+    const execution = routeFor('DOT').execution!;
+    const { api, registry } = snapshotRuntime(POLKADOT);
+    // The node's types turn the reviewed recipient into another account.
+    const hostile: ReviewedExecutionApi = {
+      ...api,
+      createType: (type: string, value: unknown) =>
+        registry.createType(type, type === 'AccountId32' ? '14E5nqKAp3oAJcmzgZhUD2RcptBeUBScxKHgJKU4HPNcKVf3' : value),
+    };
+
+    await expect(buildCall(execution, dot.to, dot.amount, hostile)).rejects.toThrow('cross_chain_call_layout_mismatch');
+  });
+
+  it('refuses a built call without encoded bytes', () => {
+    const dot = GOLDEN[0];
+
+    expect(() => assertReviewedCallLayout(routeFor('DOT').execution!, dot.to, dot.amount, undefined)).toThrow(
+      'cross_chain_call_layout_mismatch'
+    );
+  });
+
+  it.each([
+    ['a fractional amount', '1.5'],
+    ['a negative amount', '-1'],
+    ['an amount above u128', (1n << 128n).toString()],
+  ])('has no layout for %s', (_label, amount) => {
+    expect(() => expectedReviewedCall(routeFor('DOT').execution!, GOLDEN[0].to, amount)).toThrow(
+      'cross_chain_call_layout_not_reviewed'
+    );
+  });
+
+  it('has no layout for an execution kind without a bundled route', () => {
+    const relay = routeFor('DOT').execution!;
+    const reserve = { ...relay, call: 'limitedReserveTransferAssets' } as Readonly<ReviewedCrossChainExecution>;
+    const accountKey20 = { ...relay, receiverKind: 'AccountKey20' } as Readonly<ReviewedCrossChainExecution>;
+    const soraBurn = { ...relay, kind: 'sora-bridge-proxy-burn-v3' } as unknown as Readonly<ReviewedCrossChainExecution>;
+
+    for (const execution of [reserve, accountKey20, soraBurn]) {
+      expect(() => expectedReviewedCall(execution, GOLDEN[0].to, GOLDEN[0].amount)).toThrow(
+        'cross_chain_call_layout_not_reviewed'
+      );
     }
   });
 

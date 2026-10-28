@@ -25,9 +25,6 @@ vi.mock('@extension-base/api/substrate', () => ({
   getPrecisionValue: (amount: string, precision: number) => `${amount}@${precision}`,
 }));
 vi.mock('@extension-base/api/substrate/shared/signExtrinsic', () => ({ signExtrinsic: mocks.signExtrinsic }));
-vi.mock('@/extension/background/extension-base/src/background/handlers/utils', () => ({
-  getUtilityProps: () => ({ id: 'polkadot-dot', precision: 10 }),
-}));
 vi.mock('@/cross-chain/reviewedRuntimeAuthority', () => ({
   assertReviewedRuntimeAuthority: mocks.assertReviewedRuntimeAuthority,
 }));
@@ -46,7 +43,9 @@ const ADDRESS = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY';
 const OTHER = '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty';
 const ROUTE = 'reviewed-v1:wallet-xcm:polkadot:asset-hub:polkadot-dot';
 const HASH = 'ab'.repeat(32);
-const execution = { kind: 'relay-native-xcm-v3', destinationFee: '0.001', assetPrecision: 10 };
+const POLKADOT = '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3';
+const DOT = '887a17c7-1370-4de0-97dd-5422e294fa75';
+const execution = { kind: 'relay-native-xcm-v3', originChainId: POLKADOT, destinationFee: '0.001', assetPrecision: 10 };
 
 const inBlock = (extra: Partial<TrackableResult> = {}): TrackableResult => ({
   status: { type: 'InBlock', isInBlock: true, isFinalized: false, isDropped: false, isInvalid: false, isUsurped: false },
@@ -114,7 +113,7 @@ function harness({
     getAccountAddress: () => selected,
     networkService: {
       networkMap: {
-        Polkadot: { name: 'Polkadot', chainId: 'polkadot' },
+        Polkadot: { name: 'Polkadot', chainId: POLKADOT, assets: [{ id: DOT, symbol: 'DOT', precision: 10 }] },
         'Polkadot Asset Hub': { name: 'Polkadot Asset Hub', chainId: 'asset-hub' },
       },
       substrateApiHandler: { initApi: vi.fn() },
@@ -150,7 +149,7 @@ function harness({
   const callback = vi.fn((_response: BasicTxResponse) => undefined);
   const props = (overrides: Partial<MakeCrossChainProps> = {}): MakeCrossChainProps =>
     ({
-      assetId: 'polkadot-dot',
+      assetId: DOT,
       assetKey: 'asset-key',
       routeId: ROUTE,
       routeProviderId: 'wallet-xcm',

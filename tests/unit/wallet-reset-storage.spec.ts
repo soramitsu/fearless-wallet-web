@@ -152,7 +152,7 @@ describe('acknowledged whole-wallet reset with retained keys', { timeout: 60_000
       isMobile: false, walletEcosystem: WalletEcosystem.Substrate }));
     await drain();
     expect(await selection).toHaveProperty('value');
-    const sora = apiSora as unknown as { account?: { pair: unknown }; bridgeProxy: { sub: { account?: unknown } } };
+    const sora = apiSora as unknown as { account?: { pair: unknown } };
     expect(sora.account?.pair).toBe(service.getPair(address));
     vi.mocked(state.poolsService.unsubscribePools).mockClear();
     const result = track(new Extension(state).handle('public-reset', 'pri(keyring.reset)', null));
@@ -160,7 +160,7 @@ describe('acknowledged whole-wallet reset with retained keys', { timeout: 60_000
     expect(service.currentAccountSubject.value).toBeNull();
     expect(fixture.data['fwcurrent_account:CurrentAccountInfo']).toBeNull();
     expect(sora.account).toBeUndefined();
-    expect(sora.bridgeProxy.sub.account).toBeUndefined();
+    expect(sora).not.toHaveProperty('bridgeProxy');
     expect(state.poolsService.unsubscribePools).toHaveBeenCalledOnce();
     expect(service.getPair(address)).not.toBeNull();
     await drain();

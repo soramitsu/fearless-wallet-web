@@ -226,6 +226,59 @@ describe('cross-chain entry without dead ends', () => {
       expect(mocks.push).toHaveBeenCalledWith({ name: 'CrossChain', query: { originChainId: POLKADOT } });
     });
 
+    const crossChainButton = (assetId: string) => mountButtons(assetId).find('[data-testid="crossChainBtn"]');
+
+    it('offers a transfer between networks for an owned asset with a bundled route the registry matches', () => {
+      expect(crossChainButton(DOT).exists()).toBe(true);
+    });
+
+    it('offers none when the wallet holds none of the asset on this network', () => {
+      mocks.accountsStore.balances = [dotGroup('0')];
+
+      expect(crossChainButton(DOT).exists()).toBe(false);
+    });
+
+    it('offers none when the registry no longer lists the bundled route', () => {
+      mocks.networksStore.allNetworks = [{ ...polkadot, xcm: undefined }, assetHub];
+
+      expect(crossChainButton(DOT).exists()).toBe(false);
+    });
+
+    it('offers none for an asset that only the remote xcm data lists', () => {
+      const KARURA = 'baf5aabe40646d11f0ee8abbdc64f4a4b7674925cba08e4a05ff9ebed6e2126b';
+      const KSM = 'karura-ksm';
+      const karura = {
+        ...polkadot,
+        assets: [registryAsset(KSM, 'KSM', 12)],
+        chainId: KARURA,
+        name: 'Karura',
+        xcm: {
+          availableAssets: [{ id: 'xcm-ksm', interiors: [], symbol: 'KSM', versions: ['v3'] }],
+          availableDestinations: [
+            { assets: [{ id: 'xcm-ksm', interiors: [], symbol: 'KSM', versions: ['v3'] }], chainId: POLKADOT_ASSET_HUB },
+          ],
+          xcmVersion: 'v3',
+        },
+      } as unknown as NetworkJson;
+      const ksmGroup = {
+        ...dotGroup(),
+        balances: [{ id: KSM, name: 'Karura', state: APIItemState.READY, symbol: 'KSM', total: '5', transferable: '5' }],
+        groupId: 'ksm',
+        symbol: 'KSM',
+      } as unknown as TokenGroup;
+      mocks.networksStore.allNetworks = [karura, assetHub];
+      mocks.accountsStore.balances = [ksmGroup];
+      const wrapper = mount(AssetActionButtons, {
+        props: { currency: ksmGroup, assetId: KSM },
+        global: {
+          stubs,
+          mocks: { $route: { params: { assetId: KSM, selectedNetwork: 'Karura' } }, $router: { push: mocks.push } },
+        },
+      });
+
+      expect(wrapper.find('[data-testid="crossChainBtn"]').exists()).toBe(false);
+    });
+
     it('keeps send on the transfer form', () => {
       (mountButtons(DOT).vm as unknown as { onRoute: (form: string) => void }).onRoute('send');
 

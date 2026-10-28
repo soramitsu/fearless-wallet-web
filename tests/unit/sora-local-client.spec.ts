@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SoraSubmissionUnknownError, soraSubmissionUnknownResponse } from '@/sora/submission';
 import { SoraClient, amount, observe, XOR, VAL, type Runtime } from '@/sora/client';
-import { SubNetworkId, type Asset } from '@/sora/types';
+import { type Asset } from '@/sora/types';
 import { poolMarkerForAmount, poolWithdrawal } from '@/sora/pools';
 
 const asset = (address: string, decimals = 18): Asset => ({ address, decimals, symbol: 'TEST', name: 'Test', isMintable: false });
@@ -9,7 +9,7 @@ function fixture() {
   const client = new SoraClient();
   const pair = { address: '5GrwvaEF5zXb26Fz9rcQpDWS64pdDujn2AUVFQZh3aTw6rVqY', isLocked: false } as Runtime;
   client.account = { json: null, pair };
-  client.api = { isConnected: true, tx: { liquidityProxy: { swap: vi.fn(() => ({})) }, poolXYK: { depositLiquidity: vi.fn(() => ({})), withdrawLiquidity: vi.fn(() => ({})) }, bridgeProxy: { burn: vi.fn(() => ({})) } } };
+  client.api = { isConnected: true, tx: { liquidityProxy: { swap: vi.fn(() => ({})) }, poolXYK: { depositLiquidity: vi.fn(() => ({})), withdrawLiquidity: vi.fn(() => ({})) } } };
   client.dex.ids.set(XOR, 0);
   return { client, pair };
 }
@@ -92,11 +92,8 @@ describe('wallet-owned SORA transaction encoding', () => {
     expect(client.provider!.send).toHaveBeenCalledWith('liquidityProxy_quote', [0, XOR, VAL, '2500000', 'WithDesiredOutput', [], 'Disabled']);
     expect(quote.amount).toBe('900719925474099312345');
   });
-  it('encodes the Liberland bridge destination without a remote SDK', async () => {
-    const { client } = fixture();
-    vi.spyOn(client, 'submit').mockResolvedValue();
-    await client.bridgeProxy.sub.transfer(asset(XOR), `0x${'01'.repeat(32)}`, '1', SubNetworkId.Liberland);
-    expect(client.api.tx.bridgeProxy.burn).toHaveBeenCalledWith({ Sub: 'Liberland' }, XOR, { Liberland: `0x${'01'.repeat(32)}` }, '1000000000000000000');
+  it('keeps no bridge builder of its own; cross-chain calls are built only by the reviewed builder', () => {
+    expect(new SoraClient()).not.toHaveProperty('bridgeProxy');
   });
 });
 describe('local signing boundary', () => {

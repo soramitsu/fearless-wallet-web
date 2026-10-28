@@ -44,7 +44,9 @@ export class SubstrateRequestHandler {
         id,
         request: { payload: request.payload },
         url,
-        ...(signingContext?.kind === 'extrinsic' ? { network: signingContext.network } : {}),
+        ...(signingContext?.kind === 'extrinsic'
+          ? { network: signingContext.network, callReview: signingContext.callReview }
+          : {}),
       })
     );
   }

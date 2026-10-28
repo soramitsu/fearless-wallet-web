@@ -16,9 +16,6 @@ vi.mock('@extension-base/api/substrate', async () => {
   return { getPrecisionValue: (amount: string, precision: number) => new Fixed(amount, precision).toCodecString() };
 });
 vi.mock('@extension-base/api/substrate/shared/signExtrinsic', () => ({ signExtrinsic: vi.fn() }));
-vi.mock('@/extension/background/extension-base/src/background/handlers/utils', () => ({
-  getUtilityProps: () => ({ id: 'polkadot-dot', precision: 10 }),
-}));
 vi.mock('@/cross-chain/reviewedRuntimeAuthority', () => ({
   assertReviewedRuntimeAuthority: mocks.assertReviewedRuntimeAuthority,
 }));
@@ -31,7 +28,11 @@ vi.mock('@/cross-chain/originDryRun', () => ({ assertOriginExecutes: mocks.asser
 
 const ADDRESS = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY';
 const RECIPIENT = '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty';
-const execution = { kind: 'relay-native-xcm-v3', destinationFee: '0.001', assetPrecision: 10 };
+const POLKADOT = '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3';
+const ASSET_HUB = '68d56f15f85d3136970ec16946040bc1752654e906147f7e43e9d539d7c3de2f';
+const DOT = '887a17c7-1370-4de0-97dd-5422e294fa75';
+const execution = { kind: 'relay-native-xcm-v3', originChainId: POLKADOT, destinationFee: '0.001', assetPrecision: 10 };
+const dotRow = { id: DOT, symbol: 'dot', precision: 10 };
 
 function setup({ partialFee = '183000000', runtimeMinimum = '0' }: { partialFee?: string; runtimeMinimum?: string } = {}) {
   const order: string[] = [];
@@ -60,14 +61,14 @@ function setup({ partialFee = '183000000', runtimeMinimum = '0' }: { partialFee?
     keyringService: { getSubstrateAddress: (address: string) => address },
     networkService: {
       networkMap: {
-        Polkadot: { name: 'Polkadot', chainId: 'polkadot-genesis' },
-        'Polkadot Asset Hub': { name: 'Polkadot Asset Hub', chainId: 'asset-hub-genesis' },
+        Polkadot: { name: 'Polkadot', chainId: POLKADOT, assets: [dotRow] },
+        'Polkadot Asset Hub': { name: 'Polkadot Asset Hub', chainId: ASSET_HUB, assets: [dotRow] },
       },
     },
   } as unknown as State;
   const props = (overrides: Partial<CrossChainProps> = {}): CrossChainProps =>
     ({
-      assetId: 'polkadot-dot',
+      assetId: DOT,
       assetKey: 'asset-key',
       routeId: 'reviewed-route',
       routeProviderId: 'wallet-xcm',
@@ -97,8 +98,8 @@ describe('estimateCrossChainQuote', () => {
     expect(order).toEqual(['authority', 'build', 'dry-run', 'price']);
     expect(mocks.createReviewedCrossChainExtrinsic).toHaveBeenCalledWith({
       execution,
-      originChainId: 'polkadot-genesis',
-      destinationChainId: 'asset-hub-genesis',
+      originChainId: POLKADOT,
+      destinationChainId: ASSET_HUB,
       xcmAssetId: 'dot',
       to: RECIPIENT,
       precisionAmount: '15000000000',
@@ -152,6 +153,26 @@ describe('estimateCrossChainQuote', () => {
 
     await expect(estimateCrossChainQuote(props(), state)).rejects.toThrow('cross_chain_runtime_execution_drift');
     expect(mocks.assertOriginExecutes).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['a registry whose first asset is another one', [{ id: 'polkadot-usdt', symbol: 'USDT', precision: 6 }, dotRow]],
+    ['a registry with another fee precision', [{ ...dotRow, precision: 12 }]],
+    ['a registry with another fee ticker', [{ ...dotRow, symbol: 'PDOT' }]],
+    ['a registry row without assets', []],
+  ])('refuses %s before pricing, instead of converting the fee with it', async (_label, assets) => {
+    const { extrinsic, props, state } = setup();
+    state.networkService.networkMap.Polkadot.assets = assets as never;
+
+    await expect(estimateCrossChainQuote(props(), state)).rejects.toThrow('cross_chain_fee_asset_unavailable');
+    expect(extrinsic.paymentInfo).not.toHaveBeenCalled();
+  });
+
+  it('refuses a registry row that belongs to another chain', async () => {
+    const { props, state } = setup();
+    state.networkService.networkMap.Polkadot.chainId = 'another-genesis';
+
+    await expect(estimateCrossChainQuote(props(), state)).rejects.toThrow('cross_chain_fee_asset_unavailable');
   });
 
   it('refuses a fee it cannot read', async () => {

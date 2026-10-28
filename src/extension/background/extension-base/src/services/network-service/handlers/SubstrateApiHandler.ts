@@ -2,6 +2,7 @@ import { ApiPromise } from '@polkadot/api';
 import { DOTSAMA_AUTO_CONNECT_MS } from '@extension-base/const/intervals';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { WsProvider } from '@polkadot/rpc-provider';
+import { withDwellirApiKey } from '../nodeUrlPolicy';
 import { SoraApiHandler } from './SoraApiHandler';
 import type { ApiInterfaceEvents } from '@polkadot/api/types';
 import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
@@ -62,11 +63,10 @@ export class SubstrateApiHandler {
     if (this.api[networkName] === undefined) this.api[networkName] = this.createApiObject();
     const { nodeIndex } = this.api[networkName];
 
-    let currentProvider = network.isManual ? network.currentProvider : nodes[nodeIndex]?.url ?? nodes[0].url;
-
-    if (currentProvider.includes('dwellir')) {
-      currentProvider = `${currentProvider}/${process.env.FL_WEB_DWELLIR_API_KEY || process.env.FL_DWELLIR_API_KEY || ''}`;
-    }
+    const currentProvider = withDwellirApiKey(
+      network.isManual ? network.currentProvider : nodes[nodeIndex]?.url ?? nodes[0].url,
+      process.env.FL_WEB_DWELLIR_API_KEY || process.env.FL_DWELLIR_API_KEY || ''
+    );
 
     const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [
       ['connected', () => { if (ownsConnection()) this.onConnected(networkName); }],

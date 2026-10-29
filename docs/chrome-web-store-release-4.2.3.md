@@ -15,6 +15,11 @@ This update supersedes 4.2.2 for the existing Fearless Wallet Store item
 - Make the real Chrome side-panel and popup switching test a local release
   gate. It checks both popup header controls, expansion to a full tab, reopening,
   switching between surfaces, and the side-panel portfolio.
+- Update Vue I18n to the patched 11.4 release and guard the translation HTML
+  escaping regressions identified during the release dependency audit. Patch
+  the vendored deepmerge dependency to reject prototype-changing keys in both
+  merge inputs; upstream has no patched release. Dependency audit severity
+  and advisory exclusions remain unchanged.
 
 ## Store release note
 

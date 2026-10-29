@@ -21,8 +21,14 @@
   "advisory": "https://github.com/advisories/GHSA-gcqx-w48m-w2h4",
   "reviewedUnmergedPatch": "https://github.com/TehShrike/deepmerge/pull/274/files",
   "localChanges": [
-    "Reject __proto__ by name in both mergeObject loops in index.js, dist/cjs.js and dist/umd.js",
-    "Keep original version and MIT license; mark package private; omit upstream build-only scripts/devDependencies; explicitly include maintained runtime/source/provenance files"
+    "Reject __proto__ by name in both mergeObject loops in index.js and the upstream dist/cjs.js and dist/umd.js builds",
+    "Keep original version and MIT license; mark package private; omit upstream build-only scripts/devDependencies; explicitly include maintained runtime/source/provenance files",
+    "Relocate patched dist/cjs.js to index.cjs and dist/umd.js to umd.cjs without executable byte changes; set package main and files accordingly so maintained vendored source complies with the tracked generated-dist audit"
   ],
-  "upstreamFixStatus": "No published patched version as checked2026-10-29; this is a local remediation, not an upstream release."
+  "upstreamFixStatus": "No published patched version as checked2026-10-29; this is a local remediation, not an upstream release.",
+  "localFileOrigins": {
+    "index.js": "index.js",
+    "index.cjs": "dist/cjs.js",
+    "umd.cjs": "dist/umd.js"
+  }
 }

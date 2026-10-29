@@ -52,6 +52,12 @@
       ]
     },
     {
+      "reason": "OP Mainnet's PublicNode JSON-RPC endpoint, which the 4.2.3 migration writes into saved OP Mainnet node preferences that still name the retired Blast API (src/extension/background/extension-base/src/services/network-service/retiredProviders.ts). It serves balance, fee and transaction calls for the wallet's public address; the same node is listed in the remote chain registry.",
+      "hosts": [
+        "optimism.publicnode.com"
+      ]
+    },
+    {
       "reason": "Fiat prices and the buy providers (MoonPay, Ramp) opened from Buy.",
       "hosts": [
         "api.coingecko.com",

@@ -21,6 +21,21 @@ This update supersedes 4.2.2 for the existing Fearless Wallet Store item
   nodes and move Dwellir nodes from the retired `api-<chain>.dwellir.com` hosts
   to the `n.dwellir.com` hosts that serve the same genesis. The list is read from
   `master` at runtime, so it also reaches installed 4.2.2 profiles.
+- Migrate manually selected built-in Dwellir nodes only when the updated network
+  list contains the same-provider replacement for that chain. Preserve custom
+  nodes, including custom entries using an old Dwellir hostname.
+- Require an explicit dApp account grant, settle provider requests when permission
+  storage fails, and discard stale account notifications and approval results.
+  Keep subscription cleanup tied to the request that created it.
+- Refresh staking, swap, and NFT fee quotes when their inputs change, discard
+  obsolete responses, and prevent NFT submission while its fee is unavailable.
+  Estimate NFT transfers with the selected recipient and actual transfer data.
+- Correct pool withdrawal calculations, Equilibrium balance precision and loading
+  state, and TON contact validation. Release temporary account-discovery resources
+  without disconnecting a network that became active during discovery.
+- Restore the reviewed regression suites and enforce at least 80% coverage of
+  authored executable lines after the complete unit suite. Retain the existing
+  broader coverage inventory and branch/function thresholds.
 - Make the real Chrome side-panel and popup switching test a local release
   gate. It checks both popup header controls, expansion to a full tab, reopening,
   switching between surfaces, and the side-panel portfolio.
@@ -35,7 +50,8 @@ This update supersedes 4.2.2 for the existing Fearless Wallet Store item
 Restores the popup's full-screen control and connection indicator. Repairs OP
 Mainnet balance updates by replacing its retired default RPC provider, including
 for existing wallet installations, and moves a network to its next node when
-one stops answering.
+one stops answering. Also improves saved node migration, dApp connection updates,
+and fee estimates for staking, swaps, and NFT transfers.
 
 ## Validation and publication
 

@@ -1,10 +1,12 @@
 import { JsonRpcProvider, WebSocketProvider } from 'ethers';
 import {
   EvmApiHandler,
+  getEvmAutoRpcUrls,
   getEvmChainId,
   getEvmRpcUrl,
   isClosedSocketProvider,
 } from '@extension-base/services/network-service/handlers/EvmApiHandler';
+import type { EvmApiProps } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 
 // The Ethereum entry of the published chain list: a WebSocket node first, the same host over HTTPS second.
@@ -30,15 +32,59 @@ function socket(readyState: number) {
 
 const socketProvider = (readyState: number) => new WebSocketProvider(socket(readyState) as never, 1);
 
+const BLAST = 'https://optimism-mainnet.blastapi.io/';
+const OP_PUBLIC = 'https://optimism.publicnode.com/';
+
+// OP Mainnet as 4.2.2 saw it: Blast first, which every profile then saved as the current node, and which stopped
+// answering in October 2026 ("Blast API is no longer available").
+function opMainnet(overrides: Partial<NetworkJson> = {}) {
+  return {
+    name: 'OP Mainnet',
+    chainId: '10',
+    currentProvider: BLAST,
+    customNodes: [],
+    nodes: [
+      { name: 'Blast https node', url: BLAST },
+      { name: 'Blast wss node', url: 'wss://optimism-mainnet.blastapi.io/' },
+      { name: 'Public http node', url: OP_PUBLIC },
+      { name: 'Public wss node', url: 'wss://optimism.publicnode.com/' },
+    ],
+    ...overrides,
+  } as NetworkJson;
+}
+
+const urlOf = (props?: EvmApiProps) => (props?.api as JsonRpcProvider | undefined)?._getConnection().url;
+
 describe('EVM providers', () => {
   it('reaches a WebSocket node over HTTPS on the same host, because ethers never reopens a socket the node closed', () => {
     expect(getEvmRpcUrl(ethereum())).toBe('https://ethereum.publicnode.com');
   });
 
-  it('keeps an HTTPS node, and a WebSocket node whose host offers no HTTPS endpoint', () => {
-    expect(getEvmRpcUrl(ethereum({ currentProvider: 'https://nodes.mewapi.io/rpc/eth' }))).toBe(
+  it('walks the registry nodes on automatic selection, whatever node an older registry left saved as current', () => {
+    const network = ethereum({ currentProvider: 'https://nodes.mewapi.io/rpc/eth' });
+
+    expect(getEvmAutoRpcUrls(network)).toEqual(['https://ethereum.publicnode.com', 'https://nodes.mewapi.io/rpc/eth']);
+    expect(getEvmRpcUrl(network)).toBe('https://ethereum.publicnode.com');
+    expect(getEvmRpcUrl(network, 1)).toBe('https://nodes.mewapi.io/rpc/eth');
+    expect(getEvmRpcUrl(network, 2)).toBe('https://ethereum.publicnode.com');
+    // Once the registry drops the dead node, a profile that saved it starts on a live one.
+    expect(getEvmRpcUrl(opMainnet({ nodes: opMainnet().nodes.slice(2) }))).toBe(OP_PUBLIC);
+  });
+
+  it('uses the node the user chose, theirs or the registry one, until the registry drops it', () => {
+    const custom = { name: 'Own node', url: 'https://rpc.example.org/' };
+
+    expect(getEvmRpcUrl(ethereum({ isManual: true, currentProvider: 'https://nodes.mewapi.io/rpc/eth' }))).toBe(
       'https://nodes.mewapi.io/rpc/eth'
     );
+    expect(getEvmRpcUrl(ethereum({ isManual: true, currentProvider: 'wss://ethereum.publicnode.com' }))).toBe(
+      'https://ethereum.publicnode.com'
+    );
+    expect(getEvmRpcUrl(ethereum({ isManual: true, currentProvider: custom.url, customNodes: [custom] }), 1)).toBe(custom.url);
+    expect(getEvmRpcUrl(opMainnet({ isManual: true, nodes: opMainnet().nodes.slice(2) }))).toBe(OP_PUBLIC);
+  });
+
+  it('keeps a WebSocket node whose host offers no HTTPS endpoint', () => {
     expect(
       getEvmRpcUrl(
         ethereum({
@@ -49,6 +95,53 @@ describe('EVM providers', () => {
         })
       )
     ).toBe('wss://ethereum.publicnode.com');
+  });
+
+  describe('when a node fails', () => {
+    it('moves an automatically selected network to its next node once per outage, and comes round again', () => {
+      const handler = new EvmApiHandler({ 'OP Mainnet': opMainnet() });
+      handler.initEvmApi(opMainnet());
+      const blast = handler.api['op mainnet'];
+      expect(urlOf(blast)).toBe(BLAST);
+
+      const next = handler.failover('OP Mainnet', blast.api);
+
+      expect(urlOf(next)).toBe(OP_PUBLIC);
+      expect(handler.api['op mainnet']).toBe(next);
+      expect(blast.api!.destroyed).toBe(true);
+      // The other requests that were in flight on Blast fail too. They retry on the new node and move nothing.
+      expect(handler.failover('op mainnet', blast.api)).toBe(next);
+      // A rebuild for another reason stays on the node the network moved to.
+      handler.rebuildApi('OP Mainnet');
+      expect(urlOf(handler.api['op mainnet'])).toBe(OP_PUBLIC);
+
+      expect(urlOf(handler.failover('OP Mainnet', handler.api['op mainnet'].api))).toBe(BLAST);
+      handler.destroyApi('OP Mainnet');
+    });
+
+    it('rebuilds a node the user chose instead of moving off it', () => {
+      const network = opMainnet({ isManual: true, currentProvider: OP_PUBLIC });
+      const handler = new EvmApiHandler({ 'OP Mainnet': network });
+      handler.initEvmApi(network);
+      const chosen = handler.api['op mainnet'];
+
+      const rebuilt = handler.failover('OP Mainnet', chosen.api);
+
+      expect(rebuilt).not.toBe(chosen);
+      expect(urlOf(rebuilt)).toBe(OP_PUBLIC);
+      handler.destroyApi('OP Mainnet');
+    });
+
+    it('builds nothing for a network switched off meanwhile', () => {
+      const handler = new EvmApiHandler({ 'OP Mainnet': opMainnet() });
+      handler.initEvmApi(opMainnet());
+      const blast = handler.api['op mainnet'].api;
+
+      handler.destroyApi('OP Mainnet');
+
+      expect(handler.failover('OP Mainnet', blast)).toBeUndefined();
+      expect(handler.api['op mainnet']).toBeUndefined();
+    });
   });
 
   it('reads a chain id in decimal or hex, and none from a genesis hash', () => {

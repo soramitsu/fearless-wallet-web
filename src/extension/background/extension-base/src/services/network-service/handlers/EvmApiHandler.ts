@@ -1,6 +1,5 @@
 import { JsonRpcProvider, Network, WebSocketProvider } from 'ethers';
 import { getEvmApiKey } from '@extension-base/const/networks';
-import { getCurrentProvider } from '@extension-base/utils';
 import type { NetworkMap } from '..';
 import type { EvmApiProps } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -20,19 +19,45 @@ function getHost(url: string) {
 }
 
 /**
- * The node a network's EVM calls go to. A WebSocket node is swapped for the same host's HTTP endpoint when the network
- * lists one: public nodes close a socket after a minute without traffic, ethers never reopens it, and every request
- * written to it afterwards waits forever.
+ * A WebSocket node is swapped for the same host's HTTP endpoint when `nodes` lists one: public nodes close a socket
+ * after a minute without traffic, ethers never reopens it, and every request written to it afterwards waits forever.
  */
-export function getEvmRpcUrl(network: NetworkJson): string | undefined {
-  const url = getCurrentProvider(network);
-
-  if (!url || isHttpUrl(url)) return url;
+function overHttp(url: string, nodes: NetworkJson['nodes']): string {
+  if (isHttpUrl(url)) return url;
 
   const host = getHost(url);
-  const nodes = [...(network.nodes ?? []), ...(network.customNodes ?? [])];
 
   return nodes.find((node) => isHttpUrl(node.url) && getHost(node.url) === host)?.url ?? url;
+}
+
+/**
+ * The node the user picked with automatic selection off, among the network's nodes or their own. A node the registry
+ * has since dropped is no longer a choice, and selection goes back to automatic.
+ */
+export function getEvmManualRpcUrl(network: NetworkJson): string | undefined {
+  if (!network.isManual || !network.currentProvider) return undefined;
+
+  const nodes = [...(network.nodes ?? []), ...(network.customNodes ?? [])];
+
+  return nodes.some(({ url }) => url === network.currentProvider) ? overHttp(network.currentProvider, nodes) : undefined;
+}
+
+/**
+ * The nodes automatic selection goes through, in the registry's order. The node saved as current is not one of them:
+ * it is whatever node was first in the registry when the wallet first loaded it, and it stays saved after that node
+ * dies (Blast API, OP Mainnet's first node, stopped answering in October 2026).
+ */
+export function getEvmAutoRpcUrls(network: NetworkJson): string[] {
+  const nodes = network.nodes ?? [];
+
+  return [...new Set(nodes.map(({ url }) => overHttp(url, nodes)))];
+}
+
+/** The node a network's EVM calls go to: the one the user chose, or the automatic one after `failovers` moves. */
+export function getEvmRpcUrl(network: NetworkJson, failovers = 0): string | undefined {
+  const urls = getEvmAutoRpcUrls(network);
+
+  return getEvmManualRpcUrl(network) ?? urls[failovers % urls.length];
 }
 
 /**
@@ -59,6 +84,8 @@ export function isClosedSocketProvider(api: EvmApiProps['api']): boolean {
 
 export class EvmApiHandler {
   api: Record<string, EvmApiProps> = {};
+  /** How often each network (by lower-case name) moved on from a failed automatic node. Survives provider rebuilds. */
+  private readonly failovers: Record<string, number> = {};
 
   constructor(readonly networkMap: NetworkMap) {}
 
@@ -89,11 +116,34 @@ export class EvmApiHandler {
     });
   }
 
+  /**
+   * Replaces `failed`, the provider of a network whose node stopped answering. With automatic selection the network
+   * moves on to its next node; a node the user chose is rebuilt in place. Every request in flight on a dead node fails:
+   * the first replaces the provider and the others find it replaced, so one outage moves the network on once. Returns
+   * the provider to retry on, or nothing when the network was switched off meanwhile.
+   */
+  failover(network: string, failed: EvmApiProps['api']): EvmApiProps | undefined {
+    const key = network.toLowerCase();
+    const current = this.api[key];
+
+    if (!current?.api) return undefined;
+    if (current.api !== failed) return current;
+
+    const networkJson = this.findNetwork(network);
+
+    if (!networkJson) return current;
+    if (!getEvmManualRpcUrl(networkJson)) this.failovers[key] = (this.failovers[key] ?? 0) + 1;
+
+    this.initEvmApi(networkJson);
+
+    return this.api[key];
+  }
+
   initEvmApi(network: NetworkJson) {
     if (network === undefined) return;
 
     const { name } = network;
-    const currentProvider = getEvmRpcUrl(network);
+    const currentProvider = getEvmRpcUrl(network, this.failovers[name.toLowerCase()]);
 
     this.destroyApi(network.name);
 

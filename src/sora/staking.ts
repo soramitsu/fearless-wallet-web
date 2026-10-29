@@ -93,6 +93,9 @@ export class SoraStaking {
       ? 0
       : integer(this.api.consts.staking.maxNominatorRewardedPerValidator);
   }
+  getEraHours(): number {
+    return this.eraMilliseconds() / 3_600_000;
+  }
   getUnbondPeriod(): number {
     return (integer(this.api.consts.staking.bondingDuration) * this.eraMilliseconds()) / 86_400_000;
   }
@@ -292,6 +295,15 @@ export class SoraStaking {
             const identityData = this.api.derive.accounts?.info
               ? (await this.api.derive.accounts.info(address)).identity
               : null;
+            let isSlashed: boolean | undefined;
+            if (expectedApi.query.staking.slashingSpans) {
+              try {
+                const spans = opt(await expectedApi.query.staking.slashingSpans(address));
+                // A zero era in an existing record is ambiguous (including era-zero slashes).
+                // Missing/failed metadata must never qualify as confirmed non-slashed.
+                isSlashed = spans === null ? false : raw(spans?.lastNonzeroSlash) > 0n ? true : undefined;
+              } catch { /* Keep unknown slashing data out of the safe recommendation set. */ }
+            }
             const info: Record<string, string> = {};
             for (const field of ['display', 'legal', 'twitter', 'web'])
               if (identityData?.[field]) info[field] = String(identityData[field]);
@@ -316,6 +328,9 @@ export class SoraStaking {
                 raw(a.value) > raw(b.value) ? -1 : raw(a.value) < raw(b.value) ? 1 : 0
               ),
               identity: Object.keys(info).length ? { info } : null,
+              identityKey: Object.keys(info).length || identityData?.judgements?.length
+                ? this.address(identityData.parent ?? address) : undefined,
+              isSlashed,
               apy,
               isOversubscribed: max > 0 && exposure.others.length >= max,
               isKnownGood: (identityData?.judgements ?? []).some(

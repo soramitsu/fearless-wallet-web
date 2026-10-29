@@ -152,6 +152,7 @@ export type DefaultStakingParams = {
 export interface StakingParams extends DefaultStakingParams {
   network: NetworkName;
   unbondPeriod: number;
+  eraHours?: number;
   maxNominations: number;
   minBond: number;
   maxNominatorRewardedPerValidator: number;

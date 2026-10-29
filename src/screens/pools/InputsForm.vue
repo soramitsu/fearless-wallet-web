@@ -70,6 +70,8 @@ export default defineComponent({ name: 'InputsForm' ,
     return {
       networksStore: useNetworksStore(),
       percent: 0,
+      quoteRequest: 0,
+      disposed: false,
       isPercentChanging: false,
     };
   },
@@ -163,6 +165,7 @@ export default defineComponent({ name: 'InputsForm' ,
     "syncedAmount1": 'watcherAmount1',
     "syncedAmount2": 'watcherAmount2',
   },
+  beforeUnmount() { this.disposed = true; this.quoteRequest += 1; },
   methods: {
     watcherTransferable() {
       if (this.isPercentChanging) this.setMaxLiquidity();
@@ -190,13 +193,7 @@ export default defineComponent({ name: 'InputsForm' ,
               .div(new FPNumber(this.poolParams.asset1.reserve))
               .toString();
           } else {
-            this.syncedAmount2 = await getAmountPoolValue(this.poolValueParams);
-
-            const percent = Math.round(
-              new FPNumber(this.syncedAmount1 || '0').div(new FPNumber(this.transferableAmount1)).mul(FPNumber.HUNDRED).toNumber()
-            );
-
-            this.percent = Math.min(percent, 100);
+            await this.quoteWithdrawal(false);
           }
     },
     async watcherAmount2() {
@@ -210,16 +207,32 @@ export default defineComponent({ name: 'InputsForm' ,
               .div(new FPNumber(this.poolParams.asset2.reserve))
               .toString();
           } else {
-            this.syncedAmount1 = await getAmountPoolValue(this.poolValueParams);
-
-            const percent = Math.round(
-              new FPNumber(this.syncedAmount2 || '0').div(new FPNumber(this.transferableAmount2)).mul(FPNumber.HUNDRED).toNumber()
-            );
-
-            this.percent = Math.min(percent, 100);
+            await this.quoteWithdrawal(true);
           }
     },
+    async quoteWithdrawal(isExchangeB: boolean) {
+      const request = ++this.quoteRequest;
+      const params = this.poolValueParams;
+      const current = () => !this.disposed && request === this.quoteRequest && !this.isPercentChanging &&
+        this.syncedIsExchangeB === isExchangeB && JSON.stringify(this.poolValueParams) === JSON.stringify(params);
+      try {
+        const value = await getAmountPoolValue(params);
+        if (!current()) return;
+        if (isExchangeB) this.syncedAmount1 = value;
+        else this.syncedAmount2 = value;
+        const amount = new FPNumber((isExchangeB ? params.amount2 : params.amount1) || '0');
+        const balance = new FPNumber(isExchangeB ? this.transferableAmount2 : this.transferableAmount1);
+        const percent = balance.isGreaterThan(FPNumber.ZERO) ? amount.div(balance).mul(FPNumber.HUNDRED).toNumber() : 0;
+        this.percent = Number.isFinite(percent) ? Math.max(0, Math.min(Math.round(percent), 100)) : 0;
+      } catch {
+        if (!current()) return;
+        if (isExchangeB) this.syncedAmount1 = '';
+        else this.syncedAmount2 = '';
+        this.percent = 0;
+      }
+    },
     updateAmount1(value: string) {
+      this.quoteRequest += 1;
       const isOverValue = FPNumber.gt(new FPNumber(value), new FPNumber(this.transferableAmount1));
 
           if (this.isRemoveLiquidity && isOverValue) {
@@ -235,6 +248,7 @@ export default defineComponent({ name: 'InputsForm' ,
           this.isPercentChanging = false;
     },
     updateAmount2(value: string) {
+      this.quoteRequest += 1;
       const isOverValue = FPNumber.gt(new FPNumber(value), new FPNumber(this.transferableAmount2));
 
           if (this.isRemoveLiquidity && isOverValue) {
@@ -265,9 +279,11 @@ export default defineComponent({ name: 'InputsForm' ,
           }
     },
     updatePercent(percent = 100) {
-      this.percent = percent;
+      this.quoteRequest += 1;
+      this.percent = Number.isFinite(percent) ? Math.max(0, Math.min(percent, 100)) : 0;
           this.isPercentChanging = true;
           this.syncedIsExchangeB = false;
+          this.setMaxLiquidity();
     },
   },
 });

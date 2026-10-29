@@ -115,9 +115,7 @@ export default defineComponent({ name: 'ValidatorInfo',
       return this.validator.isOversubscribed;
     },
     showSlashedWarning() {
-      // TODO staking
-          return false;
-          // return this.validator.isSlashed;
+      return this.validator.isSlashed === true;
     },
     address() {
       return this.validator.address;

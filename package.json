@@ -13,7 +13,7 @@
     "audit:dependencies": "yarn test:development-dependency-guards && yarn test:deepmerge-guard && yarn npm audit --all --recursive --severity low --no-deprecations",
     "audit:dependencies:production": "yarn test:deepmerge-guard && yarn npm audit --all --recursive --environment production --severity low --no-deprecations",
     "serve": "IS_EXTENSION=false env-cmd -f .env.web vite --config vite.config.web.ts --host 0.0.0.0",
-    "test:unit": "vitest run --coverage",
+    "test:unit": "node --test scripts/test-check-coverage.mjs && vitest run --coverage && node scripts/check-coverage.mjs",
     "test:unit:watch": "vitest",
     "typecheck": "vue-tsc --noEmit",
     "lint:check": "eslint 'src/**/*.{js,jsx,vue,ts,tsx}' 'tests/**/*.{js,jsx,ts,tsx}'",

@@ -89,6 +89,7 @@ import { defineComponent } from 'vue';
 
 import type { FWValidatorInfoFull, RequestNominate } from '@extension-base/services/staking-service/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
+import { recommendedValidatorAddresses } from '@/helpers/staking';
 import { WalletEcosystem } from '@/interfaces';
 import SelectionValidatorsForm from '@/screens/staking/myStake/validators/SelectionValidatorsForm.vue';
 import YourValidators from '@/screens/staking/myStake/validators/YourValidators.vue';
@@ -244,15 +245,9 @@ export default defineComponent({ name: 'YourValidatorsManagement',
     "selectedValidators": 'srcWatcher',
   },
   async mounted() {
-    // TODO staking
-        const isSlashed = false;
-        const limitValidatorsIdentity = false;
-
         this.stakingNetwork.validators.forEach((info) => {
           this.state[info.address] = {
             ...info,
-            isSlashed,
-            limitValidatorsIdentity,
             isSelect: false,
           };
         });
@@ -283,9 +278,10 @@ export default defineComponent({ name: 'YourValidatorsManagement',
           }
     },
     openValidatorList(isSuggested = false) {
-      this.validators.forEach(
-            (validator, index) => (this.state[validator.address].isSelect = isSuggested && index < this.maxNominations) // валидаторы возвращаются от "лучшего" к "худшему", по этому берем первых в нужном количестве
-          );
+      const recommended = isSuggested ? recommendedValidatorAddresses(this.validators, this.maxNominations) : new Set<string>();
+      this.validators.forEach((validator) => {
+        this.state[validator.address].isSelect = recommended.has(validator.address);
+      });
 
           this.isSuggested = isSuggested;
           this.step = isSuggested ? 3 : 5;

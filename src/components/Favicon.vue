@@ -10,8 +10,12 @@ const { url } = defineProps<{ url: string; width?: number }>();
 const { t } = useI18n();
 
 const faviconURl = computed(() => {
-  const host = new URL(url).host;
-
-  return `https://icons.duckduckgo.com/ip3/${host}.ico`;
+  try {
+    const parsed = new URL(url);
+    if (!['http:', 'https:'].includes(parsed.protocol) || !parsed.hostname) return '';
+    return `https://icons.duckduckgo.com/ip3/${parsed.hostname}.ico`;
+  } catch {
+    return '';
+  }
 });
 </script>

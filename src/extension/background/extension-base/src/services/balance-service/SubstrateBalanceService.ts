@@ -213,77 +213,47 @@ export default class SubstrateBalanceService {
     return () => unsubList.forEach((unsubscribe) => unsubscribe());
   }
 
-  subscribeSubstrateBalances(props: GetBalancesProps, state: State) {
+  subscribeSubstrateBalances(
+    props: GetBalancesProps,
+    state: State,
+    isCurrent: (network: string) => boolean = () => true
+  ) {
     const { address, ethereumAddress, substrateNetworks } = props;
-
-    const networksEntries = Object.entries(state.getSubstrateApiMap).filter(([networkName]) =>
-      substrateNetworks?.some((net) => isSameString(net, networkName))
+    const networks = Object.entries(state.getSubstrateApiMap).filter(([name]) =>
+      substrateNetworks?.some((network) => isSameString(network, name))
     );
 
-    const unsubListPromises: Promise<{
-      networkName: string;
-      unsub: () => void;
-    }>[] = networksEntries.map(([networkName, apiProps]) => {
-      const mockUnsub = {
-        networkName,
-        unsub: mockUnsubFn,
+    return networks.map(([networkName, apiProps]) => new Promise<{ networkName: string; unsub: () => void }>((resolve) => {
+      const account = isEthereumNetwork(networkName) ? ethereumAddress : address;
+      if (!account) { resolve({ networkName, unsub: mockUnsubFn }); return; }
+      let settled = false;
+      let retry: ReturnType<typeof setTimeout> | undefined;
+      const finish = (unsub = mockUnsubFn) => {
+        if (settled) { unsub(); return; }
+        settled = true;
+        clearTimeout(retry);
+        clearTimeout(deadline);
+        resolve({ networkName, unsub });
       };
-
-      return new Promise((res) => {
-        const network = state.networkService.networkMap[networkName];
-        const isSoraNetwork = isSora(networkName);
-        const timespan = Date.now();
-
-        const addressByNetwork = isEthereumNetwork(networkName) ? ethereumAddress : address;
-
-        if (addressByNetwork === '') return mockUnsub;
-
-        const subscribeOnReady = () => {
-          if (!apiProps.api) {
-            if (network?.networkStatus !== NETWORK_STATUS.DISCONNECTED) {
-              setTimeout(subscribeOnReady, 1000);
-
-              return;
-            }
-
-            res(mockUnsub);
-
-            return;
-          }
-
-          apiProps.api.isReadyOrError
-            .then(() => {
-              const unsub = this.subscribeSubstrateAssetsBalances(addressByNetwork, networkName, apiProps.api!, state);
-
-              res({ networkName, unsub });
-            })
-            .catch(() => res(mockUnsub));
-        };
-
-        if (!isSoraNetwork) {
-          setTimeout(subscribeOnReady, 1000);
-
+      const ownsConnection = () => isCurrent(networkName) && state.getSubstrateApiMap[networkName] === apiProps;
+      const subscribeOnReady = () => {
+        if (settled || !ownsConnection()) { finish(); return; }
+        const api = apiProps.api;
+        if (!api) {
+          const network = Object.values(state.networkService.networkMap).find(({ name }) => isSameString(name, networkName));
+          if (network?.networkStatus === NETWORK_STATUS.DISCONNECTED) finish();
+          else retry = setTimeout(subscribeOnReady, 1000);
           return;
         }
+        void api.isReadyOrError.then(() => {
+          if (settled || !ownsConnection() || apiProps.api !== api) { finish(); return; }
+          finish(this.subscribeSubstrateAssetsBalances(account, networkName, api, state));
+        }).catch(() => finish());
+      };
 
-        apiProps.api?.isReadyOrError
-          .then(() => {
-            const unsub = this.subscribeSubstrateAssetsBalances(addressByNetwork, networkName, apiProps.api!, state);
-
-            res({ networkName, unsub });
-          })
-          .catch(() => {
-            // Sora сеть проверяем через setInterval
-            // потому, что instance api сохраняется в state.apis только, когда подключились к сети(см api.ts, onConnected)
-            // у остальных сетей такой проблемы нет, потому что api мы сохраняем сразу при создании
-            // если прошло 60 сек и api Sora не появилось, отписываемся и резолвим false
-
-            if (Date.now() - timespan > 60000) res(mockUnsub);
-            else setTimeout(subscribeOnReady, 1000);
-          });
-      });
-    });
-
-    return unsubListPromises;
+      const deadline = setTimeout(() => finish(), 60_000);
+      if (isSora(networkName)) subscribeOnReady();
+      else retry = setTimeout(subscribeOnReady, 1000);
+    }));
   }
 }

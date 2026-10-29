@@ -3,7 +3,6 @@ import SafeEventEmitter from '@metamask/safe-event-emitter';
 import { type JsonRpcRequest, type JsonRpcResponse, type JsonRpcSuccess } from 'json-rpc-engine';
 import { sendMessage } from '.';
 import type { RequestArguments } from '@walletconnect/jsonrpc-types';
-import { APP_VERSION } from '@/consts/global';
 
 export interface SendSyncJsonRpcRequest extends JsonRpcRequest<unknown> {
   method: 'net_version';
@@ -14,11 +13,13 @@ type EvmRequestArguments<T = unknown> = Omit<RequestArguments<T>, 'id'> & {
   jsonrpc?: string;
 };
 
-let subscribeFlag = false;
-
 export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvmProvider {
   protected _connected = false;
-  private isEnabled = false;
+  private subscribed = false;
+  private authorization?: Promise<string[]>;
+  private authorizationRevision = 0;
+  private networkVersion: string | null = null;
+  private chainRevision = 0;
 
   constructor() {
     super();
@@ -31,17 +32,21 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
   }
 
   override on(eventName: string | symbol, listener: (...args: unknown[]) => void) {
-    this.subscribeExtensionEvents();
     super.on(eventName, listener);
+    this.subscribeExtensionEvents();
 
     return this;
   }
 
   override once(eventName: string | symbol, listener: (...args: unknown[]) => void) {
-    this.subscribeExtensionEvents();
     super.once(eventName, listener);
+    this.subscribeExtensionEvents();
 
     return this;
+  }
+
+  override addListener(eventName: string | symbol, listener: (...args: unknown[]) => void) {
+    return this.on(eventName, listener);
   }
 
   isConnected() {
@@ -49,7 +54,9 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
   }
 
   subscribeExtensionEvents() {
-    if (subscribeFlag) return;
+    if (this.subscribed) return;
+    this.subscribed = true;
+    const authorizationRevision = this.authorizationRevision;
 
     sendMessage('evm(events.subscribe)', null, ({ payload, type }) => {
       const messages = [
@@ -64,26 +71,48 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
       ];
 
       if (messages.includes(type)) {
-        if (type === 'connect') this._connected = true;
-        else if (type === 'disconnect') this._connected = false;
+        if (type === 'connect') {
+          this._connected = true;
+          this.updateChainId((payload as { chainId?: unknown })?.chainId);
+        } else if (type === 'disconnect') {
+          this._connected = false;
+          this.chainRevision++;
+          this.networkVersion = null;
+        } else if (type === 'chainChanged') this.updateChainId(payload);
 
         const finalType = type === 'data' ? 'message' : type;
 
         this.emit(finalType, payload);
       } else console.warn('Can not handle event', type, payload);
     })
-      .then(() => (subscribeFlag = true))
-      .catch(() => (subscribeFlag = false));
-
-    subscribeFlag = true;
+      .catch(() => {
+        this.subscribed = false;
+        // Authorization can finish while an earlier subscription is still
+        // checking the old grant. Retry once using the newly approved state.
+        if (authorizationRevision !== this.authorizationRevision && this.eventNames().length) {
+          this.subscribeExtensionEvents();
+        }
+      });
   }
 
   enable() {
     return this.request<string[]>({ method: 'eth_requestAccounts' });
   }
 
-  request<T>({ method, params }: EvmRequestArguments): Promise<T> {
-    if (!this.isEnabled && method === 'eth_accounts') return this.request({ method: 'eth_requestAccounts' });
+  private updateChainId(chainId: unknown) {
+    this.chainRevision++;
+    this.networkVersion = typeof chainId === 'string' && /^0x[0-9a-f]+$/i.test(chainId)
+      ? BigInt(chainId).toString() : null;
+  }
+
+  async request<T>(input: EvmRequestArguments): Promise<T> {
+    if (!input || typeof input !== 'object' || Array.isArray(input) ||
+        typeof input.method !== 'string' || !input.method.trim() ||
+        (input.params !== undefined && (input.params === null || typeof input.params !== 'object'))) {
+      throw Object.assign(new Error('Invalid EVM request arguments'), { code: -32600 });
+    }
+    const { method, params } = input;
+    const chainRevision = this.chainRevision;
 
     // Subscribe events
     switch (method) {
@@ -94,30 +123,36 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
           const permissionParams = params && typeof params === 'object' ? params : {};
 
           sendMessage('evm(request)', { params: { ...permissionParams, origin }, method })
-            .then((result) => resolve(result as T))
+            .then((result) => {
+              this.authorizationRevision++;
+              if (this.eventNames().length) this.subscribeExtensionEvents();
+              resolve(result as T);
+            })
             .catch((e) => reject(e));
         });
 
       // Called once when first connecting to DAPP
       case 'eth_requestAccounts':
-        return new Promise((resolve, reject) => {
+        if (!this.authorization) {
           const origin = document.title !== '' ? document.title : window.location.hostname;
-
-          sendMessage('evm(authorizeUrl)', { method: '', params: { origin } })
+          this.authorization = sendMessage('evm(authorizeUrl)', { method: '', params: { origin } })
             .then(() => {
-              this.isEnabled = true;
-
-              this.request<T>({ method: 'eth_accounts' })
-                .then((accounts) => resolve(accounts))
-                .catch((e) => reject(e));
+              this.authorizationRevision++;
+              // Listeners may have been attached before the site was authorized.
+              if (this.eventNames().length) this.subscribeExtensionEvents();
+              return this.request<string[]>({ method: 'eth_accounts' });
             })
-            .catch((e) => reject(e));
-        });
+            .finally(() => { this.authorization = undefined; });
+        }
+        return this.authorization as Promise<T>;
 
       default:
         return new Promise((resolve, reject) => {
           sendMessage('evm(request)', { params, method })
-            .then((result) => resolve(result as T))
+            .then((result) => {
+              if (method === 'eth_chainId' && chainRevision === this.chainRevision) this.updateChainId(result);
+              resolve((method === 'eth_accounts' && result === undefined ? [] : result) as T);
+            })
             .catch((e) => reject(e));
         });
     }
@@ -125,8 +160,10 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
 
   sendAsync<T>(payload: JsonRpcRequest<T>, callback: (error: Error | null, result?: JsonRpcResponse<T>) => void): void {
     this.request<T>(payload)
-      .then((result) => callback(null, { result, id: payload.id, jsonrpc: payload.jsonrpc }))
-      .catch((e) => callback(e));
+      .then(
+        (result) => callback(null, { result, id: payload.id, jsonrpc: payload.jsonrpc }),
+        (error) => callback(error)
+      );
   }
 
   private _sendSync(payload: JsonRpcRequest<unknown>): JsonRpcResponse<unknown> {
@@ -134,7 +171,8 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
 
     switch (payload.method) {
       case 'net_version':
-        result = `Fearless Wallet v${APP_VERSION}`;
+        if (this.networkVersion === null) throw new Error('Network is unknown; use request({ method: "net_version" })');
+        result = this.networkVersion;
 
         break;
 
@@ -149,7 +187,7 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
     };
   }
 
-  send<T>(method: string, params?: T[]): Promise<JsonRpcResponse<T>>;
+  send<T>(method: string, params?: unknown[]): Promise<T>;
   send<T>(payload: JsonRpcRequest<unknown>, callback: (error: Error | null, result?: JsonRpcResponse<T>) => void): void;
   send<T>(payload: SendSyncJsonRpcRequest): JsonRpcResponse<T>;
   send(methodOrPayload: unknown, callbackOrArgs?: unknown): unknown {
@@ -158,9 +196,10 @@ export class FearlessWalletEvmProvider extends SafeEventEmitter implements FWEvm
     }
 
     if (methodOrPayload && typeof methodOrPayload === 'object' && typeof callbackOrArgs === 'function') {
-      return this.request(methodOrPayload as JsonRpcRequest<unknown>).then((rs) => {
-        (callbackOrArgs as (...args: unknown[]) => void)(rs);
-      });
+      return this.sendAsync(
+        methodOrPayload as JsonRpcRequest<unknown>,
+        callbackOrArgs as (error: Error | null, result?: JsonRpcResponse<unknown>) => void
+      );
     }
 
     return this._sendSync(methodOrPayload as SendSyncJsonRpcRequest);

@@ -1,5 +1,4 @@
 <template>
-  <Fragment>
     <ContentForm :height="contentFormHeight">
       <div class="networks">
         <div class="networks-settings">
@@ -57,7 +56,6 @@
       @toggleValue="filterValueUpdate"
       @handlerClose="toggleSelectFilterPopupVisibility"
     />
-  </Fragment>
 </template>
 
 <script lang="ts">
@@ -125,20 +123,20 @@ export default defineComponent({ name: 'AssetNetworks',
       const baseFilter = this.currency.balances?.filter(({ name, state }) => {
             const network = this.networksStore.getNetwork(name);
 
-            if (state !== APIItemState.READY) return false;
+            if (!network || state !== APIItemState.READY) return false;
 
             if (this.accountsStore.selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
 
             if (this.accountsStore.selectedNetwork === FAVORITE_NETWORKS)
-              return network.favorite.some((address) => address === this.accountsStore.selectedWallet.address);
+              return (network.favorite ?? []).some((address) => address === this.accountsStore.selectedWallet.address);
 
             return this.networksStore.getNetwork(name).active;
           });
 
           if (this.activeTabName === 'MyAssets')
-            return baseFilter.filter(({ transferable }) => transferable && +transferable > 0);
+            return (baseFilter ?? []).filter(({ transferable }) => transferable && +transferable > 0);
 
-          return baseFilter;
+          return baseFilter ?? [];
     },
     sortedNetworks() {
       return this.filteredNetworks
@@ -179,6 +177,7 @@ export default defineComponent({ name: 'AssetNetworks',
   methods: {
     openAsset(name: string) {
       const network = this.networksStore.getNetwork(name);
+      if (!network) return;
 
           this.$router.push({
             name: Components.AssetHistory,

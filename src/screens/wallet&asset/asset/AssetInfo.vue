@@ -1,5 +1,4 @@
 <template>
-  <Fragment>
     <ContentForm :height="160" :isStaticHeight="true" :bottomRightCorner="true">
       <div class="asset-info">
         <div class="asset__icon">
@@ -72,7 +71,6 @@
       :showReplaceAccount="false"
       @handlerClose="toggleDetailsPopup"
     />
-  </Fragment>
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue';

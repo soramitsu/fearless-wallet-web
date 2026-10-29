@@ -223,7 +223,6 @@ export class PoolsService {
         });
     }
 
-    // TODO use networks
     const promises: Promise<DefaultPoolsParams[]>[] = networks.map(async (network) => {
       const apiProps = this.state.getSubstrateApiMap[network.toLowerCase()];
       const isReady = await apiProps?.api?.isReady;
@@ -246,7 +245,7 @@ export class PoolsService {
       cb(accountLiquidity)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, accountLiquiditySubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => accountLiquiditySubscription.unsubscribe());
 
     port?.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
 
@@ -263,6 +262,10 @@ export class PoolsService {
     this.liquidityUpdatedSubscription = null;
     this.demeterFarmingSubscription = null;
     this.ceresLiquidityLockerSubscription = null;
+    this.accountLiquidity = [];
+    this.demeterAccountPools = [];
+    this.ceresLockedPools = [];
+    this.accountLiquiditySubject.next([]);
   }
 
   public async getDemeterPools(): Promise<DemeterPoolsResponse> {
@@ -785,8 +788,8 @@ export class PoolsService {
 
       const price1 = this.state.pricesService.getTokenPrice(asset1.name);
 
-      const groupId1 = this.state.balanceService.getTokenBalance(address, asset1.id, network).groupId; // TODO для SORA relayChain = SORA NETWORK NAME
-      const groupId2 = this.state.balanceService.getTokenBalance(address, asset2.id, network).groupId; // TODO для SORA relayChain = SORA NETWORK NAME
+      const groupId1 = this.state.balanceService.getTokenBalance(address, asset1.id, network).groupId; // SORA uses its network name as the relay-chain key.
+      const groupId2 = this.state.balanceService.getTokenBalance(address, asset2.id, network).groupId; // SORA uses its network name as the relay-chain key.
 
       const accountLiquidityPool = this.getAccountLiquidityPool(asset1.currencyId!, asset2.currencyId!);
 
@@ -976,9 +979,11 @@ export class PoolsService {
   }
 
   public getPart(liquidityInfo: LiquidityInfo, isExchangeB: boolean): FPNumber {
-    if (isExchangeB) return new FPNumber(liquidityInfo.amount2).div(liquidityInfo.secondBalance.valueFP);
-
-    return new FPNumber(liquidityInfo.amount1).div(liquidityInfo.firstBalance.valueFP);
+    const balance = isExchangeB ? liquidityInfo.secondBalance.valueFP : liquidityInfo.firstBalance.valueFP;
+    if (!balance.isFinity() || !balance.isGreaterThan(FPNumber.ZERO)) return FPNumber.ZERO;
+    const amount = new FPNumber(isExchangeB ? liquidityInfo.amount2 : liquidityInfo.amount1);
+    if (!amount.isFinity() || !amount.isGreaterThan(FPNumber.ZERO)) return FPNumber.ZERO;
+    return amount.div(balance);
   }
 
   public getPoolAmountValue(params: DefaultParams): string {
@@ -995,9 +1000,8 @@ export class PoolsService {
   public getRemoved(params: DefaultParams): string {
     const poolInfo = this.getPoolInfo(params);
     const part = this.getPart(poolInfo, params.isExchangeB);
-    const liquidityBalance = this.getLiquidityBalance(params);
-
-    return part.mul(liquidityBalance).toString();
+    // The part is measured against the full underlying balance, so apply it to the full pool-token balance.
+    return part.mul(FPNumber.fromCodecValue(poolInfo.balance)).toString();
   }
 
   public getShareOfPoolByRemoveLiquidity(params: GetShareOfPoolRequest): string {
@@ -1022,6 +1026,8 @@ export class PoolsService {
 
     const liquidityBalance = this.getLiquidityBalance(params).toString();
     const balanceFP = FPNumber.fromCodecValue(balance);
+    if (!balanceFP.isFinity() || !balanceFP.isGreaterThan(FPNumber.ZERO))
+      return { firstTokenBalance: FPNumber.ZERO, secondTokenBalance: FPNumber.ZERO, liquidityBalance: '0' };
 
     const tokenBalance1 = FPNumber.fromCodecValue(firstBalance.value, asset1.decimals);
     const tokenBalance2 = FPNumber.fromCodecValue(secondBalance.value, asset2.decimals);

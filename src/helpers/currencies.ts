@@ -6,11 +6,12 @@ import type { BasePriceJson, TokenGroup } from '@extension-base/background/types
 import { FPNumber } from '@/sora/number';
 import { getNativeAssetName } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/sora';
-import { FAVORITE_NETWORKS, POPULAR_NETWORKS, ALL_NETWORKS } from '@/consts/networks';
+import { ALL_NETWORKS } from '@/consts/networks';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
 import { isSameString, isSora } from '@/helpers';
 import { getSummaryTransferableBalance, isNetworkGroup } from '@/helpers/common';
+import { matchesNetworkSelection } from '@/helpers/networkSelection';
 import { formatDecimalString } from '@/helpers/numbers';
 import { getCanonicalAssetId } from '@/portfolio/assetIdentity';
 import { useNetworksStore } from '@/stores/networks';
@@ -22,6 +23,8 @@ export function getTransferableBalanceInNetwork(token: TokenGroup, network: stri
 
 function defaultSortingCurrencies(currencies: TokenGroup[], { tokenPriceMap }: BasePriceJson, network: NetworkName) {
   const relayChains = [];
+  const networks = useNetworksStore().networks;
+  const address = useAccountsStore().selectedWallet.address;
 
   const currenciesThatReady = currencies.filter(({ balances }) =>
     balances.some(({ state }) => state === APIItemState.READY)
@@ -64,8 +67,8 @@ function defaultSortingCurrencies(currencies: TokenGroup[], { tokenPriceMap }: B
   }
 
   currenciesWithAssetsAndWithFiatBalance.sort((currency1, currency2) => {
-    const totalFiatBalanceOne = +getSummaryTransferableBalance(currency1, network);
-    const totalFiatBalanceTwo = +getSummaryTransferableBalance(currency2, network);
+    const totalFiatBalanceOne = +getSummaryTransferableBalance(currency1, network, networks, address);
+    const totalFiatBalanceTwo = +getSummaryTransferableBalance(currency2, network, networks, address);
 
     const tokenPriceOne = tokenPriceMap[currency1.priceId ?? ''] ?? 0;
     const tokenPriceTwo = tokenPriceMap[currency2.priceId ?? ''] ?? 0;
@@ -74,8 +77,8 @@ function defaultSortingCurrencies(currencies: TokenGroup[], { tokenPriceMap }: B
   });
 
   currenciesWithAssetsAndWithoutFiatBalance.sort((currency1, currency2) => {
-    const totalFiatBalanceOne = +getSummaryTransferableBalance(currency1, network);
-    const totalFiatBalanceTwo = +getSummaryTransferableBalance(currency2, network);
+    const totalFiatBalanceOne = +getSummaryTransferableBalance(currency1, network, networks, address);
+    const totalFiatBalanceTwo = +getSummaryTransferableBalance(currency2, network, networks, address);
 
     return totalFiatBalanceTwo - totalFiatBalanceOne;
   });
@@ -334,18 +337,7 @@ function filterBalanceItemsByNetwork(balance: BalanceItem, selectedNetwork: stri
   const accountsStore = useAccountsStore();
   const networksStore = useNetworksStore();
   const network: NetworkJson = networksStore.getNetwork(balance.name);
-  const favoriteNetworks = networksStore.favoriteNetworksNames;
-  const { address } = accountsStore.selectedWallet;
-
-  if (selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
-
-  if (selectedNetwork === FAVORITE_NETWORKS) {
-    return favoriteNetworks.some(
-      ({ name, favorite }) => isSameString(name, balance.name) && favorite.includes(address)
-    );
-  }
-
-  return isSameString(balance.name, selectedNetwork);
+  return matchesNetworkSelection(network, selectedNetwork, accountsStore.selectedWallet.address);
 }
 
 export function getSummaryTransferableBalanceFilteredByActiveNetworks(
@@ -355,12 +347,15 @@ export function getSummaryTransferableBalanceFilteredByActiveNetworks(
   if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
 
   const networksStore = useNetworksStore();
+  const address = useAccountsStore().selectedWallet.address;
 
   return (
     token.balances?.reduce((sum, { state, name, transferable }) => {
-      const network: NetworkJson = networksStore.getNetwork(name);
+      const entry: NetworkJson = networksStore.getNetwork(name);
 
-      if (state === APIItemState.READY && network.active && transferable) sum += +transferable;
+      if (state === APIItemState.READY && entry?.active && transferable && matchesNetworkSelection(entry, network, address)) {
+        sum += +transferable;
+      }
 
       return sum;
     }, 0) ?? 0

@@ -1,5 +1,4 @@
 <template>
-  <Fragment>
     <div class="onboarding">
       <template v-if="showStartingScreen">
         <link v-for="(story, index) in stories" rel="preload" as="image" :href="story.image" :key="index" />
@@ -31,7 +30,6 @@
       </div>
       <RecoveryDataLink />
     </div>
-  </Fragment>
 </template>
 
 <script lang="ts">

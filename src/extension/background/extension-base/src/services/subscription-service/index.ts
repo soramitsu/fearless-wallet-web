@@ -58,6 +58,8 @@ export class SubscriptionService {
   private serviceInfoSubscription: Subscription | undefined;
   subscriptionNetworksMap: SubscriptionMap = {}; // subscriptions for networks balances
   private unsubscriptionMap: Record<string, () => void> = {};
+  private subscriptionTokens = new Map<string, symbol>();
+  private networkSubscriptionTokens = new Map<string, symbol>();
 
   private serviceInfo: ServiceInfo = {
     address: '',
@@ -73,36 +75,44 @@ export class SubscriptionService {
 
   // Clear a previous subscriber
   private unsubscribe(id: string): void {
-    if (this.subscriptionsPorts[id]) delete this.subscriptionsPorts[id];
-    else console.error(`Unable to unsubscribe from ${id}`);
+    delete this.subscriptionsPorts[id];
+    this.subscriptionTokens.delete(id);
   }
 
   createSubscription<TMessageType extends MessageTypesWithSubscriptions>(
     id: string,
     port?: Port
   ): (data: SubscriptionMessageTypes[TMessageType] | null) => void {
+    if (this.subscriptionsPorts[id]) this.cancelSubscription(id);
+    const token = Symbol(id);
+    this.subscriptionTokens.set(id, token);
     this.subscriptionsPorts[id] = port ?? 'sw-messages';
 
     // 'subscription' is a callback
     return (subscription: unknown): void => {
-      if (this.subscriptionsPorts[id]) {
+      if (this.subscriptionTokens.get(id) === token) {
         try {
           if (port) port.postMessage({ id, subscription });
           else {
             const channel = new BroadcastChannel('sw-messages');
-            channel.postMessage({ id, subscription });
-            channel.close();
+            try { channel.postMessage({ id, subscription }); }
+            finally { channel.close(); }
           }
         } catch (error) {
           console.info('Error occurred while trying to post message', error);
 
-          this.unsubscribe(id);
+          this.cancelSubscription(id);
         }
       }
     };
   }
 
   setUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
+    // BehaviorSubject may deliver (and close the port) before subscribe() returns its handle.
+    if (!this.subscriptionsPorts[id]) {
+      unsubscribe();
+      return;
+    }
     this.unsubscriptionMap[id] = unsubscribe;
   }
 
@@ -110,31 +120,27 @@ export class SubscriptionService {
     // Clear subscribe port
     this.unsubscribe(id);
 
-    if (this.unsubscriptionMap[id]) {
-      this.unsubscriptionMap[id]();
-
-      delete this.unsubscriptionMap[id];
-    }
+    const cleanup = this.unsubscriptionMap[id];
+    delete this.unsubscriptionMap[id];
+    cleanup?.();
 
     return true;
   }
 
   updateNetworkSubscription(params: UpdateSub) {
     const { name, func } = params;
-
-    const oldSub = this.subscriptionNetworksMap[name];
-
+    const key = name.toLowerCase();
+    const oldSub = this.subscriptionNetworksMap[key];
+    this.subscriptionNetworksMap[key] = func;
     oldSub?.();
-
-    this.subscriptionNetworksMap[name] = func;
   }
 
   cancelNetworkSubscription(networkName: string) {
-    const unsub = this.subscriptionNetworksMap[networkName];
-
+    const key = networkName.toLowerCase();
+    const unsub = this.subscriptionNetworksMap[key];
+    this.networkSubscriptionTokens.delete(key);
+    delete this.subscriptionNetworksMap[key];
     unsub?.();
-
-    delete this.subscriptionNetworksMap[networkName];
   }
 
   async start() {
@@ -174,7 +180,13 @@ export class SubscriptionService {
               this.state.cronService.updateCron(serviceInfo);
               this.state.nftService.publishNfts();
 
-              if (!serviceInfo.currentAccountInfo) return;
+              if (!serviceInfo.currentAccountInfo) {
+                new Set([...this.networkSubscriptionTokens.keys(), ...Object.keys(this.subscriptionNetworksMap)])
+                  .forEach((name) => this.cancelNetworkSubscription(name));
+                this.serviceInfo.address = '';
+                this.serviceInfo.ethereumAddress = '';
+                return;
+              }
 
               const { address, ethereumAddress } = serviceInfo.currentAccountInfo;
               const {
@@ -184,7 +196,7 @@ export class SubscriptionService {
               } = this.serviceInfo;
 
               const isNewAddress = oldAddress !== address;
-              const isNewEthereumAddress = !oldEthereumAddress && ethereumAddress !== '';
+              const isNewEthereumAddress = oldEthereumAddress !== ethereumAddress;
 
               const currentSubstrateNetworks = Object.keys(serviceInfo.apiMap.substrate);
               const currentEvmNetworks = Object.keys(serviceInfo.apiMap.evm);
@@ -206,13 +218,13 @@ export class SubscriptionService {
                 },
               };
 
-              // TODO возможно нужно перенести данные отписки в функцию которая отключает API сети
-              this.serviceInfo?.networks.substrate.forEach((name) => {
-                // если сетей нет в списке сетей на балансы которых мы должны быть подписанными, то удаляем подписку
-                if (!currentSubstrateNetworks.includes(name)) this.cancelNetworkSubscription(name);
+              // Compare with the previous network set before discarding removed subscriptions.
+              new Set([...oldNetworks.substrate, ...this.networkSubscriptionTokens.keys(), ...Object.keys(this.subscriptionNetworksMap)]).forEach((name) => {
+                if (isNewAddress || isNewEthereumAddress || !currentSubstrateNetworks.some((current) => isSameString(current, name)))
+                  this.cancelNetworkSubscription(name);
               });
 
-              if (isNewAddress) {
+              if (isNewAddress || isNewEthereumAddress) {
                 this.fetchNetworkBalances({
                   ...serviceInfo.currentAccountInfo,
                   substrateNetworks: this.state.networkService.activeNetworkByEcosystem.substrateList,
@@ -221,15 +233,6 @@ export class SubscriptionService {
                   solanaNetworks: this.state.networkService.activeNetworkByEcosystem.solanaList,
                   bitcoinNetworks: this.state.networkService.activeNetworkByEcosystem.bitcoinList,
                   irohaNetworks: this.state.networkService.activeNetworkByEcosystem.irohaList,
-                });
-
-                return;
-              }
-
-              if (isNewEthereumAddress) {
-                this.fetchNetworkBalances({
-                  ...serviceInfo.currentAccountInfo,
-                  evmNetworks: this.state.networkService.activeNetworkByEcosystem.evmList,
                 });
 
                 return;
@@ -257,9 +260,6 @@ export class SubscriptionService {
                 irohaNetworks: newIrohaNetworks,
               });
 
-              // кейс, когда было [sora, polkadot, kusama]
-              // стало [sora], обрабатывать и отписываться от подписок на балансы не нужно,
-              // тк мы полностью отклюачемся от api, следовательно подписки умирают сами
             },
             1000
           );
@@ -297,15 +297,31 @@ export class SubscriptionService {
   }
 
   async subscribeSubstrateBalances(props: GetBalancesProps) {
-    const unsubList = this.state.balanceService.substrateBalanceService.subscribeSubstrateBalances(props, this.state);
-
-    unsubList.forEach(async (item) => {
-      const value = await item;
-
-      this.updateNetworkSubscription({
-        name: value.networkName,
-        func: value.unsub,
-      });
-    });
+    const matchesAccount = () => this.state.currentAccount?.address === props.address &&
+      (this.state.currentAccount?.ethereumAddress ?? '') === props.ethereumAddress;
+    if (!matchesAccount()) return;
+    const tokens = new Map<string, symbol>();
+    for (const network of props.substrateNetworks ?? []) {
+      const key = network.toLowerCase();
+      this.cancelNetworkSubscription(key);
+      const token = Symbol(key);
+      tokens.set(key, token);
+      this.networkSubscriptionTokens.set(key, token);
+    }
+    const isCurrent = (network: string) => {
+      const key = network.toLowerCase();
+      return tokens.has(key) && tokens.get(key) === this.networkSubscriptionTokens.get(key) &&
+        matchesAccount();
+    };
+    const unsubList = this.state.balanceService.substrateBalanceService.subscribeSubstrateBalances(props, this.state, isCurrent);
+    await Promise.all(unsubList.map(async (item) => {
+      try {
+        const value = await item;
+        if (!isCurrent(value.networkName)) value.unsub();
+        else this.updateNetworkSubscription({ name: value.networkName, func: value.unsub });
+      } catch {
+        this.logger.error('Unable to start balance subscription');
+      }
+    }));
   }
 }

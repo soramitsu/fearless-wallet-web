@@ -613,7 +613,7 @@ export default class Extension extends FWExtensionBase {
     const isAuthorize = auth?.isAllowed === true;
     return {
       isAuthorize,
-      authorizeAccountsCount: isAuthorize ? auth.authorizedAccounts.length : 0,
+      authorizeAccountsCount: isAuthorize ? auth.authorizedAccounts?.length ?? 0 : 0,
       dAppName: tabHostName,
     };
   }
@@ -623,7 +623,7 @@ export default class Extension extends FWExtensionBase {
 
     const authSubscription = this.state.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, authSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => authSubscription.unsubscribe());
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
@@ -663,7 +663,7 @@ export default class Extension extends FWExtensionBase {
       cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, metaSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => metaSubscription.unsubscribe());
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
@@ -982,7 +982,7 @@ export default class Extension extends FWExtensionBase {
       cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, signSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => signSubscription.unsubscribe());
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
@@ -996,7 +996,7 @@ export default class Extension extends FWExtensionBase {
       cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, signEvmSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => signEvmSubscription.unsubscribe());
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
@@ -1010,7 +1010,7 @@ export default class Extension extends FWExtensionBase {
       (requests: SolanaRequests): void => cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, signSolanaSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => signSolanaSubscription.unsubscribe());
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
@@ -1067,7 +1067,7 @@ export default class Extension extends FWExtensionBase {
 
     const balanceSubscription = this.state.balanceService.balanceSubject.subscribe({ next: (rs) => cb(rs) });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, balanceSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => balanceSubscription.unsubscribe());
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
@@ -1094,7 +1094,7 @@ export default class Extension extends FWExtensionBase {
       },
     });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, priceSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => priceSubscription.unsubscribe());
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
@@ -1108,7 +1108,7 @@ export default class Extension extends FWExtensionBase {
       next: (rs) => cb(rs),
     });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, soraFeesSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => soraFeesSubscription.unsubscribe());
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
   }
@@ -1964,7 +1964,7 @@ export default class Extension extends FWExtensionBase {
       .getSubject()
       .subscribe({ next: (rs) => cb(rs) });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, networkMapSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => networkMapSubscription.unsubscribe());
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
@@ -1982,7 +1982,7 @@ export default class Extension extends FWExtensionBase {
       },
     });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, selectedNetworksSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => selectedNetworksSubscription.unsubscribe());
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
   }
@@ -2200,7 +2200,7 @@ export default class Extension extends FWExtensionBase {
       (requests: WalletConnectSessionRequest[]): void => cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, subscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe());
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
@@ -2359,7 +2359,7 @@ export default class Extension extends FWExtensionBase {
       cb(rs);
     });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, subscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe());
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
@@ -2382,7 +2382,7 @@ export default class Extension extends FWExtensionBase {
       (requests: WalletConnectTransactionRequest[]): void => cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, requestSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => requestSubscription.unsubscribe());
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 
@@ -2497,7 +2497,7 @@ export default class Extension extends FWExtensionBase {
       (requests: WalletConnectNotSupportRequest[]): void => cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, subscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe());
 
     port?.onDisconnect.addListener(() => this.cancelSubscription(id));
 

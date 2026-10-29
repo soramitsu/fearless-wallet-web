@@ -101,7 +101,6 @@ import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavai
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { defaultSortingCurrencies, filterBalanceItemsByNetwork } from '@/helpers/currencies';
-import { isNetworkGroup } from '@/helpers/common';
 import { usePortfolio } from '@/portfolio/usePortfolio';
 import { PORTFOLIO_DASHBOARD_ENABLED } from '@/portfolio/dashboard/dashboardFlag';
 import { effectiveScope } from '@/portfolio/dashboard/preferences';
@@ -268,23 +267,12 @@ export default defineComponent({ name: 'Wallet',
           });
     },
     showShimmers() {
-      return networksIsPending(this.networksStore.networks, this.accountsStore.selectedNetwork);
+      return networksIsPending(
+        this.networksStore.networks, this.accountsStore.selectedNetwork, this.accountsStore.selectedWallet.address
+      );
     },
     showLoadingBalance() {
-      if (!isNetworkGroup(this.accountsStore.selectedNetwork)) {
-            const networkStatus = this.networksStore.networks.find(
-              ({ name }) => name.toLowerCase() === this.accountsStore.selectedNetwork.toLowerCase()
-            )?.networkStatus;
-
-            return networkStatus === NETWORK_STATUS.CONNECTING;
-          }
-
-          //TODO добавить проверку по группам
-          const isPendingExists = this.networksStore.networks.some(
-            ({ networkStatus }) => networkStatus === NETWORK_STATUS.CONNECTING
-          );
-
-          return !navigator.onLine || isPendingExists;
+      return this.showShimmers;
     },
     filteredTokenGroups() {
       const isAllNetworks = isSameString(this.accountsStore.selectedNetwork, ALL_NETWORKS);

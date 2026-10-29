@@ -63,7 +63,7 @@ import type { BitcoinNetworkKind } from '@/util/bitcoin';
 import { api as apiSora } from '@/sora';
 import BalanceService from '@/extension/background/extension-base/src/services/balance-service';
 import { WalletEcosystem } from '@/interfaces';
-import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
+import { getTabAuthorizationTarget, stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
 import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
@@ -81,6 +81,7 @@ type Wallet = {
 
 export default class State {
   private ready = false;
+  private tabStatusRevision = 0;
   injectedProviders: Map<Port, ProviderInterface> = new Map();
   providers: Providers = {};
   serviceInfoSubject = new Subject<ServiceInfo>();
@@ -193,7 +194,14 @@ export default class State {
   }
 
   updateCurrentTabsUrl([tab]: chrome.tabs.Tab[]) {
-    if (!tab || !tab.url) {
+    const revision = ++this.tabStatusRevision;
+    let url: URL | undefined;
+    try {
+      if (tab?.url) url = new URL(tab.url);
+    } catch { /* Browser-internal and malformed tabs have no dApp permission. */ }
+    const isSelf = url?.hostname === EXTENSION_ID || url?.hostname === EXTENSION_HOSTNAME;
+    const target = getTabAuthorizationTarget(tab?.url);
+    if (!url || (!isSelf && !target)) {
       this.currentTabStatus = {
         isAuthorize: false,
         authorizeAccountsCount: 0,
@@ -203,12 +211,11 @@ export default class State {
       return;
     }
 
-    const url = new URL(tab.url);
-    const isSelf = url.hostname === EXTENSION_ID || url.hostname === EXTENSION_HOSTNAME;
     const tabHostName = isSelf ? 'header.currentExtensionPage' : url.hostname;
-    const tabAuthKey = isSelf ? null : stripUrl(tab.url);
+    const tabAuthKey = isSelf ? null : target?.key;
 
     const cb = (authUrls: AuthUrls) => {
+      if (revision !== this.tabStatusRevision) return;
       const auth = tabAuthKey ? authUrls[tabAuthKey] : undefined;
       const isAuthorize = auth?.isAllowed === true;
 
@@ -524,27 +531,61 @@ export default class State {
         await this.balanceService.tonBalanceService.fetchBalance(account.address, [network.name]);
       } else if (ecosystem === 'ethereum' && evmAddress) {
         const wasActive = network.active;
-        if (!this.getEvmApi(network.name)) this.networkService.evmApiHandler.initEvmApi(network);
-        await this.balanceService.evmBalanceService.fetchBalance({
-          ethereumAddress: evmAddress,
-          networks: [network.name.toLowerCase()],
-          force: true,
-        });
-        if (!wasActive) this.networkService.evmApiHandler.destroyApi(network.name);
+        const networkKey = network.name.toLowerCase();
+        let discoveryApi = this.getEvmApi(network.name)?.api;
+        try {
+          if (!discoveryApi) {
+            this.networkService.evmApiHandler.initEvmApi(network);
+            discoveryApi = this.getEvmApiMap[networkKey]?.api;
+          }
+          await this.balanceService.evmBalanceService.fetchBalance({
+            ethereumAddress: evmAddress,
+            networks: [network.name.toLowerCase()],
+            force: true,
+          });
+        } finally {
+          const currentNetwork = this.networkService.networkMap[network.name];
+          if (!wasActive && currentNetwork?.active === false && discoveryApi &&
+              this.getEvmApiMap[networkKey]?.api === discoveryApi) {
+            this.networkService.evmApiHandler.destroyApi(network.name);
+          }
+        }
       } else if (
         canScanSubstrateBackedDiscoveryNetwork(ecosystem, supportsSubstrate, evmAddress)
       ) {
         const networkKey = network.name.toLowerCase();
         const wasActive = network.active;
-        if (!this.getSubstrateApiMap[networkKey]?.api) await this.networkService.substrateApiHandler.initApi(network);
-        const api = this.getSubstrateApiMap[networkKey]?.api;
-        if (api) await Promise.race([api.isReady, new Promise((_, reject) => setTimeout(() => reject(new Error('discovery_api_timeout')), 15_000))]);
-        await this.balanceService.substrateBalanceService.fetchBalance({
-          address: publicAddress(WalletEcosystem.Substrate) ?? (supportsSubstrate ? account.address : evmAddress),
-          ethereumAddress: evmAddress,
-          networks: [network.name],
-        });
-        if (!wasActive) await this.networkService.substrateApiHandler.destroyApi(network.name);
+        let discoveryApi = this.getSubstrateApiMap[networkKey]?.api;
+        try {
+          if (!discoveryApi) {
+            const initializing = this.networkService.substrateApiHandler.initApi(network);
+            // Capture the installed API before yielding; a concurrent reconnect can replace it.
+            discoveryApi = this.getSubstrateApiMap[networkKey]?.api;
+            await initializing;
+          }
+          const api = this.getSubstrateApiMap[networkKey]?.api;
+          if (api) {
+            let timeout: ReturnType<typeof setTimeout> | undefined;
+            try {
+              await Promise.race([api.isReady, new Promise((_, reject) => {
+                timeout = setTimeout(() => reject(new Error('discovery_api_timeout')), 15_000);
+              })]);
+            } finally {
+              clearTimeout(timeout);
+            }
+          }
+          await this.balanceService.substrateBalanceService.fetchBalance({
+            address: publicAddress(WalletEcosystem.Substrate) ?? (supportsSubstrate ? account.address : evmAddress),
+            ethereumAddress: evmAddress,
+            networks: [network.name],
+          });
+        } finally {
+          const currentNetwork = this.networkService.networkMap[network.name];
+          if (!wasActive && currentNetwork?.active === false && discoveryApi &&
+              this.getSubstrateApiMap[networkKey]?.api === discoveryApi) {
+            await this.networkService.substrateApiHandler.destroyApi(network.name);
+          }
+        }
       }
     }
   }

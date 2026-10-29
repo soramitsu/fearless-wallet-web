@@ -8,6 +8,9 @@ import { CHAIN_IDS, EQUILIBRIUM } from '@/consts/networks';
 import { isSameString } from '@/helpers';
 
 type EquilibriumBalanceEntry = [u128, { asPositive: u128 }];
+// Equilibrium eq-primitives defines DECIMALS = 9 for account balances, including locks.
+// https://github.com/eq-lab/equilibrium/blob/master/eq-primitives/src/lib.rs
+const EQUILIBRIUM_BALANCE_PRECISION = 9;
 type EquilibriumAccountData = {
   data: {
     asV0: {
@@ -35,12 +38,12 @@ export default class EquilibriumBalanceService {
 
     const sub = pallet.subscribe((balances: unknown) => {
       const asV0 = (balances as EquilibriumAccountData).data.asV0;
-      const locked = FPNumber.fromCodecValue((asV0.lock as u128).toNumber(), 9); // TODO: 9 дефолтный precision, уточнить насчет asV0.lock
+      const locked = FPNumber.fromCodecValue(asV0.lock.toString(), EQUILIBRIUM_BALANCE_PRECISION);
       const balance = asV0.balance;
 
       const notZeroBalances = balance.map(([key, { asPositive }]) => {
         const _currencyId = (key as u128).toString();
-        const balanceValue = (asPositive as u128).toNumber();
+        const balanceValue = asPositive.toString();
 
         const { symbol, id, precision } = assets.find(({ currencyId }) => currencyId === _currencyId)!;
 
@@ -93,8 +96,4 @@ export default class EquilibriumBalanceService {
     return () => sub.unsubscribe();
   }
 
-  // TODO
-  fetchBalance() {
-    return '0';
-  }
 }

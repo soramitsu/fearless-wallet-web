@@ -134,11 +134,11 @@ function main() {
     assert.equal(manifest.name, 'deepmerge');
     assert.equal(manifest.version, '4.3.1');
     assert.equal(manifest.private, true);
-    assert.equal(manifest.main, 'dist/cjs.js');
+    assert.equal(manifest.main, 'index.cjs');
     assert.equal(manifest.license, 'MIT');
     assert.deepEqual(manifest.dependencies ?? {}, {});
   });
-  for (const file of ['package.json', 'index.js', 'index.d.ts', 'dist/cjs.js', 'dist/umd.js', 'license.txt', 'upstream-provenance.json']) {
+  for (const file of ['package.json', 'index.js', 'index.d.ts', 'index.cjs', 'umd.cjs', 'license.txt', 'upstream-provenance.json']) {
     check(`installed deepmerge bytes match vendor: ${file}`, () => {
       assert.deepEqual(readFileSync(path.join(installed, file)), readFileSync(path.join(vendored, file)));
     });
@@ -150,10 +150,10 @@ function main() {
       assert.equal(consumerRequire('deepmerge'), require('deepmerge'));
     });
   }
-  const cjs = require('deepmerge/dist/cjs.js');
+  const cjs = require('deepmerge/index.cjs');
   checkDeepmergeBehavior(require('deepmerge'), 'package main');
-  checkDeepmergeBehavior(cjs, 'dist/cjs.js');
-  checkDeepmergeBehavior(require('deepmerge/dist/umd.js'), 'dist/umd.js');
+  checkDeepmergeBehavior(cjs, 'index.cjs');
+  checkDeepmergeBehavior(require('deepmerge/umd.cjs'), 'umd.cjs');
   // The source's only require is an upstream build-only dependency. Use the exact
   // unchanged predicate exposed by the actual distributed build, without adding a runtime dependency.
   const options = {};

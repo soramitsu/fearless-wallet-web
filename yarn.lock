@@ -5791,8 +5791,8 @@ __metadata:
 
 "deepmerge@file:./vendor/deepmerge::locator=fearless-wallet%40workspace%3A.":
   version: 4.3.1
-  resolution: "deepmerge@file:./vendor/deepmerge#./vendor/deepmerge::hash=d4d5f7&locator=fearless-wallet%40workspace%3A."
-  checksum: 10/6f96a75b975d5f3a100ac1053eb24a552afe07c3e36e8253b0fbc47e485629fd684cff47ae549a020ccbe5e6e9ee7eb648b119753ded012dbe6b03523fa587c8
+  resolution: "deepmerge@file:./vendor/deepmerge#./vendor/deepmerge::hash=53e95a&locator=fearless-wallet%40workspace%3A."
+  checksum: 10/60938afa868e83d8adbd3ac34923a8bbde62fd2509682326caba31e8e4184aead40fca871291ff8538571ae890adce3b9e537e4313d413e37ae564d6b94f0694
   languageName: node
   linkType: hard
 

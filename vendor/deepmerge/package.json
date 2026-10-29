@@ -15,7 +15,7 @@
     "type": "git",
     "url": "git://github.com/TehShrike/deepmerge.git"
   },
-  "main": "dist/cjs.js",
+  "main": "index.cjs",
   "engines": {
     "node": ">=0.10.0"
   },
@@ -23,8 +23,9 @@
   "private": true,
   "files": [
     "index.js",
+    "index.cjs",
+    "umd.cjs",
     "index.d.ts",
-    "dist",
     "license.txt",
     "README.fearless.md",
     "upstream-provenance.json"

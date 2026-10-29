@@ -11,11 +11,20 @@ original file hashes. The small fix follows the reviewed but **unmerged**
 [upstream proposal #274](https://github.com/TehShrike/deepmerge/pull/274/files):
 reject `__proto__` before reading or assigning that key in both the target-copy
 and source-copy loops. It is applied to the source and both distributed builds:
-`index.js`, `dist/cjs.js` and `dist/umd.js`. Other merge behavior is unchanged.
+`index.js`, `index.cjs` and `umd.cjs`. Other merge behavior is unchanged.
 In particular, ordinary `constructor`/`prototype` data, null placeholders,
 custom array merging and symbol properties retain their original behavior.
 The issue affects the returned object's prototype; checking only that global
 `Object.prototype` remains unchanged does not detect it.
+
+The patched upstream `dist/cjs.js` and `dist/umd.js` builds are relocated to
+`index.cjs` and `umd.cjs`, respectively, without changing their bytes. This
+keeps maintained vendored code outside generated `dist` directories, as required
+by the repository artifact audit. The package main is `index.cjs`; both installed
+consumers import the package root. No consumer uses the upstream `deepmerge/dist`
+paths, and this private package does not add an exports map or compatibility
+shims for those unused paths. The upstream file hashes remain recorded under
+their original paths, with the relocation mapping in the provenance file.
 
 The `deepmerge: file:./vendor/deepmerge` resolution covers both TonConnect UI's
 runtime import and addons-linter's development import. Registry audits cannot

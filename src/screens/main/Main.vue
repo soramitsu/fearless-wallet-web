@@ -198,6 +198,13 @@ export default defineComponent({ name: 'Main',
     min-height: 0;
     width: 100%;
     overflow: hidden;
+
+    // The portfolio dashboard scrolls in a box that spans the window (Wallet.vue), so that the hero's wings run out to
+    // its edges: clip only top and bottom there.
+    &:has(> .wallet--dashboard) {
+      overflow-x: visible;
+      overflow-y: clip;
+    }
   }
 
   .main-child {

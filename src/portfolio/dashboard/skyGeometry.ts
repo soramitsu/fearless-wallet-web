@@ -67,10 +67,10 @@ export function logoPlacement(geometry: SkyGeometry = POPUP_SKY): { left: number
 }
 
 /**
- * The wings run off the edges of the hero card, as they run off the screen on phones (design spec 3.1). The disc sets
- * the master's size, so its wingspan alone stops short of the card: past the shoulder each wing stretches sideways just
- * enough for its tip to run off its own edge. Distances are master units from the disc centre. The cobras end at 151,
- * so the sun, the cobras and the inner wing are always the master unchanged.
+ * The wings run out of the hero card and off the edges of the window, as they run off the screen on phones (design spec
+ * 3.1). The disc sets the master's size, so its wingspan alone stops short of the window: past the shoulder each wing
+ * stretches sideways just enough for its tip to run off its own edge. Distances are master units from the disc centre.
+ * The cobras end at 151, so the sun, the cobras and the inner wing are always the master unchanged.
  */
 const WING_SHOULDER = 160;
 const WING_TIP = 491.1;
@@ -79,7 +79,7 @@ const WING_SHOWN = 0.85;
 /** The stretch eases in over the first 35% of the wing past the shoulder, so no feather bends there. */
 const WING_EASE = 0.35;
 
-/** One wing: the distance a point of the master is drawn at, for a card edge `reach` master units from the disc. */
+/** One wing: the distance a point of the master is drawn at, for an edge `reach` master units from the disc. */
 export function wingStretch(reach: number): (distance: number) => number {
   const length = WING_TIP - WING_SHOULDER;
   const target = (reach - WING_SHOULDER) / WING_SHOWN;
@@ -114,26 +114,56 @@ export function wingPaths(svg: string): WingPath[] {
   });
 }
 
-/** CSS px from the disc centre to the edge each wing runs off. */
+/** CSS px from the disc centre to where each wing ends: the edge it runs off, or where it has faded out. */
 export interface WingReach {
   left: number;
   right: number;
+  /** CSS px from the disc centre to the card's inner edges, once measured. */
+  card?: { left: number; right: number };
+  /** A wing that ends short of the window's edge fades out rather than being cut. */
+  fade?: { left: boolean; right: boolean };
 }
 
-/** The sky's own box: how far the wings reach until the card around it is measured. */
+/** How far out of the card a wing reaches at most, in px: in a window wider than that, it fades out before the edge. */
+export const WING_OUT = 120;
+/** Over how many px a wing that ends short of the window's edge fades out. */
+export const WING_FADE = 80;
+
+/** The sky's own box: how far the wings reach until the window around it is measured. */
 export const skyReach = (geometry: SkyGeometry = POPUP_SKY): WingReach => ({ left: geometry.cx, right: geometry.w - geometry.cx });
 
-/** The wings layer from one edge to the other (sky px), the slice of the master it shows, and its stretched paths. */
+/**
+ * Where the wings end, from the measured boxes (CSS px from the left of the page, or any one origin): the sky's disc
+ * centre, the card's inner edges and the edges of the box that clips the sky, the window on the wallet screen. Each wing
+ * runs out of the card to that edge, or, more than `WING_OUT` past the card, fades out there.
+ */
+export function wingReach(centre: number, card: { left: number; right: number }, stage: { left: number; right: number }): WingReach {
+  const left = centre - Math.max(stage.left, card.left - WING_OUT);
+  const right = Math.min(stage.right, card.right + WING_OUT) - centre;
+
+  return {
+    left,
+    right,
+    card: { left: centre - card.left, right: card.right - centre },
+    fade: { left: card.left - WING_OUT > stage.left + 0.5, right: card.right + WING_OUT < stage.right - 0.5 },
+  };
+}
+
+/**
+ * The wings layer from one edge to the other (sky px), the slice of the master it shows, and its stretched paths. Each
+ * tip runs `bleed` px further past its edge, so a wing moved by the cursor parallax never pulls its tip into view.
+ */
 export function wingsLayer(
   paths: readonly WingPath[],
   reach: WingReach,
-  geometry: SkyGeometry = POPUP_SKY
+  geometry: SkyGeometry = POPUP_SKY,
+  bleed = 0
 ): { left: number; top: number; width: number; height: number; viewBox: string; paths: WingPath[] } {
   const scale = geometry.logoW / MASTER.w;
   const left = reach.left / scale;
   const right = reach.right / scale;
-  const stretchLeft = wingStretch(left);
-  const stretchRight = wingStretch(right);
+  const stretchLeft = wingStretch(left + bleed / scale);
+  const stretchRight = wingStretch(right + bleed / scale);
   const x = (value: number): number =>
     round(value < MASTER.discX ? MASTER.discX - stretchLeft(MASTER.discX - value) : MASTER.discX + stretchRight(value - MASTER.discX));
   const stretch = (d: string): string =>
@@ -160,16 +190,22 @@ export function wingsLayer(
 const VEIL_FADE = 60;
 
 /**
- * The wings layer's mask. Where a wing leaves the sky's own box it may run behind text, so the host veils it there with
- * `--sky-veil`, an opacity (unset, nothing is veiled). A wing that does not leave the box is never veiled.
+ * The wings layer's mask. Inside the card, beside the sky, a wing may run behind text, so the host veils it there with
+ * `--sky-veil`, an opacity (unset, nothing is veiled); out of the card it is drawn in full again, and a wing that ends
+ * short of the window's edge fades out. Until the card is measured, everything beside the sky is veiled.
  */
-export function wingsVeil(layer: { left: number; width: number }, geometry: SkyGeometry = POPUP_SKY): string {
-  const start = -layer.left;
-  const end = start + geometry.w;
+export function wingsVeil(layer: { left: number; width: number }, reach: WingReach, geometry: SkyGeometry = POPUP_SKY): string {
   const veil = 'rgb(0 0 0 / var(--sky-veil, 1))';
+  const px = (value: number): string => `${round(value)}px`;
+  const skyStart = -layer.left;
+  const skyEnd = skyStart + geometry.w;
+  const cardStart = reach.card ? reach.left - reach.card.left : 0;
+  const cardEnd = reach.card ? reach.left + reach.card.right : layer.width;
   const stops = [
-    ...(start > 1 ? [`${veil} ${start}px`, `#000 ${start + VEIL_FADE}px`] : ['#000 0']),
-    ...(layer.width - end > 1 ? [`#000 ${end - VEIL_FADE}px`, `${veil} ${end}px`] : ['#000 100%']),
+    ...(reach.fade?.left ? ['transparent 0', `#000 ${WING_FADE}px`] : ['#000 0']),
+    ...(skyStart - cardStart > 1 ? [`#000 ${px(cardStart)}`, `${veil} ${px(cardStart)}`, `${veil} ${px(skyStart)}`, `#000 ${px(skyStart + VEIL_FADE)}`] : []),
+    ...(cardEnd - skyEnd > 1 ? [`#000 ${px(skyEnd - VEIL_FADE)}`, `${veil} ${px(skyEnd)}`, `${veil} ${px(cardEnd)}`, `#000 ${px(cardEnd)}`] : []),
+    ...(reach.fade?.right ? [`#000 ${px(layer.width - WING_FADE)}`, 'transparent 100%'] : ['#000 100%']),
   ];
 
   return `linear-gradient(to right, ${stops.join(', ')})`;

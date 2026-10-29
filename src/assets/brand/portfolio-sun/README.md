@@ -16,7 +16,8 @@ paths byte for byte. The master itself stays unmodified; its hash is in `docs/re
 The layers are used only by the portfolio dashboard (`src/screens/portfolio/PortfolioSky.vue`) and are not part of a
 production build.
 
-The sky draws `wings.svg` inline so the wings can run off the hero card's edges: from 160 units out from the disc
-centre (the cobras end at 151) each wing stretches sideways until its tip runs off its own edge (`wingsLayer` in
+The sky draws `wings.svg` inline so the wings can run out of the hero card to the window's edges: from 160 units out
+from the disc centre (the cobras end at 151) each wing stretches sideways until its tip runs off its own edge, or ends
+120 px past the card and fades out in a wider window (`wingReach` and `wingsLayer` in
 `src/portfolio/dashboard/skyGeometry.ts`). The file is not edited, and the sun, the cobras and the inner wing are drawn
 exactly as the master.

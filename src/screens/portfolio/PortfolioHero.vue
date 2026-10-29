@@ -184,18 +184,30 @@ const chipLabel = (group: AllocationGroup): string =>
 // chamfer.l (design spec 3.4): cut 16, radius 12, top-left and bottom-right; glass at Full and Lite, raised at Reduced.
 .hero-card {
   position: relative;
+  isolation: isolate;
   display: flex;
   align-items: stretch;
   gap: 4px;
   min-width: 0;
-  overflow: hidden;
-  border: 1px solid var(--fw-divider);
-  border-radius: 12px;
-  background: var(--fw-card-surface, var(--fw-glass));
-  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+  // Room for the surface's border; a transparent border of its own would be painted in forced colours.
+  padding: 1px;
+
+  // The card's surface is drawn behind its content rather than by the card, so the card clips nothing: the sky's wings
+  // run out of it to the window's edges.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border: 1px solid var(--fw-divider);
+    border-radius: 12px;
+    background: var(--fw-card-surface, var(--fw-glass));
+    clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+    pointer-events: none;
+  }
 }
 
-// Above the sky: the wings run behind the text to the card's left edge.
+// Above the sky: the wings run behind the text and out of the card's left edge.
 .hero-text {
   position: relative;
   z-index: 1;
@@ -486,7 +498,7 @@ const chipLabel = (group: AllocationGroup): string =>
 }
 
 @media (forced-colors: active) {
-  .hero-card {
+  .hero-card::before {
     background: Canvas;
     border-color: CanvasText;
   }

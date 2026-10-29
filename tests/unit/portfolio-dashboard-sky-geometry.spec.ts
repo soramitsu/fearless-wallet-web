@@ -2,6 +2,8 @@ import wingsSvg from '@/assets/brand/portfolio-sun/wings.svg?raw';
 import { RAY_COUNT, type AllocationGroup } from '@/portfolio/dashboard/allocation';
 import {
   POPUP_SKY,
+  WING_FADE,
+  WING_OUT,
   chartColour,
   layoutRays,
   logoPlacement,
@@ -11,6 +13,7 @@ import {
   skyReach,
   skyStars,
   wingPaths,
+  wingReach,
   wingStretch,
   wingsLayer,
   wingsVeil,
@@ -141,15 +144,64 @@ describe('wings', () => {
     });
   });
 
-  it('are veiled wherever they leave the sky, fading in only inside it', () => {
+  it('run past each edge by the bleed asked for, so the cursor parallax never shows a tip', () => {
+    const reach = { left: 389, right: 140 };
+    const plain = wingsLayer(paths, reach).paths.flatMap(({ d }) => xs(d));
+    const bled = wingsLayer(paths, reach, POPUP_SKY, 24);
+    const drawn = bled.paths.flatMap(({ d }) => xs(d));
+    const [viewLeft, , viewWidth] = bled.viewBox.split(' ').map(Number);
+
+    // The box and the slice it shows do not change; the tips run further out.
+    expect([bled.left, bled.width, bled.viewBox]).toEqual([POPUP_SKY.cx - 389, 529, wingsLayer(paths, reach).viewBox]);
+    expect((viewLeft - Math.min(...drawn)) * scale).toBeGreaterThan(24);
+    expect((Math.max(...drawn) - viewLeft - viewWidth) * scale).toBeGreaterThan(24);
+    expect(Math.min(...drawn)).toBeLessThan(Math.min(...plain));
+  });
+
+  it('are veiled only inside the card beside the sky, fading in only inside the sky', () => {
     const veil = 'rgb(0 0 0 / var(--sky-veil, 1))';
 
-    // Popup: the sky at the card's right edge, the text to its left.
-    expect(wingsVeil({ left: POPUP_SKY.cx - 389, width: 520 })).toBe(`linear-gradient(to right, ${veil} 258px, #000 318px, #000 100%)`);
-    // Stacked: the sun centred, a wing past each side of the sky.
-    expect(wingsVeil({ left: -49, width: 360 })).toBe(`linear-gradient(to right, ${veil} 49px, #000 109px, #000 251px, ${veil} 311px)`);
+    // Popup: the sky at the card's right edge, the text to its left. Out of the card the left wing is drawn in full.
+    const popup = { left: 407, right: 148, card: { left: 390, right: 131 }, fade: { left: false, right: false } };
+    expect(wingsVeil({ left: POPUP_SKY.cx - 407, width: 555 }, popup)).toBe(
+      `linear-gradient(to right, #000 0, #000 17px, ${veil} 17px, ${veil} 276px, #000 336px, #000 100%)`
+    );
+    // Stacked: the sun centred, the card a little wider than the sky on each side.
+    const stacked = { left: 180, right: 174, card: { left: 163, right: 161 }, fade: { left: false, right: false } };
+    expect(wingsVeil({ left: POPUP_SKY.cx - 180, width: 354 }, stacked)).toBe(
+      `linear-gradient(to right, #000 0, #000 17px, ${veil} 17px, ${veil} 49px, #000 109px, #000 251px, ${veil} 311px, ${veil} 341px, #000 341px, #000 100%)`
+    );
     // Before the card is measured the wings stay in the sky, and nothing is veiled.
-    expect(wingsVeil({ left: 0, width: POPUP_SKY.w })).toBe('linear-gradient(to right, #000 0, #000 100%)');
+    expect(wingsVeil({ left: 0, width: POPUP_SKY.w }, skyReach())).toBe('linear-gradient(to right, #000 0, #000 100%)');
+  });
+
+  it('fade out toward an edge they stop short of', () => {
+    const veil = 'rgb(0 0 0 / var(--sky-veil, 1))';
+    // A full tab: the card in the middle of a wide window, the sky at the card's right edge.
+    const reach = { left: 510, right: 251, card: { left: 390, right: 131 }, fade: { left: true, right: true } };
+
+    expect(wingsVeil({ left: POPUP_SKY.cx - 510, width: 761 }, reach)).toBe(
+      `linear-gradient(to right, transparent 0, #000 ${WING_FADE}px, #000 120px, ${veil} 120px, ${veil} 379px, #000 439px, #000 ${761 - WING_FADE}px, transparent 100%)`
+    );
+  });
+
+  it('run out of the card to the window edge, or end and fade out well past the card', () => {
+    // Popup (sky px from the sky's left): the window is 16 px past the card on each side.
+    expect(wingReach(131, { left: -259, right: 262 }, { left: -276, right: 279 })).toEqual({
+      left: 407,
+      right: 148,
+      card: { left: 390, right: 131 },
+      fade: { left: false, right: false },
+    });
+    // A full tab: the window is far past the card, so each wing ends WING_OUT past it and fades out there.
+    expect(wingReach(131, { left: -259, right: 262 }, { left: -636, right: 638 })).toEqual({
+      left: 131 + 259 + WING_OUT,
+      right: 262 + WING_OUT - 131,
+      card: { left: 390, right: 131 },
+      fade: { left: true, right: true },
+    });
+    // A window edge exactly WING_OUT past the card is still run off, not faded.
+    expect(wingReach(131, { left: -259, right: 262 }, { left: -259 - WING_OUT, right: 262 + WING_OUT }).fade).toEqual({ left: false, right: false });
   });
 });
 

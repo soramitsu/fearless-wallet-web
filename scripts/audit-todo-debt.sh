@@ -37,6 +37,7 @@ scan_source_pattern() {
         --glob '!**/node_modules/**' \
         --glob '!**/dist/**' \
         --glob '!**/build/**' \
+        --glob '!**/output/**' \
         --glob '!**/coverage/**' \
         --glob '!**/.nuxt/**' \
         --glob '!**/.output/**' \
@@ -45,7 +46,11 @@ scan_source_pattern() {
       return
     fi
 
-    find . -type f \( \
+    # Prune generated trees so the fallback scans the same source scope as rg.
+    find . -type d \( \
+      -name node_modules -o -name dist -o -name build -o -name output -o \
+      -name coverage -o -name .nuxt -o -name .output -o -name .git \
+    \) -prune -o -type f \( \
       -name '*.js' -o \
       -name '*.jsx' -o \
       -name '*.ts' -o \
@@ -54,13 +59,6 @@ scan_source_pattern() {
       -name '*.mjs' -o \
       -name '*.cjs' \
     \) \
-      ! -path '*/node_modules/*' \
-      ! -path '*/dist/*' \
-      ! -path '*/build/*' \
-      ! -path '*/coverage/*' \
-      ! -path '*/.nuxt/*' \
-      ! -path '*/.output/*' \
-      ! -path './.git/*' \
       -print | while IFS= read -r file; do
         grep -HInEi "$grep_pattern" "$file" || true
       done

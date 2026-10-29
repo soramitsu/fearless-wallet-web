@@ -96,7 +96,7 @@
       "commit": "f2ed4ccf1d3a6376b60ebd69d823a3f7748ddc4b",
       "sourcePath": "chains/v13/chains_dev.json",
       "upstreamSha256": "5726b01a5364d955e250939c71082c03f97da0dc9512ac9d120c6a2085173d05",
-      "ownedSha256": "29615d183891dcbbd26a6ce25204af7d35870b3e7b5f1997210975f003e4c60f"
+      "ownedSha256": "746aa521025b75ab455d955027ec0d951773e852cdc33413b45bd73e7db0fcdb"
     },
     {
       "path": "development/fiat/fiats.json",
@@ -3264,7 +3264,7 @@
       "commit": "ca1c2655ff541ae5942d820423962d34fd29d7f9",
       "sourcePath": "chains/v13/chains.json",
       "upstreamSha256": "79a583f08f71139a31e00c825c746891cef50c04aa81318aaa492807757b9cec",
-      "ownedSha256": "f69ae1edecd73169edb90ea4bedd73b7d7cf26099b7bac4d966b7ad6d8dcd585"
+      "ownedSha256": "23cb9eb06be43c39088b8e5f481ef189512002d485f32458ca920c72660bb7c2"
     },
     {
       "path": "production/fiat/fiats.json",
@@ -7433,6 +7433,16 @@
       ],
       "changes": [
         "Disable unreachable Reef Mainnet in app-owned catalogs after retaining unavailable chain parents and clearing stale staking selection; configured RPC returned HTTP502 on 2026-10-25. Legacy shared feeds remain unchanged."
+      ]
+    },
+    {
+      "files": [
+        "remote-config/production/chains/v13/chains.json",
+        "remote-config/development/chains/v13/chains_dev.json"
+      ],
+      "changes": [
+        "Drop Blast API nodes: since 2026-10 every Blast endpoint answers HTTP 403 \"Blast API is no longer available\", which failed every OP Mainnet balance in 4.2.2.",
+        "Move Dwellir nodes from the retired api-<chain>.dwellir.com hosts (NXDOMAIN on 2026-10-29) to the n.dwellir.com host that returned the network's genesis hash for block 0 with the bundled key; drop Dwellir nodes with no such host. A network whose only node is dead keeps it, so the registry never drops the network and hides its balances."
       ]
     }
   ]

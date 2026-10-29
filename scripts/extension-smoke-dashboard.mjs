@@ -121,12 +121,16 @@ const OVERFLOW = `(() => {
   const issues = [];
   const viewport = window.innerWidth;
   if (document.documentElement.scrollWidth > viewport) issues.push('page ' + document.documentElement.scrollWidth + ' > ' + viewport);
+  // The dashboard's scroll area reaches the window's edges and clips the sky's wings there: it must never scroll sideways.
+  const scroller = document.querySelector('.wallet--dashboard');
+  if (scroller && scroller.scrollWidth > scroller.clientWidth + 1) issues.push('the dashboard scrolls sideways ' + scroller.scrollWidth + ' > ' + scroller.clientWidth);
   for (const element of document.querySelectorAll('.hero-card, .hero-text, .legend, .actions, .segmented, .row-head, .child, .section-head, .sheet, .scope-row, .all-panel, .where, .head, .holding, .panel, .actions, .action, .polkaswap, .route, .orbit, .check')) {
     const box = element.getBoundingClientRect();
     // The legend scrolls sideways by design: its own box must fit, the chips inside it may run past the edge.
     const inLegend = Boolean(element.closest('.legend'));
     if (box.width > 0 && !inLegend && box.right > viewport + 1) issues.push(element.className + ' ends at ' + Math.round(box.right) + ' > ' + viewport);
-    if (!inLegend && element.scrollWidth > element.clientWidth + 1) issues.push(element.className + ' scrolls ' + element.scrollWidth + ' > ' + element.clientWidth);
+    // The hero card lets the sky's wings out on purpose; the check after the first screenshot pins where they end.
+    if (!inLegend && !element.matches('.hero-card') && element.scrollWidth > element.clientWidth + 1) issues.push(element.className + ' scrolls ' + element.scrollWidth + ' > ' + element.clientWidth);
   }
   return issues;
 })()`;
@@ -286,6 +290,29 @@ export async function captureDashboardScreenshots({
     if (Math.abs(shareSum - 100) > legendShares.length) throw new Error(`The legend shares add up to ${shareSum}, not 100: ${JSON.stringify(legendShares)}`);
     checks.push('the legend shares add up to the whole');
     await capture('01-all-wallets-tokens', 'All wallets by token: the winged sun with the allocation fan, the legend, and the tokens of every wallet.');
+    // The scroll area spans the window, and the wings leave the card on both sides: each runs to the window's edge (up to
+    // the scrollbar), or, where that is more than 120 px past the card, ends there.
+    await check(
+      "the wings run out of the card to the window's edges",
+      `(() => {
+        const near = (a, b) => Math.abs(a - b) < 1.5;
+        const wings = document.querySelector('[data-testid="portfolioWings"]').getBoundingClientRect();
+        const card = document.querySelector('.hero-card');
+        const cardLeft = card.getBoundingClientRect().left + card.clientLeft;
+        const scroller = document.querySelector('.wallet--dashboard');
+        const box = scroller.getBoundingClientRect();
+        const left = box.left + scroller.clientLeft;
+        return [
+          near(box.left, 0),
+          near(box.right, window.innerWidth),
+          near(wings.left, Math.max(left, cardLeft - 120)),
+          near(wings.right, Math.min(left + scroller.clientWidth, cardLeft + card.clientWidth + 120)),
+          wings.left < cardLeft - 8,
+          wings.right > cardLeft + card.clientWidth + 8,
+        ];
+      })()`,
+      [true, true, true, true, true, true]
+    );
 
     // Drill-down: the first pick highlights, the second opens the row.
     const firstChip = await evalPage(`document.querySelector('[data-testid="heroLegend"] .chip').dataset.testid.replace('legend-', '')`);

@@ -401,10 +401,10 @@ export default defineComponent({ name: 'Wallet',
   &.wallet--dashboard.main-child {
     overflow-x: hidden;
     overflow-y: auto;
-    // The scrollbar sits in the page gutter, as the portfolio list's own does, not over the hero card.
-    width: calc(100% + #{$default-padding});
-    margin-right: -$default-padding;
-    padding-right: $default-padding;
+    // The box spans the window, so the hero's wings run out to its edges (Main.vue lets it), and the scrollbar sits at
+    // the window's edge, not over the hero card. The column is centred in the window: the content keeps its place.
+    margin-inline: calc(50% - 50vw);
+    padding-inline: calc(50vw - 50%);
 
     &::-webkit-scrollbar {
       width: 6px;

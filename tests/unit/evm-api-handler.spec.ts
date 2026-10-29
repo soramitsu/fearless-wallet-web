@@ -5,6 +5,7 @@ import {
   getEvmRpcUrl,
   isClosedSocketProvider,
 } from '@extension-base/services/network-service/handlers/EvmApiHandler';
+import { migrateRetiredOpProvider, OP_MAINNET_RPC_URL } from '@extension-base/services/network-service/retiredProviders';
 import type { NetworkJson } from '@extension-base/types';
 
 // The Ethereum entry of the published chain list: a WebSocket node first, the same host over HTTPS second.
@@ -113,6 +114,29 @@ describe('EVM providers', () => {
       await expect(provider.getNetwork()).rejects.toThrow('network changed');
       expect(send).toHaveBeenCalledTimes(2);
     } finally { handler.destroyApi('Ethereum'); }
+  });
+
+  it('uses the migrated OP endpoint for balances and still rejects a changed live chain', async () => {
+    const oldUrl = 'https://optimism-mainnet.blastapi.io/';
+    const network = migrateRetiredOpProvider(ethereum({ name: 'OP Mainnet', ecosystem: 'ethereum', chainId: '10',
+      currentProvider: oldUrl, nodes: [{ name: 'Retired', url: oldUrl }] }));
+    const handler = new EvmApiHandler({ 'OP Mainnet': network });
+    handler.initEvmApi(network);
+    const provider = handler.api['op mainnet'].api as JsonRpcProvider;
+    let chainId = '0xa';
+    const send = vi.spyOn(provider, '_send').mockImplementation(async (payload) =>
+      (Array.isArray(payload) ? payload : [payload]).map((request) => ({ jsonrpc: '2.0', id: request.id,
+        result: request.method === 'eth_chainId' ? chainId : '0x2a' }))
+    );
+    try {
+      expect(provider._getConnection().url).toBe(OP_MAINNET_RPC_URL);
+      await expect(provider.getBalance('0x0000000000000000000000000000000000000000')).resolves.toBe(42n);
+      expect(send.mock.calls.flatMap(([payload]) => Array.isArray(payload) ? payload : [payload]))
+        .toEqual(expect.arrayContaining([expect.objectContaining({ method: 'eth_chainId' }),
+          expect.objectContaining({ method: 'eth_getBalance' })]));
+      chainId = '0x1';
+      await expect(provider.getNetwork()).rejects.toThrow('network changed');
+    } finally { handler.destroyApi('OP Mainnet'); }
   });
 
   it('treats a closing, closed or destroyed socket as closed, and an open one or HTTPS as live', async () => {

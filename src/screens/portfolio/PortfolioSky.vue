@@ -11,48 +11,55 @@
     @pointerleave="hovered = null"
     @click="onClick"
   >
-    <div class="sky-glow"></div>
+    <!-- The far layers move with the cursor inside the sky's own box, which clips them. -->
+    <div class="sky-layer sky-far">
+      <div class="sky-layer sky-glow sky-move" :style="depth('glow')"></div>
 
-    <svg class="sky-layer sky-stars" :width="geometry.w" :height="geometry.h" :viewBox="`0 0 ${geometry.w} ${geometry.h}`">
-      <circle v-for="(star, index) in stars" :key="index" :cx="star.x" :cy="star.y" :r="star.r" :opacity="star.opacity" />
-    </svg>
+      <svg
+        class="sky-layer sky-stars sky-move"
+        :style="depth('stars')"
+        :width="geometry.w"
+        :height="geometry.h"
+        :viewBox="`0 0 ${geometry.w} ${geometry.h}`"
+      >
+        <circle v-for="(star, index) in stars" :key="index" :cx="star.x" :cy="star.y" :r="star.r" :opacity="star.opacity" />
+      </svg>
 
-    <svg
-      class="sky-layer sky-fan"
-      :width="geometry.w"
-      :height="geometry.h"
-      :viewBox="`0 0 ${geometry.w} ${geometry.h}`"
-      data-testid="portfolioFan"
-    >
-      <line
-        v-for="(ray, index) in rays"
-        :key="index"
-        class="ray"
-        :class="{ 'ray--on': ray !== null && ray.key === highlighted }"
-        :data-group="ray?.key"
-        :x1="lines[index].x1"
-        :y1="lines[index].y1"
-        :x2="lines[index].x2"
-        :y2="lines[index].y2"
-        :style="rayStyle(ray, lines[index])"
-      />
-    </svg>
+      <svg
+        class="sky-layer sky-fan sky-move"
+        :style="depth('fan')"
+        :width="geometry.w"
+        :height="geometry.h"
+        :viewBox="`0 0 ${geometry.w} ${geometry.h}`"
+        data-testid="portfolioFan"
+      >
+        <line
+          v-for="(ray, index) in rays"
+          :key="index"
+          class="ray"
+          :class="{ 'ray--on': ray !== null && ray.key === highlighted }"
+          :data-group="ray?.key"
+          :x1="lines[index].x1"
+          :y1="lines[index].y1"
+          :x2="lines[index].x2"
+          :y2="lines[index].y2"
+          :style="rayStyle(ray, lines[index])"
+        />
+      </svg>
+    </div>
 
-    <!-- The approved mark, split by path index into depth layers that stack to the master exactly. The wings run off
-         the card's edges, stretched past the shoulder; the cobras and the disc keep the sky's own box. -->
-    <svg
-      class="sky-layer sky-wings"
-      :style="wingsStyle"
-      :viewBox="wingsArt.viewBox"
-      preserveAspectRatio="none"
-      data-testid="portfolioWings"
-    >
-      <path v-for="(path, index) in wingsArt.paths" :key="index" :d="path.d" :fill="path.fill" />
-    </svg>
+    <!-- The approved mark, split by path index into depth layers that stack to the master exactly. The wings run out of
+         the card to the window's edges, stretched past the shoulder: their box spans the window, clips them there and
+         veils them beside the sky, and the wings move inside it. The cobras and the disc keep the sky's own box. -->
+    <div class="sky-wings" :style="wingsBoxStyle" data-testid="portfolioWings">
+      <svg class="sky-wings-art sky-move" :style="wingsArtStyle" :viewBox="wingsArt.viewBox" preserveAspectRatio="none">
+        <path v-for="(path, index) in wingsArt.paths" :key="index" :d="path.d" :fill="path.fill" />
+      </svg>
+    </div>
     <div class="sky-layer sky-sun">
-      <img class="sky-layer sky-art" :src="cobraLeft" alt="" draggable="false" :style="artStyle" />
-      <img class="sky-layer sky-art" :src="cobraRight" alt="" draggable="false" :style="artStyle" />
-      <img class="sky-layer sky-art" :src="disc" alt="" draggable="false" :style="artStyle" />
+      <img class="sky-art sky-move" :src="cobraLeft" alt="" draggable="false" :style="artStyle" />
+      <img class="sky-art sky-move" :src="cobraRight" alt="" draggable="false" :style="artStyle" />
+      <img class="sky-art sky-move" :src="disc" alt="" draggable="false" :style="artStyle" />
     </div>
 
     <div v-if="tip" class="sky-tip" :style="tip.style" data-testid="portfolioSkyTip">
@@ -69,6 +76,7 @@ import cobraLeft from '@/assets/brand/portfolio-sun/uraeus-left.svg';
 import cobraRight from '@/assets/brand/portfolio-sun/uraeus-right.svg';
 import disc from '@/assets/brand/portfolio-sun/sun-disc.svg';
 import { formatShare } from '@/portfolio/dashboard/format';
+import { SKY_DEPTHS, WINGS_TILT_DEG, layerOffset, useSkyParallax } from '@/portfolio/dashboard/skyParallax';
 import {
   POPUP_SKY,
   chartColour,
@@ -80,6 +88,7 @@ import {
   skyStars,
   rayAngle,
   wingPaths,
+  wingReach,
   wingsLayer,
   wingsVeil,
   type RayLine,
@@ -103,6 +112,7 @@ const wings = wingPaths(wingsSvg);
 const sky = ref<HTMLElement>();
 const hovered = ref<string | null>(null);
 const reach = ref<WingReach>(skyReach(geometry));
+const parallax = useSkyParallax(sky);
 let resizeObserver: ResizeObserver | undefined;
 
 const rays = computed<Array<RayPaint | null>>(() => layoutRays(props.groups));
@@ -134,56 +144,109 @@ const skyStyle = {
   '--fade-from': `${geometry.r0 + 2}px`,
   '--fade-to': `${geometry.r0 + 30}px`,
 };
+/** How far a layer moves at full deflection of the cursor parallax; its CSS reads these. */
+const depth = (layer: keyof typeof SKY_DEPTHS): Record<string, string> => ({
+  '--depth-x': `${SKY_DEPTHS[layer][0]}px`,
+  '--depth-y': `${SKY_DEPTHS[layer][1]}px`,
+});
 const artStyle = {
   left: `${placement.left}px`,
   top: `${placement.top}px`,
   width: `${placement.width}px`,
   height: `${placement.height}px`,
+  ...depth('sun'),
 };
 
-const wingsArt = computed(() => wingsLayer(wings, reach.value, geometry));
-const wingsStyle = computed(() => {
+// Each tip runs past its edge by more than the wings ever move, and the wings' box has room above and below for the
+// wings to move and turn in: they turn about a point below the disc centre, so a tip far out rises or falls most.
+const WINGS_TIP_BLEED = SKY_DEPTHS.wings[0] * 1.5;
+const wingsArt = computed(() => wingsLayer(wings, reach.value, geometry, WINGS_TIP_BLEED));
+const wingsRoom = computed(() =>
+  Math.ceil(SKY_DEPTHS.wings[1] + Math.max(reach.value.left, reach.value.right) * Math.sin((WINGS_TILT_DEG * Math.PI) / 180) + 4)
+);
+const wingsBoxStyle = computed(() => {
   const { left, top, width, height } = wingsArt.value;
-  const mask = wingsVeil(wingsArt.value, geometry);
+  const mask = wingsVeil(wingsArt.value, reach.value, geometry);
 
   return {
     left: `${left}px`,
-    top: `${top}px`,
+    top: `${top - wingsRoom.value}px`,
     width: `${width}px`,
-    height: `${height}px`,
+    height: `${height + 2 * wingsRoom.value}px`,
     maskImage: mask,
     WebkitMaskImage: mask,
   };
 });
+const wingsArtStyle = computed(() => {
+  const { left, top, width, height } = wingsArt.value;
 
-/** The wings run off the edges of the box the sky sits in, the hero card, inside its border. */
+  return {
+    top: `${wingsRoom.value}px`,
+    width: `${width}px`,
+    height: `${height}px`,
+    transformOrigin: `${geometry.cx - left}px ${geometry.cy + 20 - top}px`,
+    ...depth('wings'),
+    '--tilt': `${WINGS_TILT_DEG}deg`,
+  };
+});
+
+/**
+ * The box the wings run off: the nearest one around the sky that clips sideways, inside its border and scrollbar. On the
+ * wallet screen that is the scroll area, which reaches the window's edges; without one it is the window.
+ */
+function stageOf(box: HTMLElement): HTMLElement | undefined {
+  for (let node = box.parentElement; node; node = node.parentElement) {
+    const overflow = getComputedStyle(node).overflowX;
+
+    if (overflow && overflow !== 'visible') return node;
+  }
+
+  return undefined;
+}
+
+/** The inside of an element's border and scrollbar, from its left and its client width. */
+const inside = (element: Element, scale: number): { left: number; right: number } => {
+  const left = element.getBoundingClientRect().left + element.clientLeft * scale;
+
+  return { left, right: left + element.clientWidth * scale };
+};
+
 function measureReach(): void {
   const box = sky.value;
   const card = box?.parentElement;
   const own = box?.getBoundingClientRect();
 
-  if (!card || !own?.width) return;
+  if (!box || !card || !own?.width) return;
 
+  // In sky px from the sky's left edge.
   const scale = own.width / geometry.w;
-  const centre = own.left + geometry.cx * scale;
-  const inner = card.getBoundingClientRect().left + card.clientLeft * scale;
+  const at = ({ left, right }: { left: number; right: number }) => ({ left: (left - own.left) / scale, right: (right - own.left) / scale });
+  const stage = stageOf(box);
+  const measured = wingReach(
+    geometry.cx,
+    at(inside(card, scale)),
+    at(stage ? inside(stage, scale) : { left: 0, right: document.documentElement.clientWidth })
+  );
   const next = {
-    left: Math.max(geometry.cx, Math.ceil((centre - inner) / scale)),
-    right: Math.max(geometry.w - geometry.cx, Math.ceil((inner + card.clientWidth * scale - centre) / scale)),
+    ...measured,
+    left: Math.max(geometry.cx, Math.ceil(measured.left)),
+    right: Math.max(geometry.w - geometry.cx, Math.ceil(measured.right)),
   };
 
-  if (next.left !== reach.value.left || next.right !== reach.value.right) reach.value = next;
+  if (JSON.stringify(next) !== JSON.stringify(reach.value)) reach.value = next;
 }
 
+// The sky moves within the card when the card's layout changes, and the stage's width changes with the window and with
+// its scrollbar.
 onMounted(() => {
   measureReach();
 
-  const card = sky.value?.parentElement;
+  const box = sky.value;
 
-  if (!card || typeof ResizeObserver === 'undefined') return;
+  if (!box || typeof ResizeObserver === 'undefined') return;
 
   resizeObserver = new ResizeObserver(measureReach);
-  resizeObserver.observe(card);
+  [box.parentElement, stageOf(box)].forEach((element) => element && resizeObserver?.observe(element));
 });
 
 onBeforeUnmount(() => resizeObserver?.disconnect());
@@ -201,8 +264,11 @@ function groupAt(event: PointerEvent | MouseEvent): AllocationGroup | null {
 
   if (!box || !box.width) return null;
 
+  // The fan moves with the cursor parallax: find the ray where the fan is drawn now.
   const scale = box.width / geometry.w;
-  const index = rayIndexAt((event.clientX - box.left) / scale, (event.clientY - box.top) / scale, geometry);
+  const { x, y } = parallax.deflection();
+  const fan = layerOffset(x, y, SKY_DEPTHS.fan);
+  const index = rayIndexAt((event.clientX - box.left) / scale - fan.dx, (event.clientY - box.top) / scale - fan.dy, geometry);
   const key = index === null ? undefined : rays.value[index]?.key;
 
   return key ? (groupByKey.value.get(key) ?? null) : null;
@@ -241,8 +307,11 @@ const tip = computed(() => {
 </script>
 
 <style lang="scss" scoped>
-// Not clipped: the wings run past the sky's box to the card's edges, and the card clips them there.
+// Not clipped: the wings run out of the sky's box and the card to the window's edges. --sky-x and --sky-y are the
+// cursor parallax's deflection, -1 to 1, which useSkyParallax writes here; at rest they are 0.
 .sky {
+  --sky-x: 0;
+  --sky-y: 0;
   position: relative;
   flex: none;
   user-select: none;
@@ -251,10 +320,7 @@ const tip = computed(() => {
 
 // Static backdrop paint, like the aurora: it does not count toward the one-glow-per-viewport budget (design spec 3.5).
 .sky-glow {
-  position: absolute;
-  inset: 0;
   background: radial-gradient(ellipse 62% 56% at 50% 64%, color-mix(in srgb, var(--fw-brand) 38%, transparent), transparent 72%);
-  pointer-events: none;
 }
 
 .sky-layer {
@@ -263,10 +329,16 @@ const tip = computed(() => {
   pointer-events: none;
 }
 
+// The glow, the stars and the fan move inside it; it stays put and clips them, so they never paint past the sky.
+.sky-far {
+  overflow: clip;
+}
+
 .sky-art {
-  inset: auto;
+  position: absolute;
   max-width: none;
   user-select: none;
+  pointer-events: none;
 }
 
 // The cobra and disc layers are as wide as the master; their boxes stay inside the sky.
@@ -274,12 +346,32 @@ const tip = computed(() => {
   overflow: hidden;
 }
 
-// Placed by its inline style, edge to edge; it clips the tips that run past the card. Brand art keeps its own colours
-// in forced colours, as the image layers do.
+// Placed by its inline style from one edge of the window to the other, with room above and below for the wings to move
+// in; it clips the tips that run past the edges and carries the veil, which stays put while the wings move under it.
+// Brand art keeps its own colours in forced colours, as the image layers do.
 .sky-wings {
-  inset: auto;
-  overflow: hidden;
+  position: absolute;
+  overflow: clip;
+  pointer-events: none;
   forced-color-adjust: none;
+}
+
+// The tips run past the viewBox, out to where the box clips them.
+.sky-wings-art {
+  position: absolute;
+  left: 0;
+  overflow: visible;
+}
+
+// Cursor parallax (design spec 7): each layer moves by its own depth, --depth-x and --depth-y at full deflection,
+// opposite to the cursor, and the wings also turn by --tilt. Only at Full effects and without Reduce Motion, which is
+// also when useSkyParallax moves at all; otherwise the sky is still and nothing is composited for it.
+@media (prefers-reduced-motion: no-preference) {
+  [data-fw-effects='full'] .sky-move {
+    transform: translate(calc(var(--sky-x) * var(--depth-x) * -1), calc(var(--sky-y) * var(--depth-y) * -1))
+      rotate(calc(var(--sky-x) * var(--tilt, 0deg)));
+    will-change: transform;
+  }
 }
 
 .sky-stars {

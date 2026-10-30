@@ -1,122 +1,94 @@
 <template>
   <section class="hero" :aria-label="t('portfolioDashboard.totalBalance')" data-testid="portfolioHero">
-    <div class="hero-card">
-      <div class="hero-text">
-        <p class="overline" data-testid="heroOverline">{{ t('portfolioDashboard.totalBalance') }}</p>
+    <p class="overline" data-testid="heroOverline">{{ t('portfolioDashboard.totalBalance') }}</p>
 
-        <div v-if="loading" class="total-loading" role="status" :aria-label="t('portfolioPage.loadingBalances')" data-testid="heroLoading">
-          <Shimmer height="32px" width="168px" />
-          <Shimmer height="16px" width="120px" />
-        </div>
-
-        <template v-else>
-          <button type="button" class="total" :aria-label="totalLabel" data-testid="heroTotal" @click="$emit('openFiats')">
-            <span class="total-symbol">{{ fiatSymbol }}</span>
-            <span class="total-whole">{{ amount.whole }}</span>
-            <span class="total-fraction">.{{ amount.fraction }}</span>
-          </button>
-
-          <p class="change" :class="`change--${change.direction}`" data-testid="heroChange">
-            <span v-if="change.direction !== 'flat'" class="change-arrow" aria-hidden="true">{{ change.direction === 'up' ? '▲' : '▼' }}</span>
-            {{ change.amountText }} · {{ change.percentText }} · {{ t('portfolioDashboard.changeLabel') }}
-          </p>
-
-          <p v-if="captions.length" class="caption" data-testid="heroCaption">{{ captions.join(' · ') }}</p>
-        </template>
-
-        <div class="meta">
-          <button type="button" class="count-link" data-testid="heroHowWeCount" @click="$emit('openCounting')">
-            {{ t('portfolioDashboard.howWeCount') }}
-          </button>
-
-          <button
-            type="button"
-            class="sync-chip"
-            :class="`sync-chip--${sync.kind}`"
-            :aria-label="t('portfolioDashboard.sync.open', { state: syncText })"
-            data-testid="heroSync"
-            @click="$emit('openSync')"
-          >
-            <span class="sync-dot" aria-hidden="true"></span>{{ syncText }}
-          </button>
-        </div>
-      </div>
-
-      <PortfolioSky class="hero-sky" :groups="groups" :activeKey="activeKey" @select="$emit('select', $event)" />
+    <div v-if="loading" class="total-loading" role="status" :aria-label="t('portfolioPage.loadingBalances')" data-testid="heroLoading">
+      <Shimmer height="40px" width="196px" />
+      <Shimmer height="16px" width="128px" />
     </div>
 
-    <div v-if="groups.length || showSwap" class="hero-row">
-      <ul v-if="groups.length" class="legend" :aria-label="t('portfolioDashboard.legend.label')" data-testid="heroLegend">
-        <li v-for="group in groups" :key="group.key">
-          <button
-            type="button"
-            class="chip"
-            :class="{ 'chip--active': group.key === activeKey }"
-            :aria-pressed="group.key === activeKey"
-            :aria-label="chipLabel(group)"
-            :title="group.members ? t('portfolioDashboard.legend.otherDetail', { names: group.members.join(', ') }) : undefined"
-            :data-testid="`legend-${group.key}`"
-            @click="$emit('select', group.key)"
-          >
-            <span class="chip-dot" :style="{ background: chartColour(group.slot) }" aria-hidden="true"></span>
-            <span class="chip-name">{{ groupName(group) }}</span>
-            <span class="chip-share">{{ formatShare(group.share) }}%</span>
-          </button>
-        </li>
-      </ul>
+    <template v-else>
+      <button type="button" class="total" :aria-label="totalLabel" data-testid="heroTotal" @click="$emit('openFiats')">
+        <span class="total-symbol">{{ fiatSymbol }}</span>
+        <span class="total-whole">{{ amount.whole }}</span>
+        <span class="total-fraction">.{{ amount.fraction }}</span>
+      </button>
 
-      <div v-if="showSwap" class="actions" data-testid="heroActions">
-        <button type="button" class="action" :aria-label="t('portfolioDashboard.actions.swapAria')" data-testid="heroSwap" @click="$emit('swap')">
-          <Icon icon="polkaswap" width="20px" height="20px" :hover="false" class="action-icon" />
-          {{ t('portfolioDashboard.actions.swap') }}
-        </button>
-      </div>
+      <p class="change" :class="`change--${change.direction}`" data-testid="heroChange">
+        <span v-if="change.direction !== 'flat'" class="change-arrow" aria-hidden="true">{{ change.direction === 'up' ? '▲' : '▼' }}</span>
+        {{ change.amountText }} · {{ change.percentText }} · {{ t('portfolioDashboard.changeLabel') }}
+      </p>
+    </template>
+
+    <div class="meta">
+      <button
+        type="button"
+        class="sync-chip"
+        :class="`sync-chip--${sync.kind}`"
+        :aria-label="t('portfolioDashboard.sync.open', { state: syncText })"
+        data-testid="heroSync"
+        @click="$emit('openSync')"
+      >
+        <span class="sync-dot" aria-hidden="true"></span>{{ syncText }}
+      </button>
+
+      <span class="meta-dot" aria-hidden="true">·</span>
+
+      <button type="button" class="count-link" data-testid="heroHowWeCount" @click="$emit('openCounting')">
+        {{ t('portfolioDashboard.howWeCount') }}
+      </button>
     </div>
+
+    <p v-if="!loading && captions.length" class="caption" data-testid="heroCaption">{{ captions.join(' · ') }}</p>
+
+    <!-- What a wallet is for, one press away. -->
+    <RoundActions v-if="actions.length" class="actions" :actions="actions" data-testid="heroActions" @action="onAction" />
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { AllocationGroup } from '@/portfolio/dashboard/allocation';
 import type { SyncState } from '@/portfolio/dashboard/syncState';
-import PortfolioSky from '@/screens/portfolio/PortfolioSky.vue';
-import { formatChange, formatShare, splitTotal } from '@/portfolio/dashboard/format';
-import { chartColour } from '@/portfolio/dashboard/skyGeometry';
+import RoundActions, { type RoundAction } from '@/screens/portfolio/RoundActions.vue';
+import { formatChange, splitTotal } from '@/portfolio/dashboard/format';
 import { formatSyncAge } from '@/portfolio/syncFreshness';
-import { usePortfolioFormatting } from '@/portfolio/usePortfolioFormatting';
 import { useI18n } from '@/locales/useI18n';
 import { useAccountsStore } from '@/stores/accounts';
 
-const props = defineProps<{
-  /** A decimal string, the fiat total of the scope. */
-  total: string;
-  changeAmount: string;
-  changePercent: string;
-  /** A line the wallet screen already has for this view, such as "Showing Ethereum · $1,620.00". */
-  caption: string;
-  hiddenCount: number;
-  unpricedCount: number;
-  unavailableCount: number;
-  poolStakesExcluded: boolean;
-  loading: boolean;
-  sync: SyncState;
-  groups: AllocationGroup[];
-  activeKey: string | null;
-  /** A single wallet can swap; All wallets asks for a wallet first. */
-  showSwap: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    /** A decimal string, the fiat total of the scope. */
+    total: string;
+    changeAmount: string;
+    changePercent: string;
+    /** A line the wallet screen already has for this view, such as "Showing Ethereum · $1,620.00". */
+    caption: string;
+    hiddenCount: number;
+    unpricedCount: number;
+    unavailableCount: number;
+    poolStakesExcluded: boolean;
+    loading: boolean;
+    sync: SyncState;
+    /** A single wallet can swap; All wallets asks for a wallet first. */
+    showSwap: boolean;
+    showSend?: boolean;
+    /** False for a recovery-only wallet: nothing new should be sent to it. */
+    showReceive?: boolean;
+  }>(),
+  { showSend: false, showReceive: false }
+);
 
-defineEmits<{
+const emit = defineEmits<{
   (event: 'openFiats'): void;
   (event: 'openCounting'): void;
   (event: 'openSync'): void;
-  (event: 'select', key: string): void;
   (event: 'swap'): void;
+  (event: 'send'): void;
+  (event: 'receive'): void;
 }>();
 
 const { t } = useI18n();
 const accountsStore = useAccountsStore();
-const { formatFiatValue } = usePortfolioFormatting();
 
 const fiatSymbol = computed(() => accountsStore.fiatSymbol);
 const amount = computed(() => splitTotal(props.total));
@@ -162,80 +134,83 @@ const syncText = computed(() => {
   return t(`portfolioDashboard.sync.${kind}`);
 });
 
-const groupName = (group: AllocationGroup): string => (group.key === 'other' ? t('portfolioDashboard.legend.other') : group.name);
+const actions = computed<RoundAction[]>(() =>
+  ([] as (RoundAction | false)[]).concat(
+    props.showSend && { id: 'send', icon: 'send', testId: 'heroSend', label: t('walletHome.send'), aria: t('walletHome.sendAria') },
+    props.showReceive && {
+      id: 'receive',
+      icon: 'receive',
+      testId: 'heroReceive',
+      label: t('walletHome.receive'),
+      aria: t('walletHome.receiveAria'),
+    },
+    props.showSwap && { id: 'swap', icon: 'polkaswap', testId: 'heroSwap', label: t('portfolioDashboard.actions.swap'), aria: t('portfolioDashboard.actions.swapAria') }
+  ).filter((action): action is RoundAction => Boolean(action))
+);
 
-const chipLabel = (group: AllocationGroup): string =>
-  t('portfolioDashboard.legend.chip', {
-    name: groupName(group),
-    percent: formatShare(group.share),
-    value: formatFiatValue(String(group.value)),
-  });
+function onAction(id: string): void {
+  if (id === 'send') emit('send');
+  else if (id === 'receive') emit('receive');
+  else if (id === 'swap') emit('swap');
+}
 </script>
 
 <style lang="scss" scoped>
+// The balance first, then what to do with it (Exodus' home): centred, no card, no chart in the way of the list.
 .hero {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 10px;
-  min-width: 0;
-}
-
-// chamfer.l (design spec 3.4): cut 16, radius 12, top-left and bottom-right; glass at Full and Lite, raised at Reduced.
-.hero-card {
   position: relative;
   display: flex;
-  align-items: stretch;
-  gap: 4px;
-  min-width: 0;
-  overflow: hidden;
-  border: 1px solid var(--fw-divider);
-  border-radius: 12px;
-  background: var(--fw-card-surface, var(--fw-glass));
-  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
-}
-
-// Above the sky: the wings run behind the text to the card's left edge.
-.hero-text {
-  position: relative;
-  z-index: 1;
-  flex: 1;
-  min-width: 0;
-  display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  padding: 16px 0 14px 18px;
-  text-align: left;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 2px 0 10px;
+  text-align: center;
+
+  // A soft brand glow under the total, painted behind everything and never in the way of a click.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -24px 8% 30%;
+    z-index: 0;
+    background: var(--fw-brand-glow);
+    pointer-events: none;
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
 }
 
 .overline {
   margin: 0;
-  font-family: var(--fw-font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
   color: var(--fw-text-3);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 .total-loading {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 8px;
-  padding-top: 4px;
+  padding: 6px 0 2px;
 }
 
 .total {
   display: flex;
   align-items: baseline;
+  justify-content: center;
   max-width: 100%;
-  padding: 0;
+  padding: 0 4px;
   border: 0;
+  border-radius: 8px;
   background: transparent;
   color: var(--fw-text-1);
   font-family: var(--fw-font-body);
   font-variant-numeric: tabular-nums;
-  text-align: left;
   cursor: pointer;
   overflow-wrap: anywhere;
 
@@ -246,29 +221,31 @@ const chipLabel = (group: AllocationGroup): string =>
 }
 
 .total-symbol {
-  font-size: 1.25rem;
-  font-weight: 700;
+  margin-right: 2px;
   color: var(--fw-text-2);
+  font-size: 1.5rem;
+  font-weight: 700;
 }
 
 .total-whole {
-  font-size: 2.25rem;
+  font-size: 2.4rem;
   font-weight: 800;
-  line-height: 1.1;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
 }
 
 .total-fraction {
-  font-size: 1.35rem;
-  font-weight: 700;
   color: var(--fw-text-2);
+  font-size: 1.5rem;
+  font-weight: 700;
 }
 
 .change {
   margin: 0;
+  color: var(--fw-text-2);
   font-size: 0.85rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: var(--fw-text-2);
 }
 
 // Aqua and orange never carry the direction alone (design-system 3.5): the sign is in the text, the triangle beside it.
@@ -285,59 +262,44 @@ const chipLabel = (group: AllocationGroup): string =>
   font-size: 0.7em;
 }
 
-.caption {
-  margin: 0;
-  color: var(--fw-text-2);
-  font-size: 0.72rem;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-}
-
 .meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 12px;
-  margin-top: auto;
-  padding-top: 6px;
+  justify-content: center;
+  gap: 0 8px;
 }
 
-.count-link {
-  min-height: 44px;
+.meta-dot {
+  color: var(--fw-text-3);
+}
+
+.count-link,
+.sync-chip {
+  min-height: 28px;
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--fw-link);
   font: inherit;
   font-size: 0.75rem;
-  text-align: left;
   cursor: pointer;
 
   &:focus-visible {
     outline: 2px solid var(--fw-focus);
     outline-offset: 2px;
   }
+}
+
+.count-link {
+  color: var(--fw-link);
 }
 
 .sync-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  background: transparent;
   color: var(--fw-text-2);
-  font-family: var(--fw-font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: 2px solid var(--fw-focus);
-    outline-offset: 2px;
-  }
+  font-weight: 600;
 }
 
 .sync-dot {
@@ -360,135 +322,22 @@ const chipLabel = (group: AllocationGroup): string =>
   }
 }
 
-// The wing that runs behind the text is veiled there, so every line keeps its contrast over the art.
-.hero-sky {
-  align-self: flex-end;
-  --sky-veil: 0.25;
-}
-
-// The legend scrolls within the row; Swap keeps its place at the end of it rather than taking a row of its own.
-.hero-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.legend {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  gap: 8px;
+.caption {
+  max-width: 420px;
   margin: 0;
-  padding: 0 0 2px;
-  list-style: none;
-  overflow-x: auto;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-
-  li {
-    flex: none;
-  }
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--fw-stroke-control);
-  border-radius: 22px;
-  background: var(--fw-raised);
-  color: var(--fw-text-1);
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: 2px solid var(--fw-focus);
-    outline-offset: 2px;
-  }
-}
-
-.chip--active {
-  border-color: var(--fw-select-edge);
-  background: var(--fw-select-fill);
-}
-
-.chip-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-}
-
-.chip-share {
   color: var(--fw-text-2);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .actions {
-  flex: none;
-  display: flex;
-  gap: 8px;
+  margin-top: 8px;
 }
 
-.action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid var(--fw-stroke-control);
-  border-radius: 22px;
-  background: var(--fw-raised);
-  color: var(--fw-text-1);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-
-  &:hover {
-    background: var(--fw-raised-2);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--fw-focus);
-    outline-offset: 2px;
-  }
-}
-
-// The Polkaswap mark keeps its own colours: this is the brand's Swap, never a generic arrows glyph.
-.action-icon {
-  flex: none;
-}
-
-@media (max-width: 520px) {
-  .hero-card {
-    flex-direction: column-reverse;
-    align-items: center;
-  }
-
-  .hero-text {
-    align-self: stretch;
-    padding-right: 12px;
-  }
-
-  // The text sits below the sky here: nothing to veil, and the sun is centred so both wings run off evenly.
-  .hero-sky {
-    align-self: center;
-    --sky-veil: 1;
-  }
-}
-
-@media (forced-colors: active) {
-  .hero-card {
-    background: Canvas;
-    border-color: CanvasText;
+@media (max-width: 380px) {
+  .total-whole {
+    font-size: 2.2rem;
   }
 }
 </style>

@@ -30,14 +30,14 @@
         <button
           type="button"
           class="row-head"
-          :aria-expanded="row.children.length > 1 ? isOpen(row.id) : undefined"
-          :aria-label="rowLabel(row)"
+          :aria-label="t('portfolioDashboard.where.open', { name: row.symbol })"
           :data-testid="`tokenRow-${row.id}`"
           @click="onRowClick(row)"
         >
           <span class="orb" :style="orbStyle(row.id)" aria-hidden="true">
-            <ExternalLogo v-if="logos.get(row.id)" :name="logos.get(row.id)" :width="30" class="orb-logo" />
+            <ExternalLogo v-if="logos.get(row.id)" :name="logos.get(row.id)" :width="36" class="orb-logo" />
             <template v-else>{{ row.symbol.slice(0, 4) }}</template>
+            <span v-if="row.networks.length > 1" class="orb-count">{{ row.networks.length }}</span>
           </span>
           <span class="identity">
             <span class="title">
@@ -55,35 +55,7 @@
             <span class="fiat">{{ formatFiatValue(row.fiat) }}</span>
             <span class="amount">{{ formatAmount(row.amount) }} {{ row.symbol }}</span>
           </span>
-          <Icon
-            v-if="row.children.length > 1"
-            icon="down"
-            width="12px"
-            height="10px"
-            :hover="false"
-            class="chevron"
-            :class="{ 'chevron--open': isOpen(row.id) }"
-          />
-          <Icon v-else icon="chevron-right" width="16px" height="16px" :hover="false" class="chevron" />
-        </button>
-
-        <ul v-if="row.children.length > 1 && isOpen(row.id)" class="children" :data-testid="`tokenChildren-${row.id}`">
-          <li v-for="(child, index) in row.children" :key="`${child.address}-${child.networkName}-${index}`" class="child">
-            <span class="identity">
-              <span class="title">{{ child.networkName }}</span>
-              <span class="sub">
-                {{ child.walletName }}
-                <PortfolioReadinessChip :readiness="readinessOf(child)" />
-              </span>
-            </span>
-            <span class="value">
-              <span class="fiat">{{ formatFiatValue(child.fiat) }}</span>
-              <span class="amount">{{ formatAmount(child.amount) }} {{ child.symbol }}</span>
-            </span>
-          </li>
-        </ul>
-        <button v-if="row.children.length > 1 && isOpen(row.id)" type="button" class="open" :data-testid="`whereItLives-${row.id}`" @click="$emit('open', row.id)">
-          {{ t('portfolioDashboard.where.action') }}
+          <Icon icon="chevron-right" width="16px" height="16px" :hover="false" class="chevron" />
         </button>
       </li>
     </ul>
@@ -144,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, watch } from 'vue';
 import type { AggregatedWallet } from '@/portfolio/dashboard/aggregate';
 import type { AggregateNetworkSection, AggregateTokenRow } from '@/portfolio/dashboard/facets';
 import type { AllWalletsLens } from '@/portfolio/dashboard/preferences';
@@ -209,25 +181,10 @@ const change = (percent: string | null) => {
 };
 const initial = (name: string): string => Array.from(name.trim())[0]?.toUpperCase() ?? '';
 
-// A token with several holdings opens to them; one holding opens Where it lives at once (spec 4.3).
+// A token opens Where it lives, its page across every wallet and network; with one holding, that holding is chosen.
 function onRowClick(row: AggregateTokenRow): void {
-  if (row.children.length > 1) toggle(row.id);
-  else emit('open', row.id, row.children[0]?.holdingId);
+  emit('open', row.id, row.children.length === 1 ? row.children[0]?.holdingId : undefined);
 }
-const rowLabel = (row: AggregateTokenRow): string =>
-  row.children.length > 1
-    ? t(isOpen(row.id) ? 'portfolioDashboard.rows.collapse' : 'portfolioDashboard.rows.expand', { name: row.symbol })
-    : t('portfolioDashboard.where.open', { name: row.symbol });
-
-const open = ref<Set<string>>(new Set());
-const isOpen = (id: string): boolean => open.value.has(id);
-const toggle = (id: string): void => {
-  const next = new Set(open.value);
-
-  if (next.has(id)) next.delete(id);
-  else next.add(id);
-  open.value = next;
-};
 
 function walletMeta(wallet: AggregatedWallet): string {
   const networks = new Set(wallet.holdings.map(({ networkName }) => networkName)).size;
@@ -238,13 +195,12 @@ function walletMeta(wallet: AggregatedWallet): string {
   return parts.join(' · ');
 }
 
-// "Open" on a legend chip or a ray: the row for that group opens and comes into view.
+// "Open" on a legend chip or a ray: the row for that group comes into view.
 watch(
   () => props.focus,
   async (focus) => {
     if (!focus) return;
 
-    if (props.lens === 'token' && !open.value.has(focus.key)) toggle(focus.key);
     await nextTick();
 
     const row = Array.from(document.querySelectorAll<HTMLElement>('[data-key]')).find((element) => element.dataset.key === focus.key);
@@ -260,42 +216,43 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: $default-padding;
+  padding: 8px 0 16px;
   min-width: 0;
   // The app centres its text; a list reads from the left.
   text-align: left;
 }
 
+// The same pill as the Portfolio view's: a view of the list, not a page of its own.
 .segmented {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2px;
+  align-self: center;
+  display: inline-flex;
   padding: 2px;
-  border-radius: 12px;
-  background: var(--fw-sunken);
+  border: 1px solid var(--fw-divider);
+  border-radius: 16px;
+  background: var(--fw-raised);
 }
 
 .segment {
-  min-height: 40px;
-  padding: 0 8px;
-  border: 1px solid transparent;
-  border-radius: 10px;
+  min-height: 30px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 14px;
   background: transparent;
   color: var(--fw-text-2);
   font: inherit;
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.75rem;
   cursor: pointer;
+  white-space: nowrap;
 
   &[aria-pressed='true'] {
-    border-color: var(--fw-select-edge);
-    background: var(--fw-raised-2);
+    background: var(--fw-select-fill);
     color: var(--fw-text-1);
+    font-weight: 700;
   }
 
   &:focus-visible {
     outline: 2px solid var(--fw-focus);
-    outline-offset: 2px;
+    outline-offset: 1px;
   }
 }
 
@@ -326,7 +283,6 @@ watch(
   flex-direction: column;
 }
 
-.row,
 .section {
   border-top: 1px solid var(--fw-divider);
 
@@ -340,14 +296,16 @@ watch(
 }
 
 .row-head {
+  box-sizing: border-box;
   width: 100%;
-  min-height: 56px;
+  min-height: 60px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 10px;
-  padding: 8px 4px;
+  gap: 12px;
+  padding: 8px 10px;
   border: 0;
+  border-radius: 12px;
   background: transparent;
   color: inherit;
   font: inherit;
@@ -357,6 +315,10 @@ watch(
 button.row-head {
   cursor: pointer;
 
+  &:hover {
+    background: var(--fw-raised-2);
+  }
+
   &:focus-visible {
     outline: 2px solid var(--fw-focus);
     outline-offset: -2px;
@@ -365,8 +327,9 @@ button.row-head {
 
 .orb,
 .avatar {
-  width: 36px;
-  height: 36px;
+  position: relative;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
   border: 1px solid var(--orb);
@@ -376,7 +339,24 @@ button.row-head {
   font-size: 0.6rem;
   font-weight: 800;
   letter-spacing: 0.02em;
-  overflow: hidden;
+}
+
+// On several networks: how many, as on a wallet's own list.
+.orb-count {
+  position: absolute;
+  right: -5px;
+  bottom: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border: 2px solid var(--fw-bg-base);
+  border-radius: 9px;
+  background: var(--fw-raised-2);
+  color: var(--fw-text-1);
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
 }
 
 .avatar {

@@ -121,6 +121,9 @@ describe('Hide zero balances and the filtered header caption', () => {
     const setAssetPreferences = vi.spyOn(accountsStore, 'setAssetPreferences');
     const wrapper = mountWallet();
 
+    // The list's settings are in Manage, with the grouping: the list itself has no switches.
+    expect(wrapper.find('[data-testid="hideZeroToggle"]').exists()).toBe(false);
+    await wrapper.get('[data-testid="filterBtn"]').trigger('click');
     const toggle = wrapper.get('[data-testid="hideZeroToggle"] .switcher-stub');
     expect(toggle.text()).toBe('Hide zero balances');
     await toggle.trigger('click');
@@ -177,7 +180,8 @@ describe('Hide zero balances and the filtered header caption', () => {
     const wrapper = mountWallet();
 
     await wrapper.get('[data-testid="filterBtn"]').trigger('click');
-    expect(wrapper.find('[data-testid="hideZeroToggle"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="hideZeroToggle"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="portfolioLens"]').exists()).toBe(true);
     expect(wrapper.get('[data-testid="filterHidden"]').text()).toBe('Hidden (0)');
 
     await wrapper.get('[data-testid="filterHidden"]').trigger('click');

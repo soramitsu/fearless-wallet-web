@@ -17,13 +17,16 @@
       <Teleport :to="refreshSlot ?? 'body'" :disabled="!refreshSlot">
         <button
           class="portfolio-refresh"
+          :class="{ 'portfolio-refresh--busy': refreshing }"
           data-testid="portfolioRefresh"
           type="button"
+          :title="$t(refreshing ? 'portfolioPage.syncing' : 'portfolioPage.refresh')"
           :disabled="refreshing"
           :aria-busy="refreshing"
           @click="refreshPortfolio"
         >
-          {{ $t(refreshing ? 'portfolioPage.syncing' : 'portfolioPage.refresh') }}
+          <Icon icon="reload" width="18px" height="18px" :hover="false" class="refresh-icon" />
+          <span class="refresh-label">{{ $t(refreshing ? 'portfolioPage.syncing' : 'portfolioPage.refresh') }}</span>
         </button>
       </Teleport>
     </div>
@@ -62,11 +65,8 @@
             :key="row.id"
             :row="row"
             :manage="showAssetsManagementForm"
-            :forceExpanded="searching || hiddenOnly"
+            :forceExpanded="hiddenOnly"
             :search="searchQuery"
-            :canSend="canSendFrom(row)"
-            @send="openGroupPicker($event, 'send')"
-            @receive="openGroupPicker($event, 'receive')"
           />
 
           <PortfolioZeroNetworks
@@ -81,11 +81,8 @@
               :key="row.id"
               :row="row"
               :manage="showAssetsManagementForm"
-              :forceExpanded="searching || hiddenOnly"
-            :search="searchQuery"
-              :canSend="canSendFrom(row)"
-              @send="openGroupPicker($event, 'send')"
-              @receive="openGroupPicker($event, 'receive')"
+              :forceExpanded="hiddenOnly"
+              :search="searchQuery"
             />
           </PortfolioZeroNetworks>
         </div>
@@ -142,46 +139,33 @@
       />
     </template>
 
-    <!-- Teleported to the body, so the list's scroll box cannot clip it. -->
-    <PortfolioGroupNetworkPicker
-      v-if="groupPicker"
-      :action="groupPicker.action"
-      :symbol="groupPicker.symbol"
-      :options="groupPicker.options"
-      @pick="pickGroupNetwork"
-      @close="groupPicker = null"
-    />
   </Scroll>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { computed, defineComponent } from 'vue';
 import PortfolioNetworkSection from './PortfolioNetworkSection.vue';
 import PortfolioZeroNetworks from './PortfolioZeroNetworks.vue';
 import PortfolioExclusions from './PortfolioExclusions.vue';
 import PortfolioHiddenFundsNotice from './PortfolioHiddenFundsNotice.vue';
 import PortfolioLayoutNote from './PortfolioLayoutNote.vue';
 import PortfolioTokenRow from './PortfolioTokenRow.vue';
-import PortfolioGroupNetworkPicker from './PortfolioGroupNetworkPicker.vue';
 import SearchResultStatus from '@/components/SearchResultStatus.vue';
-import { computed } from 'vue';
 import { splitZeroSections, type PortfolioNetworkSection as PortfolioSection } from '@/portfolio/assetIdentity';
 import { hiddenFundsSignature, type PortfolioViewSettings } from '@/portfolio/portfolioViewSettings';
 import { shouldShowLayoutNote } from '@/portfolio/layoutNotice';
-import {
-  splitZeroTokenRows,
-  type GroupNetworkOption,
-  type PortfolioTokenRow as TokenRow,
-} from '@/portfolio/tokenLens';
+import { splitZeroTokenRows, type PortfolioTokenRow as TokenRow } from '@/portfolio/tokenLens';
 import { usePortfolio } from '@/portfolio/usePortfolio';
 import { useWalletTokenRows } from '@/portfolio/useWalletTokenRows';
 import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-import { Components } from '@/router/routes';
 import { forceAssetDiscoverySweep } from '@/extension/messaging/asset-discovery';
 import { ALL_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { fetchNfts } from '@/extension/messaging/nfts';
+
+// One observer per list while it waits for the toolbar's Refresh place; kept off the reactive state.
+const refreshSlotObservers = new WeakMap<object, MutationObserver>();
 
 export default defineComponent({
   name: 'Currencies',
@@ -193,7 +177,6 @@ export default defineComponent({
     PortfolioHiddenFundsNotice,
     PortfolioLayoutNote,
     PortfolioTokenRow,
-    PortfolioGroupNetworkPicker,
   },
   props: {
     balances: Array,
@@ -219,8 +202,6 @@ export default defineComponent({
       visibleSections,
       tokenSort,
       tokenRows,
-      sendOptions,
-      receiveOptions,
     } = useWalletTokenRows({ search, manage, hiddenOnly, portfolio });
 
     return {
@@ -235,8 +216,6 @@ export default defineComponent({
       visibleSections,
       tokenSort,
       tokenRows,
-      sendOptions,
-      receiveOptions,
     };
   },
   data() {
@@ -245,7 +224,6 @@ export default defineComponent({
       accountsStore: useAccountsStore(),
       refreshing: false,
       refreshError: '',
-      groupPicker: null as null | { action: 'send' | 'receive'; symbol: string; options: GroupNetworkOption[] },
       refreshSlot: null as HTMLElement | null,
     };
   },
@@ -376,20 +354,41 @@ export default defineComponent({
     },
   },
   // A kept-alive wallet screen off the page still follows the route, so this list can be created where the toolbar's
-  // slot is not in the document yet. Look it up again whenever the screen is back on the page.
+  // slot is not in the document yet; the dashboard's toolbar also arrives a moment after the list. Look it up whenever
+  // the screen is back on the page, and keep looking until it is there.
   mounted() {
-    this.findRefreshSlot();
+    this.watchRefreshSlot();
   },
   activated() {
-    this.findRefreshSlot();
+    this.watchRefreshSlot();
   },
-  // The picker lives in the body: a kept-alive list must not leave it open over another screen.
   deactivated() {
-    this.groupPicker = null;
+    this.stopWatchingRefreshSlot();
+  },
+  beforeUnmount() {
+    this.stopWatchingRefreshSlot();
   },
   methods: {
     findRefreshSlot() {
       this.refreshSlot = this.refreshSlotId ? document.getElementById(this.refreshSlotId) : null;
+    },
+    watchRefreshSlot() {
+      this.stopWatchingRefreshSlot();
+      this.findRefreshSlot();
+      if (this.refreshSlot || !this.refreshSlotId || typeof MutationObserver === 'undefined') return;
+
+      refreshSlotObservers.set(
+        this,
+        new MutationObserver(() => {
+          this.findRefreshSlot();
+          if (this.refreshSlot) this.stopWatchingRefreshSlot();
+        })
+      );
+      refreshSlotObservers.get(this)?.observe(document.body, { childList: true, subtree: true });
+    },
+    stopWatchingRefreshSlot() {
+      refreshSlotObservers.get(this)?.disconnect();
+      refreshSlotObservers.delete(this);
     },
     async refreshPortfolio() {
       if (this.refreshing) return;
@@ -434,25 +433,6 @@ export default defineComponent({
       this.accountsStore.updatePortfolioView({ lens: 'network' });
       this.accountsStore.dismissPortfolioLayoutNote();
     },
-    canSendFrom(row: TokenRow): boolean {
-      return this.sendOptions(row).length > 0;
-    },
-    // Send and Receive from a token always ask for the network first, with the wrong-network warning.
-    openGroupPicker(row: TokenRow, action: 'send' | 'receive') {
-      const options = action === 'send' ? this.sendOptions(row) : this.receiveOptions(row);
-
-      this.groupPicker = { action, symbol: row.symbol, options };
-    },
-    pickGroupNetwork(option: GroupNetworkOption) {
-      const action = this.groupPicker?.action;
-      this.groupPicker = null;
-      if (!action) return;
-
-      this.$router.push({
-        name: action === 'send' ? Components.SendForm : Components.ReceiveForm,
-        params: { assetId: option.assetId, network: option.networkName },
-      });
-    },
   },
 });
 </script>
@@ -481,19 +461,61 @@ export default defineComponent({
   }
 }
 
+// An icon among the list's tools; its word stays for screen readers and as the tooltip.
 .portfolio-refresh {
-  padding: 4px 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   border: 0;
+  border-radius: 50%;
   background: transparent;
   color: palette($pink-color, var(--fw-link));
   cursor: pointer;
   font: inherit;
-  font-size: 0.72rem;
+
+  &:hover:not(:disabled) {
+    background: var(--fw-raised-2);
+  }
 
   &:disabled {
     cursor: default;
     opacity: 0.55;
   }
+}
+
+@media (max-width: 380px) {
+  .portfolio-refresh {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.portfolio-refresh--busy .refresh-icon {
+  animation: refresh-spin 1s linear infinite;
+}
+
+@keyframes refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-refresh--busy .refresh-icon {
+    animation: none;
+  }
+}
+
+.refresh-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .refresh-error {

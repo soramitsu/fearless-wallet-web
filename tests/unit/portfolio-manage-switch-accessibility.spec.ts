@@ -122,7 +122,8 @@ describe('showing a hidden asset again without a mouse', () => {
 
   it('names the Hide zero balances switch by its visible label', () => {
     const wrapper = mount(WalletSettings, {
-      props: { activeTabName: 'Currencies', filterValue: '', showAssetsManagementForm: false, hideZero: false },
+      // Hide zero balances is one of the list's settings, in Manage.
+      props: { activeTabName: 'Currencies', filterValue: '', showAssetsManagementForm: true, hideZero: false },
       global: {
         components: { Switcher },
         mocks: { $t: translate },

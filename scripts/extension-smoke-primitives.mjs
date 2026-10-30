@@ -285,14 +285,11 @@ export async function capturePrimitivesScreenshots({
       })()`
     );
   };
-  // A group's Send and Receive show once its row is expanded; the expansion is remembered per wallet.
+  // A group's Send and Receive are on its own page: its row opens it, and the page asks for the network.
   const openGroupAction = async (group, action) => {
-    const selector = `[data-token="group:${group}"] [data-testid="${action}"]`;
-    if (!(await evaluate(cdp, sessionId, `Boolean(document.querySelector(${JSON.stringify(selector)}))`))) {
-      await click(`[data-token="group:${group}"] [data-testid="tokenGroupHeader"]`);
-      await waitFor(selector, `${group} ${action}`);
-    }
-    await click(selector);
+    await click(`[data-token="group:${group}"] [data-testid="tokenGroupHeader"]`);
+    await waitFor('[data-testid="tokenOverview"]', `the ${group} page`);
+    await click(`[data-testid="${action}"]`);
   };
   const capture = async (name, description) => {
     await cdp.send('Page.bringToFront', {}, sessionId);
@@ -381,12 +378,12 @@ export async function capturePrimitivesScreenshots({
     }
     await capture(
       '01-portfolio-controls',
-      'Portfolio: tab buttons, search field, icon button, lens segments and the Hide zero switch.'
+      'Portfolio: the round actions, the views, the search, Refresh and Manage icons, and the token rows.'
     );
 
     await click('[data-testid="filterBtn"] button');
     await waitFor('[data-testid="tokenRowSwitch"]', 'Manage in By token');
-    await capture('02-manage-switches', 'Manage: one switch per token and per network, the filter chips.');
+    await capture('02-manage-switches', 'Manage: the filter chips, the grouping segments, the Hide zero switch and one switch per token.');
     await click('[data-testid="filterBtn"] button');
     await waitForExpression(
       cdp,
@@ -395,7 +392,7 @@ export async function capturePrimitivesScreenshots({
       'Manage closed'
     );
 
-    await openGroupAction('usdt', 'groupSend');
+    await openGroupAction('usdt', 'tokenSend');
     await click('[data-testid="groupNetworkOption"][data-network="Ethereum"]');
     await waitFor('[data-testid="amountInternal"]', 'Send on Ethereum');
     await capture(
@@ -405,12 +402,13 @@ export async function capturePrimitivesScreenshots({
 
     await keyboardFocus('[data-testid="amountInternal"]');
     await capture('04-send-amount-keyboard-focus', 'Send: the amount input focused from the keyboard.');
-    await keyboardFocus('[data-testid="sendToInput"] input, [data-testid="sendToInput"] textarea');
+    // The recipient field carries its test id on the input itself since the Send screen's editable Send to.
+    await keyboardFocus('input[data-testid="sendToInput"], [data-testid="sendToInput"] input, [data-testid="sendToInput"] textarea');
     await capture('05-send-recipient-keyboard-focus', 'Send: the recipient field focused from the keyboard.');
 
     await route('Currencies');
     await waitFor('[data-token="group:dot"]', 'By token list again');
-    await openGroupAction('dot', 'groupReceive');
+    await openGroupAction('dot', 'tokenReceive');
     await click('[data-testid="groupNetworkOption"][data-network="Polkadot AssetHub"]');
     await waitFor('[data-testid="qr"] img', 'Receive QR');
     await capture('06-receive', 'Receive: the QR tile, the network banner and the primary buttons.');

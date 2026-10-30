@@ -34,8 +34,8 @@ function allWallets(props: Record<string, unknown> = {}) {
 function hero(props: Record<string, unknown> = {}) {
   const wrapper = mount(PortfolioHero, { props: { total: '1234.56', changeAmount: '12', changePercent: '1', caption: '',
     hiddenCount: 0, unpricedCount: 0, unavailableCount: 0, poolStakesExcluded: false, loading: false,
-    sync: { kind: 'live', savedWallets: [], staleNetworks: [] }, groups, activeKey: null, showSwap: true, ...props,
-  }, global: { stubs: { ...stubs, PortfolioSky: true } } });
+    sync: { kind: 'live', savedWallets: [], staleNetworks: [] }, showSwap: true, showSend: true, showReceive: true, ...props,
+  }, global: { stubs } });
   wrappers.push(wrapper);
   return wrapper;
 }
@@ -58,16 +58,17 @@ describe('rendered all-wallets navigation', () => {
     expect(wrapper.text()).toContain('$40.00');
   });
 
-  it('expands grouped holdings, opens their locations and collapses them again', async () => {
-    const wrapper = allWallets({ tokenRows: [token('eth', [child('one'), { ...child('two'), networkName: 'Arbitrum' }])], activeKey: 'eth' });
+  it('opens a token held in several places on its own page, which lists them, and counts its networks on the logo', async () => {
+    const wrapper = allWallets({
+      tokenRows: [{ ...token('eth', [child('one'), { ...child('two'), networkName: 'Arbitrum' }]), networks: ['Ethereum', 'Arbitrum'] }],
+      activeKey: 'eth',
+    });
     const row = wrapper.get('[data-testid="tokenRow-eth"]');
-    expect(row.attributes('aria-expanded')).toBe('false');
+
+    expect(row.attributes('aria-expanded')).toBeUndefined();
+    expect(row.get('.orb-count').text()).toBe('2');
     await row.trigger('click');
-    expect(row.attributes('aria-expanded')).toBe('true');
-    expect(wrapper.get('[data-testid="tokenChildren-eth"]').text()).toContain('Arbitrum');
-    await wrapper.get('[data-testid="whereItLives-eth"]').trigger('click');
-    expect(wrapper.emitted('open')).toEqual([['eth']]);
-    await row.trigger('click');
+    expect(wrapper.emitted('open')).toEqual([['eth', undefined]]);
     expect(wrapper.find('[data-testid="tokenChildren-eth"]').exists()).toBe(false);
   });
 
@@ -98,14 +99,13 @@ describe('rendered all-wallets navigation', () => {
     expect(wrapper.emitted('openWallet')).toEqual([['alice']]);
   });
 
-  it('focuses a group by opening it and scrolling its actual rendered row into view', async () => {
+  it('focuses a group by scrolling its actual rendered row into view', async () => {
     const wrapper = allWallets({ tokenRows: [token('eth', [child('one'), child('two')])] });
     const row = wrapper.get('[data-key="eth"]').element;
     const scroll = vi.fn();
     Object.defineProperty(row, 'scrollIntoView', { value: scroll, configurable: true });
     await wrapper.setProps({ focus: { key: 'eth', count: 1 } });
     await flushPromises();
-    expect(wrapper.find('[data-testid="tokenChildren-eth"]').exists()).toBe(true);
     expect(scroll).toHaveBeenCalledWith({ block: 'nearest', behavior: 'smooth' });
     await wrapper.setProps({ focus: null });
     expect(scroll).toHaveBeenCalledTimes(1);
@@ -124,23 +124,21 @@ describe('portfolio total and explanatory controls', () => {
   });
 
   it('uses a loading announcement and removes actions unavailable to the scope', () => {
-    const wrapper = hero({ loading: true, showSwap: false, groups: [] });
+    const wrapper = hero({ loading: true, showSwap: false });
     expect(wrapper.get('[data-testid="heroLoading"]').attributes('role')).toBe('status');
     expect(wrapper.find('[data-testid="heroTotal"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="heroSwap"]').exists()).toBe(false);
+    // The allocation is the Portfolio view's now: the balance has no chart or legend of its own.
     expect(wrapper.find('[data-testid="heroLegend"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="portfolioSky"]').exists()).toBe(false);
   });
 
-  it('emits fiat, counting, sync, swap and group-selection actions separately', async () => {
-    const wrapper = hero({ activeKey: 'eth' });
-    for (const [testId, event] of [['heroTotal', 'openFiats'], ['heroHowWeCount', 'openCounting'], ['heroSync', 'openSync'], ['heroSwap', 'swap']]) {
+  it('emits fiat, counting, sync, send, receive and swap actions separately', async () => {
+    const wrapper = hero();
+    for (const [testId, event] of [['heroTotal', 'openFiats'], ['heroHowWeCount', 'openCounting'], ['heroSync', 'openSync'], ['heroSend', 'send'], ['heroReceive', 'receive'], ['heroSwap', 'swap']]) {
       await wrapper.get(`[data-testid="${testId}"]`).trigger('click');
       expect(wrapper.emitted(event)).toHaveLength(1);
     }
-    expect(wrapper.get('[data-testid="legend-eth"]').attributes('aria-pressed')).toBe('true');
-    expect(wrapper.get('[data-testid="legend-other"]').attributes('title')).toContain('DOT, BTC');
-    await wrapper.get('[data-testid="legend-other"]').trigger('click');
-    expect(wrapper.emitted('select')).toEqual([['other']]);
   });
 
   it.each(['live', 'partial', 'offline', 'saved'] as const)('reports %s sync status to both visible and assistive controls', (kind) => {

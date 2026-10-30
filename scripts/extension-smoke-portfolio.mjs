@@ -137,7 +137,7 @@ const OVERFLOW = `(() => {
   const issues = [];
   const viewport = window.innerWidth;
   if (document.documentElement.scrollWidth > viewport) issues.push('page ' + document.documentElement.scrollWidth + ' > ' + viewport);
-  for (const element of document.querySelectorAll('.token-row, .token-header, .network-row, .token-actions, .view-controls, .picker, .picker-option, .layout-note, .network-section, .asset-row, .send-note')) {
+  for (const element of document.querySelectorAll('.hero, .round-actions, .toolbar-row, .tabs, .manage-panel, .token-row, .token-header, .network-row, .view-controls, .picker, .picker-option, .layout-note, .network-section, .asset-row, .send-note, .token-page .head, .token-page .network, .allocation .row, .sheet .option')) {
     const box = element.getBoundingClientRect();
     if (element.scrollWidth > element.clientWidth + 1) issues.push(element.className + ' scrolls ' + element.scrollWidth + ' > ' + element.clientWidth);
     if (box.width > 0 && box.right > viewport + 1) issues.push(element.className + ' ends at ' + Math.round(box.right) + ' > ' + viewport);
@@ -278,50 +278,70 @@ export async function capturePortfolioScreenshots({
     const scrollTo = (selector) =>
       evaluate(cdp, sessionId, `(document.querySelector(${JSON.stringify(selector)})?.scrollIntoView({ block: 'start' }), true)`);
 
-    await fs.mkdir(outputDir, { recursive: true });
-    await evaluate(cdp, sessionId, `${APP}.router.replace({ name: 'Currencies' }).then(() => true)`);
-    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-testid="portfolioTokenList"]\'))', 'By token list');
+    const home = async () => {
+      await evaluate(cdp, sessionId, `${APP}.router.replace({ name: 'Currencies' }).then(() => true)`);
+      await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-testid="portfolioTokenList"]\'))', 'the token list');
+    };
+    const waitFor = (testId, label) =>
+      waitForExpression(cdp, sessionId, `Boolean(document.querySelector('[data-testid="${testId}"]'))`, label);
 
-    await capture('01-by-token-first-open', 'Default By token lens after an upgrade, with the one-time layout note.');
+    await fs.mkdir(outputDir, { recursive: true });
+    await home();
+    await capture('01-home-first-open', 'The wallet home after an upgrade: the balance, Send, Receive and Swap, then the views and the list.');
 
     await click('[data-testid="layoutNoteDismiss"]');
+    await scrollTo('[data-testid="portfolioTokenList"]');
+    await capture('02-home-token-list', 'One row per token: symbol, price and where it is held; value and amount on the right.');
+
     await click('[data-token="group:dot"] [data-testid="tokenGroupHeader"]');
-    await scrollTo('[data-token="group:dot"]');
-    await capture('02-dot-group-expanded', 'The DOT row expanded: each network with its role, Send and Receive for the group.');
+    await waitFor('tokenOverview', 'the DOT page');
+    await capture('03-token-dot', "DOT's own page: the total across networks, its price and the actions.");
+    await scrollTo('[data-testid="tokenNetworkList"]');
+    await capture('04-token-dot-networks', 'Where the DOT is: each network with its balance, what can be sent and its role.');
 
-    await click('[data-token="group:usdt"] [data-testid="tokenGroupHeader"]');
-    await scrollTo('[data-token="group:usdt"]');
-    await capture('03-usdt-group-and-bridged-row', 'Issuer-native USDT combined; bridged Polygon USDT stays its own row.');
+    await click('[data-testid="tokenNetworkRow"][data-network="Polkadot"]');
+    await waitFor('assetBalance', 'DOT on Polkadot');
+    await capture('04b-asset-dot-on-polkadot', 'One network of the token: DOT on Polkadot, with its balance, its actions and its history.');
+    await evaluate(cdp, sessionId, `${APP}.router.back(), true`);
+    await waitFor('tokenOverview', 'the DOT page again');
 
-    await click('[data-token="group:dot"] [data-testid="groupSend"]');
-    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-testid="groupNetworkPicker"]\'))', 'Send network picker');
-    await capture('04-send-choose-network', 'Send from the DOT row asks for the network first, with the wrong-network warning.');
+    await click('[data-testid="tokenSend"]');
+    await waitFor('groupNetworkPicker', 'Send network picker');
+    await capture('05-send-choose-network', 'Send from the DOT page asks for the network first, with the wrong-network warning.');
     await click('[data-testid="groupNetworkPickerClose"]');
 
-    await click('[data-token="group:dot"] [data-testid="groupReceive"]');
-    await capture('05-receive-choose-network', 'Receive from the DOT row lists every DOT network of the wallet.');
-
+    await click('[data-testid="tokenReceive"]');
+    await waitFor('groupNetworkPicker', 'Receive network picker');
+    await capture('06-receive-choose-network', 'Receive from the DOT page lists every DOT network of the wallet.');
     await click('[data-testid="groupNetworkOption"][data-network="Polkadot AssetHub"]');
-    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-testid="receiveOnlyOnNetwork"]\'))', 'Receive on AssetHub');
-    await capture('06-receive-on-assethub', 'Receive opened on the network picked: "Only send DOT on Polkadot AssetHub".');
+    await waitFor('receiveOnlyOnNetwork', 'Receive on AssetHub');
+    await capture('07-receive-on-assethub', 'Receive opened on the network picked: "Only send DOT on Polkadot AssetHub".');
 
-    await evaluate(cdp, sessionId, `${APP}.router.replace({ name: 'Currencies' }).then(() => true)`);
-    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-token="group:usdt"]\'))', 'By token list again');
-    await click('[data-token="group:usdt"] [data-testid="groupSend"]');
+    await home();
+    await click('[data-testid="heroSend"]');
+    await waitFor('assetPicker', 'the Send token picker');
+    await capture('08-home-send-picker', "The home's Send asks which token first, as in Exodus.");
+    await click('[data-testid="assetPickerOption"][data-token="group:usdt"]');
+    await waitFor('groupNetworkPicker', 'USDT network picker');
     await click('[data-testid="groupNetworkOption"][data-network="Ethereum"]');
-    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-testid="sendGroupNetworkWarning"]\'))', 'Send on Ethereum');
-    await capture('07-send-usdt-on-ethereum', 'Send opened on Ethereum for USDT, with the several-networks warning.');
+    await waitFor('sendGroupNetworkWarning', 'Send on Ethereum');
+    await capture('09-send-usdt-on-ethereum', 'Send opened on Ethereum for USDT, with the several-networks warning.');
 
-    await evaluate(cdp, sessionId, `${APP}.router.replace({ name: 'Currencies' }).then(() => true)`);
-    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-testid="portfolioLens-network"]\'))', 'lens switch');
-    await click('[data-testid="portfolioLens-network"]');
-    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-testid="portfolioNetworkList"]\'))', 'By network list');
-    await capture('08-by-network', 'The By network lens, kept per wallet.');
+    await evaluate(cdp, sessionId, `${APP}.router.replace({ name: 'PortfolioAllocation' }).then(() => true)`);
+    await waitFor('allocationRows', 'the Portfolio view');
+    await scrollTo('[data-testid="portfolioAllocation"]');
+    await capture('10-portfolio-allocation', 'The Portfolio view: the winged sun charts the allocation, the rows give each share.');
+    await click('[data-testid="allocationLens-network"]');
+    await capture('11-portfolio-by-network', 'The same allocation by network.');
 
-    await click('[data-testid="portfolioLens-token"]');
+    await home();
     await click('[data-testid="filterBtn"] button');
-    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-testid="tokenRowSwitch"]\'))', 'Manage in By token');
-    await capture('09-manage-by-token', 'Manage in By token: one switch per token, per-network switches inside.');
+    await waitFor('tokenRowSwitch', 'Manage in By token');
+    await capture('12-manage', 'Manage: hidden and test networks, grouping and zero balances, one switch per token.');
+    await click('[data-testid="portfolioLens-network"]');
+    await waitFor('portfolioNetworkList', 'By network list');
+    await capture('13-manage-by-network', 'Grouped by network instead, kept per wallet.');
+    await click('[data-testid="portfolioLens-token"]');
     await click('[data-testid="filterBtn"] button');
     await waitForExpression(cdp, sessionId, '!document.querySelector(\'[data-testid="tokenRowSwitch"]\')', 'Manage closed');
 
@@ -333,25 +353,29 @@ export async function capturePortfolioScreenshots({
       `(() => { const i18n = ${APP}.app.config.globalProperties.$i18n; i18n.locale = 'ru-RU'; document.documentElement.lang = 'ru-RU'; return i18n.locale === 'ru-RU'; })()`
     );
     if (!switched) throw new Error('Could not switch the popup to Russian');
-    await scrollTo('[data-token="group:dot"]');
-    await waitForExpression(cdp, sessionId, 'document.body.innerText.includes("По токенам")', 'Russian By token list');
-    await capture('10-by-token-russian', `Russian at the ${surface.name} width: the DOT row with each network's role and note.`);
-    await click('[data-token="group:dot"] [data-testid="groupSend"]');
-    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-testid="groupNetworkPicker"]\'))', 'Russian Send picker');
-    await capture('11-send-choose-network-russian', 'Russian Send picker: the network is chosen explicitly, with the warning.');
+    await waitForExpression(cdp, sessionId, 'document.body.innerText.includes("Активы")', 'Russian home');
+    await capture('14-home-russian', `Russian at the ${surface.name} width: the balance, the actions and the views.`);
+    await click('[data-token="group:dot"] [data-testid="tokenGroupHeader"]');
+    await waitFor('tokenOverview', 'the Russian DOT page');
+    await scrollTo('[data-testid="tokenNetworkList"]');
+    await capture('15-token-dot-russian', 'The Russian DOT page with its networks.');
+    await click('[data-testid="tokenSend"]');
+    await waitFor('groupNetworkPicker', 'Russian Send picker');
+    await capture('16-send-choose-network-russian', 'Russian Send picker: the network is chosen explicitly, with the warning.');
     await click('[data-testid="groupNetworkPickerClose"]');
 
     // The ancient-script locales: their signs must come from the bundled Noto faces, the rest from Inter.
     for (const [shot, locale, sign, description] of [
-      ['12-by-token-akkadian', 'akk-Xsux-x-old', '\\u{12000}-\\u{1254F}', 'Old Akkadian in cuneiform, drawn with the bundled Noto Sans Cuneiform.'],
-      ['13-by-token-egyptian', 'egy-Egyp', '\\u{13000}-\\u{1345F}', 'Egyptian in hieroglyphs, drawn with the bundled Noto Sans Egyptian Hieroglyphs.'],
+      ['17-home-akkadian', 'akk-Xsux-x-old', '\\u{12000}-\\u{1254F}', 'Old Akkadian in cuneiform, drawn with the bundled Noto Sans Cuneiform.'],
+      ['18-home-egyptian', 'egy-Egyp', '\\u{13000}-\\u{1345F}', 'Egyptian in hieroglyphs, drawn with the bundled Noto Sans Egyptian Hieroglyphs.'],
     ]) {
       await evaluate(
         cdp,
         sessionId,
         `(${APP}.app.config.globalProperties.$i18n.locale = '${locale}', document.documentElement.lang = '${locale}', true)`
       );
-      await scrollTo('[data-token="group:dot"]');
+      await home();
+      await scrollTo('[data-testid="portfolioTokenList"]');
       await waitForExpression(cdp, sessionId, `/[${sign}]/u.test(document.body.innerText)`, `${locale} text`);
       await capture(shot, description);
     }

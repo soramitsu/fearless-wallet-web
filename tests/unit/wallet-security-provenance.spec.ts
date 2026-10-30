@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { mnemonicValidate } from '@polkadot/util-crypto';
 import { KeyringService } from '@extension-base/services/keyring-service';
 import { WalletSecurityProvenance } from '@extension-base/services/keyring-service/WalletSecurityProvenance';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
@@ -135,5 +136,30 @@ describe('fresh wallet security provenance', () => {
     expect(provenance.accountMetadata('public-fixture-0', {}).walletSecurityGeneration).toBeUndefined();
     expect(provenance.accountMetadata('public-fixture-32//0', {}).walletSecurityGeneration).toBe(1);
     expect(provenance.accountMetadata("public-fixture-32/m/44'/60'/0'/0/0", {}).walletSecurityGeneration).toBe(1);
+  });
+});
+
+describe('key generation inputs', () => {
+  it.each([12, 15, 18, 21, 24] as const)('generates a valid %i-word phrase', async (wordCount) => {
+    const phrase = await service().mnemonicGenerate({ walletEcosystem: WalletEcosystem.Substrate, wordCount });
+    expect(phrase.split(' ')).toHaveLength(wordCount);
+    expect(mnemonicValidate(phrase)).toBe(true);
+  });
+
+  it.each([0, 1, 11, 25, '24', undefined])('refuses a word count of %j for every ecosystem', async (wordCount) => {
+    const wallet = service();
+    const generateMnemonic = vi.fn().mockResolvedValue(OLD_PHRASE.split(' '));
+    Object.defineProperty(wallet, 'tonKeyring', { value: { generateMnemonic } });
+    for (const walletEcosystem of [WalletEcosystem.Substrate, WalletEcosystem.Ton]) {
+      await expect(wallet.mnemonicGenerate({ walletEcosystem, wordCount } as never)).rejects.toThrow('Unsupported recovery phrase length.');
+    }
+    expect(generateMnemonic).not.toHaveBeenCalled();
+  });
+
+  // The keyring derives a URI that starts with '//' from its public development phrase.
+  it.each(['//Alice', '/0', " //m/44'/60'/0'/0/0"])('refuses %j, which has no phrase or seed of its own', async (suri) => {
+    await expect(service().addAccount(suri, {}, WalletEcosystem.Substrate, 'sr25519')).rejects.toThrow('A recovery phrase or seed is required.');
+    expect(mocks.fromUri).not.toHaveBeenCalled();
+    expect(mocks.pairs.size).toBe(0);
   });
 });

@@ -89,6 +89,8 @@ import { withUniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMet
 
 export type WordCount = 12 | 15 | 18 | 21 | 24;
 
+const WORD_COUNTS: readonly number[] = [12, 15, 18, 21, 24];
+
 type LegacyMigrationResult = 'migrated' | 'wrong_password' | 'not_found' | 'storage_failed';
 
 // Resolves once every wallet write queued so far has landed, and rejects if one of them failed.
@@ -413,6 +415,9 @@ export class KeyringService {
     requireFreshGeneration = false
   ) {
     if (typeof tonImport === 'boolean') requireFreshGeneration = tonImport;
+    // A secret URI that starts with a path has no phrase or seed. The keyring would derive it from the
+    // public development phrase, whose keys anyone can sign with.
+    if (suri.trim().startsWith('/')) throw new Error('A recovery phrase or seed is required.');
     meta = this.getAccountCreationMeta(suri, meta, requireFreshGeneration);
     if (walletEcosystem === 'ton') {
       const account = await this.tonKeyring.createAccount(suri, meta, typeof tonImport === 'object' ? tonImport : undefined);
@@ -860,6 +865,8 @@ export class KeyringService {
   }
 
   async mnemonicGenerate({ walletEcosystem, wordCount }: RequestGenerateMnemonic): Promise<string> {
+    // Messages are not type-checked at run time, and TON's generator accepts any length, even one word.
+    if (!WORD_COUNTS.includes(wordCount)) throw new Error('Unsupported recovery phrase length.');
     const mnemonic = walletEcosystem === 'ton'
       ? (await this.tonKeyring.generateMnemonic(undefined, wordCount)).join(' ')
       : mnemonicGenerate(wordCount);

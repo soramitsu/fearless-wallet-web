@@ -5,7 +5,7 @@ import { getInternalError, getSdkError, isValidUrl } from '@walletconnect/utils'
 import { BehaviorSubject } from 'rxjs';
 import { convertConnectRequest, convertNotSupportRequest } from '@extension-base/services/wallet-connect-service/utils';
 import { type ResultApproveWalletConnectSession } from '@extension-base/services/wallet-connect-service/types';
-import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
+import WalletConnectStorage, { hasWalletConnectData } from '@extension-base/services/wallet-connect-service/storage';
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import {
   DEFAULT_WALLET_CONNECT_OPTIONS,
@@ -73,28 +73,6 @@ export class WalletConnectService {
     return (this.client?.session.values || []).filter((session) => !this.retiredTopics.has(session.topic) && this.authority.allows(session.topic));
   }
 
-  private async haveData(): Promise<boolean> {
-    const keys = [
-      'wc@2:client:0.3//session',
-      'wc@2:client:0.3//proposal',
-      'wc@2:core:0.3//pairing',
-      'wc@2:core:0.3//subscription',
-      'wc@2:core:0.3//history',
-    ];
-    const sdkStorage = new WalletConnectStorage();
-    const data = Object.fromEntries(await Promise.all(keys.map(async (key) => [key, await sdkStorage.getItem(key)])));
-
-    const sessions = data['wc@2:client:0.3//session'] ?? [];
-    const pairings = data['wc@2:core:0.3//pairing'] ?? [];
-    const subscriptions = data['wc@2:core:0.3//subscription'] ?? [];
-    const history = data['wc@2:core:0.3//history'] ?? [];
-    const proposals = data['wc@2:client:0.3//proposal'] ?? [];
-
-    return !!sessions.length || !!pairings.length || !!subscriptions.length || !!history.length || !!proposals.length;
-  }
-
-
-
   private updateSessions() {
     this.sessionSubject.next(this.sessions);
   }
@@ -112,7 +90,7 @@ export class WalletConnectService {
 
   async initClient(force?: boolean) {
     if (this.client) return;
-    if (!force && !(await this.haveData())) return;
+    if (!force && !(await hasWalletConnectData())) return;
     // The storage read above may yield while another caller initializes.
     if (this.client) return;
     if (!this.initialization) {

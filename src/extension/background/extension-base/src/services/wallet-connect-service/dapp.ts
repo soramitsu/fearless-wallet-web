@@ -3,7 +3,7 @@ import { u8aToHex } from '@polkadot/util';
 import { evmSigningAddress } from '@extension-base/services/request-service/handlers/evmSigningContext';
 import { getInternalError, getSdkError } from '@walletconnect/utils';
 import { PROJECT_ID_EXTENSION, WALLET_CONNECT_METADATA } from '@extension-base/services/wallet-connect-service/consts';
-import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
+import WalletConnectStorage, { hasWalletConnectData } from '@extension-base/services/wallet-connect-service/storage';
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import { walletAddressIdentity } from '@extension-base/services/keyring-service/DeletedWallets';
 import Provider from '@walletconnect/universal-provider';
@@ -65,7 +65,9 @@ export class WalletConnectDAppService {
   private readonly usedPairingIds = new Set<string>();
 
   constructor(private state: State) {
-    this.initApp().catch(console.error);
+    // The provider reads all of storage and starts a 5 s heartbeat, and its extension calls keep an MV3 worker awake.
+    // With nothing stored there is no session to restore: the first mobile pairing starts it (initPairing).
+    hasWalletConnectData().then((stored) => (stored ? this.initApp() : undefined)).catch(console.error);
   }
 
   private initApp(): Promise<void> {

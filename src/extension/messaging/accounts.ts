@@ -14,6 +14,7 @@ import type {
   ResponseAccountExport,
   ResponseExportSeed,
   ResponseUniversalWalletPasswordPath,
+  ResponseUniversalWalletWatchedCheck,
   TonImportCandidateInfo,
   UniversalWalletPasswordDiscoveryItem,
   UniversalWalletPasswordStatus,
@@ -98,6 +99,10 @@ export function addUniversalWalletPasswordPath(
 
 export function switchUniversalWalletAccounts(address: string): Promise<UniversalWalletPasswordSwitchResult[]> {
   return sendMessage('pri(accounts.universalWalletPassword.switch)', { address });
+}
+
+export function checkUniversalWalletWatched(address: string): Promise<ResponseUniversalWalletWatchedCheck> {
+  return sendMessage('pri(accounts.universalWalletPassword.checkWatched)', { address });
 }
 
 export function accountUpdateName(address: string, name: string, walletEcosystem: WalletEcosystem): Promise<boolean> {

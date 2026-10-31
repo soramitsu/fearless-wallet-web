@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   status: vi.fn(),
   addPath: vi.fn(),
   switchAccounts: vi.fn(),
+  checkWatched: vi.fn(),
   clipboard: vi.fn(),
 }));
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => mocks.accounts }));
@@ -18,6 +19,7 @@ vi.mock('@/extension/messaging', () => ({
   universalWalletPasswordStatus: mocks.status,
   addUniversalWalletPasswordPath: mocks.addPath,
   switchUniversalWalletAccounts: mocks.switchAccounts,
+  checkUniversalWalletWatched: mocks.checkWatched,
 }));
 vi.mock('@/helpers', () => ({ setClipboard: mocks.clipboard }));
 
@@ -57,6 +59,7 @@ beforeEach(() => {
   mocks.status.mockReset().mockResolvedValue(legacyStatus);
   mocks.addPath.mockReset();
   mocks.switchAccounts.mockReset();
+  mocks.checkWatched.mockReset().mockResolvedValue({ changed: false, status: { state: 'protected' } });
   universalWalletPasswordNoticeRequest.value = null;
   vi.spyOn(HTMLDialogElement.prototype, 'showModal').mockImplementation(function (this: HTMLDialogElement) {
     this.setAttribute('open', '');
@@ -135,6 +138,24 @@ describe('Universal Wallet password notice', () => {
     await submit('//polkadot///TREZOR');
     expect(mocks.addPath).toHaveBeenLastCalledWith('created', '//polkadot///TREZOR');
     expect(document.querySelector('[data-testid="universalWalletPassword-solana"]')).not.toBeNull();
+  });
+
+  it('reopens a closed notice when funds reach an old address, without offering a switch for them', async () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(['created']));
+    mocks.status.mockResolvedValue({ state: 'protected' });
+    mocks.checkWatched.mockResolvedValueOnce({
+      changed: true,
+      status: { state: 'legacy', rows: [], arrived: [{ network: 'solana', legacyAddress: 'SolOld' }] },
+    });
+
+    await mountNotice();
+
+    expect(mocks.checkWatched).toHaveBeenCalledWith('created');
+    expect(dialogOpen()).toBe(true);
+    expect(document.body.textContent).toContain('Funds arrived at your old address');
+    expect(document.querySelector('[data-testid="universalWalletArrived-solana"]')?.textContent).toContain('SolOld');
+    expect(document.querySelector('[data-testid="universalWalletPasswordSwitch"]')).toBeNull();
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual([]);
   });
 
   it('stays away from an old wallet, which carries its recovery warning instead', async () => {

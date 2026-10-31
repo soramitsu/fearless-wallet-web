@@ -42,9 +42,11 @@
     </template>
 
     <template v-else-if="status.state === 'legacy'">
-      <h1 id="wallet-password-title" tabindex="-1">{{ t('title') }}</h1>
-      <p id="wallet-password-description" class="wallet-password__description">{{ t('description') }}</p>
-      <ul class="wallet-password__rows">
+      <h1 id="wallet-password-title" tabindex="-1">{{ t(status.rows.length ? 'title' : 'arrivedTitle') }}</h1>
+      <p id="wallet-password-description" class="wallet-password__description">
+        {{ t(status.rows.length ? 'description' : 'arrivedDescription') }}
+      </p>
+      <ul v-if="status.rows.length" class="wallet-password__rows">
         <li v-for="row in status.rows" :key="row.network" :data-testid="`universalWalletPassword-${row.network}`">
           <strong>{{ t(row.network) }}</strong>
           <span class="wallet-password__address">{{ t('oldAddress') }}: {{ row.legacyAddress }}</span>
@@ -59,9 +61,20 @@
           </span>
         </li>
       </ul>
+      <template v-if="status.arrived?.length">
+        <h2 v-if="status.rows.length" class="wallet-password__subtitle">{{ t('arrivedTitle') }}</h2>
+        <p v-if="status.rows.length" class="wallet-password__description">{{ t('arrivedDescription') }}</p>
+        <ul class="wallet-password__rows">
+          <li v-for="row in status.arrived" :key="row.network" :data-testid="`universalWalletArrived-${row.network}`">
+            <strong>{{ t(row.network) }}</strong>
+            <span class="wallet-password__address">{{ t('oldAddress') }}: {{ row.legacyAddress }}</span>
+          </li>
+        </ul>
+      </template>
       <p v-if="error" class="wallet-password__error" role="alert">{{ t(error) }}</p>
       <div class="wallet-password__actions">
         <button
+          v-if="status.rows.length"
           type="button"
           class="wallet-password__primary"
           :disabled="busy"
@@ -96,12 +109,14 @@ import { IS_EXTENSION } from '@/consts/global';
 import { setClipboard } from '@/helpers';
 import {
   addUniversalWalletPasswordPath,
+  checkUniversalWalletWatched,
   switchUniversalWalletAccounts,
   universalWalletPasswordStatus,
 } from '@/extension/messaging';
 import { universalWalletPasswordMessages } from '@/locales/universalWalletPassword';
 import { useAccountsStore } from '@/stores/accounts';
 import {
+  forgetClosedUniversalWalletPasswordNotice,
   needsUniversalWalletPasswordNotice,
   readClosedUniversalWalletPasswordNotices,
   rememberClosedUniversalWalletPasswordNotice,
@@ -161,18 +176,25 @@ const load = async () => {
 
   if (requested) universalWalletPasswordNoticeRequest.value = null;
   if (!wallet || recoveryOnly.value) return;
-  if (!requested && readClosedUniversalWalletPasswordNotices().includes(wallet)) return;
 
-  try {
-    const next = await universalWalletPasswordStatus(wallet);
-
+  const show = async (next: UniversalWalletPasswordStatus) => {
     if (current !== revision || !active.value) return;
     status.value = next;
-    open.value = needsUniversalWalletPasswordNotice(next);
-    if (open.value) {
-      await nextTick();
-      dialog.value?.showModal();
+    if (open.value || !needsUniversalWalletPasswordNotice(next)) return;
+    open.value = true;
+    await nextTick();
+    dialog.value?.showModal();
+  };
+
+  try {
+    if (requested || !readClosedUniversalWalletPasswordNotices().includes(wallet)) {
+      await show(await universalWalletPasswordStatus(wallet));
     }
+    // Old addresses the wallet moved away from are looked at again; funds arriving there reopen the notice.
+    const watched = await checkUniversalWalletWatched(wallet);
+    if (current !== revision || !watched.changed) return;
+    forgetClosedUniversalWalletPasswordNotice(wallet);
+    await show(watched.status);
   } catch {
     // Without an answer the wallet shows nothing new; it is asked again next time.
   }
@@ -283,6 +305,11 @@ onBeforeUnmount(() => {
     display: flex;
     align-items: center;
     justify-content: space-between;
+  }
+
+  &__subtitle {
+    margin: 4px 0 8px;
+    font-size: 1rem;
   }
 
   &__label {

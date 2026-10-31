@@ -149,6 +149,7 @@ import type {
   RequestUniversalWalletPasswordDiscovery,
   RequestUniversalWalletPasswordPath,
   ResponseUniversalWalletPasswordPath,
+  ResponseUniversalWalletWatchedCheck,
   UniversalWalletPasswordDiscoveryItem,
   UniversalWalletPasswordStatus,
   UniversalWalletPasswordSwitchResult,
@@ -238,6 +239,7 @@ export interface RequestSignatures {
   'pri(accounts.universalWalletPassword.status)': [RequestUniversalWalletPasswordAccount, UniversalWalletPasswordStatus];
   'pri(accounts.universalWalletPassword.addPath)': [RequestUniversalWalletPasswordPath, ResponseUniversalWalletPasswordPath];
   'pri(accounts.universalWalletPassword.switch)': [RequestUniversalWalletPasswordAccount, UniversalWalletPasswordSwitchResult[]];
+  'pri(accounts.universalWalletPassword.checkWatched)': [RequestUniversalWalletPasswordAccount, ResponseUniversalWalletWatchedCheck];
   'pri(accounts.forget)': [RequestAccountForget, boolean];
   'pri(accounts.recovery.list)': [null, RecoveryRecordSummary[]];
   'pri(accounts.recovery.export)': [null, { json: string }];

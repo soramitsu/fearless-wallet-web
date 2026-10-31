@@ -82,6 +82,12 @@ export async function enrollLegacyAccountNetworks(
         const meta: FWKeyringMeta = { ...current, ...additions };
         const legacyNetworks = universalWalletLegacyNetworks(current.universalWalletLegacyNetworks);
         if (legacy) meta.universalWalletLegacyNetworks = [...legacyNetworks, network.id];
+        // An old address found empty is watched: funds can still reach it after the protected account shows.
+        else if (passphrase) {
+          meta.universalWalletWatchedNetworks = [
+            ...universalWalletLegacyNetworks(current.universalWalletWatchedNetworks), network.id,
+          ];
+        }
         const walletEcosystem = meta.walletEcosystem ??
           (pair.type === 'ethereum' ? WalletEcosystem.Evm : WalletEcosystem.Substrate);
         return { ...meta, walletEcosystem, universalWallet: buildUniversalWalletKeyringMeta({

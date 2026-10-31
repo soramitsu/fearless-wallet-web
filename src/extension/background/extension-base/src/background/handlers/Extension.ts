@@ -2709,6 +2709,11 @@ export default class Extension extends FWExtensionBase {
         return this.state.keyringService.addUniversalWalletPasswordPath(request as RequestUniversalWalletPasswordPath);
       case 'pri(accounts.universalWalletPassword.switch)':
         return this.universalWalletPasswordSwitch(request as RequestUniversalWalletPasswordAccount);
+      case 'pri(accounts.universalWalletPassword.checkWatched)':
+        return this.state.keyringService.checkWatchedUniversalWalletAccounts(
+          (request as RequestUniversalWalletPasswordAccount).address,
+          balanceServiceFundsProbe(this.state.balanceService)
+        );
 
       case 'pri(networkMap.getSubscription)':
         return this.subscribeNetworkMap(id, port);

@@ -683,10 +683,16 @@ export interface UniversalWalletPasswordRow {
  * `legacy`: some accounts still open with the words alone; `password-unknown`: a wallet saved before passwords
  * were kept whose key was made with a derivation path, which may include a password.
  */
+/** Funds that reached an old address after the wallet moved to its protected account, which keeps its own. */
+export interface UniversalWalletArrivedRow {
+  network: UniversalWalletPasswordNetwork;
+  legacyAddress: string;
+}
+
 export type UniversalWalletPasswordStatus =
   | { state: 'none' }
   | { state: 'protected' }
-  | { state: 'legacy'; rows: UniversalWalletPasswordRow[] }
+  | { state: 'legacy'; rows: UniversalWalletPasswordRow[]; arrived?: UniversalWalletArrivedRow[] }
   | { state: 'password-unknown' };
 
 export interface RequestUniversalWalletPasswordPath {
@@ -697,6 +703,12 @@ export interface RequestUniversalWalletPasswordPath {
 export type ResponseUniversalWalletPasswordPath =
   | { ok: true; status: UniversalWalletPasswordStatus }
   | { ok: false; code: 'locked' | 'not_found' | 'path_mismatch' | 'no_password' | 'storage_failed' };
+
+/** `changed`: a watched old address went back into the wallet or newly reported funds. */
+export interface ResponseUniversalWalletWatchedCheck {
+  changed: boolean;
+  status: UniversalWalletPasswordStatus;
+}
 
 export interface UniversalWalletPasswordSwitchResult {
   network: UniversalWalletPasswordNetwork;

@@ -16,7 +16,12 @@
             @closeHandler="setExportType"
           />
 
-          <ExportTypeForm v-else-if="showExportType" @setExportType="setExportType" @closeHandler="setPassword" />
+          <ExportTypeForm
+            v-else-if="showExportType"
+            :password="password"
+            @setExportType="setExportType"
+            @closeHandler="setPassword"
+          />
 
           <router-view
             v-else

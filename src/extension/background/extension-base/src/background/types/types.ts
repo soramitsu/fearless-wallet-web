@@ -698,6 +698,8 @@ export interface RequestValidateMnemonic {
 
 export interface ResponseExportSeed {
   seed: string;
+  /** The phrase alone opens another account: the wallet was made with a derivation path or password. */
+  restoresOtherAccount?: boolean;
 }
 
 export type EvmProvider = JsonRpcProvider | WebSocketProvider;

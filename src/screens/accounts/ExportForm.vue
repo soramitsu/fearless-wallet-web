@@ -40,6 +40,15 @@
               role="note"
               data-testid="tonPhraseAsTyped"
             />
+            <p
+              v-if="restoresOtherAccount"
+              class="as-typed-hint derived-wallet-note"
+              role="note"
+              :lang="$i18n.locale === 'ru-RU' ? 'ru' : 'en'"
+              data-testid="phraseRestoresOtherAccount"
+            >
+              {{ restoresOtherAccountText }}
+            </p>
           </MnemonicBackupForm>
         </div>
 
@@ -84,6 +93,7 @@ import { WalletEcosystem } from '@/interfaces';
 import MnemonicBackupForm from '@/screens/addWallet/MnemonicBackupForm.vue';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
+import { derivedWalletExportMessages } from '@/locales/derivedWalletExport';
 import { isTonPhraseIrregular } from '@/util/tonKeyring';
 
 enum ExportTypeTextKey {
@@ -105,6 +115,8 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
       json: {} as KeyringPair$Json,
       isLoading: false,
       seed: '',
+      /** The phrase alone opens another account; its derivation path or password is needed too. */
+      restoresOtherAccount: false,
       /** Why the export could not run; the screen then offers the next step instead of a phrase. */
       errorKey: '',
       canUnlockAccount: false,
@@ -127,6 +139,9 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
     // only opens the wallet when typed that way.
     isPhraseAsTyped() {
       return this.accountsStore.selectedWallet.walletEcosystem === WalletEcosystem.Ton && isTonPhraseIrregular(this.seed);
+    },
+    restoresOtherAccountText() {
+      return derivedWalletExportMessages[this.$i18n.locale === 'ru-RU' ? 'ru-RU' : 'en-EN'].restoresOtherAccount;
     },
     isRowSeed() {
       return this.exportType === 'rawSeed';
@@ -172,9 +187,10 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
     try {
       if (this.isMnemonic) {
         const { address, walletEcosystem } = this.exportedAccount;
-        const { seed } = await exportMnemonic(address, this.password, walletEcosystem);
+        const { seed, restoresOtherAccount } = await exportMnemonic(address, this.password, walletEcosystem);
 
         this.seed = seed;
+        this.restoresOtherAccount = !!restoresOtherAccount;
       } else if (this.isRowSeed) {
         const { seed } = await exportRowSeed(this.addressByNetwork, this.password, this.isEthereumNetwork);
 
@@ -259,6 +275,12 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
     border-radius: $default-border-radius;
     padding: 8px 16px;
     background-color: rgba(255, 255, 255, 0.24);
+  }
+
+  .derived-wallet-note {
+    margin: 0;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
   }
 }
 </style>

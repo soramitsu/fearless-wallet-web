@@ -183,6 +183,8 @@ import type {
   RequestGenerateMnemonic,
   RequestValidateMnemonic,
   RequestTonImportCandidates,
+  RequestSubstratePasswordAccounts,
+  SubstratePasswordAccountInfo,
   RequestUniversalWalletPasswordAccount,
   RequestUniversalWalletPasswordDiscovery,
   RequestUniversalWalletPasswordPath,
@@ -460,14 +462,17 @@ export default class Extension extends FWExtensionBase {
     return result;
   }
 
-  async accountsCreate({ suri, type, meta, walletEcosystem, tonImport, requireFreshGeneration }: RequestAccountCreateSuri): Promise<string> {
+  async accountsCreate({
+    suri, type, meta, walletEcosystem, tonImport, requireFreshGeneration, substratePasswordRule,
+  }: RequestAccountCreateSuri): Promise<string> {
     const address = await this.state.keyringService.addAccount(
       suri,
       { ...meta, isMobile: false },
       walletEcosystem,
       type,
       tonImport,
-      requireFreshGeneration
+      requireFreshGeneration,
+      substratePasswordRule
     );
 
     if (!isEthereumAddress(address) && !IS_EXTENSION_SMOKE) {
@@ -475,6 +480,10 @@ export default class Extension extends FWExtensionBase {
     }
 
     return address;
+  }
+
+  substratePasswordAccounts({ suri, type }: RequestSubstratePasswordAccounts): SubstratePasswordAccountInfo[] {
+    return this.state.keyringService.substratePasswordAccounts(suri, type);
   }
 
   // Every TON address the typed text can open. Addresses are only looked up on the network when
@@ -2794,6 +2803,8 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(keyring.tonImportCandidates)':
         return this.tonImportCandidates(request as RequestTonImportCandidates);
+      case 'pri(keyring.substratePasswordAccounts)':
+        return this.substratePasswordAccounts(request as RequestSubstratePasswordAccounts);
       case 'pri(keyring.universalWalletPasswordDiscovery)':
         return this.universalWalletPasswordDiscovery(request as RequestUniversalWalletPasswordDiscovery);
       case 'pri(accounts.universalWalletPassword.status)':

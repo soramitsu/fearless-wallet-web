@@ -15,6 +15,7 @@ import type {
   ResponseExportSeed,
   ResponseUniversalWalletPasswordPath,
   ResponseUniversalWalletWatchedCheck,
+  SubstratePasswordAccountInfo,
   TonImportCandidateInfo,
   UniversalWalletPasswordDiscoveryItem,
   UniversalWalletPasswordStatus,
@@ -23,6 +24,7 @@ import type {
 import type { DerivationPath, NetworkName, TonEventTokens } from '@/interfaces';
 import type { WordCount } from '@extension-base/services';
 import type { TonImportChoice } from '@/util/tonKeyring';
+import type { SubstratePasswordRule } from '@extension-base/services/keyring-service/SubstratePassword';
 import { WalletEcosystem } from '@/interfaces';
 import { UNIVERSAL_WALLET_DEFAULT_WORD_COUNT } from '@/consts/universalWallet';
 import { sendMessage } from '@/extension/messaging/index';
@@ -32,11 +34,14 @@ export function addAccount(
   type: KeypairType,
   meta: FWKeyringMeta,
   walletEcosystem = WalletEcosystem.Substrate,
-  tonImportOrFreshGeneration?: TonImportChoice | boolean
+  tonImportOrFreshGeneration?: TonImportChoice | boolean,
+  substratePasswordRule?: SubstratePasswordRule
 ): Promise<string> {
   const tonImport = typeof tonImportOrFreshGeneration === 'object' ? tonImportOrFreshGeneration : undefined;
   const requireFreshGeneration = tonImportOrFreshGeneration === true;
-  return sendMessage('pri(accounts.create)', { suri, type, meta, walletEcosystem, tonImport, requireFreshGeneration });
+  return sendMessage('pri(accounts.create)', {
+    suri, type, meta, walletEcosystem, tonImport, requireFreshGeneration, ...(substratePasswordRule ? { substratePasswordRule } : {}),
+  });
 }
 
 export function createMobileWallet(address: string, meta: FWKeyringMeta): Promise<boolean> {
@@ -90,6 +95,10 @@ export function mnemonicValidate(walletEcosystem = WalletEcosystem.Substrate, se
 
 export function tonImportCandidates(mnemonic: string): Promise<TonImportCandidateInfo[]> {
   return sendMessage('pri(keyring.tonImportCandidates)', { mnemonic });
+}
+
+export function substratePasswordAccounts(suri: string, type: KeypairType): Promise<SubstratePasswordAccountInfo[]> {
+  return sendMessage('pri(keyring.substratePasswordAccounts)', { suri, type });
 }
 
 export function universalWalletPasswordDiscovery(mnemonic: string): Promise<UniversalWalletPasswordDiscoveryItem[]> {

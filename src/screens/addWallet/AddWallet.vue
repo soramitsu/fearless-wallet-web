@@ -71,6 +71,12 @@
 
         <TonAddressChoice v-if="showTonAddressChoice" v-model="tonDerivation" :candidates="tonCandidates" />
 
+        <SubstrateAddressChoice
+          v-if="showSubstrateAddressChoice"
+          v-model="substratePasswordRule"
+          :candidates="substrateCandidates"
+        />
+
         <AdvancedForm
           v-if="showAdvancedForm"
           :derivationPaths="derivationPaths"
@@ -142,7 +148,8 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import type { DerivationPaths, ValidateJsonResult } from '@/interfaces';
-import type { TonImportCandidateInfo } from '@extension-base/background/types/types';
+import type { SubstratePasswordAccountInfo, TonImportCandidateInfo } from '@extension-base/background/types/types';
+import type { SubstratePasswordRule } from '@extension-base/services/keyring-service/SubstratePassword';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import { isWalletGenerationExpired } from '@/util/walletSecurity';
 import { walletGenerationExpiredMessage } from '@/locales/walletSecurity';
@@ -153,6 +160,8 @@ import FinishForm from '@/screens/addWallet/FinishForm.vue';
 import ImportWallet from '@/screens/addWallet/ImportWallet.vue';
 import NicknameForm from '@/screens/addWallet/NicknameForm.vue';
 import TonAddressChoice from '@/screens/addWallet/TonAddressChoice.vue';
+import SubstrateAddressChoice from '@/screens/addWallet/SubstrateAddressChoice.vue';
+import { substratePasswordMessage } from '@/locales/substratePassword';
 import { preselectTonImportCandidate } from '@/screens/addWallet/tonImportChoice';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import AddEthereumAccountPopup from '@/screens/addWallet/AddEthereumAccountPopup.vue';
@@ -179,6 +188,7 @@ import {
   generateMnemonic,
   mnemonicValidate,
   tonImportCandidates,
+  substratePasswordAccounts,
   universalWalletPasswordDiscovery,
   universalWalletPasswordStatus,
 } from '@/extension/messaging';
@@ -196,6 +206,7 @@ export default defineComponent({ name: 'AddWallet',
     ImportWallet,
     NicknameForm,
     TonAddressChoice,
+    SubstrateAddressChoice,
     AdvancedForm,
     AddEthereumAccountPopup,
     RestoredWalletPathForm,
@@ -232,6 +243,12 @@ export default defineComponent({ name: 'AddWallet',
       showTonAddressChoice: false,
       // A restored wallet whose words open its key only with its derivation path, asked for before finishing.
       restoredPathAddress: '',
+      // Mnemonic import whose Substrate path password earlier web versions read differently: the account each
+      // rule opens, the words, path and key type they were derived for, and the pick.
+      substrateCandidates: [] as SubstratePasswordAccountInfo[],
+      substrateCandidatesFor: '',
+      substratePasswordRule: 'nfkd' as SubstratePasswordRule,
+      showSubstrateAddressChoice: false,
     };
   },
   computed: {
@@ -263,6 +280,15 @@ export default defineComponent({ name: 'AddWallet',
       const candidate = this.tonCandidates.find(({ derivation }) => derivation === this.tonDerivation);
 
       return candidate && { derivation: candidate.derivation, address: candidate.address };
+    },
+    substrateCandidatesKey(): string {
+      return `${this.derivationPaths.substrate.keypairType}\n${this.suriSubstrate}`;
+    },
+    // The rule picked for exactly these words, path and key type; otherwise the current rule.
+    chosenSubstratePasswordRule(): SubstratePasswordRule | undefined {
+      return this.substrateCandidates.length > 1 && this.substrateCandidatesFor === this.substrateCandidatesKey
+        ? this.substratePasswordRule
+        : undefined;
     },
     mnemonicLength() {
       return this.isCreateWallet || this.walletEcosystem === 'ton' ? UNIVERSAL_WALLET_DEFAULT_WORD_COUNT : 12;
@@ -317,7 +343,11 @@ export default defineComponent({ name: 'AddWallet',
     },
     showImportForm() {
       return (
-        this.isImportWallet && (this.step === 1 || this.step === 2) && !this.showAdvancedForm && !this.showTonAddressChoice
+        this.isImportWallet &&
+        (this.step === 1 || this.step === 2) &&
+        !this.showAdvancedForm &&
+        !this.showTonAddressChoice &&
+        !this.showSubstrateAddressChoice
       );
     },
     showBackIcon() {
@@ -339,6 +369,8 @@ export default defineComponent({ name: 'AddWallet',
             if (this.isOnlyEthereumAccount) return this.t('addEthereumAccount');
 
             if (this.showTonAddressChoice) return this.$t('ux.tonAddressChoiceTitle');
+
+            if (this.showSubstrateAddressChoice) return substratePasswordMessage(this.$i18n.locale, 'title');
 
             return this.typeImport === 'mnemonic' ? this.t('importWallet') : this.t('importAccount', { type: 'substrate' });
           }
@@ -362,6 +394,8 @@ export default defineComponent({ name: 'AddWallet',
           if (this.isImportWallet) {
             if (this.step === 1) {
               if (this.showTonAddressChoice) return !this.tonImportChoice;
+
+              if (this.showSubstrateAddressChoice) return false;
 
               // A phrase, a raw seed, or a JSON file with its password.
               if (this.isOnlyEthereumAccount)
@@ -511,6 +545,10 @@ export default defineComponent({ name: 'AddWallet',
           this.tonCandidatesText = '';
           this.tonDerivation = '';
           this.showTonAddressChoice = false;
+          this.substrateCandidates = [];
+          this.substrateCandidatesFor = '';
+          this.substratePasswordRule = 'nfkd';
+          this.showSubstrateAddressChoice = false;
     },
     setImportValue(value: string & (KeyringPair$Json | Record<string, never>), field: AddWalletField) {
       this[field] = value;
@@ -606,7 +644,13 @@ export default defineComponent({ name: 'AddWallet',
         if (this.isCreateWallet) await this.createFlow();
         else await this.importFlow();
         // Keep the current step while validation, the optional account prompt or the TON address choice is open.
-        this.step += this.showNotificationPopup || this.showAddEthereumAccountPopup || this.showTonAddressChoice ? 0 : 1;
+        this.step +=
+          this.showNotificationPopup ||
+          this.showAddEthereumAccountPopup ||
+          this.showTonAddressChoice ||
+          this.showSubstrateAddressChoice
+            ? 0
+            : 1;
       } catch {
         this.flowError = true;
       } finally {
@@ -623,8 +667,9 @@ export default defineComponent({ name: 'AddWallet',
     async importFlow() {
       if (this.step === 1) {
             // The address was chosen on the previous press of Continue.
-            if (this.showTonAddressChoice) {
+            if (this.showTonAddressChoice || this.showSubstrateAddressChoice) {
               this.showTonAddressChoice = false;
+              this.showSubstrateAddressChoice = false;
               this.step += 1;
 
               return;
@@ -642,6 +687,13 @@ export default defineComponent({ name: 'AddWallet',
             // A phrase that opens more than one TON address: the user picks before going on.
             if (this.isTonImport && this.tonCandidates.length > 1) {
               this.showTonAddressChoice = true;
+
+              return;
+            }
+
+            // A path password that earlier web versions read differently opens more than one account: the user picks.
+            if (this.typeImport === 'mnemonic' && !this.isTonImport && (await this.loadSubstrateCandidates())) {
+              this.showSubstrateAddressChoice = true;
 
               return;
             }
@@ -664,6 +716,19 @@ export default defineComponent({ name: 'AddWallet',
         : preselectTonImportCandidate(this.tonCandidates)?.derivation ?? '';
 
       return this.tonCandidates.length !== 0;
+    },
+    // The pick survives Back unless the words, path or key type change. Only a path with a password can differ.
+    async loadSubstrateCandidates() {
+      const key = this.substrateCandidatesKey;
+      const previous = this.substrateCandidatesFor === key ? this.substratePasswordRule : 'nfkd';
+
+      this.substrateCandidates = this.mnemonic && this.suriSubstrate.includes('///')
+        ? await substratePasswordAccounts(this.suriSubstrate, this.derivationPaths.substrate.keypairType)
+        : [];
+      this.substrateCandidatesFor = key;
+      this.substratePasswordRule = this.substrateCandidates.some(({ rule }) => rule === previous) ? previous : 'nfkd';
+
+      return this.substrateCandidates.length > 1;
     },
     validateAddressForDubMobileWallet(address: string) {
       const substrate = BaseApi.encodeAddress(address);
@@ -774,7 +839,11 @@ export default defineComponent({ name: 'AddWallet',
             meta.ethereumAddress = ethereumAddress;
           }
 
-          const address = await addAccount(this.suriSubstrate, substrateKeypairType, meta, this.walletEcosystem, this.isCreateWallet);
+          // The rule goes along only when the user picked one (SubstrateAddressChoice).
+          const rule = this.chosenSubstratePasswordRule;
+          const address = rule
+            ? await addAccount(this.suriSubstrate, substrateKeypairType, meta, this.walletEcosystem, this.isCreateWallet, rule)
+            : await addAccount(this.suriSubstrate, substrateKeypairType, meta, this.walletEcosystem, this.isCreateWallet);
 
           return address;
     },
@@ -842,9 +911,10 @@ export default defineComponent({ name: 'AddWallet',
     back() {
       if (this.isLoading) return;
       this.flowError = false;
-      // From the TON address choice, Back returns to the phrase.
-      if (this.showTonAddressChoice) {
+      // From an address choice, Back returns to the phrase.
+      if (this.showTonAddressChoice || this.showSubstrateAddressChoice) {
         this.showTonAddressChoice = false;
+        this.showSubstrateAddressChoice = false;
 
         return;
       }
@@ -859,6 +929,7 @@ export default defineComponent({ name: 'AddWallet',
 
           // Back from the nickname returns to the TON address choice it came from.
           if (this.step === 1 && this.isTonImport && this.tonCandidates.length > 1) this.showTonAddressChoice = true;
+          else if (this.step === 1 && this.chosenSubstratePasswordRule) this.showSubstrateAddressChoice = true;
     },
   },
 });

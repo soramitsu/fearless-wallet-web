@@ -161,6 +161,8 @@ import type {
   RequestValidateMnemonic,
   RequestTonImportCandidates,
   TonImportCandidateInfo,
+  RequestSubstratePasswordAccounts,
+  SubstratePasswordAccountInfo,
   RequestUpdateCurrentAccount,
   ResponseBalanceRequest,
   RequestGetHistory,
@@ -237,6 +239,7 @@ export interface RequestSignatures {
   'pri(keyring.generateMnemonic)': [RequestGenerateMnemonic, string];
   'pri(keyring.mnemonicValidate)': [RequestValidateMnemonic, boolean];
   'pri(keyring.tonImportCandidates)': [RequestTonImportCandidates, TonImportCandidateInfo[]];
+  'pri(keyring.substratePasswordAccounts)': [RequestSubstratePasswordAccounts, SubstratePasswordAccountInfo[]];
   'pri(keyring.universalWalletPasswordDiscovery)': [RequestUniversalWalletPasswordDiscovery, UniversalWalletPasswordDiscoveryItem[]];
   'pri(accounts.universalWalletPassword.status)': [RequestUniversalWalletPasswordAccount, UniversalWalletPasswordStatus];
   'pri(accounts.universalWalletPassword.addPath)': [RequestUniversalWalletPasswordPath, ResponseUniversalWalletPasswordPath];

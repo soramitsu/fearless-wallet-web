@@ -59,6 +59,7 @@ import { upgradePasswordVerifier } from './PasswordVerifier';
 import { WalletSecurityProvenance, withoutWalletSecurityClaims } from './WalletSecurityProvenance';
 import {
   createSubstratePairFromUri,
+  substratePasswordAccounts,
   substratePasswordRecoveryAttempts,
   type SubstratePasswordRule,
 } from './SubstratePassword';
@@ -99,6 +100,7 @@ import type {
   ResponseRestoreDeletedWallet,
   ResponseUniversalWalletPasswordPath,
   ResponseUniversalWalletWatchedCheck,
+  SubstratePasswordAccountInfo,
   UniversalWalletPasswordStatus,
 } from '../../background/types/types';
 import type { FWKeyringMeta } from '@extension-base/types';
@@ -562,6 +564,15 @@ export class KeyringService {
       if (password) pair.setMeta({ universalWalletPassphrase: this.sealUniversalWalletPassphrase(pair, password) });
       return importLocalAccount(pair, effectiveEcosystem, () => this.password);
     });
+  }
+
+  // Every Substrate account typed words and a path open under the rules earlier web versions read a path
+  // password with (SubstratePassword.ts): one entry unless the password reads differently under them.
+  substratePasswordAccounts(suri: string, type?: KeypairType): SubstratePasswordAccountInfo[] {
+    return substratePasswordAccounts(suri, type).map((account) => ({
+      ...account,
+      ...(this.getAccount(account.address) ? { inWallet: true } : {}),
+    }));
   }
 
   private mnemonicSuriPassword(suri: string): string {

@@ -24,6 +24,7 @@ vi.mock('@extension-base/services/keyring-service/LegacyNetworkEnrollment', () =
 vi.mock('@extension-base/services', () => ({}));
 vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}, handlers: vi.fn() }));
 
+import Extension from '@extension-base/background/handlers/Extension';
 import { KeyringService } from '@extension-base/services/keyring-service';
 import { TonKeyringService } from '@extension-base/services/keyring-service/TonKeyring';
 import { importLocalAccount } from '@extension-base/services/keyring-service/LocalAccountImport';
@@ -34,6 +35,8 @@ import {
 import AccountsStore from '@extension-base/stores/Accounts';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import CurrentAccountStore from '@extension-base/stores/CurrentAccountStore';
+import type State from '@extension-base/background/handlers/State';
+import type { SubstratePasswordAccountInfo } from '@extension-base/background/types/types';
 import type { KeypairType } from '@subwallet/keyring/types';
 import { WalletEcosystem } from '@/interfaces';
 
@@ -157,5 +160,27 @@ describe('Substrate path password in the background keyring', { timeout: 120_000
       expect(result, `${item.id} ${rule}`).toMatchObject({ ok: true });
       await forget(address);
     }
+  });
+
+  it('lists the accounts a typed phrase and path open, marking one already in the wallet', async () => {
+    const item = vector('default24-unicode');
+    const extension = Object.assign(Object.create(Extension.prototype) as Extension, {
+      state: { keyringService: service } as unknown as State,
+    });
+    const list = (text: string) => Extension.prototype.handle.call(extension, 'id', 'pri(keyring.substratePasswordAccounts)', {
+      suri: text, type: 'sr25519',
+    }) as Promise<SubstratePasswordAccountInfo[]>;
+    const stored = await storedByEarlierVersion(item, 'nfc');
+
+    const accounts = await list(suri(item));
+
+    expect(accounts.map(({ rule }) => rule)).toEqual(['nfkd', 'nfc']);
+    expect(accounts.map(({ address }) => accountId(address))).toEqual([
+      item.accounts.nfkd.sr25519.accountId, item.accounts.nfc.sr25519.accountId,
+    ]);
+    expect(accounts.find(({ rule }) => rule === 'nfc')).toEqual({ rule: 'nfc', address: stored, inWallet: true });
+    expect(accounts.find(({ rule }) => rule === 'nfkd')?.inWallet).toBeUndefined();
+    expect((await list(suri(vector('import12-ascii')))).map(({ rule }) => rule)).toEqual(['nfkd']);
+    await forget(stored);
   });
 });

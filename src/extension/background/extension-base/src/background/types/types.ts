@@ -14,6 +14,7 @@ import type { ApiPromise } from '@polkadot/api';
 import type { HexString } from '@polkadot/util/types';
 import type { KeyringPair$Json, KeyringPair, KeypairType as SubwalletKeypairType } from '@subwallet/keyring/types';
 import type { FWKeyringMeta, NetworkJson, PriceProvider } from '@extension-base/types';
+import type { SubstratePasswordRule } from '@extension-base/services/keyring-service/SubstratePassword';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { TypeRegistry } from '@polkadot/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
@@ -252,10 +253,24 @@ export interface RequestAccountCreateSuri {
   walletEcosystem: WalletEcosystem;
   /** TON imports: the address picked on the import screen and the derivation that opens it. */
   tonImport?: TonImportChoice;
+  /** Mnemonic imports: how the Substrate path password is read (SubstratePassword.ts). New words ignore it. */
+  substratePasswordRule?: SubstratePasswordRule;
 }
 
 export interface RequestTonImportCandidates {
   mnemonic: string;
+}
+
+export interface RequestSubstratePasswordAccounts {
+  suri: string;
+  type?: SubwalletKeypairType;
+}
+
+/** One Substrate account a typed phrase and path open; `inWallet` marks one already in the wallet list. */
+export interface SubstratePasswordAccountInfo {
+  rule: SubstratePasswordRule;
+  address: string;
+  inWallet?: boolean;
 }
 
 /** What the network says about a TON address; `unknown` when it could not be checked. */

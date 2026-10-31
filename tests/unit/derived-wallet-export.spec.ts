@@ -36,6 +36,7 @@ import { TonKeyringService } from '@extension-base/services/keyring-service/TonK
 import AccountsStore from '@extension-base/stores/Accounts';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import CurrentAccountStore from '@extension-base/stores/CurrentAccountStore';
+import Extension from '@extension-base/background/handlers/Extension';
 import { WalletEcosystem } from '@/interfaces';
 
 const PASSWORD = 'Public derived export fixture password';
@@ -65,6 +66,12 @@ afterEach(async () => {
 });
 
 const opens = (seed: string, type: 'sr25519' | 'ethereum' = 'sr25519') => keyring.createFromUri(seed, {}, type).address;
+// The message the export choices send: the handler answers with the keyring service's boolean.
+function rawSeedAvailable(address: string, password: string) {
+  const extension = Object.create(Extension.prototype) as Extension;
+  Object.assign(extension, { state: { keyringService: service } });
+  return extension.handle('public-check', 'pri(keyring.export.rawSeedAvailable)', { address, password });
+}
 
 describe('mnemonic and raw-seed export of a wallet made with a derivation path or password', () => {
   for (const suffix of ['//staking', '///public-bip39-password']) {
@@ -75,6 +82,7 @@ describe('mnemonic and raw-seed export of a wallet made with a derivation path o
       expect(await service.exportAccountMnemonic(request)).toEqual({ seed: PHRASE, restoresOtherAccount: true });
       expect(opens(PHRASE)).not.toBe(address);
       expect(() => service.accountExportRawSeed(request)).toThrow('derivation path or password');
+      expect(await rawSeedAvailable(address, PASSWORD)).toBe(false);
       // Internal callers still get the stored phrase as before.
       expect(service.exportMnemonic(request)).toEqual({ seed: PHRASE });
     });
@@ -86,6 +94,10 @@ describe('mnemonic and raw-seed export of a wallet made with a derivation path o
 
     expect(await service.exportAccountMnemonic(request)).toEqual({ seed: PHRASE });
     expect(opens(service.accountExportRawSeed(request).seed)).toBe(address);
+    expect(await rawSeedAvailable(address, PASSWORD)).toBe(true);
+    // The password is checked as the export checks it.
+    expect(await rawSeedAvailable(address, 'Public wrong password')).toBe(false);
+    expect(await rawSeedAvailable(address, '')).toBe(false);
   });
 
   it('checks an EVM wallet with the path Fearless creates EVM accounts with', async () => {

@@ -1,8 +1,8 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-// The raw seed is offered once the background has exported it (derived-wallet-export-screens.spec.ts).
-vi.mock('@/extension/messaging', () => ({ sendMessage: vi.fn(), exportRowSeed: vi.fn(async () => ({ seed: `0x${'11'.repeat(32)}` })) }));
+// The raw seed is offered once the background answers that it opens the wallet (derived-wallet-export-screens.spec.ts).
+vi.mock('@/extension/messaging', () => ({ sendMessage: vi.fn(), rawSeedAvailable: vi.fn(async () => true) }));
 import type { AccountJson } from '@extension-base/background/types/types';
 import ExportTypeForm from '@/screens/accounts/ExportTypeForm.vue';
 import { useAccountsStore } from '@/stores/accounts';

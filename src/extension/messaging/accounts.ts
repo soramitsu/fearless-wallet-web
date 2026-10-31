@@ -62,6 +62,11 @@ export function exportRowSeed(address: string, password: string, isEVM: boolean)
   return sendMessage('pri(keyring.export.rowSeed)', { address, password, isEVM });
 }
 
+// Only whether Raw seed export would open this wallet; the seed stays in the background.
+export function rawSeedAvailable(address: string, password: string): Promise<boolean> {
+  return sendMessage('pri(keyring.export.rawSeedAvailable)', { address, password });
+}
+
 export function generateMnemonic(
   walletEcosystem = WalletEcosystem.Substrate,
   wordCount: WordCount = UNIVERSAL_WALLET_DEFAULT_WORD_COUNT

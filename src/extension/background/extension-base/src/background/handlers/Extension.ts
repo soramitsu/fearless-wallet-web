@@ -2686,6 +2686,9 @@ export default class Extension extends FWExtensionBase {
       case 'pri(keyring.export.rowSeed)':
         return this.state.keyringService.accountExportRawSeed(request as RequestExportSeed);
 
+      case 'pri(keyring.export.rawSeedAvailable)':
+        return this.state.keyringService.accountRawSeedAvailable(request as RequestTypes['pri(keyring.export.rawSeedAvailable)']);
+
       case 'pri(keyring.generateMnemonic)':
         return this.state.keyringService.mnemonicGenerate(request as RequestGenerateMnemonic);
 

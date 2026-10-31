@@ -63,6 +63,7 @@ import type {
   RequestExportSeed,
   RequestGenerateMnemonic,
   RequestMigratePassword,
+  RequestRawSeedAvailable,
   RequestRecoverAccountWithPassword,
   RequestRecoverAccountWithPhrase,
   RequestUnlockExtension,
@@ -1021,6 +1022,16 @@ export class KeyringService {
     const rawSeed = u8aToHex(seedU8);
 
     return { seed: rawSeed };
+  }
+
+  // `pri(keyring.export.rawSeedAvailable)`: whether Raw seed export would open this wallet. The password
+  // is checked as the export checks it; only the answer leaves the background, never the phrase or seed.
+  accountRawSeedAvailable({ address, password }: RequestRawSeedAvailable): boolean {
+    if (!password) return false;
+
+    const { seed } = this.exportMnemonic({ address, password });
+
+    return !!seed && this.phraseOpensAccount(address, seed);
   }
 
   // decodeJsonAccount's check: the stored phrase reproduces this key without a derivation path or

@@ -30,10 +30,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onDeactivated, onMounted, ref, watch } from 'vue';
 import type { ExportType } from '@/interfaces';
 
-import { exportRowSeed } from '@/extension/messaging';
+import { rawSeedAvailable } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 
 const props = defineProps<{ password?: string }>();
@@ -48,24 +48,35 @@ const hasSubstrateMnemonic = computed(
 );
 
 // The raw seed of a wallet made with a derivation path or password opens another account, and the
-// background refuses it. It is offered only once the background has exported it for this wallet.
+// background refuses it. It is offered only when the background answers that it opens this wallet;
+// that answer never carries the seed.
 const rawSeedOpensWallet = ref(false);
 let rawSeedCheck = 0;
 
-watch(() => [selectedWallet.value.address, hasSubstrateMnemonic.value && !isTonWallet.value, props.password] as const,
-  async ([address, hasMnemonic, password]) => {
-    const check = ++rawSeedCheck;
+// Also discards an answer still on its way.
+const dropRawSeedAnswer = () => {
+  rawSeedCheck += 1;
+  rawSeedOpensWallet.value = false;
+};
 
-    rawSeedOpensWallet.value = false;
-    if (!hasMnemonic || !password) return;
-    try {
-      const { seed } = await exportRowSeed(address, password, false);
+// Asked once, for the wallet the password was just entered for.
+onMounted(async () => {
+  const check = rawSeedCheck;
 
-      if (check === rawSeedCheck) rawSeedOpensWallet.value = !!seed;
-    } catch {
-      // Not offered: the background refused it or could not export it.
-    }
-  }, { immediate: true });
+  if (!hasSubstrateMnemonic.value || isTonWallet.value || !props.password) return;
+  try {
+    const available = await rawSeedAvailable(selectedWallet.value.address, props.password);
+
+    if (check === rawSeedCheck) rawSeedOpensWallet.value = available === true;
+  } catch {
+    // Not offered: the background could not confirm it.
+  }
+});
+
+// Another wallet, a cleared password or leaving the screen drops the answer for good. The password
+// stays with the parent; nothing here keeps it or asks again with it.
+watch([() => selectedWallet.value.address, () => !!props.password], dropRawSeedAnswer);
+onDeactivated(dropRawSeedAnswer);
 
 const openExport = (type: ExportType) => emit('setExportType', type);
 </script>

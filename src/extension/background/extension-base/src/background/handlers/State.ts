@@ -489,105 +489,110 @@ export default class State {
 
     const ecosystem = network.ecosystem;
     const accounts = this.keyringService.getAllMainAccounts();
-
-    for (const account of accounts) {
-      const meta = account.meta as FWKeyringMeta;
-      const publicAccounts = meta.universalWallet?.publicAccounts ?? [];
-      const publicAddress = (walletEcosystem: WalletEcosystem) =>
-        publicAccounts.find(
-          (item) =>
-            item.ecosystem === walletEcosystem &&
-            (!item.chainId || isSameString(item.chainId, network.chainId) || item.chainId.includes(network.chainId))
-        )?.address;
-      const supports = (walletEcosystem: WalletEcosystem) =>
-        meta.walletEcosystem === walletEcosystem || publicAccounts.some((item) => item.ecosystem === walletEcosystem);
-      const evmAddress = resolveAssetDiscoveryEvmAddress({
-        primaryAddress: account.address,
-        primaryEcosystem: meta.walletEcosystem,
-        ethereumAddress: meta.ethereumAddress,
-        publicAccounts,
-      });
-      const supportsSubstrate = supports(WalletEcosystem.Substrate);
-
-      if (ecosystem === 'solana' && supports(WalletEcosystem.Solana)) {
-        await this.balanceService.solanaBalanceService.fetchBalance({
-          address: account.address,
-          solanaAddress: meta.solanaAddress ?? publicAddress(WalletEcosystem.Solana),
-          networks: [network.name],
-        });
-      } else if (ecosystem === 'bitcoin' && supports(WalletEcosystem.Bitcoin)) {
-        await this.balanceService.bitcoinBalanceService.fetchBalance({
-          address: account.address,
-          bitcoinAddress: meta.bitcoinAddress,
-          bitcoinTestnetAddress: meta.bitcoinTestnetAddress,
-          networks: [network.name],
-        });
-      } else if (ecosystem === 'iroha' && supports(WalletEcosystem.Iroha)) {
-        await this.balanceService.irohaBalanceService.fetchBalance({
-          address: account.address,
-          irohaAddress: meta.irohaAddress ?? publicAddress(WalletEcosystem.Iroha),
-          networks: [network.name],
-        });
-      } else if (ecosystem === 'ton' && supports(WalletEcosystem.Ton)) {
-        if (!this.getTonApiMap[network.name.toLowerCase()]) await this.networkService.tonApiHandler.initApi(network);
-        await this.balanceService.tonBalanceService.fetchBalance(account.address, [network.name]);
-      } else if (ecosystem === 'ethereum' && evmAddress) {
-        const wasActive = network.active;
-        const networkKey = network.name.toLowerCase();
-        let discoveryApi = this.getEvmApi(network.name)?.api;
+    // A Substrate network is connected once for every wallet of the sweep: each connection downloads its metadata.
+    const substrateKey = network.name.toLowerCase();
+    const substrateWasActive = network.active;
+    let substrateApi = this.getSubstrateApiMap[substrateKey]?.api;
+    let substrateReady: Promise<void> | undefined;
+    const connectSubstrate = () => substrateReady ??= (async () => {
+      if (!substrateApi) {
+        const initializing = this.networkService.substrateApiHandler.initApi(network);
+        // Capture the installed API before yielding; a concurrent reconnect can replace it.
+        substrateApi = this.getSubstrateApiMap[substrateKey]?.api;
+        await initializing;
+      }
+      const api = this.getSubstrateApiMap[substrateKey]?.api;
+      if (api) {
+        let timeout: ReturnType<typeof setTimeout> | undefined;
         try {
-          if (!discoveryApi) {
-            this.networkService.evmApiHandler.initEvmApi(network);
-            discoveryApi = this.getEvmApiMap[networkKey]?.api;
-          }
-          await this.balanceService.evmBalanceService.fetchBalance({
-            ethereumAddress: evmAddress,
-            networks: [network.name.toLowerCase()],
-            force: true,
-          });
+          await Promise.race([api.isReady, new Promise((_, reject) => {
+            timeout = setTimeout(() => reject(new Error('discovery_api_timeout')), 15_000);
+          })]);
         } finally {
-          const currentNetwork = this.networkService.networkMap[network.name];
-          if (!wasActive && currentNetwork?.active === false && discoveryApi &&
-              this.getEvmApiMap[networkKey]?.api === discoveryApi) {
-            this.networkService.evmApiHandler.destroyApi(network.name);
-          }
+          clearTimeout(timeout);
         }
-      } else if (
-        canScanSubstrateBackedDiscoveryNetwork(ecosystem, supportsSubstrate, evmAddress)
-      ) {
-        const networkKey = network.name.toLowerCase();
-        const wasActive = network.active;
-        let discoveryApi = this.getSubstrateApiMap[networkKey]?.api;
-        try {
-          if (!discoveryApi) {
-            const initializing = this.networkService.substrateApiHandler.initApi(network);
-            // Capture the installed API before yielding; a concurrent reconnect can replace it.
-            discoveryApi = this.getSubstrateApiMap[networkKey]?.api;
-            await initializing;
-          }
-          const api = this.getSubstrateApiMap[networkKey]?.api;
-          if (api) {
-            let timeout: ReturnType<typeof setTimeout> | undefined;
-            try {
-              await Promise.race([api.isReady, new Promise((_, reject) => {
-                timeout = setTimeout(() => reject(new Error('discovery_api_timeout')), 15_000);
-              })]);
-            } finally {
-              clearTimeout(timeout);
+      }
+    })();
+
+    try {
+      for (const account of accounts) {
+        const meta = account.meta as FWKeyringMeta;
+        const publicAccounts = meta.universalWallet?.publicAccounts ?? [];
+        const publicAddress = (walletEcosystem: WalletEcosystem) =>
+          publicAccounts.find(
+            (item) =>
+              item.ecosystem === walletEcosystem &&
+              (!item.chainId || isSameString(item.chainId, network.chainId) || item.chainId.includes(network.chainId))
+          )?.address;
+        const supports = (walletEcosystem: WalletEcosystem) =>
+          meta.walletEcosystem === walletEcosystem || publicAccounts.some((item) => item.ecosystem === walletEcosystem);
+        const evmAddress = resolveAssetDiscoveryEvmAddress({
+          primaryAddress: account.address,
+          primaryEcosystem: meta.walletEcosystem,
+          ethereumAddress: meta.ethereumAddress,
+          publicAccounts,
+        });
+        const supportsSubstrate = supports(WalletEcosystem.Substrate);
+
+        if (ecosystem === 'solana' && supports(WalletEcosystem.Solana)) {
+          await this.balanceService.solanaBalanceService.fetchBalance({
+            address: account.address,
+            solanaAddress: meta.solanaAddress ?? publicAddress(WalletEcosystem.Solana),
+            networks: [network.name],
+          });
+        } else if (ecosystem === 'bitcoin' && supports(WalletEcosystem.Bitcoin)) {
+          await this.balanceService.bitcoinBalanceService.fetchBalance({
+            address: account.address,
+            bitcoinAddress: meta.bitcoinAddress,
+            bitcoinTestnetAddress: meta.bitcoinTestnetAddress,
+            networks: [network.name],
+          });
+        } else if (ecosystem === 'iroha' && supports(WalletEcosystem.Iroha)) {
+          await this.balanceService.irohaBalanceService.fetchBalance({
+            address: account.address,
+            irohaAddress: meta.irohaAddress ?? publicAddress(WalletEcosystem.Iroha),
+            networks: [network.name],
+          });
+        } else if (ecosystem === 'ton' && supports(WalletEcosystem.Ton)) {
+          if (!this.getTonApiMap[network.name.toLowerCase()]) await this.networkService.tonApiHandler.initApi(network);
+          await this.balanceService.tonBalanceService.fetchBalance(account.address, [network.name]);
+        } else if (ecosystem === 'ethereum' && evmAddress) {
+          const wasActive = network.active;
+          const networkKey = network.name.toLowerCase();
+          let discoveryApi = this.getEvmApi(network.name)?.api;
+          try {
+            if (!discoveryApi) {
+              this.networkService.evmApiHandler.initEvmApi(network);
+              discoveryApi = this.getEvmApiMap[networkKey]?.api;
+            }
+            await this.balanceService.evmBalanceService.fetchBalance({
+              ethereumAddress: evmAddress,
+              networks: [network.name.toLowerCase()],
+              force: true,
+            });
+          } finally {
+            const currentNetwork = this.networkService.networkMap[network.name];
+            if (!wasActive && currentNetwork?.active === false && discoveryApi &&
+                this.getEvmApiMap[networkKey]?.api === discoveryApi) {
+              this.networkService.evmApiHandler.destroyApi(network.name);
             }
           }
+        } else if (
+          canScanSubstrateBackedDiscoveryNetwork(ecosystem, supportsSubstrate, evmAddress)
+        ) {
+          await connectSubstrate();
           await this.balanceService.substrateBalanceService.fetchBalance({
             address: publicAddress(WalletEcosystem.Substrate) ?? (supportsSubstrate ? account.address : evmAddress),
             ethereumAddress: evmAddress,
             networks: [network.name],
           });
-        } finally {
-          const currentNetwork = this.networkService.networkMap[network.name];
-          if (!wasActive && currentNetwork?.active === false && discoveryApi &&
-              this.getSubstrateApiMap[networkKey]?.api === discoveryApi) {
-            await this.networkService.substrateApiHandler.destroyApi(network.name);
-          }
         }
+      }
+    } finally {
+      const currentNetwork = this.networkService.networkMap[network.name];
+      if (substrateReady && !substrateWasActive && currentNetwork?.active === false && substrateApi &&
+          this.getSubstrateApiMap[substrateKey]?.api === substrateApi) {
+        await this.networkService.substrateApiHandler.destroyApi(network.name);
       }
     }
   }

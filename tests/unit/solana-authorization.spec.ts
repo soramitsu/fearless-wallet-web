@@ -11,6 +11,7 @@ const storeState = vi.hoisted(() => ({
   getCalls: 0,
 }));
 
+vi.mock('@polkadot/phishing', () => ({ checkIfDenied: vi.fn(async () => false) }));
 vi.mock('@extension-base/stores/Authorize', () => ({
   default: class MockAuthorizeStore {
     getAndWait(key: string): Promise<AuthUrls> {

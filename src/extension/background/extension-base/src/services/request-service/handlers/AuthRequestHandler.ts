@@ -1,4 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
+import { checkIfDenied } from '@polkadot/phishing';
 import { assert } from '@polkadot/util';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import AuthorizeStore from '@extension-base/stores/Authorize';
@@ -347,6 +348,8 @@ export class AuthRequestHandler {
   public async authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<boolean> {
     const resetRevision = this.keyringService.walletResetRevision;
     this.assertWalletAvailable(resetRevision);
+    // Every connect path ends here, and a site can skip the page's own check.
+    if (await checkIfDenied(url)) throw new Error('This site is blocked by the phishing protection');
     await this.getAuthList();
     this.assertWalletAvailable(resetRevision);
     const authList = this.authorizeCached;

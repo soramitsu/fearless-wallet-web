@@ -13,6 +13,7 @@ import type {
 } from '@extension-base/background/types/types';
 import type { Message } from '@extension-base/types';
 import { IS_EXTENSION } from '@/consts/global';
+import { takeBackgroundPort } from '@/extension/messaging/backgroundPort';
 
 interface Handler {
   resolve: (data: unknown) => void;
@@ -65,7 +66,7 @@ function rejectPendingRequests() {
 
 function connectExtension() {
   let receivedMessage = false;
-  port = chrome.runtime?.connect({ name: PORT_EXTENSION });
+  port = takeBackgroundPort() ?? chrome.runtime?.connect({ name: PORT_EXTENSION });
   port?.onDisconnect.addListener(() => {
     rejectPendingRequests();
     try {

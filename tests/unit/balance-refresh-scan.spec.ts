@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { APIItemState } from '@extension-base/api/types/networks';
-import BalanceService from '@extension-base/services/balance-service';
+import BalanceService, { BALANCE_STORAGE_WRITE_DELAY_MS } from '@extension-base/services/balance-service';
 import type { BalanceItem, NetworkScanState } from '@extension-base/api/evm/types';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkJson } from '@extension-base/types';
@@ -49,9 +49,12 @@ const assetKey = (network: NetworkJson, assetId: string) => createAssetKey({
   assetId,
 });
 const units = (amount: number) => BigInt(amount) * 10n ** 18n;
-// Storage mocks resolve on microtasks; reaching another turn drains the queued
-// read/merge/write operations even on the pre-fix, fire-and-forget path.
-const flushStorage = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+// Storage mocks resolve on microtasks. The first turn lets answered reads queue their writes; balance writes then
+// wait BALANCE_STORAGE_WRITE_DELAY_MS, so a timer set after that fires once the queued read/merge/write has run.
+const flushStorage = async () => {
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  await new Promise<void>((resolve) => setTimeout(resolve, BALANCE_STORAGE_WRITE_DELAY_MS));
+};
 
 type StoredBalance = BalanceItem & { chain: string };
 type Persisted = {

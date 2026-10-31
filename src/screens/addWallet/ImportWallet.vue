@@ -184,7 +184,7 @@ export default defineComponent({ name: 'ImportWallet',
       this.$emit('reset');
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           //@ts-ignore
-          this.$nextTick(() => this.valueInputComponent?.input.focus());
+          this.$nextTick(() => this.valueInputComponent?.input?.focus());
     },
     t(value: string, obj: Record<string, string> = {}) {
       return this.$t(`addWallet.${value}`, obj);

@@ -21,11 +21,12 @@ type AssetBalanceResponse = {
   data?: BalanceData;
   toJSON?: () => { balance?: unknown } | null;
 };
-type AssetsQuery = {
-  account(assetId: unknown, address: string): unknown;
-};
 type SubscribableBalanceQuery = {
-  subscribe(callback: (balances: unknown) => void): Subscription;
+  subscribe(observer: { next: (balances: unknown) => void; error: (error: unknown) => void }): Subscription;
+};
+type StorageEntry<T> = {
+  (...args: unknown[]): T;
+  key(...args: unknown[]): string;
 };
 
 function getErrorMessage(error: unknown): string {
@@ -36,6 +37,22 @@ function toCodecValue(value: unknown): CodecValue {
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'bigint') return value;
 
   return 0;
+}
+
+// The storage entry and arguments that read one asset's balance. The entry is missing when the chain has no such pallet.
+function balanceStorage<T>(
+  query: unknown,
+  native: boolean,
+  type: string | undefined,
+  address: string,
+  options: unknown
+): [StorageEntry<T> | undefined, unknown[]] {
+  const pallets = query as Record<string, Record<string, StorageEntry<T> | undefined> | undefined>;
+
+  if (native) return [pallets.system?.account, [address]];
+  if (type === 'assets') return [pallets.assets?.account, [options, address]];
+
+  return [pallets.tokens?.accounts, [address, options]];
 }
 
 export default class SubstrateBalanceService {
@@ -71,21 +88,20 @@ export default class SubstrateBalanceService {
 
         if (!query) return undefined;
 
-        let response;
-
         const isSoraXOR =
           symbol === SORA_UTILITY_ASSET &&
           (isSameString(networkKey, SORA_MAINNET) || isSameString(networkKey, SORA_TEST));
 
-        if (type === 'normal' || isSoraXOR) response = query.system?.account?.(addressByNetwork);
-        else if (type === 'assets')
-          response = (query.assets as unknown as AssetsQuery | undefined)?.account?.(options, addressByNetwork);
-        else response = query.tokens?.accounts?.(addressByNetwork, options);
+        const [entry, args] = balanceStorage<Promise<unknown>>(
+          query, type === 'normal' || isSoraXOR, type, addressByNetwork, options
+        );
 
         // ApiPromise exposes an empty query object before metadata is available. It proves no balance.
-        if (response === undefined) return undefined;
+        if (!entry) return undefined;
+        // Keys asked for in one tick are read together, so one this chain cannot encode would fail the others.
+        entry.key(...args);
 
-        const balances = await response;
+        const balances = await entry(...args);
         const balanceResponse = balances as AssetBalanceResponse;
 
         const balance = (
@@ -143,21 +159,37 @@ export default class SubstrateBalanceService {
     if (networkName === 'Equilibrium') return this.equilibriumBalanceService.subscribeBalance(address, api);
 
     const unsubList = assets.map(({ precision, symbol, id, type }) => {
+      // An error keeps a cached amount but no longer shows it as current (setBalanceItem).
+      const setFailed = (err: unknown) => {
+        state.balanceService.setBalanceItem(
+          networkKey,
+          {
+            state: APIItemState.ERROR,
+            relayChain,
+            symbol,
+            id,
+          },
+          state.keyringService.getSubstrateAddress(address)
+        );
+
+        console.warn(getErrorMessage(err), networkKey);
+      };
+
       try {
         const options = getAssetOptions(id, state.networkService.assetsMap);
 
         if (!api || !api.rx) return () => null;
 
-        const query = api.rx.query;
-
         const isSoraXOR = symbol === SORA_UTILITY_ASSET && isSora(networkName, true);
 
-        const pallet =
-          type === 'normal' || isSoraXOR
-            ? query.system.account(address ?? '')
-            : type === 'assets'
-            ? (query.assets as unknown as AssetsQuery).account(options, address ?? '')
-            : query.tokens?.accounts(address, options);
+        const [entry, args] = balanceStorage<SubscribableBalanceQuery>(
+          api.rx.query, type === 'normal' || isSoraXOR, type, address ?? '', options
+        );
+
+        if (!entry) throw new Error(`${networkName} has no balance storage for ${symbol}`);
+        // The API subscribes to the keys asked for in one tick together, so one key this chain cannot encode
+        // (Pendulum's tokens take no symbol) failed every balance of the network. Encoding it first fails only this one.
+        entry.key(...args);
 
         const onBalanceFetch = (balances: unknown) => {
           const balanceResponse = balances as AssetBalanceResponse;
@@ -189,22 +221,12 @@ export default class SubstrateBalanceService {
           );
         };
 
-        const sub: Subscription | undefined = (pallet as SubscribableBalanceQuery | undefined)?.subscribe(onBalanceFetch);
+        // A failed subscription sends nothing more, so without an error state the network would stay pending.
+        const sub = entry(...args).subscribe({ next: onBalanceFetch, error: setFailed });
 
-        return () => sub?.unsubscribe();
+        return () => sub.unsubscribe();
       } catch (err: unknown) {
-        state.balanceService.setBalanceItem(
-          networkKey,
-          {
-            state: APIItemState.ERROR,
-            relayChain,
-            symbol,
-            id,
-          },
-          address
-        );
-
-        console.warn(getErrorMessage(err), networkKey);
+        setFailed(err);
 
         return mockUnsubFn;
       }

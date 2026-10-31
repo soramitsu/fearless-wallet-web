@@ -248,6 +248,23 @@ describe('a password wallet saved by Fearless 4.2.x', SCRYPT_SUITE, () => {
     expect(record(pair)).toEqual(after);
   });
 
+  it('updates the live account when its last old address switches, so the notice has nothing left to show', async () => {
+    const pair = storedPasswordWalletFrom42();
+    const keyring = unlocked();
+    await keyring.addUniversalWalletPasswordPath({ address: pair.address, derivationPath: `//polkadot///${PASSWORD}` });
+
+    await keyring.switchUniversalWalletAccounts(pair.address, probeAll({
+      bitcoin: 'empty', bitcoinTestnet: 'empty', solana: 'empty', ton: 'empty', iroha: 'empty',
+    }));
+
+    // The live pair, not only storage: setMeta merges, so a deleted list would linger there until restart.
+    const live = mocks.backend.getPair(pair.address).meta as FWKeyringMeta;
+    expect(live.universalWalletLegacyNetworks).toBeUndefined();
+    expect(live.universalWalletWatchedNetworks).toEqual([...UNIVERSAL_WALLET_PASSWORD_NETWORKS]);
+    expect(keyring.universalWalletPasswordStatus(pair.address)).toEqual({ state: 'protected' });
+    expect('universalWalletLegacyNetworks' in metaOf(pair) && metaOf(pair).universalWalletLegacyNetworks !== undefined).toBe(false);
+  });
+
   it('brings back an old address that is paid after the switch when the protected account is empty', async () => {
     const pair = storedPasswordWalletFrom42();
     const keyring = unlocked();

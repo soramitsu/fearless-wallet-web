@@ -59,8 +59,9 @@ const withNetworks = (
   const next = UNIVERSAL_WALLET_PASSWORD_NETWORKS.filter((network) =>
     !remove.includes(network) && (add.includes(network) || universalWalletLegacyNetworks(meta[key]).includes(network)));
 
-  if (next.length) meta[key] = next;
-  else delete meta[key];
+  // Undefined rather than deleted: the live account merges new metadata into the old, so a removed key would keep
+  // the old list in memory until the next start; storage leaves an undefined field out.
+  meta[key] = next.length ? next : undefined;
 };
 
 const normalizeIdentity = (network: UniversalWalletPasswordNetwork, value: unknown): string | undefined => {

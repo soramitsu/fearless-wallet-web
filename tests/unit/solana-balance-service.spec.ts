@@ -204,16 +204,17 @@ describe('SolanaBalanceService', () => {
         solanaAddress: WALLET,
         networks: ['Solana'],
       })
-    ).resolves.toEqual([{ assetId: 'SOL', balance: '0', network: 'Solana' }]);
+    ).resolves.toEqual([]);
 
     expect(client.getBalances).not.toHaveBeenCalled();
+    // Nothing was loaded before: the balance is unknown, not 0.
     expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).toMatchObject({
       state: APIItemState.ERROR,
-      total: '0',
+      total: undefined,
     });
     expect(updateBalanceStore).toHaveBeenCalledWith(
       'Solana',
-      expect.objectContaining({ state: APIItemState.ERROR, total: '0' }),
+      expect.objectContaining({ state: APIItemState.ERROR, total: undefined }),
       SUBSTRATE_ADDRESS
     );
 
@@ -392,7 +393,7 @@ describe('SolanaBalanceService', () => {
         solanaAddress: WALLET,
         networks: ['Solana'],
       })
-    ).resolves.toEqual([{ assetId: 'SOL', balance: '0', network: 'Solana' }]);
+    ).resolves.toEqual([]);
 
     expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS]).toHaveLength(1);
   });
@@ -493,12 +494,12 @@ describe('SolanaBalanceService', () => {
         solanaAddress: WALLET,
         networks: ['Solana'],
       })
-    ).resolves.toEqual([{ assetId: 'SOL', balance: '0', network: 'Solana' }]);
+    ).resolves.toEqual([]);
 
     expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).toMatchObject({
       state: APIItemState.ERROR,
       symbol: 'SOL',
-      total: '0',
+      total: undefined,
     });
   });
 

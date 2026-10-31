@@ -136,6 +136,7 @@ import type {
   ResponseCheckScam,
   RequestExportSeed,
   ResponseExportSeed,
+  RequestRawSeedAvailable,
   RequestChangePassword,
   RequestUnlockExtension,
   RequestMigratePassword,
@@ -224,6 +225,7 @@ export interface RequestSignatures {
   'pri(migrate.export.json)': [string, ResponseAccountExport];
   'pri(keyring.export.mnemonic)': [RequestExportSeed, ResponseExportSeed];
   'pri(keyring.export.rowSeed)': [RequestExportSeed, ResponseExportSeed];
+  'pri(keyring.export.rawSeedAvailable)': [RequestRawSeedAvailable, boolean];
   'pri(keyring.generateMnemonic)': [RequestGenerateMnemonic, string];
   'pri(keyring.mnemonicValidate)': [RequestValidateMnemonic, boolean];
   'pri(keyring.tonImportCandidates)': [RequestTonImportCandidates, TonImportCandidateInfo[]];

@@ -702,6 +702,12 @@ export interface ResponseExportSeed {
   restoresOtherAccount?: boolean;
 }
 
+/** Asks whether Raw seed export would open this wallet; the answer never carries the seed. */
+export interface RequestRawSeedAvailable {
+  address: string;
+  password: string;
+}
+
 export type EvmProvider = JsonRpcProvider | WebSocketProvider;
 
 export type EvmApiMap = Record<string, EvmApiProps>;

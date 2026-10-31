@@ -1,5 +1,6 @@
 import { BehaviorSubject } from 'rxjs';
 import { createSigningRequestId } from '@extension-base/services/request-service/signingRequestId';
+import { assertSolanaMessageIsNotTransaction } from '@extension-base/services/request-service/handlers/solanaSigning';
 import type { RequestService } from '@extension-base/services/request-service';
 import type {
   SolanaRequestPayload,
@@ -275,6 +276,7 @@ function assertSolanaMessageRequest(request: SolanaSignMessageRequest): void {
   if (request.display !== undefined && request.display !== 'utf8' && request.display !== 'hex') {
     throw new Error('Invalid Solana message display mode');
   }
+  assertSolanaMessageIsNotTransaction(Uint8Array.from(Buffer.from(request.messageBase64, 'base64')));
 }
 
 function assertSolanaTransactionRequest(request: SolanaSignTransactionRequest): void {

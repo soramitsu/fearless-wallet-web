@@ -38,7 +38,7 @@
 
     <main class="main-content">
       <router-view v-slot="{ Component, route }">
-        <keep-alive :max="20">
+        <keep-alive :include="keptAliveScreens" :max="5">
           <component
             :is="Component"
             :key="route.fullPath"
@@ -74,6 +74,11 @@ import { IS_EXTENSION } from '@/consts/global';
 import { useAccountsStore } from '@/stores/accounts';
 import { isSelectedWalletRecoveryOnly } from '@/util/walletRecoveryPolicy';
 
+// A hidden screen keeps running, so only these stay alive: the wallet home (its list and scroll come back), the swap
+// form (kept across its disclaimer) and the DeFi and Settings tabs, which refresh themselves when shown again. Send
+// forms, export screens and asset pages mount fresh and never show the previous wallet's entries.
+const KEPT_ALIVE_SCREENS = ['Wallet', 'SwapForm', 'DeFiHub', 'SettingsPage'];
+
 export default defineComponent({ name: 'Main',
   components: {
     AccountAccessBanner,
@@ -91,6 +96,7 @@ export default defineComponent({ name: 'Main',
   data() {
     return {
       accountsStore: useAccountsStore(),
+      keptAliveScreens: KEPT_ALIVE_SCREENS,
       buttonTopClick: 0,
       selectedWalletAddress: '',
       showSettings: false,

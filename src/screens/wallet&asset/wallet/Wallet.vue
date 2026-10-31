@@ -53,6 +53,7 @@
         />
 
         <router-view
+          :route="ownRoute"
           :balances="filteredTokenGroups"
           :showAssetsManagementForm="showAssetsManagementForm"
           :manageHiddenOnly="manageHiddenOnly"
@@ -87,7 +88,7 @@
 </template>
 
 <script lang="ts">
-import { defineAsyncComponent, defineComponent } from 'vue';
+import { defineAsyncComponent, defineComponent, markRaw } from 'vue';
 
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import type { TabWallet } from '@/interfaces';
@@ -154,6 +155,9 @@ export default defineComponent({ name: 'Wallet',
       dashboardEnabled: PORTFOLIO_DASHBOARD_ENABLED,
       dashboardStore: PORTFOLIO_DASHBOARD_ENABLED ? usePortfolioDashboardStore() : undefined,
       refreshSlotId: `portfolio-refresh-${++walletViews}`,
+      // Main.vue keeps this screen alive for its own route: hidden, it keeps its own list instead of rendering the
+      // child of whatever route is open now.
+      ownRoute: markRaw({ ...this.$route }),
     };
   },
   computed: {

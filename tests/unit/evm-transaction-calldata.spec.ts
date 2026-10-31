@@ -45,8 +45,13 @@ const evmProvider = () => ({
   getTransactionCount: vi.fn(async () => 0),
   estimateGas: vi.fn(async () => 50000n),
   getFeeData: vi.fn(async () => ({ gasPrice: 1n, maxFeePerGas: null, maxPriorityFeePerGas: null })),
-  broadcastTransaction: vi.fn(async (_signed: string) => ({ hash: '0x1234' })),
+  // The wallet sends with eth_sendRawTransaction alone; the node answers with the transaction's hash.
+  send: vi.fn(async (method: string, params: unknown[]) =>
+    method === 'eth_sendRawTransaction' ? Transaction.from(params[0] as string).hash : null
+  ),
 });
+const sentTransaction = () =>
+  Transaction.from(provider.send.mock.calls.find(([method]) => method === 'eth_sendRawTransaction')![1][0] as string);
 async function approve(tx: Record<string, unknown>) {
   const params = [{ from: address, to, value: '0x1', ...tx }];
   const context = await captureEvmSigningContext(state, url, 'eth_sendTransaction', params);
@@ -99,7 +104,7 @@ describe('JSON-RPC `input` calldata', () => {
   it('is signed and broadcast as the transaction data', async () => {
     expect(await approve({ input: calldata })).toBe(true);
 
-    const signed = Transaction.from(provider.broadcastTransaction.mock.calls[0][0]);
+    const signed = sentTransaction();
     expect(signed.to?.toLowerCase()).toBe(to);
     expect(signed.value).toBe(1n);
     expect(signed.data).toBe(calldata);
@@ -114,7 +119,7 @@ describe('JSON-RPC `input` calldata', () => {
     expect(() => evmTransaction({ to, data: '0x', input: calldata })).toThrow('Conflicting EVM calldata');
     expect(review({ data: '0x', input: calldata }).blocked).toBe(true);
     await expect(approve({ data: '0x', input: calldata })).rejects.toThrow('Conflicting EVM calldata');
-    expect(provider.broadcastTransaction).not.toHaveBeenCalled();
+    expect(provider.send).not.toHaveBeenCalledWith('eth_sendRawTransaction', expect.anything());
     expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
   });
 

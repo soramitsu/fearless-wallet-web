@@ -49,6 +49,10 @@ export default class EvmBalanceService {
 
         if (!api) return [];
 
+        // An asset's refresh reads only the networks that list it; a missing asset would fail the whole network.
+        const requestedAssets = assetId ? assets.filter(({ id }) => id === assetId) : assets;
+        if (!requestedAssets.length) return [];
+
         const timeout = api.timeout[ethereumAddress] ?? Number.MIN_VALUE;
         const timeDiff = Date.now() - timeout;
         const shouldSkipUpdate = timeDiff < REFRESH_TIME && !force;
@@ -57,9 +61,6 @@ export default class EvmBalanceService {
 
         // Save timeout [network api][ethereum address]
         api.timeout[ethereumAddress] = Date.now();
-
-        const requestedAssets = assetId ? [{ id: assetId }] : assets;
-        if (!requestedAssets.length) return [];
         const address = this.state.keyringService.getSubstrateAddress(ethereumAddress);
 
         return this.state.balanceService.refreshNetworkBalances(name, address, async () => {

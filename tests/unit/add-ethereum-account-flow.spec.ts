@@ -22,8 +22,12 @@ vi.mock('@/extension/messaging', () => ({
   tonImportCandidates: vi.fn(),
 }));
 vi.mock('@/router/routes', () => ({ Components: { AddWallet: 'AddWallet', Welcome: 'Welcome', Wallet: 'Wallet' } }));
+const selectedWallet: { address: string; name: string; ethereumAddress?: string } = {
+  address: '5SelectedWallet',
+  name: 'Existing wallet',
+};
 vi.mock('@/stores/accounts', () => ({
-  useAccountsStore: () => ({ accounts: [], selectedWallet: { address: '5SelectedWallet', name: 'Existing wallet' } }),
+  useAccountsStore: () => ({ accounts: [], selectedWallet }),
 }));
 vi.mock('@/consts/globalClient', () => ({ IS_POPUP: false, IS_SIDE_PANEL: false }));
 vi.mock('@/util/universalWalletKeyringFields', () => ({ deriveUniversalWalletKeyringFields: () => ({}) }));
@@ -157,6 +161,25 @@ describe('Adding an Ethereum account to the selected wallet', () => {
     expect(mocks.updatePairMeta).toHaveBeenCalledTimes(2);
     expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'Wallet' });
     wrapper.unmount();
+  });
+
+  it('never replaces the Ethereum account a wallet already has', async () => {
+    selectedWallet.ethereumAddress = '0xExistingEth';
+    try {
+      const wrapper = mountAddWallet(await openFromAccounts(1));
+      await flushPromises();
+      await wrapper.setData({ mnemonic: PHRASE });
+
+      await wrapper.vm.proceed();
+      await flushPromises();
+      expect(wrapper.vm.flowError).toBe(true);
+      expect(mocks.addAccount).not.toHaveBeenCalled();
+      expect(mocks.updatePairMeta).not.toHaveBeenCalled();
+      expect(mocks.push).not.toHaveBeenCalled();
+      wrapper.unmount();
+    } finally {
+      delete selectedWallet.ethereumAddress;
+    }
   });
 
   it('goes Back one visible step at a time', async () => {

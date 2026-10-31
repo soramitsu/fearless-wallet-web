@@ -177,8 +177,18 @@ export default defineComponent({ name: 'AccountsLayout',
       return this.$route.name;
     },
   },
+  watch: {
+    // The password and the secret it opened belong to the wallet the export was opened for.
+    'accountsStore.selectedWallet.address': 'clearExport',
+  },
+  // Kept alive, the screen would show the last phrase or keystore again: coming back asks for the password.
+  deactivated() { this.clearExport(); },
   beforeUnmount() { this.viewActive = false; this.nodeRequest += 1; },
   methods: {
+    clearExport() {
+      this.password = '';
+      this.exportType = null;
+    },
     setExportType(type: Nullable<ExportType> = null) {
       this.exportType = type;
     },

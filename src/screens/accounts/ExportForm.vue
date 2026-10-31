@@ -183,22 +183,27 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
   },
   async mounted() {
     this.isLoading = true;
+    // A reply that arrives after another wallet was selected is never shown under that wallet.
+    const wallet = this.accountsStore.selectedWallet.address;
+    const stillSelected = () => this.accountsStore.selectedWallet.address === wallet;
 
     try {
       if (this.isMnemonic) {
         const { address, walletEcosystem } = this.exportedAccount;
         const { seed, restoresOtherAccount } = await exportMnemonic(address, this.password, walletEcosystem);
 
-        this.seed = seed;
-        this.restoresOtherAccount = !!restoresOtherAccount;
+        if (stillSelected()) {
+          this.seed = seed;
+          this.restoresOtherAccount = !!restoresOtherAccount;
+        }
       } else if (this.isRowSeed) {
         const { seed } = await exportRowSeed(this.addressByNetwork, this.password, this.isEthereumNetwork);
 
-        this.seed = seed;
+        if (stillSelected()) this.seed = seed;
       } else {
         const { json } = await exportJSON(this.addressByNetwork, this.password, this.network);
 
-        this.json = json;
+        if (stillSelected()) this.json = json;
       }
     } catch (error) {
       // A key that waits for a password used before can be unlocked in Account access; nothing was exported.

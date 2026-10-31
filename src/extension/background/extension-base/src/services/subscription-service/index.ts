@@ -1,4 +1,5 @@
 import { logger as createLogger } from '@polkadot/util';
+import { DOTSAMA_API_TIMEOUT } from '@extension-base/const/intervals';
 import type { Subscription } from 'rxjs';
 import type State from '@extension-base/background/handlers/State';
 import type { Logger } from '@polkadot/util/types';
@@ -8,11 +9,13 @@ import type {
   SubscriptionMessageTypes,
   Subscriptions,
 } from '@extension-base/background/types/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { NetworkName } from '@/interfaces';
 import { WalletEcosystem } from '@/interfaces';
 import { isSameString } from '@/helpers';
 import { walletEcosystemOf } from '@/extension/background/extension-base/src/background/helpers/walletEcosystem';
 import { IS_EXTENSION_SMOKE } from '@/consts/global';
+import { withDeadline } from '@/bootstrap/boundedAttempts';
 
 type UpdateSub = {
   name: NetworkName;
@@ -150,23 +153,29 @@ export class SubscriptionService {
     const accountsExceptCurrent = this.state.keyringService
       .getAllMainAccounts()
       .filter(({ address }) => !isSameString(address, this.state.currentAccount?.address));
+    const networks = this.state.networkService.activeNetworkByEcosystem;
 
-    accountsExceptCurrent.forEach(({ address, meta }) =>
-      this.fetchNetworkBalances({
-        address,
-        bitcoinAddress: meta.bitcoinAddress as string | undefined,
-        bitcoinTestnetAddress: meta.bitcoinTestnetAddress as string | undefined,
-        ethereumAddress: meta.ethereumAddress ?? '',
-        irohaAddress: meta.irohaAddress as string | undefined,
-        solanaAddress: meta.solanaAddress as string | undefined,
-        walletEcosystem: meta.walletEcosystem!,
-        substrateNetworks: this.state.networkService.activeNetworkByEcosystem.substrateList,
-        evmNetworks: this.state.networkService.activeNetworkByEcosystem.evmList,
-        tonNetworks: this.state.networkService.activeNetworkByEcosystem.tonList,
-        solanaNetworks: this.state.networkService.activeNetworkByEcosystem.solanaList,
-        bitcoinNetworks: this.state.networkService.activeNetworkByEcosystem.bitcoinList,
-        irohaNetworks: this.state.networkService.activeNetworkByEcosystem.irohaList,
-        isFirstRun: true,
+    // The other wallets are read once the Substrate connections are ready. One that is not ready in time is marked as
+    // not refreshed for the wallets that hold it, so their cached amounts are not shown as current.
+    if (accountsExceptCurrent.length) void this.readySubstrateNetworks(networks.substrate).then(({ ready, unavailable }) =>
+      accountsExceptCurrent.forEach(({ address, meta }) => {
+        this.fetchNetworkBalances({
+          address,
+          bitcoinAddress: meta.bitcoinAddress as string | undefined,
+          bitcoinTestnetAddress: meta.bitcoinTestnetAddress as string | undefined,
+          ethereumAddress: meta.ethereumAddress ?? '',
+          irohaAddress: meta.irohaAddress as string | undefined,
+          solanaAddress: meta.solanaAddress as string | undefined,
+          walletEcosystem: meta.walletEcosystem!,
+          substrateNetworks: ready,
+          evmNetworks: networks.evmList,
+          tonNetworks: networks.tonList,
+          solanaNetworks: networks.solanaList,
+          bitcoinNetworks: networks.bitcoinList,
+          irohaNetworks: networks.irohaList,
+          isFirstRun: true,
+        });
+        unavailable.forEach((network) => this.markNotRefreshed(address, network));
       })
     );
 
@@ -266,6 +275,38 @@ export class SubscriptionService {
           );
         },
       });
+  }
+
+  // Before its metadata loads a connection's `api.query` is empty (@polkadot/api), so a read then proves nothing.
+  private async readySubstrateNetworks(networks: NetworkJson[]): Promise<{ ready: NetworkName[]; unavailable: string[] }> {
+    const deadline = Date.now() + DOTSAMA_API_TIMEOUT;
+    const isReady = async (key: string): Promise<boolean> => {
+      while (Date.now() < deadline) {
+        // A failed connection is replaced by the next node; SORA installs its API once connected.
+        const api = this.state.getSubstrateApiMap[key]?.api;
+        try {
+          if (api) return await withDeadline(api.isReadyOrError, deadline - Date.now(), 'Substrate connection not ready').then(() => true);
+        } catch { /* Wait for a replacement until the deadline. */ }
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+      return false;
+    };
+    const results = await Promise.all(networks.map(async ({ name }) => ({ name, ready: await isReady(name.toLowerCase()) })));
+
+    return {
+      ready: results.filter(({ ready }) => ready).map(({ name }) => name.toLowerCase()),
+      unavailable: results.filter(({ ready }) => !ready).map(({ name }) => name),
+    };
+  }
+
+  // The scan state the portfolio reads: stale, with the last successful read kept.
+  private markNotRefreshed(address: string, network: string) {
+    const holds = this.state.balanceService.balanceMap[address]?.some(({ balances }) =>
+      balances.some(({ name }) => isSameString(name, network)));
+    if (!holds) return;
+    void this.state.balanceService.refreshNetworkBalances(network, address, async () => {
+      throw new Error('Substrate connection not ready');
+    }, true).catch(() => undefined);
   }
 
   async init(): Promise<void> {

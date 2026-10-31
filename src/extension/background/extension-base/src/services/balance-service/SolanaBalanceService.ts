@@ -111,7 +111,7 @@ export default class SolanaBalanceService {
 
       console.warn('Failed to fetch Solana balance', error);
 
-      return [{ balance: '0', network: network.name, assetId: this.getNativeAsset(network).id }];
+      return [];
     }
   }
 
@@ -159,7 +159,8 @@ export default class SolanaBalanceService {
     scanCoverage: BalanceItem['scanCoverage'] = /test|dev/i.test(`${network.name} ${network.chainId}`) ? 'limited' : 'complete'
   ): void {
     const { id, icon, precision, symbol, priceId } = this.getNativeAsset(network);
-    const balance = native?.uiAmountString ?? '0';
+    // A failed read with nothing loaded before has no amount and no load time: the balance is unknown, not 0.
+    const balance = native?.uiAmountString;
     const tokenGroup = this.getOrCreateTokenGroup(address, network, id, icon, symbol, symbol, priceId);
     const balanceItem: BalanceItem = {
       address,
@@ -180,7 +181,7 @@ export default class SolanaBalanceService {
       state,
       symbol,
       type: 'solana',
-      timestamp: Date.now(),
+      timestamp: native ? Date.now() : undefined,
       assetMetadataTrust: 'verified',
       assetMetadataSource: 'registry',
       priceId,

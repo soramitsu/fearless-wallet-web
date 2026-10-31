@@ -395,6 +395,8 @@ export default defineComponent({
       // fee; an exact maximum the quote returned (Bitcoin, Solana) is kept as quoted.
       isMaxAmount: false,
       maxFollowsFee: false,
+      // The amount Max last set from the fee a transfer was just quoted at; that quote already prices it.
+      pricedMaxAmount: '',
       isScamAddress: false,
       scamInfo: null,
       step: 1,
@@ -896,6 +898,21 @@ export default defineComponent({
       // проверяем, что utility balance достаточно на оплату fee и ED
       return FPNumber.gte(new FPNumber(this.calcTransferableUtility(), precision), checkValue);
     },
+    // A Substrate native transfer may leave the sender below the existential deposit: the chain then removes the
+    // account and burns what is left on it. Max leaves nothing, and a deposit not loaded or 0 asks for no check.
+    leavesDustBelowExistentialDeposit() {
+      const balance = this.currencyBalance;
+
+      if (!this.isTransfer || this.originNet?.ecosystem !== 'substrate' || !balance?.isUtility) return false;
+
+      const precision = balance.precision;
+      const existentialDeposit = FPNumber.fromCodecValue(balance.existentialDeposit ?? '0', precision);
+      const left = new FPNumber(balance.transferable ?? '0', precision)
+        .sub(new FPNumber(this.syncedAmount || '0', precision))
+        .sub(new FPNumber(this.syncedFee || '0', precision));
+
+      return existentialDeposit.isGtZero() && left.isGtZero() && left.lt(existentialDeposit);
+    },
     solanaAccountCreationDeposit() {
       const deposit = this.solanaQuote?.accountCreationDeposit;
 
@@ -1010,7 +1027,7 @@ export default defineComponent({
     syncedNetwork: ['resetDestNetwork', 'calculateFee'],
     syncedAssetId: ['updateSelectedNetwork', 'calculateFee'],
     syncedDestNet: ['clearRecipient', 'calculateFee'],
-    syncedAmount: 'calculateFee',
+    syncedAmount: 'onAmountChange',
     transferableAmount: 'onTransferableChange',
   },
   created() {
@@ -1092,24 +1109,32 @@ export default defineComponent({
       this.isFetchingFees = true;
       this.timeoutSubscription = setTimeout(() => this.calculateEstimates(), 2000);
     },
+    onAmountChange(amount: string) {
+      // Quoting it again would move the fee again where the base fee changes every block, and Max would never settle.
+      if (this.isMaxAmount && amount === this.pricedMaxAmount) return;
+
+      this.calculateFee();
+    },
     onTransferableChange() {
       if (this.isMaxAmount && this.maxFollowsFee && this.syncedFee !== '') this.followMaxAmount(this.syncedFee);
     },
     /**
      * Keeps a Max amount at the whole balance less the latest fee, so a fee that moved between quotes never turns it
-     * into a shortfall. A changed amount is quoted again, like any other amount.
+     * into a shortfall. A changed amount is quoted again, like any other amount, unless the quote it follows prices it.
      */
-    followMaxAmount(fee: string) {
+    followMaxAmount(fee: string, priced = false) {
       const amount = this.calcTransferableSendMinusFee(fee).toString();
 
       if (amount === this.syncedAmount) return;
 
+      this.pricedMaxAmount = priced ? amount : '';
       this.syncedAmount = amount;
       this.syncedValue = getCostOfAssets(amount, this.assetPrice).toString();
     },
     clearMaxAmount() {
       this.isMaxAmount = false;
       this.maxFollowsFee = false;
+      this.pricedMaxAmount = '';
     },
     async calculateEstimates() {
       if (!this.currency || this.isBitcoinTransferDisabled) {
@@ -1144,7 +1169,10 @@ export default defineComponent({
         this.crossChainRuntimeMinimum = minimum ?? '';
         this.$emit('update:runtimeMinimum', this.crossChainRuntimeMinimum);
 
-        if (!transferError && this.isMaxAmount && this.maxFollowsFee && estimateFee) this.followMaxAmount(estimateFee);
+        // A transfer's fee does not change with the amount, so this quote prices the amount that follows it. A
+        // cross-chain quote holds for one amount only, so a new amount is quoted again.
+        if (!transferError && this.isMaxAmount && this.maxFollowsFee && estimateFee)
+          this.followMaxAmount(estimateFee, this.isTransfer);
       } catch {
         if (revision !== this.feeQuoteRevision || requestKey !== this.feeQuoteRequestKey()) return;
         this.syncedFee = '';
@@ -1269,6 +1297,7 @@ export default defineComponent({
 
       this.isMaxAmount = true;
       this.maxFollowsFee = false;
+      this.pricedMaxAmount = '';
       this.syncedFee = '';
       this.isFetchingFees = true;
       try {
@@ -1412,6 +1441,13 @@ export default defineComponent({
 
       if (this.step === 2) {
         this.showConfirmationPasswordPopup = true;
+
+        return;
+      }
+
+      // The warning's Accept continues from here while the warning is still open.
+      if (!this.showExistentialPopup && this.leavesDustBelowExistentialDeposit) {
+        this.showExistentialPopup = true;
 
         return;
       }

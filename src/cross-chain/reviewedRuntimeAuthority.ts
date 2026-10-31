@@ -3,6 +3,7 @@ import type { ReviewedExecutionApi } from '@/cross-chain/reviewedExecution';
 import type { ReviewedCrossChainExecution, ReviewedDestinationMinimum } from '@/cross-chain/reviewedRoutes';
 import { FPNumber } from '@/sora/number';
 import { connectedSubstrateApi } from '@/cross-chain/runtimeConnection';
+import { assertReviewedRpcEndpoint } from '@/cross-chain/reviewedEndpoints';
 
 type Codec = {
   isEmpty?: boolean;
@@ -261,6 +262,9 @@ export async function assertReviewedRuntimeAuthority(
 
   assertGenesis(originApi, execution.originChainId);
   assertGenesis(destinationApi, execution.destinationChainId);
+  // Both nodes answer for the send (metadata, balances, dry run, minimum, status); only reviewed hosts may.
+  assertReviewedRpcEndpoint(execution.originChainId, originApi);
+  assertReviewedRpcEndpoint(execution.destinationChainId, destinationApi);
   await Promise.all([originApi.isReadyOrError, destinationApi.isReadyOrError]);
 
   if (execution.kind === 'external-to-sora-xcm-v3') {

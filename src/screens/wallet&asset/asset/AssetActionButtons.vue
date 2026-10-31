@@ -58,9 +58,8 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 
-import { getNativeAssetName } from '@extension-base/background/handlers/utils';
 import { isSora } from '@/helpers';
-import { buildOwnedCrossChainAssets } from '@/cross-chain/routeRegistry';
+import { buildOwnedCrossChainAssets, buildReviewedCrossChainRoutes } from '@/cross-chain/routeRegistry';
 import { Components } from '@/router/routes';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
@@ -108,9 +107,6 @@ export default defineComponent({ name: 'AssetActionButtons' ,
     selectedNetwork() {
       return this.$route.params.selectedNetwork ?? '';
     },
-    selectedAsset() {
-      return this.currency?.symbol?.toLowerCase() ?? '';
-    },
     showSwapButton() {
       return !this.recoveryOnly && isSora(this.selectedNetwork) && !this.accountsStore.selectedWallet.isMobile;
     },
@@ -122,26 +118,37 @@ export default defineComponent({ name: 'AssetActionButtons' ,
     isNeedPopupButton() {
       return this.showCrossChainButton && this.showBuyButton && this.showSwapButton;
     },
+    // The asset on this page as the route builder knows it, when the wallet holds some of it on this network.
+    ownedCrossChainAsset() {
+      const network = this.networksStore.getNetwork(this.selectedNetwork);
+      if (!network) return undefined;
+
+      const assetId = String(this.$route.params.assetId ?? '');
+
+      return buildOwnedCrossChainAssets(this.accountsStore.balances, this.networksStore.allNetworks).find(
+        (owned) =>
+          owned.networkName === network.name && [owned.groupId, owned.assetId, owned.canonicalAssetId].includes(assetId)
+      );
+    },
     showCrossChainButton() {
       if (this.recoveryOnly || this.selectedNetwork === '') return false;
 
-          const network = this.networksStore.getNetwork(this.selectedNetwork);
+      const network = this.networksStore.getNetwork(this.selectedNetwork);
+      const asset = this.ownedCrossChainAsset;
+      if (!network || !asset) return false;
 
-          const asset = getNativeAssetName(this.selectedAsset);
-
-          if (!network || network.xcm === undefined) return false;
-
-          return network.xcm.availableAssets?.some(({ symbol }) => symbol.toLowerCase() === asset);
+      // Only a bundled reviewed route that the registry still matches is offered; remote xcm data alone cannot add
+      // one. Whether its provider is enabled is shown on the route screen.
+      return (
+        buildReviewedCrossChainRoutes({ asset, origin: network, networks: this.networksStore.allNetworks, actions: {} })
+          .length > 0
+      );
     },
     crossChainEntryQuery(): Record<string, string> {
       const network = this.networksStore.getNetwork(this.selectedNetwork);
       if (!network) return {};
 
-      const assetId = String(this.$route.params.assetId ?? '');
-      const asset = buildOwnedCrossChainAssets(this.accountsStore.balances, this.networksStore.allNetworks).find(
-        (owned) =>
-          owned.networkName === network.name && [owned.groupId, owned.assetId, owned.canonicalAssetId].includes(assetId)
-      );
+      const asset = this.ownedCrossChainAsset;
 
       return asset
         ? { originChainId: asset.networkChainId, assetKey: asset.key }

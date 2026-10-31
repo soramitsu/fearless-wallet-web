@@ -239,21 +239,17 @@ export class FearlessWalletSolanaProvider extends EventEmitter<SolanaEventName> 
 
   #accounts: readonly SolanaWalletStandardAccount[] = Object.freeze([]);
   #publicKey: SolanaPublicKeyLike | null = null;
-
-  constructor() {
-    super();
-
-    this.refreshAccounts().catch(() => undefined);
-    sendMessage('solana(events.subscribe)', null, ({ accounts }) => {
-      this.applyAccounts(accounts);
-    }).catch(() => undefined);
-  }
+  #started = false;
 
   get accounts(): readonly SolanaWalletStandardAccount[] {
+    this.#start();
+
     return this.#accounts;
   }
 
   get connected(): boolean {
+    this.#start();
+
     return this.#accounts.length > 0;
   }
 
@@ -262,7 +258,37 @@ export class FearlessWalletSolanaProvider extends EventEmitter<SolanaEventName> 
   }
 
   get publicKey(): SolanaPublicKeyLike | null {
+    this.#start();
+
     return this.#publicKey;
+  }
+
+  override on<T extends EventEmitter.EventNames<SolanaEventName>>(
+    event: T,
+    fn: EventEmitter.EventListener<SolanaEventName, T>,
+    context?: unknown
+  ): this {
+    this.#start();
+
+    return super.on(event, fn, context);
+  }
+
+  override addListener<T extends EventEmitter.EventNames<SolanaEventName>>(
+    event: T,
+    fn: EventEmitter.EventListener<SolanaEventName, T>,
+    context?: unknown
+  ): this {
+    return this.on(event, fn, context);
+  }
+
+  override once<T extends EventEmitter.EventNames<SolanaEventName>>(
+    event: T,
+    fn: EventEmitter.EventListener<SolanaEventName, T>,
+    context?: unknown
+  ): this {
+    this.#start();
+
+    return super.once(event, fn, context);
   }
 
   get features(): Record<string, unknown> {
@@ -304,6 +330,8 @@ export class FearlessWalletSolanaProvider extends EventEmitter<SolanaEventName> 
   }
 
   async connect(input: SolanaConnectInput = {}): Promise<SolanaConnectResponse> {
+    this.#start();
+
     const silent = input.onlyIfTrusted ?? input.silent ?? false;
     const response = silent
       ? await this.refreshAccounts()
@@ -313,11 +341,15 @@ export class FearlessWalletSolanaProvider extends EventEmitter<SolanaEventName> 
   }
 
   async disconnect(): Promise<void> {
+    this.#start();
+
     await sendMessage('solana(disconnect)');
     this.applyAccounts([]);
   }
 
   async request<T = unknown>({ method, params }: { method: string; params?: unknown }): Promise<T> {
+    this.#start();
+
     switch (method) {
       case 'connect':
         return this.connect(params as SolanaConnectInput) as Promise<T>;
@@ -407,6 +439,18 @@ export class FearlessWalletSolanaProvider extends EventEmitter<SolanaEventName> 
     return response.signedTransactionsBase64.map((signedTransaction, index) =>
       serializedTransactions[index].restore(base64ToBytes(signedTransaction))
     );
+  }
+
+  // The page's first use asks for the accounts and subscribes to them. Until then the provider sends nothing, so a
+  // page that never uses the wallet opens no port to it and does not wake it.
+  #start(): void {
+    if (this.#started) return;
+
+    this.#started = true;
+    this.refreshAccounts().catch(() => undefined);
+    sendMessage('solana(events.subscribe)', null, ({ accounts }) => {
+      this.applyAccounts(accounts);
+    }).catch(() => undefined);
   }
 
   private async refreshAccounts(): Promise<SolanaConnectResponse> {

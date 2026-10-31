@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { expectedReviewedCall } from '@/cross-chain/reviewedCallLayout';
 import {
   createReviewedCrossChainExtrinsic,
   createReviewedExecutionFingerprint,
@@ -27,9 +28,13 @@ const request = () => ({
   precisionAmount: '10000000000',
 });
 
+// The node's encoding of the reviewed call; the golden call test checks real bytes against the layout.
 const teleport = () =>
   Object.assign(
-    vi.fn((..._args: unknown[]) => ({ paymentInfo: vi.fn() })),
+    vi.fn((..._args: unknown[]) => ({
+      paymentInfo: vi.fn(),
+      method: { toHex: () => expectedReviewedCall(execution, VALID_SUBSTRATE_ADDRESS, '10000000000') },
+    })),
     {
       callIndex: Uint8Array.from([reviewed.calls[0].palletIndex, reviewed.calls[0].callIndex]),
       meta: {

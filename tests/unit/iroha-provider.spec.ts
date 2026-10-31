@@ -34,6 +34,8 @@ const reject = (id: string, error: string) => {
 };
 
 async function initializeProvider(provider: FearlessWalletIrohaProvider, postedMessages: PostedMessage[]): Promise<void> {
+  // The page's first use starts the account refresh and subscription.
+  expect(provider.accounts).toEqual([]);
   response(postedMessages[0].id, { accounts: [] });
   response(postedMessages[1].id, true);
   await Promise.resolve();
@@ -53,6 +55,42 @@ describe('FearlessWalletIrohaProvider', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it('sends nothing until the page uses it, then asks for the Nexus accounts and subscribes once', () => {
+    const provider = new FearlessWalletIrohaProvider();
+    const changed = vi.fn();
+
+    expect(postedMessages).toEqual([]);
+
+    expect(provider.selectedAddress).toBeNull();
+    expect(provider.publicKeyHex).toBeNull();
+    expect(provider.isConnected).toBe(false);
+    provider.once('change', changed);
+    provider.addListener('change', changed);
+
+    expect(postedMessages.map(({ message }) => message)).toEqual(['iroha(accounts)', 'iroha(events.subscribe)']);
+
+    handleResponse({ id: postedMessages[1].id, subscription: { accounts: [nexusAccount] } } as never);
+
+    expect(changed).toHaveBeenCalledTimes(2);
+    expect(changed).toHaveBeenCalledWith({ accounts: [nexusAccount] });
+    expect(provider.selectedAddress).toBe(nexus.i105);
+    expect(postedMessages).toHaveLength(2);
+  });
+
+  it('connects on a first connect() call', async () => {
+    const provider = new FearlessWalletIrohaProvider();
+    const connect = provider.connect();
+
+    expect(postedMessages.map(({ message }) => message)).toEqual([
+      'iroha(accounts)',
+      'iroha(events.subscribe)',
+      'iroha(authorizeUrl)',
+    ]);
+    response(postedMessages[2].id, { accounts: [nexusAccount] });
+    await expect(connect).resolves.toEqual({ accounts: [nexusAccount] });
+    expect(provider.connected).toBe(true);
   });
 
   it('uses Iroha-scoped messages for Nexus connect, accounts, and disconnect', async () => {

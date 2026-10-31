@@ -156,8 +156,8 @@ export class RequestService {
     return this.authRequestHandler.mutateAuthorizations(update);
   }
 
-  public authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<boolean> {
-    return this.authRequestHandler.authorizeUrl(url, request);
+  public authorizeUrl(url: string, request: RequestAuthorizeTab, signal?: AbortSignal): Promise<boolean> {
+    return this.authRequestHandler.authorizeUrl(url, request, signal);
   }
 
   public getAuthRequest(id: string): AuthRequest {

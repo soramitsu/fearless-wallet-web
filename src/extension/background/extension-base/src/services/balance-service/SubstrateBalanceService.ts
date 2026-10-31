@@ -21,11 +21,12 @@ type AssetBalanceResponse = {
   data?: BalanceData;
   toJSON?: () => { balance?: unknown } | null;
 };
-type AssetsQuery = {
-  account(assetId: unknown, address: string): unknown;
-};
 type SubscribableBalanceQuery = {
-  subscribe(callback: (balances: unknown) => void): Subscription;
+  subscribe(observer: { next: (balances: unknown) => void; error: (error: unknown) => void }): Subscription;
+};
+type StorageEntry<T> = {
+  (...args: unknown[]): T;
+  key(...args: unknown[]): string;
 };
 
 function getErrorMessage(error: unknown): string {
@@ -36,6 +37,22 @@ function toCodecValue(value: unknown): CodecValue {
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'bigint') return value;
 
   return 0;
+}
+
+// The storage entry and arguments that read one asset's balance. The entry is missing when the chain has no such pallet.
+function balanceStorage<T>(
+  query: unknown,
+  native: boolean,
+  type: string | undefined,
+  address: string,
+  options: unknown
+): [StorageEntry<T> | undefined, unknown[]] {
+  const pallets = query as Record<string, Record<string, StorageEntry<T> | undefined> | undefined>;
+
+  if (native) return [pallets.system?.account, [address]];
+  if (type === 'assets') return [pallets.assets?.account, [options, address]];
+
+  return [pallets.tokens?.accounts, [address, options]];
 }
 
 export default class SubstrateBalanceService {
@@ -71,21 +88,20 @@ export default class SubstrateBalanceService {
 
         if (!query) return undefined;
 
-        let response;
-
         const isSoraXOR =
           symbol === SORA_UTILITY_ASSET &&
           (isSameString(networkKey, SORA_MAINNET) || isSameString(networkKey, SORA_TEST));
 
-        if (type === 'normal' || isSoraXOR) response = query.system?.account?.(addressByNetwork);
-        else if (type === 'assets')
-          response = (query.assets as unknown as AssetsQuery | undefined)?.account?.(options, addressByNetwork);
-        else response = query.tokens?.accounts?.(addressByNetwork, options);
+        const [entry, args] = balanceStorage<Promise<unknown>>(
+          query, type === 'normal' || isSoraXOR, type, addressByNetwork, options
+        );
 
         // ApiPromise exposes an empty query object before metadata is available. It proves no balance.
-        if (response === undefined) return undefined;
+        if (!entry) return undefined;
+        // Keys asked for in one tick are read together, so one this chain cannot encode would fail the others.
+        entry.key(...args);
 
-        const balances = await response;
+        const balances = await entry(...args);
         const balanceResponse = balances as AssetBalanceResponse;
 
         const balance = (
@@ -143,21 +159,37 @@ export default class SubstrateBalanceService {
     if (networkName === 'Equilibrium') return this.equilibriumBalanceService.subscribeBalance(address, api);
 
     const unsubList = assets.map(({ precision, symbol, id, type }) => {
+      // An error keeps a cached amount but no longer shows it as current (setBalanceItem).
+      const setFailed = (err: unknown) => {
+        state.balanceService.setBalanceItem(
+          networkKey,
+          {
+            state: APIItemState.ERROR,
+            relayChain,
+            symbol,
+            id,
+          },
+          state.keyringService.getSubstrateAddress(address)
+        );
+
+        console.warn(getErrorMessage(err), networkKey);
+      };
+
       try {
         const options = getAssetOptions(id, state.networkService.assetsMap);
 
         if (!api || !api.rx) return () => null;
 
-        const query = api.rx.query;
-
         const isSoraXOR = symbol === SORA_UTILITY_ASSET && isSora(networkName, true);
 
-        const pallet =
-          type === 'normal' || isSoraXOR
-            ? query.system.account(address ?? '')
-            : type === 'assets'
-            ? (query.assets as unknown as AssetsQuery).account(options, address ?? '')
-            : query.tokens?.accounts(address, options);
+        const [entry, args] = balanceStorage<SubscribableBalanceQuery>(
+          api.rx.query, type === 'normal' || isSoraXOR, type, address ?? '', options
+        );
+
+        if (!entry) throw new Error(`${networkName} has no balance storage for ${symbol}`);
+        // The API subscribes to the keys asked for in one tick together, so one key this chain cannot encode
+        // (Pendulum's tokens take no symbol) failed every balance of the network. Encoding it first fails only this one.
+        entry.key(...args);
 
         const onBalanceFetch = (balances: unknown) => {
           const balanceResponse = balances as AssetBalanceResponse;
@@ -189,22 +221,12 @@ export default class SubstrateBalanceService {
           );
         };
 
-        const sub: Subscription | undefined = (pallet as SubscribableBalanceQuery | undefined)?.subscribe(onBalanceFetch);
+        // A failed subscription sends nothing more, so without an error state the network would stay pending.
+        const sub = entry(...args).subscribe({ next: onBalanceFetch, error: setFailed });
 
-        return () => sub?.unsubscribe();
+        return () => sub.unsubscribe();
       } catch (err: unknown) {
-        state.balanceService.setBalanceItem(
-          networkKey,
-          {
-            state: APIItemState.ERROR,
-            relayChain,
-            symbol,
-            id,
-          },
-          address
-        );
-
-        console.warn(getErrorMessage(err), networkKey);
+        setFailed(err);
 
         return mockUnsubFn;
       }
@@ -213,77 +235,47 @@ export default class SubstrateBalanceService {
     return () => unsubList.forEach((unsubscribe) => unsubscribe());
   }
 
-  subscribeSubstrateBalances(props: GetBalancesProps, state: State) {
+  subscribeSubstrateBalances(
+    props: GetBalancesProps,
+    state: State,
+    isCurrent: (network: string) => boolean = () => true
+  ) {
     const { address, ethereumAddress, substrateNetworks } = props;
-
-    const networksEntries = Object.entries(state.getSubstrateApiMap).filter(([networkName]) =>
-      substrateNetworks?.some((net) => isSameString(net, networkName))
+    const networks = Object.entries(state.getSubstrateApiMap).filter(([name]) =>
+      substrateNetworks?.some((network) => isSameString(network, name))
     );
 
-    const unsubListPromises: Promise<{
-      networkName: string;
-      unsub: () => void;
-    }>[] = networksEntries.map(([networkName, apiProps]) => {
-      const mockUnsub = {
-        networkName,
-        unsub: mockUnsubFn,
+    return networks.map(([networkName, apiProps]) => new Promise<{ networkName: string; unsub: () => void }>((resolve) => {
+      const account = isEthereumNetwork(networkName) ? ethereumAddress : address;
+      if (!account) { resolve({ networkName, unsub: mockUnsubFn }); return; }
+      let settled = false;
+      let retry: ReturnType<typeof setTimeout> | undefined;
+      const finish = (unsub = mockUnsubFn) => {
+        if (settled) { unsub(); return; }
+        settled = true;
+        clearTimeout(retry);
+        clearTimeout(deadline);
+        resolve({ networkName, unsub });
       };
-
-      return new Promise((res) => {
-        const network = state.networkService.networkMap[networkName];
-        const isSoraNetwork = isSora(networkName);
-        const timespan = Date.now();
-
-        const addressByNetwork = isEthereumNetwork(networkName) ? ethereumAddress : address;
-
-        if (addressByNetwork === '') return mockUnsub;
-
-        const subscribeOnReady = () => {
-          if (!apiProps.api) {
-            if (network?.networkStatus !== NETWORK_STATUS.DISCONNECTED) {
-              setTimeout(subscribeOnReady, 1000);
-
-              return;
-            }
-
-            res(mockUnsub);
-
-            return;
-          }
-
-          apiProps.api.isReadyOrError
-            .then(() => {
-              const unsub = this.subscribeSubstrateAssetsBalances(addressByNetwork, networkName, apiProps.api!, state);
-
-              res({ networkName, unsub });
-            })
-            .catch(() => res(mockUnsub));
-        };
-
-        if (!isSoraNetwork) {
-          setTimeout(subscribeOnReady, 1000);
-
+      const ownsConnection = () => isCurrent(networkName) && state.getSubstrateApiMap[networkName] === apiProps;
+      const subscribeOnReady = () => {
+        if (settled || !ownsConnection()) { finish(); return; }
+        const api = apiProps.api;
+        if (!api) {
+          const network = Object.values(state.networkService.networkMap).find(({ name }) => isSameString(name, networkName));
+          if (network?.networkStatus === NETWORK_STATUS.DISCONNECTED) finish();
+          else retry = setTimeout(subscribeOnReady, 1000);
           return;
         }
+        void api.isReadyOrError.then(() => {
+          if (settled || !ownsConnection() || apiProps.api !== api) { finish(); return; }
+          finish(this.subscribeSubstrateAssetsBalances(account, networkName, api, state));
+        }).catch(() => finish());
+      };
 
-        apiProps.api?.isReadyOrError
-          .then(() => {
-            const unsub = this.subscribeSubstrateAssetsBalances(addressByNetwork, networkName, apiProps.api!, state);
-
-            res({ networkName, unsub });
-          })
-          .catch(() => {
-            // Sora сеть проверяем через setInterval
-            // потому, что instance api сохраняется в state.apis только, когда подключились к сети(см api.ts, onConnected)
-            // у остальных сетей такой проблемы нет, потому что api мы сохраняем сразу при создании
-            // если прошло 60 сек и api Sora не появилось, отписываемся и резолвим false
-
-            if (Date.now() - timespan > 60000) res(mockUnsub);
-            else setTimeout(subscribeOnReady, 1000);
-          });
-      });
-    });
-
-    return unsubListPromises;
+      const deadline = setTimeout(() => finish(), 60_000);
+      if (isSora(networkName)) subscribeOnReady();
+      else retry = setTimeout(subscribeOnReady, 1000);
+    }));
   }
 }

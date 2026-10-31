@@ -47,7 +47,12 @@ export default defineComponent({ name: 'HistoryItem' ,
     },
     address() {
       if (BaseApi.isEthereumNetwork(this.network.toLowerCase())) return this.accountsStore.selectedWallet.ethereumAddress;
-      if (BaseApi.isBitcoinNetwork(this.network) || BaseApi.isIrohaNetwork(this.network)) {
+      // A universal wallet's Substrate address is not its Bitcoin, Iroha or Solana account.
+      if (
+        BaseApi.isBitcoinNetwork(this.network) ||
+        BaseApi.isIrohaNetwork(this.network) ||
+        BaseApi.isSolanaNetwork(this.network)
+      ) {
         return this.historyElement.address ?? BaseApi.formatAddress(this.accountsStore.selectedWallet, this.network);
       }
 

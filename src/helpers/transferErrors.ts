@@ -73,6 +73,13 @@ const TRANSFER_ERROR_LOCALE_KEYS: Record<string, string> = {
   cross_chain_runtime_registration_missing: 'assets.crossChainRouteUnavailable',
   cross_chain_runtime_not_reviewed: 'assets.crossChainRouteUnavailable',
   cross_chain_runtime_call_index_mismatch: 'assets.crossChainRouteUnavailable',
+  // The node encoded the reviewed call differently from its independently written layout.
+  cross_chain_call_layout_mismatch: 'assets.crossChainRouteUnavailable',
+  cross_chain_call_layout_not_reviewed: 'assets.crossChainRouteUnavailable',
+  // The registry does not confirm the pinned fee asset of the origin runtime.
+  cross_chain_fee_asset_unavailable: 'assets.crossChainRouteUnavailable',
+  // The wallet is connected to a node that is not a reviewed host of that chain.
+  cross_chain_rpc_endpoint_not_reviewed: 'assets.crossChainRouteUnavailable',
   // An earlier send of this route may still be included; sending again could move the funds twice.
   cross_chain_previous_send_unresolved: 'assets.transactionStatusUnknown',
   cross_chain_send_in_progress: 'assets.transactionPending',

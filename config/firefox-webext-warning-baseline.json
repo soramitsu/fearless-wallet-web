@@ -14,9 +14,9 @@
     "chunks/background-vendor/emurgo-cardano-serialization-lib-browser-bhnNmS9k.js": 2,
     "chunks/background-vendor/subwallet-keyring-Dz92pNZA.js": 1,
     "chunks/mountApp.js": 16,
-    "chunks/usePortfolioPreferences.js": 1
+    "chunks/SendForm.js": 1
   },
-  "warningSetSha256": "5bab0ca728fd16aaa5967a496522f19586f638cafb2418d8a67685cefe548ec3",
+  "warningSetSha256": "4ce836cb29a3112966668385a9131a37a3de6b59938821c60dd53ae60611bca6",
   "artifacts": [
     {
       "file": "chunks/background-vendor/assert-Dr2usS2V.js",
@@ -40,11 +40,11 @@
     },
     {
       "file": "chunks/mountApp.js",
-      "sha256": "feb0747ac0ceaae3696d59ff9a63a6ee4c4a462395a0b6fd78f2cd5ce630fc52"
+      "sha256": "bee1375f061e5daedd5a358fa60e1bb5497e1b673a6130d84a45cc9009a21213"
     },
     {
-      "file": "chunks/usePortfolioPreferences.js",
-      "sha256": "ce5cf19ffa749a176a5b6f8eb1280b82d83842c831564ad0c2edfb3c90308241"
+      "file": "chunks/SendForm.js",
+      "sha256": "3d5a08760c7559bf5a5f27bd41ea72caa04406d0dbc29601373613a8420fa3e8"
     }
   ]
 }

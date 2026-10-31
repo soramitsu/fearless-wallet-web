@@ -42,6 +42,7 @@ vi.mock('@extension-base/utils/crossenv', () => ({ chrome: {
     },
   } },
 } }));
+vi.mock('@polkadot/phishing', () => ({ checkIfDenied: vi.fn(async () => false) }));
 vi.mock('@/sora/cosigner', () => ({ decryptForCosigner: vi.fn(), encryptForCosigners: vi.fn() }));
 vi.mock('@extension-base/services/keyring-service/LegacyNetworkEnrollment', () => ({ enrollLegacyAccountNetworks: vi.fn() }));
 vi.mock('@extension-base/services', () => ({}));

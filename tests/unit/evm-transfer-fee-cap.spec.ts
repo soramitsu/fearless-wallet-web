@@ -13,13 +13,14 @@ const sender = new Wallet('0x' + '11'.repeat(32));
 const recipient = '0x' + '22'.repeat(20);
 const gwei = (value: string) => parseUnits(value, 'gwei');
 let state: State;
-let broadcastTransaction: ReturnType<typeof vi.fn>;
+let rpcSend: ReturnType<typeof vi.fn>;
 
 // The node quotes and then sends at `feeData`. `legacy` is a network without EIP-1559 fees.
 function node(feeData: { maxFeePerGas: bigint | null; maxPriorityFeePerGas: bigint | null; gasPrice: bigint | null }, legacy = false) {
-  broadcastTransaction = vi.fn(async () => ({ hash: '0x' + 'ab'.repeat(32) }));
+  // The node takes the transaction: eth_sendRawTransaction answers with its hash.
+  rpcSend = vi.fn(async (_method: string, [signed]: string[]) => Transaction.from(signed).hash);
   const provider = {
-    broadcastTransaction,
+    send: rpcSend,
     estimateGas: async () => 21000n,
     getBlock: async () => ({ baseFeePerGas: legacy ? null : gwei('4') }),
     getFeeData: async () => feeData,
@@ -72,8 +73,9 @@ describe('the reviewed EVM network fee is a ceiling', () => {
 
     await sending;
 
-    expect(broadcastTransaction).toHaveBeenCalledOnce();
-    expect(Transaction.from(broadcastTransaction.mock.calls[0][0]).maxFeePerGas).toBe(gwei('10'));
+    expect(rpcSend).toHaveBeenCalledOnce();
+    expect(rpcSend.mock.calls[0][0]).toBe('eth_sendRawTransaction');
+    expect(Transaction.from(rpcSend.mock.calls[0][1][0]).maxFeePerGas).toBe(gwei('10'));
     expect(callback).toHaveBeenCalledWith({ status: true });
   });
 
@@ -83,7 +85,7 @@ describe('the reviewed EVM network fee is a ceiling', () => {
 
     await sending;
 
-    expect(broadcastTransaction).not.toHaveBeenCalled();
+    expect(rpcSend).not.toHaveBeenCalled();
     expect(callback).toHaveBeenCalledWith({
       status: false,
       errors: [expect.objectContaining({ message: 'transfer_fee_changed' })],
@@ -94,12 +96,12 @@ describe('the reviewed EVM network fee is a ceiling', () => {
     node({ maxFeePerGas: null, maxPriorityFeePerGas: null, gasPrice: gwei('5') }, true);
 
     await send('0.000105').sending;
-    expect(broadcastTransaction).toHaveBeenCalledOnce();
+    expect(rpcSend).toHaveBeenCalledOnce();
 
     node({ maxFeePerGas: null, maxPriorityFeePerGas: null, gasPrice: gwei('5') }, true);
     const { sending, callback } = send('0.0001');
     await sending;
-    expect(broadcastTransaction).not.toHaveBeenCalled();
+    expect(rpcSend).not.toHaveBeenCalled();
     expect(callback).toHaveBeenCalledWith(expect.objectContaining({ status: false }));
   });
 

@@ -100,7 +100,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, onMounted, watch } from 'vue';
+import { computed, reactive, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import fallbackNftImage from '@/assets/image-placeholder.svg';
 import { useI18n } from '@/locales/useI18n';
@@ -109,6 +109,7 @@ import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import EditAddressBook from '@/screens/wallet&asset/EditAddressBook.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
+import { useNftFeeQuote } from '@/portfolio/nftFeeQuote';
 import { checkNft } from '@/extension/messaging/nfts';
 import ContentForm from '@/components/ContentForm.vue';
 import { Components } from '@/router/routes';
@@ -133,12 +134,10 @@ const popupControls = reactive({
 });
 
 const errors = reactive({
-  insufficientFunds: false,
   incorrectRecipient: false,
 });
 
 const formInfo = reactive({
-  fee: '0',
   to: '',
   newAddress: '',
   assetId: '',
@@ -166,7 +165,7 @@ const recipientCut = computed(() => cut(formInfo.to));
 const network = computed(() => nft.value?.network ?? '');
 
 const isSameAddress = computed(() => BaseApi.isSameAddress(selectedWallet.value, formInfo.to, network.value));
-const isDisabled = computed(() => formInfo.to === '' || errors.incorrectRecipient || errors.insufficientFunds);
+const isDisabled = computed(() => formInfo.to === '' || isSameAddress.value || errors.incorrectRecipient || feeQuote.pending || !!feeQuote.error);
 
 const assetSymbol = computed(() => {
   const net = networksStore.getNetwork(network.value);
@@ -174,7 +173,9 @@ const assetSymbol = computed(() => {
   return net?.assets.find(({ isUtility }) => isUtility)?.symbol ?? '';
 });
 
-const formatFeeString = computed(() => `${n(+formInfo.fee, 'decimalPrecise')} ${assetSymbol.value?.toUpperCase()}`);
+const formatFeeString = computed(() => feeQuote.pending || !feeQuote.fee
+  ? t('signingReview.feeUnavailable')
+  : `${n(+feeQuote.fee, 'decimalPrecise')} ${assetSymbol.value?.toUpperCase()}`);
 
 const header = computed(() => {
   if (popupControls.showEditAddressBook) return 'assets.addContact';
@@ -187,7 +188,8 @@ const header = computed(() => {
 });
 
 const actionBtnName = computed(() => {
-  if (errors.insufficientFunds) return t('assets.insufficientBalance', { asset: assetSymbol.value.toUpperCase() });
+  if (feeQuote.error === 'estimationFailed') return 'common.estimateFeeError';
+  if (feeQuote.error === 'insufficientFunds') return t('assets.insufficientBalance', { asset: assetSymbol.value.toUpperCase() });
 
   if (isSameAddress.value) return 'assets.isSameAddress';
 
@@ -232,15 +234,7 @@ const showSubmitBtn = computed(
   () => !popupControls.showHistoryBook && !popupControls.showEditAddressBook && !popupControls.showMyWallets
 );
 
-const validateTx = () => {
-  if (!tx.value.network) return;
-
-  checkNft(tx.value).then((checkData) => {
-    if (checkData?.error === 'insufficientFunds') errors.insufficientFunds = true;
-
-    formInfo.fee = checkData.fee;
-  });
-};
+const feeQuote = useNftFeeQuote(tx, checkNft);
 
 const validateAddress = () => {
   if (formInfo.to === '' || network.value === '' || isSameAddress.value) errors.incorrectRecipient = true;
@@ -252,9 +246,6 @@ const validateAddress = () => {
 };
 
 watch(formInfo, validateAddress);
-watch(tx, validateTx);
-
-onMounted(validateTx);
 
 const onConfirmClose = () => router.push({ name: Components.Nfts });
 const paste = () => (formInfo.to = getClipboard());
@@ -287,6 +278,7 @@ const setWallet = (ethereumAddress: string) => {
 };
 
 const onProceed = () => {
+  if (isDisabled.value) return;
   if (!popupControls.showConfirmScreen) popupControls.showConfirmScreen = true;
   else popupControls.showConfirmationPasswordPopup = true;
 };

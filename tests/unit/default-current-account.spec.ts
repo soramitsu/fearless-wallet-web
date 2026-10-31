@@ -124,7 +124,7 @@ describe('removing the current account', () => {
     const state = {
       keyringService: {
         archiveWallet: vi.fn(async () => undefined),
-        getPair: () => ({meta:SUBSTRATE.meta}),
+        getPair: () => ({meta:SUBSTRATE.meta}), isEthereumAccountLinkedElsewhere: () => false,
         forgetAccount: vi.fn(), forgetAddress:vi.fn(),
       },
       requestService: { mutateAuthorizations:vi.fn(async () => { throw new Error('Public permission write failure'); }) },
@@ -145,7 +145,7 @@ describe('removing the current account', () => {
       currentAccount: toCurrentAccountInfo(current) as ReturnType<typeof toCurrentAccountInfo> | null,
       keyringService: {
         currentAccountRevision: 0,
-        getPair: () => pair,
+        getPair: () => pair, isEthereumAccountLinkedElsewhere: () => false,
         forgetAccount: vi.fn(async (_address: string, beforeRemoval: () => Promise<void>) => beforeRemoval()),
         getAllMainAccounts: () => remaining,
       },
@@ -169,7 +169,7 @@ describe('removing the current account', () => {
     const state = {
       currentAccount: toCurrentAccountInfo(SUBSTRATE),
       keyringService: {
-        getPair: () => ({ meta: SUBSTRATE.meta }),
+        getPair: () => ({ meta: SUBSTRATE.meta }), isEthereumAccountLinkedElsewhere: () => false,
         forgetAccount: vi.fn(async () => { throw new Error('QUOTA_BYTES quota exceeded'); }),
         getAllMainAccounts: () => [TON],
       },

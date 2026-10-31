@@ -1,0 +1,33 @@
+{
+  "name": "deepmerge",
+  "description": "Locally guarded deepmerge 4.3.1 for Fearless runtime and tooling",
+  "keywords": [
+    "merge",
+    "deep",
+    "extend",
+    "copy",
+    "clone",
+    "recursive"
+  ],
+  "version": "4.3.1",
+  "homepage": "https://github.com/TehShrike/deepmerge",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/TehShrike/deepmerge.git"
+  },
+  "main": "index.cjs",
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "license": "MIT",
+  "private": true,
+  "files": [
+    "index.js",
+    "index.cjs",
+    "umd.cjs",
+    "index.d.ts",
+    "license.txt",
+    "README.fearless.md",
+    "upstream-provenance.json"
+  ]
+}

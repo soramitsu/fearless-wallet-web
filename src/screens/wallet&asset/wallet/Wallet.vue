@@ -53,6 +53,7 @@
         />
 
         <router-view
+          :route="ownRoute"
           :balances="filteredTokenGroups"
           :showAssetsManagementForm="showAssetsManagementForm"
           :manageHiddenOnly="manageHiddenOnly"
@@ -87,7 +88,7 @@
 </template>
 
 <script lang="ts">
-import { defineAsyncComponent, defineComponent } from 'vue';
+import { defineAsyncComponent, defineComponent, markRaw } from 'vue';
 
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import type { TabWallet } from '@/interfaces';
@@ -101,7 +102,6 @@ import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavai
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { defaultSortingCurrencies, filterBalanceItemsByNetwork } from '@/helpers/currencies';
-import { isNetworkGroup } from '@/helpers/common';
 import { usePortfolio } from '@/portfolio/usePortfolio';
 import { PORTFOLIO_DASHBOARD_ENABLED } from '@/portfolio/dashboard/dashboardFlag';
 import { effectiveScope } from '@/portfolio/dashboard/preferences';
@@ -155,6 +155,9 @@ export default defineComponent({ name: 'Wallet',
       dashboardEnabled: PORTFOLIO_DASHBOARD_ENABLED,
       dashboardStore: PORTFOLIO_DASHBOARD_ENABLED ? usePortfolioDashboardStore() : undefined,
       refreshSlotId: `portfolio-refresh-${++walletViews}`,
+      // Main.vue keeps this screen alive for its own route: hidden, it keeps its own list instead of rendering the
+      // child of whatever route is open now.
+      ownRoute: markRaw({ ...this.$route }),
     };
   },
   computed: {
@@ -268,23 +271,12 @@ export default defineComponent({ name: 'Wallet',
           });
     },
     showShimmers() {
-      return networksIsPending(this.networksStore.networks, this.accountsStore.selectedNetwork);
+      return networksIsPending(
+        this.networksStore.networks, this.accountsStore.selectedNetwork, this.accountsStore.selectedWallet.address
+      );
     },
     showLoadingBalance() {
-      if (!isNetworkGroup(this.accountsStore.selectedNetwork)) {
-            const networkStatus = this.networksStore.networks.find(
-              ({ name }) => name.toLowerCase() === this.accountsStore.selectedNetwork.toLowerCase()
-            )?.networkStatus;
-
-            return networkStatus === NETWORK_STATUS.CONNECTING;
-          }
-
-          //TODO добавить проверку по группам
-          const isPendingExists = this.networksStore.networks.some(
-            ({ networkStatus }) => networkStatus === NETWORK_STATUS.CONNECTING
-          );
-
-          return !navigator.onLine || isPendingExists;
+      return this.showShimmers;
     },
     filteredTokenGroups() {
       const isAllNetworks = isSameString(this.accountsStore.selectedNetwork, ALL_NETWORKS);

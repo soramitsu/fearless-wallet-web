@@ -13,11 +13,9 @@ function event() {
 function fixture() {
   const api = {
     runtime: { onConnect: event(), onInstalled: event(), onUpdateAvailable: event(), reload: vi.fn() },
-    tabs: { onUpdated: event(), onActivated: event(), onRemoved: event() },
-    windows: { onFocusChanged: event() },
-    alarms: { create: vi.fn(), onAlarm: event() },
+    alarms: { get: vi.fn().mockResolvedValue(undefined), create: vi.fn(), onAlarm: event() },
   };
-  const runtime = { handleMessage: vi.fn().mockResolvedValue(undefined), onInstalled: vi.fn().mockResolvedValue(undefined), getActiveTabs: vi.fn(), onAlarm: vi.fn() };
+  const runtime = { handleMessage: vi.fn().mockResolvedValue(undefined), onInstalled: vi.fn().mockResolvedValue(undefined), onAlarm: vi.fn() };
   const port = { onMessage: event(), onDisconnect: event(), postMessage: vi.fn() };
   let resolve!: (value: BackgroundRuntime) => void;
   let reject!: (error: Error) => void;
@@ -42,21 +40,15 @@ describe('synchronous extension background wake listeners', () => {
     expect(f.runtime.handleMessage).toHaveBeenNthCalledWith(2, second, f.port);
   });
 
-  it('captures install, alarms and tab lifecycle events during cold startup', async () => {
+  it('captures install and alarm events during cold startup', async () => {
     const f = fixture();
     const details = { reason: 'install' };
     const alarm = { name: 'fearless-asset-discovery-sweep' };
     f.api.runtime.onInstalled.emit(details);
     f.api.alarms.onAlarm.emit(alarm);
-    f.api.tabs.onUpdated.emit(1, { status: 'complete' });
-    f.api.tabs.onUpdated.emit(1, { url: 'https://fixture.example' });
-    f.api.tabs.onActivated.emit({ tabId: 1 });
-    f.api.tabs.onRemoved.emit(1);
-    f.api.windows.onFocusChanged.emit(1);
     expect(f.runtime.onInstalled).not.toHaveBeenCalled();
     f.resolve(f.runtime);
-    await vi.waitFor(() => expect(f.runtime.getActiveTabs).toHaveBeenCalledTimes(4));
-    expect(f.runtime.onInstalled).toHaveBeenCalledExactlyOnceWith(details);
+    await vi.waitFor(() => expect(f.runtime.onInstalled).toHaveBeenCalledExactlyOnceWith(details));
     expect(f.runtime.onAlarm).toHaveBeenCalledExactlyOnceWith(alarm);
     expect(f.api.alarms.create).toHaveBeenCalledWith('fearless-asset-discovery-sweep', { periodInMinutes: 60 });
   });

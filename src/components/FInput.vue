@@ -17,6 +17,22 @@
         @blur="$emit('blur', $event)"
         @keydown="keydownPress"
       />
+      <!-- A file input has no text value to bind: the form gets the chosen file's text instead. -->
+      <input
+        v-else-if="type === 'text-file'"
+        ref="input"
+        type="file"
+        :id="inputId"
+        :aria-invalid="isError || undefined"
+        :aria-describedby="describedBy || undefined"
+        :class="['el-input__inner', inputClasses]"
+        :accept="accept"
+        :disabled="disabled"
+        :style="inputStyle"
+        @blur="$emit('blur', $event)"
+        @change="readFile"
+        @keydown="keydownPress"
+      />
       <input
         v-else
         v-model="vModel"
@@ -25,7 +41,7 @@
         :aria-invalid="isError || undefined"
         :aria-describedby="describedBy || undefined"
         :class="['el-input__inner', inputClasses]"
-        :type="showPassword ? 'password' : type === 'text-file' ? 'file' : type"
+        :type="showPassword ? 'password' : type"
         :accept="accept"
         :maxlength="maxlength"
         :readonly="readonly"
@@ -39,7 +55,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, useId } from 'vue';
+import { ref, computed, useId, watch } from 'vue';
 
 type Size = 'small' | 'medium' | 'big';
 type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
@@ -97,6 +113,38 @@ const vModel = computed({
 });
 
 const input = ref<HTMLInputElement | HTMLTextAreaElement | null>(null);
+
+// Wallet backups are a few kilobytes; a larger file is not read.
+const MAX_TEXT_FILE_BYTES = 5 * 1024 * 1024;
+// A file that is too large, empty or unreadable reaches the form as this text, which is not JSON,
+// so the form reports it as invalid.
+const INVALID_FILE_TEXT = 'unreadable file';
+let fileRead = 0;
+
+const readFile = async (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  const read = ++fileRead;
+  let text = '';
+
+  if (file) {
+    try {
+      text = file.size > MAX_TEXT_FILE_BYTES ? INVALID_FILE_TEXT : (await file.text()) || INVALID_FILE_TEXT;
+    } catch {
+      text = INVALID_FILE_TEXT;
+    }
+  }
+
+  // A file chosen meanwhile replaces this one.
+  if (read === fileRead) emit('change', text);
+};
+
+// When the form clears a rejected file, the chooser is cleared too, so the same file can be chosen again.
+watch(
+  () => props.value,
+  (value) => {
+    if (props.type === 'text-file' && !value && input.value) input.value.value = '';
+  }
+);
 
 const containerInputClasses = computed(() => {
   // for "small" and "mini" sizes also medium

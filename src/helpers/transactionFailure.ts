@@ -37,6 +37,8 @@ const KNOWN_MESSAGE_KEYS = new Map<string, string>([
   ['iroha_node_protocol_unsupported', 'assets.irohaTransfersDisabled'],
   ['unsupported_solana_asset', 'assets.unsupportedSolanaTokenTransfer'],
   ['cross_chain_send_in_progress', 'assets.transactionPending'],
+  // Nothing was sent: the origin node could not report its head, so the send could not be recorded.
+  ['cross_chain_send_record_unavailable', 'assets.crossChainRuntimeUnavailable'],
   // Nothing was sent; the quote must be confirmed again.
   ['cross_chain_fee_changed', 'assets.transferFeeApprovalRequired'],
   ['cross_chain_destination_fee_changed', 'assets.transferFeeApprovalRequired'],
@@ -47,12 +49,15 @@ const KNOWN_MESSAGE_KEYS = new Map<string, string>([
 ]);
 
 const HEX_TRANSACTION_HASH = /^[0-9a-f]{64}$/iu;
+// An EVM transaction hash is written with its 0x.
+const EVM_TRANSACTION_HASH = /^0x[0-9a-f]{64}$/iu;
 // 64 bytes in base58: 88 characters at most, and fewer for the rare signature that is a smaller number.
 const SOLANA_SIGNATURE = /^[1-9A-HJ-NP-Za-km-z]{64,88}$/u;
 // The network may already have these transfers: they can still go through, so the
 // result is neither a success nor a failure.
 const UNCONFIRMED_MESSAGES: ReadonlySet<string> = new Set([
   'bitcoin_broadcast_ambiguous',
+  'evm_broadcast_ambiguous',
   'solana_broadcast_ambiguous',
   'solana_broadcast_signature_mismatch',
   'sora_broadcast_ambiguous',
@@ -170,7 +175,7 @@ function getUnknownTransactionHash(value: unknown): string | null {
 
   // Bitcoin and Iroha hashes are hex, which a base58 reading would also accept when it holds no zero; a Solana
   // signature is base58 and case-sensitive.
-  if (HEX_TRANSACTION_HASH.test(hash.value)) return hash.value.toLowerCase();
+  if (HEX_TRANSACTION_HASH.test(hash.value) || EVM_TRANSACTION_HASH.test(hash.value)) return hash.value.toLowerCase();
 
   return SOLANA_SIGNATURE.test(hash.value) ? hash.value : null;
 }

@@ -1,8 +1,27 @@
 import { APIItemState, NETWORK_STATUS } from '@extension-base/api/types/networks';
-import { ethers } from 'ethers';
+import { ethers, isError } from 'ethers';
 import { REFRESH_TIME } from '../evm-contract-service';
 import type State from '@extension-base/background/handlers/State';
-import type { ResponseBalanceRequest, FetchBalancePayload } from '@extension-base/background/types/types';
+import type { ResponseBalanceRequest, FetchBalancePayload, EvmProvider } from '@extension-base/background/types/types';
+import { withTimeout } from '@/util/endpointFailover';
+
+/** A balance read the node has not answered by then counts as an outage, so the network moves on to its next node. */
+export const EVM_BALANCE_TIMEOUT_MS = 15_000;
+
+class EvmBalanceTimeoutError extends Error {
+  constructor() {
+    super('evm_balance_timeout');
+  }
+}
+
+/**
+ * Whether a failed read says the node is unusable (refused, an HTTP error, no answer in time, another chain, a provider
+ * replaced mid-request) rather than answering for the chain. A reverted or undecodable call is the chain's answer about
+ * that contract, and every other node would give it too.
+ */
+export function isEvmNodeFailure(error: unknown): boolean {
+  return !(isError(error, 'CALL_EXCEPTION') || isError(error, 'BAD_DATA') || isError(error, 'INVALID_ARGUMENT'));
+}
 
 export default class EvmBalanceService {
   constructor(private readonly state: State) {}
@@ -30,6 +49,10 @@ export default class EvmBalanceService {
 
         if (!api) return [];
 
+        // An asset's refresh reads only the networks that list it; a missing asset would fail the whole network.
+        const requestedAssets = assetId ? assets.filter(({ id }) => id === assetId) : assets;
+        if (!requestedAssets.length) return [];
+
         const timeout = api.timeout[ethereumAddress] ?? Number.MIN_VALUE;
         const timeDiff = Date.now() - timeout;
         const shouldSkipUpdate = timeDiff < REFRESH_TIME && !force;
@@ -38,9 +61,6 @@ export default class EvmBalanceService {
 
         // Save timeout [network api][ethereum address]
         api.timeout[ethereumAddress] = Date.now();
-
-        const requestedAssets = assetId ? [{ id: assetId }] : assets;
-        if (!requestedAssets.length) return [];
         const address = this.state.keyringService.getSubstrateAddress(ethereumAddress);
 
         return this.state.balanceService.refreshNetworkBalances(name, address, async () => {
@@ -86,13 +106,10 @@ export default class EvmBalanceService {
 
     const address = state.keyringService.getSubstrateAddress(ethereumAddress);
 
-    const apiProps = state.getEvmApi(networkKey);
-    const api = apiProps?.api;
-
-    if (!api) throw new Error('API not found');
+    if (!state.getEvmApi(networkKey)?.api) throw new Error('API not found');
 
     try {
-      const balance = await api.getBalance(ethereumAddress);
+      const balance = await this.readOnNode(networkKey, (api) => api.getBalance(ethereumAddress));
       const utilityBalance = ethers.formatEther(balance);
 
       state.balanceService.setBalanceItem(
@@ -118,8 +135,6 @@ export default class EvmBalanceService {
       // instead of a confirmed 0 (the first start after the update from 3.0.5 has no balance cache).
       state.balanceService.setBalanceItem(networkKey, { state: APIItemState.ERROR, symbol, id, relayChain: 'ethereum' }, address);
 
-      this.state.networkService.evmApiHandler.refreshEvmApi(networkKey);
-
       return cachedBalance ?? '0';
     }
   }
@@ -137,8 +152,11 @@ export default class EvmBalanceService {
     const { symbol, precision, id } = asset;
 
     try {
-      const contract = await this.state.evmContractService.getContract(contractAddress, api.api);
-      const balanceOf = await contract.balanceOf(ethereumAddress);
+      const balanceOf = await this.readOnNode(networkKey, async (provider) => {
+        const contract = await this.state.evmContractService.getContract(contractAddress, provider);
+
+        return contract.balanceOf(ethereumAddress);
+      });
 
       const balance = ethers.formatUnits(balanceOf, precision);
 
@@ -166,6 +184,31 @@ export default class EvmBalanceService {
       state.balanceService.setBalanceItem(networkKey, { state: APIItemState.ERROR, symbol, id, relayChain: 'ethereum' }, address);
 
       return cachedBalance ?? '0';
+    }
+  }
+
+  /**
+   * Reads on the network's node within EVM_BALANCE_TIMEOUT_MS. When the node fails, the network moves on to its next
+   * node and the read is tried there once, so a dead node costs a moment instead of the balance.
+   */
+  private async readOnNode<T>(networkKey: string, read: (api: EvmProvider) => Promise<T>): Promise<T> {
+    const handler = this.state.networkService.evmApiHandler;
+    let api = this.state.getEvmApi(networkKey)?.api;
+
+    for (let attempt = 0; ; attempt += 1) {
+      if (!api) throw new Error('API not found');
+
+      try {
+        return await withTimeout(read(api), EVM_BALANCE_TIMEOUT_MS, () => new EvmBalanceTimeoutError());
+      } catch (error) {
+        if (!isEvmNodeFailure(error)) throw error;
+
+        const next = handler.failover(networkKey, api)?.api;
+
+        if (attempt > 0 || !next) throw error;
+
+        api = next;
+      }
     }
   }
 

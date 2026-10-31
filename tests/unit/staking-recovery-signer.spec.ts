@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
     shouldPairBeLocked: true,
     staking: {
       bondExtra: vi.fn(), unbond: vi.fn(), withdrawUnbonded: vi.fn(), payout: vi.fn(), getPayoutNetworkFee: vi.fn(),
-      getStashByController: vi.fn(), getMyStakingInfo: vi.fn(),
+      getStashByController: vi.fn(), getMyStakingInfo: vi.fn(), getEraHours: vi.fn(),
     },
   },
 }));
@@ -54,6 +54,7 @@ beforeEach(() => {
   mocks.api.staking.payout.mockReset().mockResolvedValue(undefined);
   mocks.api.staking.getPayoutNetworkFee.mockReset().mockResolvedValue('0.02');
   mocks.api.staking.getStashByController.mockReset().mockResolvedValue('old-stash');
+  mocks.api.staking.getEraHours.mockReset().mockReturnValue(6);
   mocks.api.staking.getMyStakingInfo.mockReset().mockResolvedValue({ payee: 'Stash', controller: 'separate-controller' });
 });
 
@@ -67,7 +68,7 @@ describe('staking actual signer recovery policy', () => {
     vi.spyOn(service, 'getMaxNominations').mockReturnValue(16);
     vi.spyOn(service, 'maxNominatorRewardedPerValidator').mockReturnValue(256);
     await expect(service.getStakingParams({ networks: ['sora'] })).resolves.toMatchObject([
-      { network: 'sora', activeStake: '5', redeemAmount: '2', apy: 0 },
+      { network: 'sora', activeStake: '5', redeemAmount: '2', apy: 0, eraHours: 6 },
     ]);
   });
 

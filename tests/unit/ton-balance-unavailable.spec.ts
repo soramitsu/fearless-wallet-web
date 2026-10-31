@@ -76,7 +76,8 @@ async function upgradedFrom305(node: Node) {
 
   const refresh = async () => {
     await service.tonBalanceService.fetchBalance(TON_ADDRESS, ['ton mainnet']);
-    await vi.waitFor(() => expect((stored.networkScanStates as Record<string, unknown>)?.[TON_ADDRESS]).toBeDefined());
+    // Balance writes are batched; a change queued last is written together with, or after, the refresh's.
+    await service.deleteBalanceStore('ton mainnet', { id: 'never-cached' }, TON_ADDRESS);
 
     const scanStates = (stored.networkScanStates as Record<string, Record<string, never>>)[TON_ADDRESS];
     const input = {

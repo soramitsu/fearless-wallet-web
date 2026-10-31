@@ -186,9 +186,7 @@ async function startBackground() {
   const { registerBackgroundListeners, WALLET_STORAGE_UNAVAILABLE } = await import('@/extension/entry/backgroundBootstrap');
   const api = {
     runtime: { onConnect: event(), onInstalled: event(), onUpdateAvailable: event(), reload: vi.fn() },
-    tabs: { onUpdated: event(), onActivated: event(), onRemoved: event() },
-    windows: { onFocusChanged: event() },
-    alarms: { create: vi.fn(), onAlarm: event() },
+    alarms: { get: vi.fn().mockResolvedValue(undefined), create: vi.fn(), onAlarm: event() },
   };
   registerBackgroundListeners(api as unknown as typeof chrome, backgroundReady);
   const send = (id: string, message = 'pri(keyring.hasMasterPassword)') => {
@@ -212,7 +210,6 @@ afterEach(() => {
 describe('background start-up ordering (W10)', () => {
   it('wakes the bounded registry retry and publishes only a refreshed catalog', async () => {
     const background = await startBackground();
-    expect(background.api.alarms.create).toHaveBeenCalledWith('fearless-network-registry-retry', { periodInMinutes: 1 });
     background.state.isReady.mockReturnValue(true);
     background.api.alarms.onAlarm.emit({ name: 'fearless-network-registry-retry' });
     await vi.waitFor(() => expect(background.state.updateServiceInfo).toHaveBeenCalledOnce());

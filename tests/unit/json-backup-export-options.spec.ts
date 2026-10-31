@@ -1,13 +1,14 @@
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-vi.mock('@/extension/messaging', () => ({ sendMessage: vi.fn() }));
+// The raw seed is offered once the background answers that it opens the wallet (derived-wallet-export-screens.spec.ts).
+vi.mock('@/extension/messaging', () => ({ sendMessage: vi.fn(), rawSeedAvailable: vi.fn(async () => true) }));
 import type { AccountJson } from '@extension-base/background/types/types';
 import ExportTypeForm from '@/screens/accounts/ExportTypeForm.vue';
 import { useAccountsStore } from '@/stores/accounts';
 
 function form() {
-  return mount(ExportTypeForm, { global: {
+  return mount(ExportTypeForm, { props: { password: 'public password' }, global: {
     mocks: { $t: (key: string) => key },
     stubs: { InfoRow: { props: ['text'], emits: ['click'], template: '<button @click="$emit(\'click\')">{{ text }}</button>' } },
   } });
@@ -29,6 +30,7 @@ describe('JSON-only recovery export choices', () => {
     const store = useAccountsStore();
     store.setSelectedWallet({ address: 'public verified', isMasterAccount: true } as AccountJson);
     const wrapper = form();
+    await flushPromises();
     expect(wrapper.findAll('button').map((button) => button.text())).toEqual(['accounts.mnemonic', 'accounts.rawSeed', 'accounts.json']);
     store.setSelectedWallet({ address: 'public raw' } as AccountJson);
     await wrapper.vm.$nextTick();

@@ -12,7 +12,7 @@ import { BehaviorSubject, Subject } from 'rxjs';
 import WalletConnectRetiredSessions, { sessionIsApproved } from '@extension-base/stores/WalletConnectRetiredSessions';
 import CurrentAccountStore, { CurrentAccountContextChanged, type CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import { decodePair } from '@polkadot/keyring/pair/decode';
-import { hexToU8a, u8aToHex } from '@polkadot/util';
+import { hexToU8a, u8aEq, u8aToHex } from '@polkadot/util';
 import { keyring } from '@subwallet/ui-keyring';
 import AccountsStore from '@extension-base/stores/Accounts';
 import { ecdsaPairKeys } from '@extension-base/stores/EcdsaAccountRecords';
@@ -63,6 +63,7 @@ import type {
   RequestExportSeed,
   RequestGenerateMnemonic,
   RequestMigratePassword,
+  RequestRawSeedAvailable,
   RequestRecoverAccountWithPassword,
   RequestRecoverAccountWithPhrase,
   RequestUnlockExtension,
@@ -88,6 +89,8 @@ import { buildWebUniversalWalletMigrationSnapshot } from '@/util/universalWallet
 import { withUniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMeta';
 
 export type WordCount = 12 | 15 | 18 | 21 | 24;
+
+const WORD_COUNTS: readonly number[] = [12, 15, 18, 21, 24];
 
 type LegacyMigrationResult = 'migrated' | 'wrong_password' | 'not_found' | 'storage_failed';
 
@@ -193,10 +196,20 @@ export class KeyringService {
     // Concurrent startup retries are reads, not competing user choices.
     const request = this.selectionRequestRevision ?? 0;
     const currentAccount = await this.currentAccountStore.readSelection();
-    // A cancelled mobile selection whose compensation failed cannot regain
-    // authority after worker restart, even if the SDK retains its old session.
-    const retired = currentAccount?.isMobile && currentAccount.wcTopic &&
-      !sessionIsApproved(await new WalletConnectRetiredSessions().readPolicy(), currentAccount.wcTopic);
+    let retired = false;
+    let unconfirmed = false;
+    if (currentAccount?.isMobile && currentAccount.wcTopic) {
+      try {
+        // A cancelled mobile selection whose compensation failed cannot regain
+        // authority after worker restart, even if the SDK retains its old session.
+        retired = !sessionIsApproved(await new WalletConnectRetiredSessions().readPolicy(), currentAccount.wcTopic);
+      } catch (error) {
+        // A retirement record that cannot be read or parsed leaves this mobile wallet unselected,
+        // without writing, instead of keeping every start from opening the wallet.
+        console.error(error);
+        unconfirmed = true;
+      }
+    }
     if (this.selectionRequestRevision !== request) return;
     if (retired) {
       if (!IS_EXTENSION && KeyringStoreWeb.readOnly) {
@@ -208,7 +221,7 @@ export class KeyringService {
       return;
     }
     this.selectionRevision = this.currentAccountRevision + 1;
-    this.currentAccountSubject.next(currentAccount);
+    this.currentAccountSubject.next(unconfirmed ? null : currentAccount);
   }
 
   get addressSubject() {
@@ -413,6 +426,9 @@ export class KeyringService {
     requireFreshGeneration = false
   ) {
     if (typeof tonImport === 'boolean') requireFreshGeneration = tonImport;
+    // A secret URI that starts with a path has no phrase or seed. The keyring would derive it from the
+    // public development phrase, whose keys anyone can sign with.
+    if (suri.trim().startsWith('/')) throw new Error('A recovery phrase or seed is required.');
     meta = this.getAccountCreationMeta(suri, meta, requireFreshGeneration);
     if (walletEcosystem === 'ton') {
       const account = await this.tonKeyring.createAccount(suri, meta, typeof tonImport === 'object' ? tonImport : undefined);
@@ -486,6 +502,15 @@ export class KeyringService {
     return this.archiveWallet(address, true, beforeRemoval, assertCurrent);
   }
 
+  // The same phrase imported again with another Substrate path links the same EVM account, and so
+  // does a phrase whose EVM key was imported on its own first. That key stays while another wallet links it.
+  isEthereumAccountLinkedElsewhere(ethereumAddress: string, walletAddress: string): boolean {
+    const wallet = walletAddressIdentity(walletAddress);
+
+    return this.getAllAccounts().some(({ address, meta }) => !isEthereumAddress(address) &&
+      walletAddressIdentity(address) !== wallet && isSameString(meta.ethereumAddress as string | undefined, ethereumAddress));
+  }
+
   forgetAddress(address: string, beforeRemoval?: () => Promise<void>, assertCurrent?: () => void): Promise<void> {
     return this.tonKeyring.vault.exclusive(() => this.withAccountRemoval(
       [address], beforeRemoval, () => removePublicAddress(address, assertCurrent)
@@ -496,7 +521,7 @@ export class KeyringService {
    * Keeps every stored record that holds this wallet's keys (its account, its linked Ethereum account, the records an
    * ECDSA account had before, its TON phrase) exactly as stored, in one entry Account access can restore
    * (DeletedWallets.ts). Settles once that entry is written and rejects if it is not, so a wallet is deleted only
-   * when its keys are kept.
+   * when its keys are kept. A linked Ethereum account that another wallet also links stays live and out of the entry.
    */
   async archiveWallet(address: string, remove = false, beforeRemoval?: () => Promise<void>, assertCurrent?: () => void): Promise<void> {
     // Import, password rotation and TON repair share this queue; metadata shares
@@ -506,7 +531,11 @@ export class KeyringService {
       const ton = this.tonKeyring.accountSubject.value[address];
       const pair = ton ? null : this.getPair(address);
       const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
-      const ethereumPair = ethereumAddress ? this.getPair(ethereumAddress) : null;
+      const linkedPair = ethereumAddress ? this.getPair(ethereumAddress) : null;
+      const keepsEthereum = () => !!linkedPair && linkedPair !== pair &&
+        this.isEthereumAccountLinkedElsewhere(linkedPair.address, address);
+      const keptEthereum = keepsEthereum();
+      const ethereumPair = keptEthereum ? null : linkedPair;
       const pairs = [...new Set([pair, ethereumPair].filter((candidate): candidate is KeyringPair => !!candidate))];
       const accountKeys = walletRecordKeys(pairs);
       const keys = [...accountKeys, ...(ton ? [`ton:${address}`] : [])];
@@ -514,7 +543,7 @@ export class KeyringService {
       const persist = () => store.mutateRecordsAndWait(keys, (current) => {
         assertCurrent?.();
         if (pairs.some((candidate) => !isCurrentAccountPair(candidate)) ||
-          (ton && !this.tonKeyring.accountSubject.value[address]))
+          (ton && !this.tonKeyring.accountSubject.value[address]) || keepsEthereum() !== keptEthereum)
           throw new Error('Wallet changed before removal.');
         // A live private key without its durable primary record is not safe to delete.
         if (pairs.some((candidate) => !current[accountStoreKey(candidate)]) || (ton && !current[`ton:${address}`]))
@@ -860,6 +889,8 @@ export class KeyringService {
   }
 
   async mnemonicGenerate({ walletEcosystem, wordCount }: RequestGenerateMnemonic): Promise<string> {
+    // Messages are not type-checked at run time, and TON's generator accepts any length, even one word.
+    if (!WORD_COUNTS.includes(wordCount)) throw new Error('Unsupported recovery phrase length.');
     const mnemonic = walletEcosystem === 'ton'
       ? (await this.tonKeyring.generateMnemonic(undefined, wordCount)).join(' ')
       : mnemonicGenerate(wordCount);
@@ -880,7 +911,14 @@ export class KeyringService {
   // `pri(keyring.export.mnemonic)`. A TON phrase is returned exactly as stored, only after it derived the
   // account's public key, and never empty: a phrase that does not open throws its recovery code.
   async exportAccountMnemonic(request: RequestExportSeed): Promise<ResponseExportSeed> {
-    if (request.walletEcosystem !== WalletEcosystem.Ton) return this.exportMnemonic(request);
+    if (request.walletEcosystem !== WalletEcosystem.Ton) {
+      const exported = this.exportMnemonic(request);
+
+      // The export screen says so when the phrase alone opens another account.
+      return exported.seed && !this.phraseOpensAccount(request.address, exported.seed)
+        ? { ...exported, restoresOtherAccount: true }
+        : exported;
+    }
     if (!IS_EXTENSION && KeyringStoreWeb.readOnly) {
       // Emergency export verifies the supplied account password against the stored
       // public key, including a previous password. The vault cannot repair storage here.
@@ -972,6 +1010,11 @@ export class KeyringService {
 
     if (!seed) return { seed: '' };
 
+    // Without the wallet's derivation path or password the phrase's seed opens another account.
+    if (!this.phraseOpensAccount(request.address, seed)) {
+      throw new Error('This wallet was made with a derivation path or password. Use its encrypted JSON backup.');
+    }
+
     // Convert mnemonic to raw seed (32 bytes for sr25519)
     const seedU8 = mnemonicToMiniSecret(seed);
 
@@ -979,6 +1022,37 @@ export class KeyringService {
     const rawSeed = u8aToHex(seedU8);
 
     return { seed: rawSeed };
+  }
+
+  // `pri(keyring.export.rawSeedAvailable)`: whether Raw seed export would open this wallet. The password
+  // is checked as the export checks it; only the answer leaves the background, never the phrase or seed.
+  accountRawSeedAvailable({ address, password }: RequestRawSeedAvailable): boolean {
+    if (!password) return false;
+
+    const { seed } = this.exportMnemonic({ address, password });
+
+    return !!seed && this.phraseOpensAccount(address, seed);
+  }
+
+  // decodeJsonAccount's check: the stored phrase reproduces this key without a derivation path or
+  // password (phrase//staking, phrase///password). EVM keys use the path Fearless creates them with.
+  private phraseOpensAccount(address: string, phrase: string): boolean {
+    const pair = this.getPair(address);
+
+    if (!pair) return false;
+
+    const isEthereum = isEthereumAddress(pair.address);
+    let root: KeyringPair | undefined;
+
+    try {
+      root = keyring.createFromUri(isEthereum ? `${phrase}${ETHEREUM_DEFAULT_DERIVATION_PATH}` : phrase, {}, pair.type);
+
+      return isEthereum ? isSameString(root.address, pair.address) : u8aEq(root.publicKey, pair.publicKey);
+    } catch {
+      return false;
+    } finally {
+      root?.lock();
+    }
   }
 
   public accountExportSecretKey(request: RequestExportSeed): Uint8Array | null {

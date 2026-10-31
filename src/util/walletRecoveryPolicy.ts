@@ -76,7 +76,7 @@ const recoveryRoutes = new Set([
   'Defi', 'Staking', 'MyStake', 'Pools', 'PoolDetails', 'Farming', 'Polkamarkt',
   'AccountsLayout', 'ChainAccounts', 'AccountSetting', 'Export',
   'Settings', 'SettingsNetworksAssets', 'SettingsChangePassword', 'Nodes',
-  'ManageAuths', 'DAppDetails', 'DAppsAuths', 'WcAuths', 'WalletConnectSessionDetails',
+  'ManageAuths', 'DAppDetails', 'DAppsAuths', 'WcAuths', 'WalletConnectAuthDetails',
   'AddWallet', 'AddFromGoogle', 'CreateGoogle', 'MobileWalletAuth',
   'ChangePassword', 'Unlock', 'Welcome', 'Onboarding', 'ResetWallet',
   'MigrationDescription', 'MigrationAccounts', 'UniversalWalletMigration',

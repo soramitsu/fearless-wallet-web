@@ -13,9 +13,9 @@ export class TimeoutService {
     this.clearTimeout(key);
 
     const lazy = setTimeout(() => {
-      callback();
-
+      // Release this timer before invoking user code, which may schedule the same key again.
       this.clearTimeout(key);
+      callback();
     }, delay);
 
     this.timeouts[key] = lazy;

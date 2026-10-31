@@ -167,10 +167,10 @@ describe('current account selection persistence', () => {
     expect(service.currentAccountSubject.value).toEqual(second);
   });
 
-  it('refuses malformed saved selection without publishing or overwriting it', async () => {
+  it('treats a malformed saved selection as no selection without overwriting it', async () => {
     fixture.data[key] = true;
-    expect(await observe(service.restoreCurrentAccount())).toBe('rejected');
-    expect(service.currentAccountSubject.value).toEqual(first);
+    expect(await observe(service.restoreCurrentAccount())).toBe('resolved');
+    expect(service.currentAccountSubject.value).toBeNull();
     expect(fixture.data[key]).toBe(true);
   });
 
@@ -390,7 +390,6 @@ describe('selection races through actual mobile pairing', () => {
     const { state, dapp, callback, address } = await pairing();
     const oldSoraPair = { json: null, pair: { address: first.address } };
     Object.assign(apiSora, { account: oldSoraPair });
-    Object.assign(apiSora.bridgeProxy.sub, { account: oldSoraPair });
     fixture.failSelectionRollback = true;
     const cancelled = observe(dapp.abortPairingAttempt('public-selection-race'));
     fixture.holdWrite = false;
@@ -400,7 +399,6 @@ describe('selection races through actual mobile pairing', () => {
     expect(state.poolsService.unsubscribePools).toHaveBeenCalled();
     expect(state.updateServiceInfo).toHaveBeenCalled();
     expect((apiSora as unknown as { account: unknown }).account).toBeUndefined();
-    expect((apiSora.bridgeProxy.sub as unknown as { account: unknown }).account).toBeUndefined();
     expect(fixture.data[key]).toMatchObject({ address });
     expect(callback).not.toHaveBeenCalledWith({ status: true });
     fixture.failSelectionRollback = false;

@@ -1,14 +1,11 @@
 <template>
-  <Fragment>
     <Favicon :url="url" :width="80" class="auth-favicon" />
     <div class="header" data-testid="header">{{ title }}</div>
     <div v-if="subtext" class="subtext">{{ subtext }}</div>
-  </Fragment>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Fragment } from 'vue';
 import { useI18n } from '@/locales/useI18n';
 import Favicon from '@/components/Favicon.vue';
 type Props = {

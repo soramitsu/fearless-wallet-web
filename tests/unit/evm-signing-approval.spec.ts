@@ -1,6 +1,17 @@
 import { captureMobileSigningContext } from '@extension-base/services/wallet-connect-service/mobileSigningContext';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Wallet, Transaction, getBytes, verifyMessage, verifyTypedData } from 'ethers';
+import {
+  JsonRpcProvider,
+  Wallet,
+  Transaction,
+  getBytes,
+  makeError,
+  verifyMessage,
+  verifyTypedData,
+  type JsonRpcError,
+  type JsonRpcPayload,
+  type JsonRpcResult,
+} from 'ethers';
 import { checkIfDenied } from '@polkadot/phishing';
 import { captureWalletConnectSigningContext } from '@extension-base/services/wallet-connect-service/signingContext';
 import EvmRequestHandler from '@extension-base/services/request-service/handlers/EvmRequestHandler';
@@ -133,7 +144,8 @@ const providerFixture = () => ({
   getTransactionCount: vi.fn(async () => 0),
   estimateGas: vi.fn(async () => 21000n),
   getFeeData: vi.fn(async () => ({ gasPrice: 1n, maxFeePerGas: null, maxPriorityFeePerGas: null })),
-  broadcastTransaction: vi.fn(async (_signed: string) => ({ hash: '0x1234' })),
+  // A node that takes the transaction answers eth_sendRawTransaction with its hash.
+  send: vi.fn(async (_method: string, [signed]: string[]) => Transaction.from(signed).hash),
 });
 
 describe('EVM approval revalidates after transaction preparation and signing', () => {
@@ -152,7 +164,7 @@ describe('EVM approval revalidates after transaction preparation and signing', (
     await failedApproval;
     await rejected;
     expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
-    expect(provider.broadcastTransaction).not.toHaveBeenCalled();
+    expect(provider.send).not.toHaveBeenCalled();
   });
 
   it('refuses an RPC configuration changed after the request was reviewed', async () => {
@@ -184,7 +196,7 @@ describe('EVM approval revalidates after transaction preparation and signing', (
       done({ gasPrice: 1n, maxFeePerGas: null, maxPriorityFeePerGas: null });
       await expect(approving).rejects.toThrow();
       expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
-      expect(provider.broadcastTransaction).not.toHaveBeenCalled();
+      expect(provider.send).not.toHaveBeenCalled();
       expect(handler.getEvmSignRequest('first')).toBe(request);
     }
   );
@@ -198,7 +210,7 @@ describe('EVM approval revalidates after transaction preparation and signing', (
     });
     await expect(extension.signEvmApprove({ id: 'first' })).rejects.toThrow();
     expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
-    expect(provider.broadcastTransaction).not.toHaveBeenCalled();
+    expect(provider.send).not.toHaveBeenCalled();
   });
   it.each(['revocation', 'provider replacement'])('refuses %s during local transaction signing', async (change) => {
     await queue('eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
@@ -216,7 +228,7 @@ describe('EVM approval revalidates after transaction preparation and signing', (
     else vi.mocked(state.getEvmApi).mockReturnValue({ api: providerFixture() } as never);
     done('0xpublic');
     await expect(approving).rejects.toThrow();
-    expect(provider.broadcastTransaction).not.toHaveBeenCalled();
+    expect(provider.send).not.toHaveBeenCalled();
   });
   it.each(['personal_sign', 'eth_signTypedData_v4'])('does not release revoked local %s signatures', async (method) => {
     const typed = {
@@ -481,9 +493,10 @@ describe('EVM approval uses the reviewed request context', () => {
     const provider = providerFixture();
     vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
     await extension.signEvmApprove({ id: 'first' });
-    await expect(result).resolves.toEqual({ id: 'first', payload: '0x1234' });
-    expect(provider.broadcastTransaction).toHaveBeenCalledOnce();
-    const signed = Transaction.from(provider.broadcastTransaction.mock.calls[0][0]);
+    expect(provider.send).toHaveBeenCalledOnce();
+    expect(provider.send.mock.calls[0][0]).toBe('eth_sendRawTransaction');
+    const signed = Transaction.from(provider.send.mock.calls[0][1][0]);
+    await expect(result).resolves.toEqual({ id: 'first', payload: signed.hash });
     expect(signed.chainId).toBe(1n);
     expect(signed.from).toBe(address);
     expect(signed.value).toBe(1n);
@@ -495,8 +508,8 @@ describe('EVM approval uses the reviewed request context', () => {
     vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
     await extension.signEvmApprove({ id: 'first' });
     await result;
-    expect(provider.broadcastTransaction).toHaveBeenCalledOnce();
-    const signed = Transaction.from(provider.broadcastTransaction.mock.calls[0][0]);
+    expect(provider.send).toHaveBeenCalledOnce();
+    const signed = Transaction.from(provider.send.mock.calls[0][1][0]);
     expect(signed.gasLimit).toBe(21000n);
     expect(signed.gasPrice).toBe(1000000000n);
     expect(signed.from).toBe(address);
@@ -514,14 +527,13 @@ describe('EVM approval uses the reviewed request context', () => {
     expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
     expect(handler.getEvmSignRequest('first')).toBe(request);
   });
-  it('does not replay a broadcast after an ambiguous transport failure', async () => {
+  it('gives the site the hash after an ambiguous transport failure, and does not replay the broadcast', async () => {
     const { result } = await queue('eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
-    const rejected = expect(result).rejects.toThrow('response lost after submission');
     const provider = providerFixture();
     vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
-    const send = provider.broadcastTransaction.mockRejectedValue(new Error('response lost after submission'));
-    await expect(extension.signEvmApprove({ id: 'first' })).resolves.toBe(false);
-    await rejected;
+    const send = provider.send.mockRejectedValue(new Error('response lost after submission'));
+    await expect(extension.signEvmApprove({ id: 'first' })).resolves.toBe(true);
+    await expect(result).resolves.toEqual({ id: 'first', payload: Transaction.from(send.mock.calls[0][1][0]).hash });
     await expect(extension.signEvmApprove({ id: 'first' })).rejects.toThrow();
     expect(send).toHaveBeenCalledTimes(1);
   });
@@ -847,21 +859,23 @@ describe('WalletConnect approval claims the actual queued intent', () => {
     await expect(extension.wcRequestApprove({ address, approvalId })).rejects.toThrow('unavailable');
     expect(sign).toHaveBeenCalledTimes(1);
   });
-  it('consumes an ambiguous broadcast failure without deleting the next same-session request', async () => {
+  it('consumes an ambiguous broadcast failure with its hash without deleting the next same-session request', async () => {
     const send = vi.fn().mockRejectedValue(new Error('response lost'));
     const provider = {
       getNetwork: vi.fn(async () => ({ chainId: 1n })),
       getTransactionCount: vi.fn(async () => 0),
       estimateGas: vi.fn(async () => 21000n),
       getFeeData: vi.fn(async () => ({ gasPrice: 1n, maxFeePerGas: null, maxPriorityFeePerGas: null })),
-      broadcastTransaction: send,
+      send,
     };
     vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
     const first = queued(1, 'eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
-    const rejected = expect(first.result).rejects.toThrow('response lost');
     const next = queued(2);
-    await expect(extension.wcRequestApprove({ address, approvalId: first.approvalId })).resolves.toBe(false);
-    await rejected;
+    await expect(extension.wcRequestApprove({ address, approvalId: first.approvalId })).resolves.toBe(true);
+    await expect(first.result).resolves.toEqual({
+      id: 'public-topic',
+      payload: Transaction.from(send.mock.calls[0][1][0]).hash,
+    });
     await expect(extension.wcRequestApprove({ address, approvalId: first.approvalId })).rejects.toThrow('unavailable');
     expect(send).toHaveBeenCalledTimes(1);
     expect(handler.signWcSubject.value.map(({ id }) => id)).toEqual([2]);
@@ -878,5 +892,123 @@ describe('WalletConnect approval claims the actual queued intent', () => {
     expect(handler.signWcSubject.value.map(({ id }) => id)).toEqual([2]);
     await extension.wcRequestApprove({ address, approvalId: next.approvalId });
     await next.result;
+  });
+});
+
+describe('an EVM transaction a site or a WalletConnect dApp asked for', () => {
+  type Behaviour = 'takes it' | 'takes it, block number rate-limited' | 'refuses it' | 'http' | 'busy' | 'destroyed';
+  const tx = { from: address, to: address, value: '0x1' };
+  const block = {
+    number: '0x10', hash: `0x${'33'.repeat(32)}`, parentHash: `0x${'44'.repeat(32)}`, timestamp: '0x1',
+    nonce: '0x0000000000000000', difficulty: '0x0', gasLimit: '0x1c9c380', gasUsed: '0x0', miner: `0x${'00'.repeat(20)}`,
+    extraData: '0x', baseFeePerGas: '0x1', transactions: [],
+  };
+
+  // An in-process node behind a real ethers provider, so a send goes through ethers as in the extension.
+  class Node extends JsonRpcProvider {
+    sent: string[] = [];
+
+    constructor(private readonly behaviour: Behaviour) {
+      super('http://127.0.0.1:1', 1, { batchStallTime: 10, batchMaxCount: 30 });
+    }
+
+    async _send(payload: JsonRpcPayload | JsonRpcPayload[]): Promise<JsonRpcResult[]> {
+      const list = Array.isArray(payload) ? payload : [payload];
+      const raw = list.find(({ method }) => method === 'eth_sendRawTransaction');
+
+      if (raw) {
+        this.sent.push((raw.params as string[])[0]);
+        if (this.behaviour === 'http') throw makeError('server response 503 Service Unavailable', 'SERVER_ERROR');
+        // A balance read's failover destroys this provider while the node's answer is on its way back.
+        if (this.behaviour === 'destroyed') this.destroy();
+      }
+
+      const answers = list.map(({ id, method, params }): JsonRpcResult | JsonRpcError => {
+        switch (method) {
+          case 'eth_chainId': return { id, result: '0x1' };
+          case 'eth_getTransactionCount': return { id, result: '0x0' };
+          case 'eth_estimateGas': return { id, result: '0x5208' };
+          case 'eth_gasPrice': case 'eth_maxPriorityFeePerGas': return { id, result: '0x1' };
+          case 'eth_getBlockByNumber': return { id, result: block };
+          case 'eth_blockNumber':
+            return this.behaviour === 'takes it, block number rate-limited'
+              ? { id, error: { code: -32005, message: 'rate limited' } }
+              : { id, result: '0x10' };
+          case 'eth_sendRawTransaction':
+            if (this.behaviour === 'refuses it') {
+              return { id, error: { code: -32000, message: 'insufficient funds for gas * price + value' } };
+            }
+            if (this.behaviour === 'busy') return { id, error: { code: -32005, message: 'limit exceeded' } };
+
+            return { id, result: Transaction.from((params as string[])[0]).hash! };
+          default: return { id, error: { code: -32601, message: `the method ${method} does not exist` } };
+        }
+      });
+
+      // ethers reads error answers from the same list.
+      return answers as JsonRpcResult[];
+    }
+  }
+
+  const settle = (result: Promise<unknown>) => result.then((value) => ({ value }), (error: unknown) => ({ error }));
+
+  beforeEach(() => vi.spyOn(console, 'warn').mockImplementation(() => undefined));
+
+  async function fromSite(node: Node) {
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: node } as never);
+    const outcome = settle((await queue('eth_sendTransaction', [tx])).result);
+
+    return { approved: await extension.signEvmApprove({ id: 'first' }), outcome: await outcome };
+  }
+
+  async function fromWalletConnect(node: Node) {
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: node } as never);
+    const event = {
+      id: 1,
+      topic: 'public-topic',
+      params: { chainId: 'eip155:1', request: { method: 'eth_sendTransaction', params: [tx] } },
+    } as never;
+    const outcome = settle(handler.onWCSign(event, captureWalletConnectSigningContext(state, event)));
+    const { approvalId } = handler.signWcSubject.value[0];
+
+    return { approved: await extension.wcRequestApprove({ address, approvalId }), outcome: await outcome };
+  }
+
+  describe.each([
+    ['a site', fromSite, 'first'],
+    ['a WalletConnect dApp', fromWalletConnect, 'public-topic'],
+  ] as const)('from %s', (_name, approve, id) => {
+    it('fails when the node refuses it', async () => {
+      const node = new Node('refuses it');
+      const { approved, outcome } = await approve(node);
+
+      expect(node.sent).toHaveLength(1);
+      expect(approved).toBe(false);
+      expect(outcome).toEqual({ error: expect.objectContaining({ code: 'INSUFFICIENT_FUNDS' }) });
+    });
+
+    it.each([
+      ['the node took it but its block number is rate-limited', 'takes it, block number rate-limited'],
+      ['an HTTP error ends the request', 'http'],
+      ['the node answers with a rate limit', 'busy'],
+      ['its provider is destroyed with the answer on its way', 'destroyed'],
+    ] as const)('is answered with its hash when %s', async (_case, behaviour) => {
+      const node = new Node(behaviour);
+      const { approved, outcome } = await approve(node);
+
+      expect(node.sent).toHaveLength(1);
+      expect(approved).toBe(true);
+      expect(outcome).toEqual({ value: { id, payload: Transaction.from(node.sent[0]).hash } });
+    });
+
+    it('is answered with the node’s hash when the node takes it', async () => {
+      const node = new Node('takes it');
+      const answered = vi.spyOn(node, 'send');
+      const { approved, outcome } = await approve(node);
+      const sendRaw = answered.mock.calls.findIndex(([method]) => method === 'eth_sendRawTransaction');
+
+      expect(approved).toBe(true);
+      expect(outcome).toEqual({ value: { id, payload: await answered.mock.results[sendRaw].value } });
+    });
   });
 });

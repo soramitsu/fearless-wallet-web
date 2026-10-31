@@ -10,7 +10,7 @@ import {
   validateSubstrateSigningAccount,
 } from '@extension-base/services/request-service/handlers/substrateSigningAccount';
 import { ethers, formatUnits, VoidSigner, Wallet } from 'ethers';
-import { makeEVMTransfer, quoteEVMTransfer } from '@extension-base/api/evm/transfer';
+import { makeEVMTransfer, quoteEVMTransfer, sendDappEvmTransaction } from '@extension-base/api/evm/transfer';
 import {
   isBitcoinTransferNetwork,
   makeBitcoinTransfer,
@@ -790,12 +790,13 @@ export default class Extension extends FWExtensionBase {
         const signed = await signer.signTransaction(populated!);
         assertProviderCurrent();
         try {
-          const { hash } = await provider!.broadcastTransaction(signed);
+          // Only the node's refusal fails the request. The site gets the hash of a transaction the network may
+          // have: told it failed, it could send the amount again with a fresh nonce.
+          const hash = await sendDappEvmTransaction(provider!, signed);
           request.resolve({ id: request.id, payload: hash as HexString });
         } catch (error) {
-          // A transport failure can occur after broadcast. Settle this intent;
-          // retrying it with a fresh nonce could transfer the amount twice.
-          request.reject(error instanceof Error ? error : new Error('EVM submission outcome is unavailable'));
+          // The node refused the transaction, so nothing was sent. Settle this intent.
+          request.reject(error instanceof Error ? error : new Error('EVM submission was refused'));
           return false;
         }
       } else {
@@ -2455,12 +2456,13 @@ export default class Extension extends FWExtensionBase {
         const signed = await signer.signTransaction(populated!);
         assertProviderCurrent();
         try {
-          const { hash } = await provider!.broadcastTransaction(signed);
+          // Only the node's refusal fails the request. The dApp gets the hash of a transaction the network may
+          // have: told it failed, it could send the amount again with a fresh nonce.
+          const hash = await sendDappEvmTransaction(provider!, signed);
           request.resolve({ id: request.request.topic, payload: hash as HexString });
         } catch (error) {
-          // A transport failure may follow a successful broadcast. Consume this
-          // intent instead of retrying it with a fresh nonce from the same screen.
-          request.reject(error instanceof Error ? error : new Error('WalletConnect submission outcome is unavailable'));
+          // The node refused the transaction, so nothing was sent. Consume this intent.
+          request.reject(error instanceof Error ? error : new Error('WalletConnect submission was refused'));
           return false;
         }
       } else {

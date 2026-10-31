@@ -120,7 +120,8 @@ const providerFixture = () => ({
   getTransactionCount: vi.fn(async () => 0),
   estimateGas: vi.fn(async () => 21000n),
   getFeeData: vi.fn(async () => ({ gasPrice: 1n, maxFeePerGas: null, maxPriorityFeePerGas: null })),
-  broadcastTransaction: vi.fn(async (_signed: string) => ({ hash: '0xpublic' })),
+  // A node that takes the transaction answers eth_sendRawTransaction with its hash.
+  send: vi.fn(async (_method: string, [signed]: string[]) => Transaction.from(signed).hash),
 });
 
 describe('WalletConnect uses the approved session grant at admission', () => {
@@ -291,7 +292,7 @@ describe('WalletConnect captures and revalidates asynchronous boundaries', () =>
       done({ gasPrice: 1n, maxFeePerGas: null, maxPriorityFeePerGas: null });
       await expect(approving).rejects.toThrow();
       expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
-      expect(provider.broadcastTransaction).not.toHaveBeenCalled();
+      expect(provider.send).not.toHaveBeenCalled();
     }
   );
   it('does not broadcast if the session changes while a transaction signature is pending', async () => {
@@ -309,7 +310,7 @@ describe('WalletConnect captures and revalidates asynchronous boundaries', () =>
     revision += 1;
     done('0xpublic');
     await expect(approving).rejects.toThrow();
-    expect(provider.broadcastTransaction).not.toHaveBeenCalled();
+    expect(provider.send).not.toHaveBeenCalled();
   });
   it('does not release a message signature if the session changes while signing is pending', async () => {
     const approvalId = await admit();
@@ -412,8 +413,9 @@ describe('WalletConnect captures and revalidates asynchronous boundaries', () =>
     const provider = providerFixture();
     vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
     await expect(extension.wcRequestApprove({ address, approvalId })).resolves.toBe(true);
-    expect(provider.broadcastTransaction).toHaveBeenCalledOnce();
-    const signed = Transaction.from(provider.broadcastTransaction.mock.calls[0][0]);
+    expect(provider.send).toHaveBeenCalledOnce();
+    expect(provider.send.mock.calls[0][0]).toBe('eth_sendRawTransaction');
+    const signed = Transaction.from(provider.send.mock.calls[0][1][0]);
     expect(signed.chainId).toBe(1n);
     expect(signed.from).toBe(address);
     expect(signed.value).toBe(1n);

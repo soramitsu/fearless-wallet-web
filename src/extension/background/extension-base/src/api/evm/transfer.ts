@@ -269,20 +269,9 @@ async function getERC20TransactionObject(params: TransferParams, state: State): 
     data,
   };
 
-  let gasLimit: bigint;
-
-  try {
-    gasLimit = await web3Api.estimateGas(transactionObject);
-  } catch (e) {
-    //BNB on ethereum is working that way, remove if something better is comes up
-    console.info(e);
-
-    const tx = { ...transactionObject };
-
-    delete tx.data;
-
-    gasLimit = await web3Api.estimateGas(tx);
-  }
+  // A transfer the node cannot estimate is not quoted or sent: a gas limit estimated without its call data runs out of
+  // gas on chain and costs the fee.
+  const gasLimit = await web3Api.estimateGas(transactionObject);
 
   const estimateFee = calcEvmFees(maxFeePerGas ?? gasPrice, block?.baseFeePerGas, gasLimit);
 

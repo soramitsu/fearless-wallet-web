@@ -91,11 +91,15 @@ export class SubstrateApiHandler {
 
     if (isSora(networkName)) return SoraApiHandler.initApi(currentProvider, eventListeners);
 
+    // A replaced connection would stay open and keep reconnecting. Its events no longer count (connectionRevision).
+    const { api: replacedApi, provider: replacedProvider } = this.api[networkName];
     const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS, undefined, 10000);
 
     const api = new ApiPromise({ provider, noInitWarn: true });
     this.api[networkName].api = api;
     this.api[networkName].provider = provider;
+    void replacedApi?.disconnect().catch(console.warn);
+    void replacedProvider?.disconnect().catch(console.warn);
     // ApiPromise rejects this even when no balance/signing caller is awaiting readiness yet.
     void api.isReadyOrError.catch((error) => {
       if (this.api[networkName]?.api !== api) return;

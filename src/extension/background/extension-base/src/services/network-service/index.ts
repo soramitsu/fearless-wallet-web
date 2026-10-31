@@ -466,11 +466,14 @@ export class NetworkService {
     });
 
     this.activeNetworkByEcosystem.substrate.forEach((network) => {
-      const initSubstrateApis = () => this.substrateApiHandler.initApi(network);
+      // The handler keys connections by lower-case name. A live connection is kept; one that fails is replaced once.
+      const key = network.name.toLowerCase();
+      const api = this.substrateApiHandler.api[key]?.api;
 
-      if (this.substrateApiHandler.api[network.name])
-        this.substrateApiHandler.api[network.name].api?.isReadyOrError.catch(initSubstrateApis);
-      else initSubstrateApis();
+      if (api) api.isReadyOrError.catch(() => {
+        if (this.substrateApiHandler.api[key]?.api === api) this.substrateApiHandler.initApi(network);
+      });
+      else this.substrateApiHandler.initApi(network);
     });
   }
 
@@ -491,9 +494,7 @@ export class NetworkService {
       if (network.ecosystem === 'ethereum') this.evmApiHandler.initEvmApi(network);
       else if (network.ecosystem === 'ton') this.tonApiHandler.initApi(network);
       else if (network.ecosystem === 'substrate' || network.ecosystem === 'ethereumBased') {
-        const previous = this.substrateApiHandler.api[name.toLowerCase()];
-        void previous?.api?.disconnect().catch(console.warn);
-        void previous?.provider?.disconnect().catch(console.warn);
+        // initApi closes the connection it replaces.
         await this.substrateApiHandler.initApi(network);
       }
     } catch (error) { console.warn('Saved network connection is unavailable', error); }

@@ -421,7 +421,7 @@ export class NetworkService {
 
       if (value === FAVORITE_NETWORKS) {
         this.networkValues.forEach((network) => {
-          if (network.favorite.includes(address)) return;
+          if (!network.favorite.includes(address)) return;
 
           if (
             isSubstrateAddress &&

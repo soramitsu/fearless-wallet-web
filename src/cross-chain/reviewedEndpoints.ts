@@ -4,7 +4,8 @@ const chain = REVIEWED_CHAIN_IDS;
 
 /**
  * RPC hosts a cross-chain quote may use, per chain: the chains of the reviewed runtime table and the destinations of
- * the bundled routes, each with the hosts of its production registry `nodes` on 2026-10-29.
+ * the bundled routes, each with the hosts of its production registry `nodes` as of 4.2.3 (Dwellir's `n.dwellir.com`
+ * hosts, no Blast API).
  *
  * The remote registry chooses which node the wallet connects to, and that node supplies the metadata that encodes the
  * call, the balances and nonce, the dry run, the destination's existential deposit and the transaction status. A
@@ -12,26 +13,26 @@ const chain = REVIEWED_CHAIN_IDS;
  */
 export const REVIEWED_RPC_HOSTS: Readonly<Record<string, readonly string[]>> = Object.freeze({
   [chain.polkadot]: Object.freeze([
-    'api-polkadot.dwellir.com',
+    'api-polkadot.n.dwellir.com',
     'rpc.polkadot.io',
     'rpc-polkadot.luckyfriday.io',
     'polkadot.public.curie.radiumblock.co',
   ]),
   [chain.kusama]: Object.freeze([
-    'api-kusama.dwellir.com',
+    'api-kusama.n.dwellir.com',
     'kusama-rpc.polkadot.io',
     'rpc-kusama.luckyfriday.io',
     'kusama.public.curie.radiumblock.co',
   ]),
   [chain.polkadotAssetHub]: Object.freeze([
-    'api-assethub-polkadot.dwellir.com',
+    'api-asset-hub-polkadot.n.dwellir.com',
     'polkadot-asset-hub-rpc.polkadot.io',
     'statemint.public.curie.radiumblock.co',
     'rpc-asset-hub-polkadot.luckyfriday.io',
     'dot-rpc.stakeworld.io',
   ]),
   [chain.kusamaAssetHub]: Object.freeze([
-    'api-assethub-kusama.dwellir.com',
+    'api-asset-hub-kusama.n.dwellir.com',
     'kusama-asset-hub-rpc.polkadot.io',
     'statemine.public.curie.radiumblock.co',
     'rpc-asset-hub-kusama.luckyfriday.io',
@@ -40,7 +41,7 @@ export const REVIEWED_RPC_HOSTS: Readonly<Record<string, readonly string[]>> = O
   [chain.liberland]: Object.freeze(['mainnet.liberland.org']),
   [chain.sora]: Object.freeze(['ws.mof.sora.org', 'mof2.sora.org', 'mof3.sora.org']),
   [chain.acala]: Object.freeze([
-    'acala-rpc.dwellir.com',
+    'acala-rpc.n.dwellir.com',
     'acala-rpc-0.aca-api.network',
     'acala-rpc-1.aca-api.network',
     'acala-rpc-3.aca-api.network',
@@ -48,9 +49,8 @@ export const REVIEWED_RPC_HOSTS: Readonly<Record<string, readonly string[]>> = O
     'acala.dotters.network',
   ]),
   [chain.astar]: Object.freeze([
-    'api-astar.dwellir.com',
+    'api-astar.n.dwellir.com',
     'rpc.astar.network',
-    'astar.public.blastapi.io',
     'astar.public.curie.radiumblock.co',
   ]),
 });

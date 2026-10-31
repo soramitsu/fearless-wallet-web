@@ -717,6 +717,10 @@ export default defineComponent({ name: 'AddWallet',
             this.validateMobileDubs();
     },
     saveKeypair() {
+      // The Ethereum-only flow links an account to a wallet that has none; it never replaces one.
+      if (this.isOnlyEthereumAccount && this.accountsStore.selectedWallet.ethereumAddress)
+        return Promise.reject(new Error('The wallet already has an Ethereum account'));
+
       if (this.substrateJson || this.ethereumJson) return this.saveKeypairFromJson();
 
           return this.saveKeypairFromSeed();

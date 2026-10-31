@@ -14,9 +14,13 @@ import { type NetworkName } from '@/interfaces';
 import { isSora } from '@/helpers';
 import { MAX_CONTINUE_RETRY } from '@/consts/networks';
 
+// The longest wait before connecting again to a network whose every node failed.
+const RECONNECT_MAX_DELAY_MS = 120_000;
+
 export class SubstrateApiHandler {
   api: Record<NetworkName, ApiProps> = {};
   private readonly connectionRevision: Record<NetworkName, number> = {};
+  private readonly reconnectAttempts: Record<NetworkName, number> = {};
 
   constructor(readonly networkService: NetworkService, public state: State) {}
 
@@ -114,6 +118,9 @@ export class SubstrateApiHandler {
     if (isSora(networkName)) this.api[networkName].api = SoraApiHandler.getApiInstance();
 
     this.api[networkName].apiRetry = 0;
+    // A later outage starts again from the first node and the shortest wait.
+    this.api[networkName].nodeIndex = 0;
+    delete this.reconnectAttempts[networkName];
     this.api[networkName].apiStatus = NETWORK_STATUS.CONNECTED;
   }
 
@@ -148,6 +155,9 @@ export class SubstrateApiHandler {
       return;
     }
 
+    // Offline every node fails. The provider keeps reconnecting by itself, so this failure is not held against the node.
+    if (!navigator.onLine) return;
+
     api.apiRetry += 1;
 
     if (api.apiRetry < MAX_CONTINUE_RETRY) return;
@@ -156,12 +166,27 @@ export class SubstrateApiHandler {
 
     api.nodeIndex += 1;
 
-    if (api.nodeIndex <= network.nodes.length - 1 && navigator.onLine) {
+    if (api.nodeIndex <= network.nodes.length - 1) {
       this.initApi(network);
     } else {
-      api.apiStatus = NETWORK_STATUS.DISCONNECTED; // попробовали все ноды, не смогли подключиться, ставим статус дисконнект
-
-      this.state.disableNetworkMap(networkName);
+      // Every node failed. The network stays active and connects again from the first node after a bounded backoff.
+      api.apiStatus = NETWORK_STATUS.DISCONNECTED;
+      api.nodeIndex = 0;
+      this.reconnectLater(netName);
     }
+  }
+
+  private reconnectLater(name: string) {
+    const networkName = name.toLowerCase();
+    const revision = this.connectionRevision[networkName];
+    const attempt = (this.reconnectAttempts[networkName] ?? 0) + 1;
+    this.reconnectAttempts[networkName] = attempt;
+
+    setTimeout(() => {
+      // A newer connection, or the network being switched off, takes over.
+      const network = this.networkService.networkMap[name];
+      if (this.connectionRevision[networkName] !== revision || !network?.active) return;
+      void this.initApi(network);
+    }, Math.min(DOTSAMA_AUTO_CONNECT_MS * 2 ** (attempt - 1), RECONNECT_MAX_DELAY_MS));
   }
 }

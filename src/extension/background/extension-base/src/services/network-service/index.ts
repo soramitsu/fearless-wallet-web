@@ -78,6 +78,7 @@ export class NetworkService {
   private registryInitialization?: Promise<void>;
   private registryRetry?: Promise<boolean>;
   private preferenceRevision = 0;
+  private selectedNetworksRead = false;
   private readonly networkPreferenceRevision: Record<string, number> = {};
   private readonly logger = createLogger('Network_Service');
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
@@ -97,9 +98,12 @@ export class NetworkService {
     this.substrateApiHandler = new SubstrateApiHandler(this, state);
     this.tonApiHandler = new TonApiHandler(state);
 
-    this.selectedNetworksStore.get('selectedNetworks', (selectedNetworks) => {
-      this.selectedNetworks = selectedNetworks ?? {};
-    });
+    // A failed read is not an empty choice: until a read succeeds, the saved choices are not replaced.
+    void Promise.resolve().then(() => this.selectedNetworksStore.getAndWait('selectedNetworks')).then((selectedNetworks) => {
+      // Saved choices win over the defaults loadNetworkMap may have filled in meanwhile.
+      this.selectedNetworks = { ...this.selectedNetworks, ...(selectedNetworks ?? {}) };
+      this.selectedNetworksRead = true;
+    }, (error) => console.warn('Network selections could not be read', error));
   }
 
   get networkValues() {
@@ -340,6 +344,7 @@ export class NetworkService {
   }
 
   saveSelectedNetworks() {
+    if (!this.selectedNetworksRead) return;
     this.selectedNetworksStore.set('selectedNetworks', this.selectedNetworks);
   }
 

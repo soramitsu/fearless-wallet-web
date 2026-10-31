@@ -5,6 +5,7 @@
     :step="step"
     :completionConfirmed="isFinished"
     :isLoading="isLoading"
+    :backDisabled="isSaving"
     :header="header"
     :showFullScreenIcon="false"
     @back="back"
@@ -195,6 +196,10 @@ export default defineComponent({ name: 'CreateGoogle',
     confirmMnemonicStep() {
       return this.step === 3;
     },
+    // Leaving now would not stop the wallet from being created, only its Drive backup.
+    isSaving() {
+      return this.step === 4 && this.isLoading;
+    },
     mnemonicLength() {
       return UNIVERSAL_WALLET_DEFAULT_WORD_COUNT;
     },
@@ -306,6 +311,7 @@ export default defineComponent({ name: 'CreateGoogle',
       this.$router.replace({ name: Components.Wallet, params: { access_token: '' } }).catch((e) => e);
     },
     back() {
+      if (this.isSaving) return;
       if (this.step === 1 || this.step === 4) this.goBack();
       else if (!this.isLoading) this.step -= 1;
     },

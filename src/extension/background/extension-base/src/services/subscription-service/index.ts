@@ -74,7 +74,11 @@ export class SubscriptionService {
   constructor(private state: State) {
     this.logger = createLogger('Subscription');
 
-    void this.init().catch(() => this.logger.error('Unable to persist authorization account display state'));
+    // The display projection lists the wallet's accounts, so it runs once the wallet records have been read. Run
+    // earlier, it found no accounts whenever the authorization store answered first.
+    void Promise.resolve(this.state.eventService?.waitCryptoReady)
+      .then(() => this.init())
+      .catch(() => this.logger.error('Unable to persist authorization account display state'));
   }
 
   // Clear a previous subscriber

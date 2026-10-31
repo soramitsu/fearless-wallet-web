@@ -183,7 +183,7 @@ describe('captured Substrate metadata and network', () => {
       if (change === 'disabled network') state.networkService.networkMap.public.disabled = true;
       if (change === 'ambiguous network')
         state.networkService.networkMap.other = { ...state.networkService.networkMap.public };
-      if (change === 'ambiguous metadata') replaceMetadata([metadata(), metadata()]);
+      if (change === 'ambiguous metadata') replaceMetadata([metadata(), { ...metadata(), specVersion: 2 }]);
       if (change === 'version five') value.version = 5;
       await expect(
         handler.sign(url, new RequestExtrinsicSign(value), { address: pair.address } as AccountJson)

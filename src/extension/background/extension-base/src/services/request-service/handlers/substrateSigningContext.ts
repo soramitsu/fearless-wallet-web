@@ -8,6 +8,7 @@ import {
 } from './substrateCallReview';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
+import type { HexString } from '@polkadot/util/types';
 import type State from '@extension-base/background/handlers/State';
 import type { SignRequest } from '@extension-base/background/types/types';
 import type { RequestService } from '@extension-base/services/request-service';
@@ -48,9 +49,14 @@ export function captureSubstrateSigningContext(
   const network = matches[0];
   if (network && (network.disabled || !['substrate', 'ethereumBased'].includes(network.ecosystem)))
     throw new Error('Substrate signing network is unavailable');
-  const definitions = service.knownMetadata.filter((entry) => entry.genesisHash.toLowerCase() === genesisHash);
-  if (definitions.length > 1) throw new Error('Substrate signing metadata is ambiguous');
+  // Metadata kept before genesis hashes were lower-cased can repeat a chain in another letter case. Copies that agree
+  // are one definition; copies that differ stay ambiguous.
+  const definitions = service.knownMetadata
+    .filter((entry) => entry.genesisHash.toLowerCase() === genesisHash)
+    .map((entry) => ({ ...entry, genesisHash: genesisHash as HexString }));
   const metadata = definitions[0];
+  if (definitions.slice(1).some((entry) => JSON.stringify(entry) !== JSON.stringify(metadata)))
+    throw new Error('Substrate signing metadata is ambiguous');
   if (
     !Array.isArray(payload.signedExtensions) ||
     payload.signedExtensions.some((name) => typeof name !== 'string') ||

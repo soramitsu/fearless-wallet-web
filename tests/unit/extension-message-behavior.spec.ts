@@ -33,7 +33,7 @@ function fixture() {
       tonKeyring: { getAccounts: () => [], accountSubject: subject(account('ton-alice', 'TON Alice', 'ton')) },
     },
     keyringLockService: { lockIfExpired: vi.fn(), lockTimerIsExist: vi.fn(() => false), clearLockTimer: vi.fn(), setExtensionAutoLockTimeout: vi.fn() },
-    networkService: { networkMap, selectedNetworks: { alice: 'substrate' }, networkMapStore: { getSubject: () => subject(networkMap) }, selectedNetworksStore: { getSubject: () => subject({ alice: 'substrate' }) } },
+    networkService: { networkMap, activeNetworkByEcosystem: { evmList: ['ethereum', 'kaia mainnet', 'zetachain mainnet'] }, selectedNetworks: { alice: 'substrate' }, networkMapStore: { getSubject: () => subject(networkMap) }, selectedNetworksStore: { getSubject: () => subject({ alice: 'substrate' }) } },
     subscriptionService: { createSubscription: vi.fn((id: string) => { const cb = vi.fn(); callbacks.set(id, cb); return cb; }), setUnsubscriptionHandle: (id: string, cleanup: () => void) => cleanups.set(id, cleanup), cancelSubscription: vi.fn((id: string) => { cleanups.get(id)?.(); cleanups.delete(id); return true; }) },
     requestService: {
       getAuthList: vi.fn().mockResolvedValue({}), getMetaRequest: vi.fn(), getConnectWCRequest: vi.fn(), getNotSupportWCRequest: vi.fn(),
@@ -150,6 +150,10 @@ describe('extension balance routing', () => {
   it('does not start EVM balance loading until startup has finished', async () => {
     state.isReady.mockReturnValue(false); await call('pri(fetch.evm.balance)', { assetId: 'eth', ethereumAddress: '0x1234' }); expect(state.balanceService.evmBalanceService.fetchBalance).not.toHaveBeenCalled();
     state.isReady.mockReturnValue(true); await call('pri(fetch.evm.balance)', { assetId: 'eth', ethereumAddress: '0x1234' }); expect(state.balanceService.evmBalanceService.fetchBalance).toHaveBeenCalledWith(expect.objectContaining({ assetId: 'eth', ethereumAddress: '0x1234', networks: expect.any(Array) }));
+  });
+  it('refreshes every active EVM network from the wallet screen, as start-up does', async () => {
+    await call('pri(fetch.evm.balance)', { ethereumAddress: '0x1234' });
+    expect(state.balanceService.evmBalanceService.fetchBalance).toHaveBeenCalledExactlyOnceWith({ assetId: undefined, ethereumAddress: '0x1234', networks: ['ethereum', 'kaia mainnet', 'zetachain mainnet'] });
   });
 });
 

@@ -58,6 +58,8 @@ type PrepareBitcoinSendParams = {
   maxInputs?: number;
   mnemonicOrSeed: string;
   network?: BitcoinDerivationNetwork;
+  /** BIP39 passphrase (the wallet password); '' for accounts derived from the words alone. */
+  passphrase?: string;
   /**
    * Coins of an earlier transaction whose broadcast outcome is unknown. Every
    * one of them is spent again, so the new transaction conflicts with the
@@ -168,6 +170,7 @@ export async function prepareBitcoinSend(params: PrepareBitcoinSendParams): Prom
     mnemonicOrSeed: params.mnemonicOrSeed,
     network: plan.network,
     outputs: [{ address: plan.toAddress, value: plan.amountSat }],
+    passphrase: params.passphrase,
   });
 
   return {

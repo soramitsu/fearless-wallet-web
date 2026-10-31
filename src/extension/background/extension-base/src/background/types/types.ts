@@ -37,6 +37,7 @@ import type { CrossChainSendRecords } from '@/cross-chain/sendLedger';
 import type { ActionCapabilityConfig } from '@extension-base/services/action-capability-service';
 import type { SendKillSwitchState } from '@/util/sendKillSwitch';
 import type { TonImportChoice } from '@/util/tonKeyring';
+import type { UniversalWalletFunds, UniversalWalletPasswordNetwork } from '@/util/universalWalletPassphrase';
 import type { BitcoinPendingSend } from '@extension-base/api/bitcoin/pendingSends';
 import type { SolanaPendingSend } from '@extension-base/api/solana/pendingSends';
 import type { SigningRequestKind } from '@extension-base/services/request-service/signingRequestId';
@@ -654,6 +655,52 @@ export interface RequestRecoverAccountWithPhrase {
 export interface ResponseRecoverAccountWithPhrase {
   ok: boolean;
   code?: 'phrase_mismatch' | 'locked' | 'not_found' | 'storage_failed';
+}
+
+/** A phrase about to be imported: its no-password Universal Wallet addresses are checked for funds. */
+export interface RequestUniversalWalletPasswordDiscovery {
+  mnemonic: string;
+}
+
+export interface UniversalWalletPasswordDiscoveryItem {
+  network: UniversalWalletPasswordNetwork;
+  address: string;
+  funds: UniversalWalletFunds;
+}
+
+export interface RequestUniversalWalletPasswordAccount {
+  address: string;
+}
+
+/** One account a password wallet still shows at the address its recovery words alone open. */
+export interface UniversalWalletPasswordRow {
+  network: UniversalWalletPasswordNetwork;
+  legacyAddress: string;
+  protectedAddress?: string;
+}
+
+/**
+ * `legacy`: some accounts still open with the words alone; `password-unknown`: a wallet saved before passwords
+ * were kept whose key was made with a derivation path, which may include a password.
+ */
+export type UniversalWalletPasswordStatus =
+  | { state: 'none' }
+  | { state: 'protected' }
+  | { state: 'legacy'; rows: UniversalWalletPasswordRow[] }
+  | { state: 'password-unknown' };
+
+export interface RequestUniversalWalletPasswordPath {
+  address: string;
+  derivationPath: string;
+}
+
+export type ResponseUniversalWalletPasswordPath =
+  | { ok: true; status: UniversalWalletPasswordStatus }
+  | { ok: false; code: 'locked' | 'not_found' | 'path_mismatch' | 'no_password' | 'storage_failed' };
+
+export interface UniversalWalletPasswordSwitchResult {
+  network: UniversalWalletPasswordNetwork;
+  outcome: 'switched' | 'funded' | 'unknown';
 }
 
 /** A wallet the user deleted whose keys are kept on the device (DeletedWallets.ts); not in the wallet list. */

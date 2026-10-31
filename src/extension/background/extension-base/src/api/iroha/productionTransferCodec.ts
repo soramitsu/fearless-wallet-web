@@ -12,7 +12,7 @@ import { deriveIrohaSigningKey } from '@/util/irohaKeyring';
 // Norito V1 frame header that Torii counts toward the per-byte fee (`tx_bytes_len`).
 const NORITO_FRAME_HEADER_BYTES = 40;
 
-type IrohaTransferPayloadInput = Omit<IrohaTransferCodecInput, 'derivationPath' | 'mnemonicOrSeed'>;
+type IrohaTransferPayloadInput = Omit<IrohaTransferCodecInput, 'derivationPath' | 'mnemonicOrSeed' | 'passphrase'>;
 
 function buildTransferPayload(input: IrohaTransferPayloadInput): Uint8Array {
   return buildBrowserTransferPayload({
@@ -39,7 +39,11 @@ function getIrohaTransferFrameBytes(input: IrohaTransferPayloadInput): number {
 
 const browserIrohaTransferCodec: IrohaTransferCodec = {
   async buildAndSignTransfer(input: IrohaTransferCodecInput): Promise<IrohaSignedTransaction> {
-    const signingKey = deriveIrohaSigningKey({ mnemonic: input.mnemonicOrSeed, path: input.derivationPath });
+    const signingKey = deriveIrohaSigningKey({
+      mnemonic: input.mnemonicOrSeed,
+      passphrase: input.passphrase,
+      path: input.derivationPath,
+    });
 
     try {
       if (signingKey.publicKeyHex.toLowerCase() !== input.signingPublicKeyHex.toLowerCase()) {

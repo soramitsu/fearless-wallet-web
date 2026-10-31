@@ -11,9 +11,11 @@ import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { FetchBalancePayload, ResponseBalanceRequest, TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RelayChainName } from '@/interfaces';
+import type { UniversalWalletFunds } from '@/util/universalWalletPassphrase';
 import { UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
 import { isSameString } from '@/helpers';
 import { parseIrohaI105Address } from '@/util/iroha';
+import { withTimeout } from '@/util/endpointFailover';
 
 type IrohaNetworkKey = keyof typeof UNIVERSAL_WALLET_IROHA_NETWORKS;
 
@@ -65,6 +67,7 @@ type IrohaBalanceClient = {
 type IrohaBalanceClientFactory = (network: NetworkJson, irohaNetwork: IrohaNetworkKey) => IrohaBalanceClient;
 
 const IROHA_FALLBACK_NETWORK = 'Taira';
+const IROHA_FUNDS_PROBE_TIMEOUT_MS = 6_000;
 const IROHA_NEXUS_FALLBACK_ASSET_ID = 'xor#sora';
 const IROHA_FALLBACK_ICON = 'iroha';
 const IROHA_FALLBACK_SYMBOL = 'XOR';
@@ -113,6 +116,31 @@ export default class IrohaBalanceService {
     );
 
     return results.flat();
+  }
+
+  /** Whether the Taira address holds any asset now (the Universal Wallet password checks). Read-only: nothing
+   * is cached, and a failed, slow or incomplete read is `unknown`. */
+  async probeAddressFunds(address: string): Promise<UniversalWalletFunds> {
+    const network = [
+      ...(this.state.networkService.activeNetworkByEcosystem.iroha ?? []),
+      ...Object.values(this.state.networkService.networkMap),
+    ].find((candidate) => candidate?.ecosystem === 'iroha' && candidate.chainId === UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId);
+
+    if (!network || !this.isAddressForNetwork(address, 'taira')) return 'unknown';
+
+    try {
+      const items = await withTimeout(
+        this.fetchAllAccountAssets(this.clientFactory(network, 'taira'), address, 'taira'),
+        IROHA_FUNDS_PROBE_TIMEOUT_MS,
+        () => new Error('iroha_funds_probe_timeout')
+      );
+
+      return items.some((item) => /[1-9]/.test(this.getQuantity(item))) ? 'funded' : 'empty';
+    } catch (error) {
+      console.warn('Taira funds probe failed', error);
+
+      return 'unknown';
+    }
   }
 
   private resolveWalletAddress(

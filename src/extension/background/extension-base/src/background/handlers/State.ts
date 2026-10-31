@@ -33,6 +33,7 @@ import {
 import { storage } from '@extension-base/stores/Storage';
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
 import { KeyringLockService } from '@extension-base/services/keyring-service/KeyringLock';
+import { balanceServiceFundsProbe } from '@extension-base/services/keyring-service/UniversalWalletPassword';
 import {
   existingCurrentAccount,
   pickDefaultCurrentAccount,
@@ -149,6 +150,7 @@ export default class State {
   historyService = new HistoryService(this);
 
   constructor() {
+    this.keyringService.setUniversalWalletFundsProbe(balanceServiceFundsProbe(this.balanceService));
     this.injectFromStorage();
     this.init();
   }

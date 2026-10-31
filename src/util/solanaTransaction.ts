@@ -34,6 +34,8 @@ export type ParsedSolanaTransaction = {
 export type SignSolanaTransactionPayload = {
   expectedSigner?: string;
   mnemonic: string;
+  /** The wallet password when it opens the signer; '' for accounts the words alone open. */
+  passphrase?: string;
   path?: string;
   transaction: string | Uint8Array;
 };
@@ -108,11 +110,12 @@ export function getSolanaSerializedMessageBase64(transaction: string | Uint8Arra
 export function signSolanaSerializedTransaction({
   expectedSigner,
   mnemonic,
+  passphrase,
   path = SOLANA_DEFAULT_DERIVATION_PATH,
   transaction,
 }: SignSolanaTransactionPayload): SignedSolanaTransaction {
   const parsed = parseSolanaSerializedTransaction(transaction);
-  const account = deriveSolanaAccount({ mnemonic, path });
+  const account = deriveSolanaAccount({ mnemonic, passphrase, path });
 
   if (expectedSigner !== undefined && account.address !== expectedSigner) {
     throw new SolanaTransactionError('signer_mismatch');
@@ -124,7 +127,7 @@ export function signSolanaSerializedTransaction({
   if (signerIndex >= parsed.requiredSignatures) throw new SolanaTransactionError('signer_not_required');
   if (signerIndex >= parsed.signatureCount) throw new SolanaTransactionError('missing_signature_slot');
 
-  const signature = signSolanaMessage({ message: parsed.messageBytes, mnemonic, path });
+  const signature = signSolanaMessage({ message: parsed.messageBytes, mnemonic, passphrase, path });
   const signedTransaction = normalizeTransaction(transaction);
 
   signedTransaction.set(signature.signature, parsed.signaturesOffset + signerIndex * SIGNATURE_BYTES);

@@ -7,6 +7,7 @@ import {
   type BitcoinFeeEstimates,
 } from '@extension-base/services/bitcoin-indexer-service';
 import { assertSendCapability } from '@extension-base/services/send-kill-switch-service';
+import { exportUniversalWalletSecret } from '@extension-base/services/keyring-service/UniversalWalletPassword';
 import {
   getDefaultBitcoinPendingSendStore,
   resolveBitcoinPendingSends,
@@ -60,6 +61,8 @@ type BitcoinTransferSource = {
   bitcoinAddress?: string;
   bitcoinTestnetAddress?: string;
   mnemonicOrSeed: string;
+  /** The wallet password when it opens this account; '' for every account the words alone open. */
+  passphrase: string;
   source: BitcoinSendSource;
 };
 type BitcoinTransferClient = BitcoinSendClient & BitcoinDiscoveryClient & Partial<BitcoinPendingSendClient>;
@@ -196,6 +199,7 @@ export async function makeBitcoinTransfer(
       client: indexer,
       mnemonicOrSeed: source.mnemonicOrSeed,
       network,
+      passphrase: source.passphrase,
       requiredOutpoints: unresolved.flatMap(({ outpoints }) => outpoints),
       selectedOutpoints: params.bitcoinSelectedOutpoints,
       sources: discovered.sources,
@@ -290,6 +294,7 @@ export async function prepareBitcoinTransferForTest(
     maxInputs: params.bitcoinMaxInputs,
     mnemonicOrSeed: source.mnemonicOrSeed,
     network,
+    passphrase: source.passphrase,
     selectedOutpoints: params.bitcoinSelectedOutpoints,
     sources: discovered.sources,
     toAddress: normalizeRecipient(params.to, network),
@@ -308,6 +313,7 @@ export async function discoverBitcoinTransferSources(
     maxLookahead: options.maxLookahead,
     mnemonicOrSeed: source.mnemonicOrSeed,
     network,
+    passphrase: source.passphrase,
   });
   const firstReceive = discovery.receive.addresses[0];
 
@@ -518,10 +524,12 @@ export function resolveBitcoinTransferSource(
 
   if (!sourceAddress || !isBitcoinAddress(sourceAddress, network)) throw new Error('invalid_bitcoin_source_address');
 
-  const { seed } = state.keyringService.exportMnemonic({
-    address: account.address,
-    walletEcosystem: meta.walletEcosystem,
-  });
+  const { seed, passphrase } = exportUniversalWalletSecret(
+    state.keyringService,
+    { address: account.address, walletEcosystem: meta.walletEcosystem },
+    network === 'testnet' ? 'bitcoinTestnet' : 'bitcoin',
+    meta
+  );
 
   if (!seed) throw new Error('bitcoin_mnemonic_unavailable');
 
@@ -530,6 +538,7 @@ export function resolveBitcoinTransferSource(
     bitcoinAddress: meta.bitcoinAddress,
     bitcoinTestnetAddress: meta.bitcoinTestnetAddress,
     mnemonicOrSeed: seed,
+    passphrase,
     source: {
       address: normalizeRecipient(sourceAddress, network),
       derivationPath: getBitcoinReceivePath(network),

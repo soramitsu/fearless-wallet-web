@@ -602,3 +602,24 @@ describe('SolanaBalanceService', () => {
     );
   });
 });
+
+describe('SolanaBalanceService funds probe (Universal Wallet password)', () => {
+  it('counts SOL or any token as funded, and an unread token list or failure as unchecked', async () => {
+    const { state, updateBalanceStore } = createState();
+    const client = { getBalances: vi.fn(), verifyServiceInfo: vi.fn().mockResolvedValue({ schemaVersion: 1, serviceId: 'si.soramitsu.io' }) };
+    const service = new SolanaBalanceService(state, client);
+
+    client.getBalances.mockResolvedValueOnce(balancesResponse('1', '0.000000001'));
+    await expect(service.probeAddressFunds(WALLET)).resolves.toBe('funded');
+    client.getBalances.mockResolvedValueOnce(balancesResponse('0', '0', [tokenBalance('Mint1111111111111111111111111111111111111111', '5', 0, 'spl-token')]));
+    await expect(service.probeAddressFunds(WALLET)).resolves.toBe('funded');
+    client.getBalances.mockResolvedValueOnce(balancesResponse('0', '0'));
+    await expect(service.probeAddressFunds(WALLET)).resolves.toBe('empty');
+    client.getBalances.mockResolvedValueOnce({ ...balancesResponse('0', '0'), tokensUnavailable: true });
+    await expect(service.probeAddressFunds(WALLET)).resolves.toBe('unknown');
+    client.getBalances.mockRejectedValueOnce(new Error('rpc unavailable'));
+    await expect(service.probeAddressFunds(WALLET)).resolves.toBe('unknown');
+    expect(client.getBalances).toHaveBeenCalledWith(WALLET);
+    expect(updateBalanceStore).not.toHaveBeenCalled();
+  });
+});

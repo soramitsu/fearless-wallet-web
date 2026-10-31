@@ -135,7 +135,8 @@ describe('TON import: phrase validation', () => {
     await finish(wrapper);
 
     expect(mocks.save.mock.calls.at(-1)).toEqual([PHRASE, expect.anything(), expect.anything(), 'substrate', false]);
-    expect(mocks.derive).toHaveBeenCalledWith(PHRASE);
+    // Without a ///password the Universal Wallet accounts use no passphrase.
+    expect(mocks.derive).toHaveBeenCalledWith(PHRASE, '', []);
     wrapper.unmount();
   });
 });

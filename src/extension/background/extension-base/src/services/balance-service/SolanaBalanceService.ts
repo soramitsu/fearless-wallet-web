@@ -14,7 +14,9 @@ import type { ResponseBalanceRequest, TokenGroup } from '@extension-base/backgro
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { FetchBalancePayload } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
+import type { UniversalWalletFunds } from '@/util/universalWalletPassphrase';
 import { isSameString } from '@/helpers';
+import { withTimeout } from '@/util/endpointFailover';
 
 type SolanaBalanceClient = Pick<SolanaIndexerClient, 'getBalances'> &
   Partial<Pick<SolanaIndexerClient, 'getTokenMetadataBatch' | 'verifyServiceInfo'>>;
@@ -23,6 +25,7 @@ type SolanaTokenMetadataByMint = Record<string, SolanaTokenMetadata | undefined>
 const SOLANA_FALLBACK_NETWORK = 'Solana';
 const SOLANA_FALLBACK_ASSET_ID = 'SOL';
 const SOLANA_FALLBACK_ICON = 'solana';
+const SOLANA_FUNDS_PROBE_TIMEOUT_MS = 6_000;
 
 export default class SolanaBalanceService {
   private serviceInfoVerified = false;
@@ -44,6 +47,44 @@ export default class SolanaBalanceService {
         createClusterBoundSolanaRpcClient({ network: getSolanaNetworkKind(network), rpcUrls: getSolanaRpcUrls(network) })
       )
     );
+  }
+
+  /** Whether the address holds SOL or tokens now (the Universal Wallet password checks). Read-only: nothing is
+   * cached, and a failed, slow or partial read (token accounts unread) is `unknown`. */
+  async probeAddressFunds(address: string): Promise<UniversalWalletFunds> {
+    const network = [
+      ...(this.state.networkService.activeNetworkByEcosystem.solana ?? []),
+      ...Object.values(this.state.networkService.networkMap),
+    ].find((candidate) => {
+      try {
+        return candidate?.ecosystem === 'solana' && getSolanaNetworkKind(candidate) === 'mainnet';
+      } catch {
+        return false;
+      }
+    });
+
+    if (!network) return 'unknown';
+
+    try {
+      const client = this.clientFor(network);
+
+      return await withTimeout(
+        (async (): Promise<UniversalWalletFunds> => {
+          await this.ensureServiceInfoVerified(client);
+          const { native, tokens, tokensUnavailable } = await client.getBalances(address);
+
+          if (BigInt(native.lamports) > 0n || tokens.some(({ amount }) => amount !== '0')) return 'funded';
+
+          return tokensUnavailable ? 'unknown' : 'empty';
+        })(),
+        SOLANA_FUNDS_PROBE_TIMEOUT_MS,
+        () => new Error('solana_funds_probe_timeout')
+      );
+    } catch (error) {
+      console.warn('Solana funds probe failed', error);
+
+      return 'unknown';
+    }
   }
 
   async fetchBalance({

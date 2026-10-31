@@ -145,6 +145,13 @@ import type {
   ResponseRecoverAccountWithPassword,
   RequestRecoverAccountWithPhrase,
   ResponseRecoverAccountWithPhrase,
+  RequestUniversalWalletPasswordAccount,
+  RequestUniversalWalletPasswordDiscovery,
+  RequestUniversalWalletPasswordPath,
+  ResponseUniversalWalletPasswordPath,
+  UniversalWalletPasswordDiscoveryItem,
+  UniversalWalletPasswordStatus,
+  UniversalWalletPasswordSwitchResult,
   DeletedWalletSummary,
   RequestRestoreDeletedWallet,
   ResponseRestoreDeletedWallet,
@@ -227,6 +234,10 @@ export interface RequestSignatures {
   'pri(keyring.generateMnemonic)': [RequestGenerateMnemonic, string];
   'pri(keyring.mnemonicValidate)': [RequestValidateMnemonic, boolean];
   'pri(keyring.tonImportCandidates)': [RequestTonImportCandidates, TonImportCandidateInfo[]];
+  'pri(keyring.universalWalletPasswordDiscovery)': [RequestUniversalWalletPasswordDiscovery, UniversalWalletPasswordDiscoveryItem[]];
+  'pri(accounts.universalWalletPassword.status)': [RequestUniversalWalletPasswordAccount, UniversalWalletPasswordStatus];
+  'pri(accounts.universalWalletPassword.addPath)': [RequestUniversalWalletPasswordPath, ResponseUniversalWalletPasswordPath];
+  'pri(accounts.universalWalletPassword.switch)': [RequestUniversalWalletPasswordAccount, UniversalWalletPasswordSwitchResult[]];
   'pri(accounts.forget)': [RequestAccountForget, boolean];
   'pri(accounts.recovery.list)': [null, RecoveryRecordSummary[]];
   'pri(accounts.recovery.export)': [null, { json: string }];

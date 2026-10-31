@@ -51,6 +51,7 @@ beforeEach(() => {
     keyringService: {
       accountSubject: accounts, addressSubject: addresses,
       getAllSubstrateAccounts: vi.fn(() => [{ address: 'public-substrate' }]),
+      getAllAccounts: vi.fn(() => [{ address: 'public-substrate', meta: { name: 'Public fixture' } }]),
       encodeAddress: (address: string) => address,
       getAddress: vi.fn(() => ({ meta: { name: 'Public fixture', ethereumAddress: '0x1234' } })),
     },
@@ -307,7 +308,9 @@ describe('tab signing and provider boundaries', () => {
   });
   it.each(['pub(authorize.tab)', 'evm(authorizeUrl)', 'evm(events.subscribe)', 'evm(request)'] as const)('does not invoke %s without a compatible wallet', async (type) => {
     vi.mocked(state.keyringService.getAllSubstrateAccounts).mockReturnValue([]);
-    await expect(call(type, {})).resolves.toBeUndefined();
+    vi.mocked(state.keyringService.getAllAccounts).mockReturnValue([]);
+    if (type === 'pub(authorize.tab)') await expect(call(type, {})).rejects.toThrow('no Substrate account');
+    else await expect(call(type, {})).resolves.toBeUndefined();
     expect(state.requestService.authorizeUrl).not.toHaveBeenCalled();
     expect(mocks.permission).not.toHaveBeenCalled(); expect(mocks.events).not.toHaveBeenCalled(); expect(mocks.evmRequest).not.toHaveBeenCalled();
   });

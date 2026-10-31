@@ -44,7 +44,7 @@ describe('reviewed RPC hosts for cross-chain quotes', () => {
         expect(() => assertReviewedRpcEndpoint(chainId, connectedTo(`wss://${host}/ws`)), host).not.toThrow();
       }
     }
-    expect(() => assertReviewedRpcEndpoint(POLKADOT, connectedTo('wss://api-polkadot.dwellir.com/key'))).not.toThrow();
+    expect(() => assertReviewedRpcEndpoint(POLKADOT, connectedTo('wss://api-polkadot.n.dwellir.com/key'))).not.toThrow();
     expect(() => assertReviewedRpcEndpoint(POLKADOT, connectedTo('wss://RPC.Polkadot.io'))).not.toThrow();
   });
 

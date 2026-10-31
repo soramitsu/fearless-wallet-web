@@ -212,28 +212,38 @@ export function calcEvmFees(maxFee: bigint | null, baseFee: bigint | null | unde
   return prepGasPrice * gasLimit;
 }
 
-async function getUtilityTransactionObject(params: TransferParams): Promise<TransactionObject> {
-  const { networkKey, to, amount } = params;
+async function getUtilityTransactionObject(params: TransferParams, forQuote = false): Promise<TransactionObject> {
+  const { networkKey, from, to, amount } = params;
   const web3Api = state.getEvmApi(networkKey)?.api;
 
   if (!web3Api) throw new Error(`Unknown network ${networkKey}`);
 
   const { maxFeePerGas, maxPriorityFeePerGas, gasPrice } = await web3Api.getFeeData();
+  const value = parseEther(amount);
 
   const transactionObject: TransactionRequest = {
     to,
     maxFeePerGas,
     maxPriorityFeePerGas,
-    value: parseEther('0.0'),
+    value,
   } as TransactionRequest;
 
-  const gasLimit = await web3Api.provider.estimateGas(transactionObject);
+  // A contract recipient's gas depends on the sender and the value it receives. Without fee fields a node does not cap
+  // the estimate at what the balance pays after the value, which would leave nothing for Max.
+  const gasLimit = await web3Api.provider.estimateGas({ from, to, value }).catch((error: unknown) => {
+    // The Send screen also prices 1 coin before an amount is entered, and amounts above the balance: such a quote
+    // prices a zero-value transfer. A send only signs a gas limit estimated for its own value.
+    if (!forQuote) throw error;
+
+    console.info(error);
+
+    return web3Api.provider.estimateGas({ from, to });
+  });
   const block = await web3Api.provider.getBlock('latest');
 
   const estimateFee = calcEvmFees(maxFeePerGas ?? gasPrice, block?.baseFeePerGas, gasLimit);
 
   transactionObject.gasLimit = gasLimit;
-  transactionObject.value = parseEther(amount);
 
   return { tx: transactionObject, fee: estimateFee };
 }
@@ -295,7 +305,7 @@ async function makeERC20Transfer(params: MakeTransferParams, state: State) {
 }
 
 export function getEVMTransactionObject(params: TransferParams, state: State): Promise<TransactionObject> {
-  if (params.balance.isUtility) return getUtilityTransactionObject(params);
+  if (params.balance.isUtility) return getUtilityTransactionObject(params, true);
 
   return getERC20TransactionObject(params, state);
 }

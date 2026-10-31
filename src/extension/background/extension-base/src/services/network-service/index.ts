@@ -33,6 +33,10 @@ export type NetworkMap = Record<string, NetworkJson>;
 // The extension retries an unavailable registry when this alarm fires (backgroundRuntime.ts).
 export const REGISTRY_RETRY_ALARM = 'fearless-network-registry-retry';
 
+// Connection statuses change many times while networks connect, and each write reads and replaces the whole stored
+// map (~217 KB; 24 writes in a worker's first 95 s). Status changes made within this delay are written once.
+export const NETWORK_STATUS_WRITE_DELAY_MS = 1000;
+
 type NetworkPreferences = Pick<NetworkJson, 'favorite' | 'currentProvider' | 'customNodes' | 'customProviders' | 'isManual'>;
 
 function preferences(network: NetworkJson): NetworkPreferences {
@@ -84,6 +88,7 @@ export class NetworkService {
   private registryAlarmUpdate = Promise.resolve();
   private preferenceRevision = 0;
   private selectedNetworksRead = false;
+  private statusWrite?: ReturnType<typeof setTimeout>;
   private readonly networkPreferenceRevision: Record<string, number> = {};
   private readonly logger = createLogger('Network_Service');
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
@@ -348,6 +353,9 @@ export class NetworkService {
   }
 
   updateNetworkStore() {
+    // This write includes the statuses changed so far.
+    clearTimeout(this.statusWrite);
+    this.statusWrite = undefined;
     // Status polling and connection callbacks also reach here. None may erase unread personal settings.
     if (!this.cacheReadable) return;
     // Background status/catalog writes never replace preferences committed by a concurrent user action.
@@ -382,7 +390,9 @@ export class NetworkService {
 
     this.networkMap[networkKey].networkStatus = status;
 
-    this.updateNetworkStore();
+    // The stored map is a start-up cache, and personal settings are saved on their own (persistPreferences), so a
+    // status written a moment later, or lost with the worker, costs only that cache.
+    this.statusWrite ??= setTimeout(() => this.updateNetworkStore(), NETWORK_STATUS_WRITE_DELAY_MS);
   }
 
   getActiveNetworks() {

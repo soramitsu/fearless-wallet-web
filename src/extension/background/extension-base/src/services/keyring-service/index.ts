@@ -12,7 +12,7 @@ import { BehaviorSubject, Subject } from 'rxjs';
 import WalletConnectRetiredSessions, { sessionIsApproved } from '@extension-base/stores/WalletConnectRetiredSessions';
 import CurrentAccountStore, { CurrentAccountContextChanged, type CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import { decodePair } from '@polkadot/keyring/pair/decode';
-import { hexToU8a, u8aToHex } from '@polkadot/util';
+import { hexToU8a, u8aEq, u8aToHex } from '@polkadot/util';
 import { keyring } from '@subwallet/ui-keyring';
 import AccountsStore from '@extension-base/stores/Accounts';
 import { ecdsaPairKeys } from '@extension-base/stores/EcdsaAccountRecords';
@@ -900,7 +900,14 @@ export class KeyringService {
   // `pri(keyring.export.mnemonic)`. A TON phrase is returned exactly as stored, only after it derived the
   // account's public key, and never empty: a phrase that does not open throws its recovery code.
   async exportAccountMnemonic(request: RequestExportSeed): Promise<ResponseExportSeed> {
-    if (request.walletEcosystem !== WalletEcosystem.Ton) return this.exportMnemonic(request);
+    if (request.walletEcosystem !== WalletEcosystem.Ton) {
+      const exported = this.exportMnemonic(request);
+
+      // The export screen says so when the phrase alone opens another account.
+      return exported.seed && !this.phraseOpensAccount(request.address, exported.seed)
+        ? { ...exported, restoresOtherAccount: true }
+        : exported;
+    }
     if (!IS_EXTENSION && KeyringStoreWeb.readOnly) {
       // Emergency export verifies the supplied account password against the stored
       // public key, including a previous password. The vault cannot repair storage here.
@@ -992,6 +999,11 @@ export class KeyringService {
 
     if (!seed) return { seed: '' };
 
+    // Without the wallet's derivation path or password the phrase's seed opens another account.
+    if (!this.phraseOpensAccount(request.address, seed)) {
+      throw new Error('This wallet was made with a derivation path or password. Use its encrypted JSON backup.');
+    }
+
     // Convert mnemonic to raw seed (32 bytes for sr25519)
     const seedU8 = mnemonicToMiniSecret(seed);
 
@@ -999,6 +1011,27 @@ export class KeyringService {
     const rawSeed = u8aToHex(seedU8);
 
     return { seed: rawSeed };
+  }
+
+  // decodeJsonAccount's check: the stored phrase reproduces this key without a derivation path or
+  // password (phrase//staking, phrase///password). EVM keys use the path Fearless creates them with.
+  private phraseOpensAccount(address: string, phrase: string): boolean {
+    const pair = this.getPair(address);
+
+    if (!pair) return false;
+
+    const isEthereum = isEthereumAddress(pair.address);
+    let root: KeyringPair | undefined;
+
+    try {
+      root = keyring.createFromUri(isEthereum ? `${phrase}${ETHEREUM_DEFAULT_DERIVATION_PATH}` : phrase, {}, pair.type);
+
+      return isEthereum ? isSameString(root.address, pair.address) : u8aEq(root.publicKey, pair.publicKey);
+    } catch {
+      return false;
+    } finally {
+      root?.lock();
+    }
   }
 
   public accountExportSecretKey(request: RequestExportSeed): Uint8Array | null {

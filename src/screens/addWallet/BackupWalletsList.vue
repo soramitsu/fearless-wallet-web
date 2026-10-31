@@ -73,6 +73,14 @@
             </div>
             <p v-if="file.primaryOnly" class="row-status" role="status">{{ $t('addWallet.google.importFileOnlyDone') }}</p>
 
+            <RestoredWalletPathForm
+              v-if="isGoogle && file.restoredPathAddress"
+              class="restored-path-row"
+              :address="file.restoredPathAddress"
+              @done="finishRestoredPath(index)"
+              @skip="skipRestoredPath(index)"
+            />
+
             <p v-if="file.isComplete && !file.active" class="row-status" role="status" aria-live="polite">
               {{ $t('migration.completed') }}
             </p>
@@ -90,13 +98,22 @@
 import { defineComponent, type PropType } from 'vue';
 import type { FilesState } from '@/interfaces';
 import { cut } from '@/helpers';
-import { isJsonValid, jsonRestore, updateCurrentAccount, migrateMasterPassword } from '@/extension/messaging';
+import RestoredWalletPathForm from '@/components/RestoredWalletPathForm.vue';
+import {
+  isJsonValid,
+  jsonRestore,
+  updateCurrentAccount,
+  migrateMasterPassword,
+  universalWalletPasswordStatus,
+} from '@/extension/messaging';
+import { rememberClosedUniversalWalletPasswordNotice } from '@/util/universalWalletPasswordNotice';
 
 type RowOperation = { file: FilesState; key: string; token: symbol };
 const rowKey = (file: FilesState) => (file.id ? `id:${file.id}` : `address:${file.address}`);
 
 export default defineComponent({
   name: 'BackupWalletsList',
+  components: { RestoredWalletPathForm },
   props: {
     items: { type: Array as PropType<FilesState[]>, default: () => [] },
     isGoogle: { type: Boolean, default: false },
@@ -166,6 +183,7 @@ export default defineComponent({
       if (!operation) return;
       const { json, ethJson, password } = operation.file;
       let success = false;
+      let restoredPathAddress = '';
       let errorDescription = 'addWallet.google.somethingWrong';
       try {
         if (!json || !password) return;
@@ -184,11 +202,31 @@ export default defineComponent({
         if (!address) throw new Error('Import returned no account');
         await updateCurrentAccount(address);
         success = true;
+        if (await this.needsRestoredPath(address)) restoredPathAddress = address;
       } catch {
         // A failed import never appears complete, and always releases the loading state.
       } finally {
+        const index = restoredPathAddress ? this.operationIndex(operation) : -1;
         this.finishOperation(operation, success, primaryOnly, errorDescription);
+        if (index >= 0) this.setItemValue(index, { restoredPathAddress });
       }
+    },
+    // The row stays complete either way; without an answer the wallet keeps only the accounts its backup held.
+    async needsRestoredPath(address: string) {
+      try {
+        return (await universalWalletPasswordStatus(address)).state === 'path-required';
+      } catch {
+        return false;
+      }
+    },
+    finishRestoredPath(index: number) {
+      this.setItemValue(index, { restoredPathAddress: '' });
+    },
+    // Asked once: the wallet's own screen does not ask again by itself.
+    skipRestoredPath(index: number) {
+      const address = this.items[index]?.restoredPathAddress;
+      if (address) rememberClosedUniversalWalletPasswordNotice(address);
+      this.setItemValue(index, { restoredPathAddress: '' });
     },
     buttonText(file: FilesState) {
       return file.isComplete ? 'migration.completed' : file.isLoading ? 'migration.pending' : 'common.confirm';
@@ -366,4 +404,5 @@ export default defineComponent({
   overflow-wrap: anywhere;
 }
 .primary-file-recovery p { margin: 0 0 12px; }
+.restored-path-row { margin-top: 16px; }
 </style>

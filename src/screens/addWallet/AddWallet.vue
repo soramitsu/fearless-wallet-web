@@ -82,6 +82,12 @@
         <p v-if="generationExpired" role="alert" data-testid="generationExpired" :lang="$i18n.locale === 'ru-RU' ? 'ru' : 'en'">{{ generationExpiredMessage }}</p>
         <p v-if="flowError" role="alert" data-testid="accountFailure">{{ $t('ux.accountSetupFailed') }}</p>
         <p v-if="isLoading" role="status">{{ $t('ux.settingUpWallet') }}</p>
+        <RestoredWalletPathForm
+          v-if="restoredPathAddress"
+          :address="restoredPathAddress"
+          @done="finishRestoredPath"
+          @skip="skipRestoredPath"
+        />
         <FinishForm v-if="showFinishForm" />
       </div>
 
@@ -99,7 +105,7 @@
         />
 
         <FButton
-          v-if="!showAdvancedForm"
+          v-if="!showAdvancedForm && !restoredPathAddress"
           size="big"
           fontSize="big"
           width="100%"
@@ -150,6 +156,7 @@ import TonAddressChoice from '@/screens/addWallet/TonAddressChoice.vue';
 import { preselectTonImportCandidate } from '@/screens/addWallet/tonImportChoice';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import AddEthereumAccountPopup from '@/screens/addWallet/AddEthereumAccountPopup.vue';
+import RestoredWalletPathForm from '@/components/RestoredWalletPathForm.vue';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
@@ -173,7 +180,9 @@ import {
   mnemonicValidate,
   tonImportCandidates,
   universalWalletPasswordDiscovery,
+  universalWalletPasswordStatus,
 } from '@/extension/messaging';
+import { rememberClosedUniversalWalletPasswordNotice } from '@/util/universalWalletPasswordNotice';
 import { IS_POPUP, IS_SIDE_PANEL } from '@/consts/globalClient';
 import { useAccountsStore } from '@/stores/accounts';
 import { type FWKeyringMeta } from '@/extension/background/extension-base/src/types';
@@ -189,6 +198,7 @@ export default defineComponent({ name: 'AddWallet',
     TonAddressChoice,
     AdvancedForm,
     AddEthereumAccountPopup,
+    RestoredWalletPathForm,
   },
   data() {
     return {
@@ -220,6 +230,8 @@ export default defineComponent({ name: 'AddWallet',
       tonCandidatesText: '',
       tonDerivation: '' as TonImportDerivation | '',
       showTonAddressChoice: false,
+      // A restored wallet whose words open its key only with its derivation path, asked for before finishing.
+      restoredPathAddress: '',
     };
   },
   computed: {
@@ -312,7 +324,7 @@ export default defineComponent({ name: 'AddWallet',
       return this.step !== 4 || this.flowError;
     },
     showFinishForm() {
-      return this.step === 4 && this.savedSuccessfully;
+      return this.step === 4 && this.savedSuccessfully && !this.restoredPathAddress;
     },
     header() {
       if (this.isCreateWallet) {
@@ -555,7 +567,8 @@ export default defineComponent({ name: 'AddWallet',
       this.isLoading = true;
       this.flowError = false;
       try {
-        await this.saveKeypair();
+        const address = await this.saveKeypair();
+        if (!this.isOnlyEthereumAccount && address && this.typeImport === 'json') await this.askRestoredPath(address);
         this.savedSuccessfully = true;
         if (this.isOnlyEthereumAccount) this.$router.push({ name: Components.Wallet });
       } catch (error) {
@@ -567,6 +580,22 @@ export default defineComponent({ name: 'AddWallet',
       } finally {
         this.isLoading = false;
       }
+    },
+    // The wallet is saved either way; without an answer it keeps only the accounts its backup held.
+    async askRestoredPath(address: string) {
+      try {
+        if ((await universalWalletPasswordStatus(address)).state === 'path-required') this.restoredPathAddress = address;
+      } catch {
+        // Wallet details can still ask for the path later.
+      }
+    },
+    finishRestoredPath() {
+      this.restoredPathAddress = '';
+    },
+    // Asked once: the wallet's own screen does not ask again by itself.
+    skipRestoredPath() {
+      rememberClosedUniversalWalletPasswordNotice(this.restoredPathAddress);
+      this.restoredPathAddress = '';
     },
     async proceed() {
       if (this.isLoading || (this.confirmMnemonicStep && !this.mnemonicConfirmed)) return;

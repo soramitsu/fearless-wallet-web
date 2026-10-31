@@ -107,7 +107,11 @@ export default defineComponent({ name: 'WalletDetailsPopup' ,
       if (!address) return;
       try {
         const status = await universalWalletPasswordStatus(address);
-        if (this.isActive && this.selectedWalletAddress === address) this.needsPasswordNotice = needsUniversalWalletPasswordNotice(status);
+        if (this.isActive && this.selectedWalletAddress === address) {
+          this.needsPasswordNotice = needsUniversalWalletPasswordNotice(status);
+          // A restored wallet waiting for its path offers to bring its networks back instead.
+          this.passwordNoticeLabel = universalWalletPasswordMessages['en-EN'][status.state === 'path-required' ? 'restoreReopen' : 'reopen'];
+        }
       } catch {
         // The row is optional; without an answer it stays hidden.
       }

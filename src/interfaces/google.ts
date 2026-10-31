@@ -17,6 +17,8 @@ interface FileData {
   description: string;
   json: KeyringPair$Json;
   ethJson: KeyringPair$Json;
+  /** The restored wallet, while the row asks for the derivation path its words open its key with. */
+  restoredPathAddress: string;
 }
 
 type FilesState = { address: string } & Partial<FileData>;

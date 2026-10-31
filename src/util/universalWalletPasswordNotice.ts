@@ -9,7 +9,7 @@ export const universalWalletPasswordNoticeRequest = ref<string | null>(null);
 
 export function needsUniversalWalletPasswordNotice(status: UniversalWalletPasswordStatus | undefined): boolean {
   return (status?.state === 'legacy' && (status.rows.length > 0 || !!status.arrived?.length)) ||
-    status?.state === 'password-unknown';
+    status?.state === 'password-unknown' || status?.state === 'path-required';
 }
 
 export function readClosedUniversalWalletPasswordNotices(): string[] {

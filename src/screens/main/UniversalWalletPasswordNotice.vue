@@ -41,6 +41,12 @@
       </div>
     </template>
 
+    <template v-else-if="status.state === 'path-required'">
+      <h1 id="wallet-password-title" tabindex="-1">{{ t('restoreTitle') }}</h1>
+      <p id="wallet-password-description" class="wallet-password__description">{{ t('restoreDescription') }}</p>
+      <RestoredWalletPathForm :address="address" :showIntro="false" @done="restoredPathDone" @skip="later" />
+    </template>
+
     <template v-else-if="status.state === 'legacy'">
       <h1 id="wallet-password-title" tabindex="-1">{{ t(status.rows.length ? 'title' : 'arrivedTitle') }}</h1>
       <p id="wallet-password-description" class="wallet-password__description">
@@ -105,6 +111,7 @@ import type {
 } from '@extension-base/background/types/types';
 import type { UniversalWalletPasswordNetwork } from '@/util/universalWalletPassphrase';
 import Icon from '@/components/Icon.vue';
+import RestoredWalletPathForm from '@/components/RestoredWalletPathForm.vue';
 import { IS_EXTENSION } from '@/consts/global';
 import { setClipboard } from '@/helpers';
 import {
@@ -175,7 +182,8 @@ const load = async () => {
   const requested = !!wallet && universalWalletPasswordNoticeRequest.value === wallet;
 
   if (requested) universalWalletPasswordNoticeRequest.value = null;
-  if (!wallet || recoveryOnly.value) return;
+  // A recovery-only wallet never shows it by itself; asked for from wallet details, it opens like on any wallet.
+  if (!wallet || (recoveryOnly.value && !requested)) return;
 
   const show = async (next: UniversalWalletPasswordStatus) => {
     if (current !== revision || !active.value) return;
@@ -232,6 +240,12 @@ const addPath = async () => {
   } finally {
     if (current === revision) busy.value = false;
   }
+};
+
+// The restored wallet's accounts are back; a password wallet that kept old addresses goes on to their rows.
+const restoredPathDone = (next: UniversalWalletPasswordStatus) => {
+  status.value = next;
+  if (!needsUniversalWalletPasswordNotice(next)) later();
 };
 
 const switchAccounts = async () => {

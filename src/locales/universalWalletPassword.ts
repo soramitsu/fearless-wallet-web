@@ -33,6 +33,11 @@ export const universalWalletPasswordMessages = {
     arrivedTitle: 'Funds arrived at your old address',
     arrivedDescription:
       'Your recovery words alone open it. To move these funds, import the words without the password as another wallet.',
+    restoreTitle: 'Enter the derivation path',
+    restoreDescription:
+      "This backup's recovery words open the wallet only with its derivation path. Enter it to show the wallet's Bitcoin, Solana, TON and Taira accounts.",
+    restoreReopen: 'Show Bitcoin, Solana, TON and Taira',
+    skip: 'Skip',
     bitcoin: 'Bitcoin',
     bitcoinTestnet: 'Bitcoin testnet',
     solana: 'Solana',

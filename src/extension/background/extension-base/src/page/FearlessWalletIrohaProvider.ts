@@ -37,19 +37,17 @@ export class FearlessWalletIrohaProvider extends EventEmitter<IrohaEventName> im
   #connectGeneration = 0;
   #network: IrohaNetworkKey = 'nexus';
   readonly #subscribedNetworks = new Set<IrohaNetworkKey>();
-
-  constructor() {
-    super();
-
-    this.refreshAccounts().catch(() => undefined);
-    this.ensureNetworkSubscription(this.#network);
-  }
+  #started = false;
 
   get accounts(): readonly IrohaAccountInfo[] {
+    this.#start();
+
     return this.#accounts;
   }
 
   get connected(): boolean {
+    this.#start();
+
     return this.#accounts.length > 0;
   }
 
@@ -58,15 +56,50 @@ export class FearlessWalletIrohaProvider extends EventEmitter<IrohaEventName> im
   }
 
   get publicKeyHex(): string | null {
+    this.#start();
+
     return this.#accounts[0]?.publicKeyHex ?? null;
   }
 
   get selectedAddress(): string | null {
+    this.#start();
+
     return this.#accounts[0]?.address ?? null;
+  }
+
+  override on<T extends EventEmitter.EventNames<IrohaEventName>>(
+    event: T,
+    fn: EventEmitter.EventListener<IrohaEventName, T>,
+    context?: unknown
+  ): this {
+    this.#start();
+
+    return super.on(event, fn, context);
+  }
+
+  override addListener<T extends EventEmitter.EventNames<IrohaEventName>>(
+    event: T,
+    fn: EventEmitter.EventListener<IrohaEventName, T>,
+    context?: unknown
+  ): this {
+    return this.on(event, fn, context);
+  }
+
+  override once<T extends EventEmitter.EventNames<IrohaEventName>>(
+    event: T,
+    fn: EventEmitter.EventListener<IrohaEventName, T>,
+    context?: unknown
+  ): this {
+    this.#start();
+
+    return super.once(event, fn, context);
   }
 
   async connect(input: IrohaConnectInput = {}): Promise<IrohaConnectResponse> {
     const network = normalizeNetwork(input.network);
+
+    this.#start();
+
     const silent = input.onlyIfTrusted ?? input.silent ?? false;
     const generation = ++this.#connectGeneration;
     const networkChanged = network !== this.#network;
@@ -87,6 +120,8 @@ export class FearlessWalletIrohaProvider extends EventEmitter<IrohaEventName> im
   }
 
   async disconnect(): Promise<void> {
+    this.#start();
+
     const generation = ++this.#connectGeneration;
 
     await sendMessage('iroha(disconnect)');
@@ -94,6 +129,8 @@ export class FearlessWalletIrohaProvider extends EventEmitter<IrohaEventName> im
   }
 
   async request<T = unknown>({ method, params }: { method: string; params?: unknown }): Promise<T> {
+    this.#start();
+
     switch (method) {
       case 'accounts':
         return this.refreshAccounts() as Promise<T>;
@@ -109,6 +146,16 @@ export class FearlessWalletIrohaProvider extends EventEmitter<IrohaEventName> im
       default:
         throw new Error(`Unsupported Iroha request method: ${method}`);
     }
+  }
+
+  // The page's first use asks for the Nexus accounts and subscribes to them. Until then the provider sends nothing, so
+  // a page that never uses the wallet opens no port to it and does not wake it.
+  #start(): void {
+    if (this.#started) return;
+
+    this.#started = true;
+    this.refreshAccounts().catch(() => undefined);
+    this.ensureNetworkSubscription(this.#network);
   }
 
   private async refreshAccounts(): Promise<IrohaConnectResponse> {

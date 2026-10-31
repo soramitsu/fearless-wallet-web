@@ -896,6 +896,21 @@ export default defineComponent({
       // проверяем, что utility balance достаточно на оплату fee и ED
       return FPNumber.gte(new FPNumber(this.calcTransferableUtility(), precision), checkValue);
     },
+    // A Substrate native transfer may leave the sender below the existential deposit: the chain then removes the
+    // account and burns what is left on it. Max leaves nothing, and a deposit not loaded or 0 asks for no check.
+    leavesDustBelowExistentialDeposit() {
+      const balance = this.currencyBalance;
+
+      if (!this.isTransfer || this.originNet?.ecosystem !== 'substrate' || !balance?.isUtility) return false;
+
+      const precision = balance.precision;
+      const existentialDeposit = FPNumber.fromCodecValue(balance.existentialDeposit ?? '0', precision);
+      const left = new FPNumber(balance.transferable ?? '0', precision)
+        .sub(new FPNumber(this.syncedAmount || '0', precision))
+        .sub(new FPNumber(this.syncedFee || '0', precision));
+
+      return existentialDeposit.isGtZero() && left.isGtZero() && left.lt(existentialDeposit);
+    },
     solanaAccountCreationDeposit() {
       const deposit = this.solanaQuote?.accountCreationDeposit;
 
@@ -1412,6 +1427,13 @@ export default defineComponent({
 
       if (this.step === 2) {
         this.showConfirmationPasswordPopup = true;
+
+        return;
+      }
+
+      // The warning's Accept continues from here while the warning is still open.
+      if (!this.showExistentialPopup && this.leavesDustBelowExistentialDeposit) {
+        this.showExistentialPopup = true;
 
         return;
       }

@@ -237,7 +237,7 @@ export default defineComponent({ name: 'AddWallet',
       return this.step === 3 && this.isCreateWallet;
     },
     isOnlyEthereumAccount() {
-      return this.$route.params.onlyEthereumAccount !== undefined;
+      return this.$route.query?.onlyEthereumAccount !== undefined;
     },
     walletType() {
       return this.$route.params.type;
@@ -358,8 +358,13 @@ export default defineComponent({ name: 'AddWallet',
             if (this.step === 1) {
               if (this.showTonAddressChoice) return !this.tonImportChoice;
 
+              // A phrase, a raw seed, or a JSON file with its password.
               if (this.isOnlyEthereumAccount)
-                return !this.ethereumRawSeed && this.isLengthZero(this.ethereumJson) && !this.passwordEthereumJson;
+                return (
+                  !this.mnemonic &&
+                  !this.ethereumRawSeed &&
+                  (this.isLengthZero(this.ethereumJson) || !this.passwordEthereumJson)
+                );
 
               if (
                 !this.mnemonic &&
@@ -736,7 +741,8 @@ export default defineComponent({ name: 'AddWallet',
             const ethereumAddress = await addAccount(this.suriEthereum, ethereumKeypairType, meta, WalletEcosystem.Substrate, this.isCreateWallet);
 
             if (this.isOnlyEthereumAccount) {
-              updatePairMeta(this.accountsStore.selectedWallet.address, { ethereumAddress });
+              // Until it is linked, the new account shows up as a wallet of its own.
+              await updatePairMeta(this.accountsStore.selectedWallet.address, { ethereumAddress });
 
               return '';
             }
@@ -768,7 +774,7 @@ export default defineComponent({ name: 'AddWallet',
             const ethereumAddress = await jsonRestore(this.ethereumJSON, this.passwordEthereumJson);
 
             if (this.isOnlyEthereumAccount) {
-              updatePairMeta(this.accountsStore.selectedWallet.address, {
+              await updatePairMeta(this.accountsStore.selectedWallet.address, {
                 ethereumAddress,
                 walletEcosystem: WalletEcosystem.Substrate,
               });
@@ -794,6 +800,11 @@ export default defineComponent({ name: 'AddWallet',
     backIsImportWallet() {
       if (this.step === 3 && this.ethereumRawSeed === '' && this.ethereumJson === '') this.step -= 1;
     },
+    // The Ethereum-only flow has no nickname step, and its import has no Ethereum step either.
+    backIsOnlyEthereumAccount() {
+      if (this.isCreateWallet && this.step === 2) this.step -= 1;
+      else if (this.isImportWallet && this.step === 4) this.step -= 2;
+    },
     back() {
       if (this.isLoading) return;
       this.flowError = false;
@@ -803,7 +814,7 @@ export default defineComponent({ name: 'AddWallet',
 
         return;
       }
-      if (this.isOnlyEthereumAccount) this.step -= 1;
+      if (this.isOnlyEthereumAccount) this.backIsOnlyEthereumAccount();
           else if (this.isImportWallet) this.backIsImportWallet();
           else if (this.step === 2) {
             this.ethereumRawSeed = '';

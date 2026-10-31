@@ -1,22 +1,67 @@
 <template>
-  <div class="content-settings">
-    <div class="settings-part">
-      <template v-if="!syncedShowAssetsManagementForm">
-        <TabButton
-          v-for="{ label, tabName, tooltipText, target, classes } in tabsOptions"
-          class="tab"
+  <div class="content-settings" :class="{ 'content-settings--manage': syncedShowAssetsManagementForm }">
+    <div class="toolbar-row">
+      <div v-if="!syncedShowAssetsManagementForm" class="tabs" role="group" :aria-label="$t('walletHome.tabs.label')">
+        <button
+          v-for="{ label, tabName } in tabsOptions"
           :key="tabName"
-          :tooltipText="tooltipText"
-          :target="target"
-          :class="classes"
-          :label="label"
-          :isActive="syncedActiveTabName === tabName"
+          type="button"
+          class="tab"
+          :class="{ 'tab--active': syncedActiveTabName === tabName }"
+          :aria-current="syncedActiveTabName === tabName ? 'page' : undefined"
+          :data-tab="tabName"
           data-testid="optTab"
           @click="openTab(tabName)"
-        />
-      </template>
+        >
+          {{ $t(label) }}
+        </button>
+      </div>
+      <p v-else class="manage-title">{{ $t('walletHome.toolbar.manageTitle') }}</p>
 
-      <div v-else-if="notNftTabActive" class="manage-filters">
+      <div v-if="listTabActive" class="toolbar-actions">
+        <button
+          v-if="!syncedShowAssetsManagementForm"
+          type="button"
+          class="icon-button"
+          :class="{ 'icon-button--active': searchShown }"
+          :aria-label="$t(searchShown ? 'walletHome.toolbar.closeSearch' : 'walletHome.toolbar.search')"
+          :aria-expanded="searchShown"
+          data-testid="searchToggle"
+          @click="toggleSearch"
+        >
+          <Icon :icon="searchShown ? 'close' : 'search'" width="20px" height="20px" :hover="false" />
+        </button>
+
+        <!-- The list (Currencies.vue) teleports its Refresh here, so it sits with the other list tools. -->
+        <span v-if="refreshSlotId" :id="refreshSlotId" class="refresh-slot"></span>
+
+        <CircleButton
+          backgroundColor="none"
+          tooltipText="wallet.assetManagement"
+          placement="left"
+          :ariaLabel="$t(syncedShowAssetsManagementForm ? 'walletHome.toolbar.done' : 'walletHome.toolbar.manage')"
+          :target="target"
+          :iconName="iconName"
+          data-testid="filterBtn"
+          class="filter-btn"
+          @click="toggleAssetsManagementVisible"
+        />
+      </div>
+    </div>
+
+    <div v-if="searchShown && listTabActive && !syncedShowAssetsManagementForm" class="search-row">
+      <SearchInput
+        :value="syncedFilterValue"
+        width="100%"
+        placeholder="walletHome.toolbar.searchPlaceholder"
+        data-testid="searchInput"
+        @change="changeSyncedFilterValue"
+      />
+    </div>
+
+    <!-- Manage: which assets the list shows, and how it groups them. -->
+    <div v-if="syncedShowAssetsManagementForm && listTabActive" class="manage-panel">
+      <div class="manage-filters">
         <button
           type="button"
           class="filter-chip"
@@ -36,68 +81,45 @@
           {{ $t('portfolioPage.testnets') }}
         </button>
       </div>
-    </div>
 
-    <div class="settings-part search-part">
-      <SearchInput
-        v-if="!syncedShowAssetsManagementForm"
-        :value="syncedFilterValue"
-        :width="searchInputWidth"
-        placeholder="common.search"
-        data-testid="searchInput"
-        @change="changeSyncedFilterValue"
-      />
+      <div class="view-controls">
+        <span class="control-label">{{ $t('walletHome.toolbar.groupBy') }}</span>
+        <div class="segmented" role="group" :aria-label="$t('portfolioPage.lens.label')" data-testid="portfolioLens">
+          <button
+            v-for="option in lensOptions"
+            :key="option.value"
+            type="button"
+            class="segment"
+            :aria-pressed="lens === option.value"
+            :data-testid="`portfolioLens-${option.value}`"
+            @click="$emit('update:lens', option.value)"
+          >
+            {{ $t(option.label) }}
+          </button>
+        </div>
 
-      <CircleButton
-        backgroundColor="none"
-        tooltipText="wallet.assetManagement"
-        placement="left"
-        :target="target"
-        :iconName="iconName"
-        data-testid="filterBtn"
-        class="filter-btn"
-        @click="toggleAssetsManagementVisible"
-      />
-    </div>
-
-    <div v-if="notNftTabActive" class="view-controls">
-      <div class="segmented" role="group" :aria-label="$t('portfolioPage.lens.label')" data-testid="portfolioLens">
-        <button
-          v-for="option in lensOptions"
-          :key="option.value"
-          type="button"
-          class="segment"
-          :aria-pressed="lens === option.value"
-          :data-testid="`portfolioLens-${option.value}`"
-          @click="$emit('update:lens', option.value)"
+        <!-- Only for wallets that ordered their assets in 3.0.5: that order is kept until Value is picked. -->
+        <div
+          v-if="lens === 'token' && showSortControl"
+          class="segmented"
+          role="group"
+          :aria-label="$t('portfolioPage.sort.label')"
+          data-testid="portfolioSort"
         >
-          {{ $t(option.label) }}
-        </button>
-      </div>
+          <button
+            v-for="option in sortOptions"
+            :key="option.value"
+            type="button"
+            class="segment"
+            :aria-pressed="sort === option.value"
+            :data-testid="`portfolioSort-${option.value}`"
+            @click="$emit('update:sort', option.value)"
+          >
+            {{ $t(option.label) }}
+          </button>
+        </div>
 
-      <!-- Only for wallets that ordered their assets in 3.0.5: that order is kept until Value is picked. -->
-      <div
-        v-if="lens === 'token' && showSortControl"
-        class="segmented"
-        role="group"
-        :aria-label="$t('portfolioPage.sort.label')"
-        data-testid="portfolioSort"
-      >
-        <button
-          v-for="option in sortOptions"
-          :key="option.value"
-          type="button"
-          class="segment"
-          :aria-pressed="sort === option.value"
-          :data-testid="`portfolioSort-${option.value}`"
-          @click="$emit('update:sort', option.value)"
-        >
-          {{ $t(option.label) }}
-        </button>
-      </div>
-
-      <div class="view-end">
-        <div v-if="!syncedShowAssetsManagementForm" class="hide-zero" data-testid="hideZeroToggle">
+        <div class="hide-zero" data-testid="hideZeroToggle">
           <Switcher
             :value="hideZero"
             :activeText="$t('wallet.hideZero')"
@@ -105,9 +127,6 @@
             @change="$emit('update:hideZero', $event)"
           />
         </div>
-
-        <!-- The list (Currencies.vue) teleports its Refresh here, so it shares this row instead of taking one below. -->
-        <span v-if="refreshSlotId" :id="refreshSlotId" class="refresh-slot"></span>
       </div>
     </div>
   </div>
@@ -122,9 +141,6 @@ import { Components } from '@/router/routes';
 interface TabsOptions {
   label: string;
   tabName: TabWallet;
-  tooltipText: string;
-  classes: string;
-  target: string;
 }
 
 export default defineComponent({ name: 'ContentSettings' ,
@@ -143,6 +159,10 @@ export default defineComponent({ name: 'ContentSettings' ,
     activeTabName: { type: String },
     filterValue: { type: String },
     showAssetsManagementForm: { type: Boolean },
+    /** The Portfolio tab (the allocation chart) comes with the dashboard (src/portfolio/dashboard/dashboardFlag.ts). */
+    showPortfolioTab: Boolean,
+    /** All wallets lists what every wallet holds: it has no NFTs, search or Manage of its own. */
+    allWallets: Boolean,
   },
   emits: [
     'update:activeTabName',
@@ -156,6 +176,7 @@ export default defineComponent({ name: 'ContentSettings' ,
   ],
   data() {
     return {
+      searchOpen: false,
       lensOptions: [
         { value: 'token', label: 'portfolioPage.lens.tokens' },
         { value: 'network', label: 'portfolioPage.lens.networks' },
@@ -167,38 +188,25 @@ export default defineComponent({ name: 'ContentSettings' ,
     };
   },
   computed: {
-    tabsOptions() {
-      const baseTabs: TabsOptions[] = [
-            {
-              label: 'wallet.currencies',
-              tabName: Components.Currencies,
-              tooltipText: 'wallet.fungibleTokens',
-              classes: 'currencies-tab',
-              target: '.currencies-tab',
-            },
-          ];
-
-          baseTabs.push({
-              label: 'wallet.nfts',
-              tabName: Components.Nfts,
-              tooltipText: 'wallet.nonFungibleTokens',
-              classes: 'currencies-tab',
-              target: '.currencies-tab',
-            });
-
-          return baseTabs;
+    tabsOptions(): TabsOptions[] {
+      return [
+        { label: 'walletHome.tabs.assets', tabName: Components.Currencies },
+        ...(this.showPortfolioTab ? [{ label: 'walletHome.tabs.portfolio', tabName: Components.PortfolioAllocation }] : []),
+        ...(this.allWallets ? [] : [{ label: 'walletHome.tabs.nfts', tabName: Components.Nfts }]),
+      ] as TabsOptions[];
     },
     target() {
       return `.${this.iconName}`;
     },
-    searchInputWidth() {
-      return '100%';
+    // A search typed earlier keeps its field open, so it can always be read and cleared.
+    searchShown(): boolean {
+      return this.searchOpen || Boolean(this.filterValue);
+    },
+    listTabActive(): boolean {
+      return this.syncedActiveTabName === Components.Currencies && !this.allWallets;
     },
     iconName() {
       return this.syncedShowAssetsManagementForm ? 'close' : 'filter';
-    },
-    notNftTabActive() {
-      return this.syncedActiveTabName !== Components.Nfts;
     },
     syncedActiveTabName: {
       get() {
@@ -235,185 +243,277 @@ export default defineComponent({ name: 'ContentSettings' ,
     toggleAssetsManagementVisible() {
       this.syncedShowAssetsManagementForm = !this.syncedShowAssetsManagementForm;
     },
+    toggleSearch() {
+      if (this.searchShown) {
+        this.searchOpen = false;
+        this.syncedFilterValue = '';
+        return;
+      }
+
+      this.searchOpen = true;
+      // The field takes the cursor as it opens.
+      void this.$nextTick(() => this.$el.querySelector?.('.search-row input')?.focus());
+    },
   },
 });
 </script>
 
 <style lang="scss" scoped>
+// One row: the views on the left, the list's tools on the right (Exodus' wallet list). Everything else is in Manage.
 .content-settings {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.toolbar-row {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
-  margin-right: 16px;
+  gap: 12px;
+  min-height: 44px;
+  border-bottom: 1px solid var(--fw-divider);
+}
 
-  .manage-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
+.tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  align-self: stretch;
+  min-width: 0;
+}
 
-  .filter-chip {
-    min-height: 32px;
-    padding: 0 12px;
-    border: $default-border;
-    border-radius: 16px;
-    background: $secondary-background-color;
-    color: $grayish-white;
-    font: inherit;
-    font-size: 0.75rem;
-    cursor: pointer;
+.tab {
+  position: relative;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--fw-text-2);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
 
-    &[aria-pressed='true'] {
-      border-color: palette($pink-lavender-color, var(--fw-select-edge));
-      background: $pink-purple-color;
-      color: $plain-white;
-    }
-
-    &:focus-visible {
-      outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
-      outline-offset: 2px;
-    }
-  }
-
-  .view-controls {
-    flex-basis: 100%;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-  }
-
-  .segmented {
-    display: inline-flex;
-    padding: 2px;
-    border: $default-border;
-    border-radius: 16px;
-    background: $secondary-background-color;
-  }
-
-  .segment {
-    min-height: 28px;
-    padding: 0 12px;
-    border: 0;
-    border-radius: 14px;
+  // The current view is underlined in the brand's colour, as a tab is.
+  &::after {
+    content: '';
+    position: absolute;
+    right: 10px;
+    bottom: -1px;
+    left: 10px;
+    height: 2px;
+    border-radius: 2px;
     background: transparent;
-    color: $grayish-white;
-    font: inherit;
-    font-size: 0.72rem;
-    cursor: pointer;
+  }
+
+  &:hover {
+    color: var(--fw-text-1);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--fw-focus);
+    outline-offset: -2px;
+  }
+}
+
+.tab--active {
+  color: var(--fw-text-1);
+  font-weight: 700;
+
+  &::after {
+    background: var(--fw-brand);
+  }
+}
+
+.manage-title {
+  margin: 0;
+  color: var(--fw-text-1);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--fw-text-2);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--fw-raised-2);
+    color: var(--fw-text-1);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--fw-focus);
+    outline-offset: 1px;
+  }
+}
+
+.icon-button--active {
+  color: var(--fw-text-1);
+}
+
+.refresh-slot {
+  display: contents;
+}
+
+.filter-btn :deep(button) {
+  width: 36px;
+  height: 36px;
+}
+
+.search-row {
+  :deep(.search-input-wrapper) {
+    width: 100%;
+  }
+
+  // The magnifier says what the field is for; its label stays for screen readers only.
+  :deep(.s-placeholder) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
     white-space: nowrap;
-
-    &[aria-pressed='true'] {
-      background: $pink-purple-color;
-      color: $plain-white;
-      font-weight: 700;
-    }
-
-    &:focus-visible {
-      outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
-      outline-offset: 1px;
-    }
-  }
-
-  // Hide zero balances and Refresh end the view row, in normal use and in Manage alike.
-  .view-end {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-left: auto;
-  }
-
-  .hide-zero {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    color: $grayish-white;
-    font-size: 0.75rem;
-  }
-
-  .refresh-slot {
-    display: contents;
-  }
-
-  .settings-part {
-    display: flex;
-    align-items: center;
-    height: 42px;
-
-    .tab {
-      margin: auto 12px auto 0;
-    }
-  }
-
-  // Tabs, search and Manage share the first row: the field takes the room the tabs leave.
-  .search-part {
-    flex: 1 1 200px;
-    min-width: 0;
-    justify-content: flex-end;
-
-    :deep(.search-input-wrapper) {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-
-    // The magnifier says what the field is for; its label stays for screen readers only.
-    :deep(.s-placeholder) {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-      white-space: nowrap;
-    }
-  }
-
-  i {
-    color: $grayish-white;
-    margin-left: 24px;
-
-    &:hover {
-      cursor: pointer;
-    }
-  }
-
-  .filter-btn {
-    margin-left: 16px;
-  }
-
-  .hide-balance-text {
-    font-weight: 500;
-    font-size: 0.875em;
-    line-height: 18px;
-    margin-left: 8px;
-    user-select: none;
   }
 }
 
-.fw-web {
-  .content-settings {
-    flex-wrap: wrap;
-    gap: 10px;
-    flex-grow: 2;
+.manage-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--fw-divider);
+  border-radius: 12px;
+  background: var(--fw-raised);
+}
 
-    .search-input-wrapper {
-      flex-grow: 2;
-    }
+.manage-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-chip {
+  min-height: 32px;
+  padding: 0 12px;
+  border: $default-border;
+  border-radius: 16px;
+  background: $secondary-background-color;
+  color: $grayish-white;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+
+  &[aria-pressed='true'] {
+    border-color: palette($pink-lavender-color, var(--fw-select-edge));
+    background: $pink-purple-color;
+    color: $plain-white;
+  }
+
+  &:focus-visible {
+    outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
+    outline-offset: 2px;
   }
 }
 
-@include v1-palette {
-  .content-settings {
-    gap: 12px;
-    .settings-part {
-      height: auto;
-      min-height: 44px;
+.view-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-label {
+  color: var(--fw-text-2);
+  font-size: 0.75rem;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  border: $default-border;
+  border-radius: 16px;
+  background: $secondary-background-color;
+}
+
+.segment {
+  min-height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: $grayish-white;
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &[aria-pressed='true'] {
+    background: $pink-purple-color;
+    color: $plain-white;
+    font-weight: 700;
+  }
+
+  &:focus-visible {
+    outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
+    outline-offset: 1px;
+  }
+}
+
+.hide-zero {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  color: $grayish-white;
+  font-size: 0.75rem;
+}
+
+// The side panel's column: the views and the three tools still share one row, in every language.
+@media (max-width: 380px) {
+  .toolbar-row {
+    gap: 6px;
+  }
+
+  .tabs {
+    gap: 0;
+  }
+
+  .tab {
+    padding: 0 6px;
+    font-size: 0.8rem;
+
+    &::after {
+      right: 6px;
+      left: 6px;
     }
-    // The row gap already separates it from the tabs.
-    .view-controls {
-      margin-top: 0;
-    }
+  }
+
+  .toolbar-actions {
+    gap: 0;
+  }
+
+  .icon-button,
+  .filter-btn :deep(button) {
+    width: 32px;
+    height: 32px;
   }
 }
 </style>

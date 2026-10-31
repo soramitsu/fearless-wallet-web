@@ -7,6 +7,7 @@ import { SubstrateApiHandler } from '@extension-base/services/network-service/ha
 import { logger as createLogger } from '@polkadot/util';
 import { TonApiHandler } from './handlers/TonApiHandler';
 import { nodePreferences, sameNodePreferences, type NodePreferences } from './preferences';
+import { migrateRetiredBuiltinProviders } from './retiredProviders';
 import type { KeyringService } from '@extension-base/services';
 import type { ApiMap } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -261,6 +262,11 @@ export class NetworkService {
     }
     mergeUniversalWalletRegistryNetworks(this.networkMap, registryPreferences);
 
+    // Run after saved preferences are rebased so saved preferences cannot restore retired built-in endpoints.
+    for (const [name, network] of Object.entries(this.networkMap)) {
+      this.networkMap[name] = migrateRetiredBuiltinProviders(network);
+    }
+
     const activeNetworks = this.getActiveNetworks();
 
     Object.keys(this.networkMap).forEach((networkName) => {
@@ -310,7 +316,7 @@ export class NetworkService {
       const catalog = structuredClone(this.networkMap);
       const current = readableSettings(stored);
       return { ...current, ...Object.fromEntries(Object.entries(catalog).map(([name, network]) => [name,
-        { ...network, ...(usableNetwork(current[name]) ? preferences(current[name]) : {}) },
+        migrateRetiredBuiltinProviders({ ...network, ...(usableNetwork(current[name]) ? preferences(current[name]) : {}) }),
       ])) };
     }, () => this.networkMapStore.getSubject().next(this.networkMap), false)
       .catch((error) => console.warn('Network catalog could not be saved', error));
@@ -495,8 +501,8 @@ export class NetworkService {
   ): Promise<void> {
     await this.networkMapStore.updateAndWait('NetworkMap', (stored) => {
       const current = readableSettings(stored);
-      const saved = { ...catalog, ...(usableNetwork(current[name]) ? preferences(current[name]) : {}),
-        ...(activate ? { active: true } : {}) };
+      const saved = migrateRetiredBuiltinProviders({ ...catalog, ...(usableNetwork(current[name]) ? preferences(current[name]) : {}),
+        ...(activate ? { active: true } : {}) });
       return { ...current, [name]: { ...current[name], ...saved, ...update(saved) } };
     }, (committed) => {
       const saved = committed[name];

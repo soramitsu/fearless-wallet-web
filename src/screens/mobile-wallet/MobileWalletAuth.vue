@@ -1,5 +1,4 @@
 <template>
-  <Fragment>
     <AboveForm v-if="!showFinishForm" :fullScreen="true" header="welcome.connectMobile" @closeHandler="onClose">
       <template v-if="isQRPrep">
         <h2 class="header">{{ $t('mobileConnector.qrHeader') }}</h2>
@@ -24,7 +23,6 @@
         @click="onContinue"
       />
     </div>
-  </Fragment>
 </template>
 
 <script lang="ts" setup>
@@ -109,7 +107,7 @@ onMounted(async () => {
         } else failed();
       }
     });
-    unsubscribe = subscription.unsubscribe;
+    unsubscribe = () => subscription.unsubscribe();
     await subscription.response;
     subscriptionReady = true;
     if (terminal) unsubscribe();

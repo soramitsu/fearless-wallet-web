@@ -39,5 +39,9 @@ export type ValidatorInfoFull = {
   address: string; commission: string; blocked?: boolean; rewardPoints: number;
   nominators: { who: string; value: string }[]; identity: { info: Record<string, string> } | null;
   apy: string; isOversubscribed: boolean; isKnownGood: boolean; stake: { total: string; own: string };
+  /** Undefined means the runtime did not provide usable slashing evidence. */
+  isSlashed?: boolean;
+  /** On-chain identity owner, including the parent of a registered sub-identity. */
+  identityKey?: string;
 };
 export type DemeterRewardToken = { assetId: string; tokenPerBlock: FPNumber; farmsTotalMultiplier: number; stakingTotalMultiplier: number; farmsAllocation: FPNumber; stakingAllocation: FPNumber; teamAllocation: FPNumber };

@@ -52,6 +52,12 @@
       ]
     },
     {
+      "reason": "OP Mainnet's PublicNode JSON-RPC endpoint, which the 4.2.3 migration writes into saved OP Mainnet node preferences that still name the retired Blast API (src/extension/background/extension-base/src/services/network-service/retiredProviders.ts). It serves balance, fee and transaction calls for the wallet's public address; the same node is listed in the remote chain registry.",
+      "hosts": [
+        "optimism.publicnode.com"
+      ]
+    },
+    {
       "reason": "Fiat prices and the buy providers (MoonPay, Ramp) opened from Buy.",
       "hosts": [
         "api.coingecko.com",
@@ -292,6 +298,61 @@
         "xx.network",
         "zeitgeist.pm",
         "zero.io"
+      ]
+    },
+    {
+      "reason": "Exact same-provider Dwellir hostname migrations for previously selected built-in Substrate nodes. Retired hosts are compared with saved preferences only; a replacement is selected only for the matching catalog name/genesis/ecosystem when already present in its built-in node list. Explicit custom nodes are preserved. The new hosts serve the same-chain public RPC calls and use the existing Dwellir credential handling.",
+      "hosts": [
+        "acala-rpc.dwellir.com",
+        "acala-rpc.n.dwellir.com",
+        "api-aleph-zero-mainnet.dwellir.com",
+        "api-aleph-zero-mainnet.n.dwellir.com",
+        "api-asset-hub-kusama.n.dwellir.com",
+        "api-asset-hub-polkadot.n.dwellir.com",
+        "api-assethub-kusama.dwellir.com",
+        "api-assethub-polkadot.dwellir.com",
+        "api-astar.dwellir.com",
+        "api-astar.n.dwellir.com",
+        "api-basilisk.dwellir.com",
+        "api-basilisk.n.dwellir.com",
+        "api-bifrost-kusama.dwellir.com",
+        "api-bifrost-kusama.n.dwellir.com",
+        "api-bifrost-polkadot.dwellir.com",
+        "api-bifrost-polkadot.n.dwellir.com",
+        "api-bridge-hub-kusama.n.dwellir.com",
+        "api-bridge-hub-polkadot.n.dwellir.com",
+        "api-centrifuge.dwellir.com",
+        "api-centrifuge.n.dwellir.com",
+        "api-darwinia.n.dwellir.com",
+        "api-frequency.dwellir.com",
+        "api-frequency.n.dwellir.com",
+        "api-heima.n.dwellir.com",
+        "api-interlay.dwellir.com",
+        "api-interlay.n.dwellir.com",
+        "api-karura.dwellir.com",
+        "api-karura.n.dwellir.com",
+        "api-kintsugi.dwellir.com",
+        "api-kintsugi.n.dwellir.com",
+        "api-kusama-bridge-hub.dwellir.com",
+        "api-kusama.dwellir.com",
+        "api-kusama.n.dwellir.com",
+        "api-litentry.dwellir.com",
+        "api-neuroweb.dwellir.com",
+        "api-neuroweb.n.dwellir.com",
+        "api-pendulum.dwellir.com",
+        "api-pendulum.n.dwellir.com",
+        "api-polkadot-bridge-hub.dwellir.com",
+        "api-polkadot.dwellir.com",
+        "api-polkadot.n.dwellir.com",
+        "api-shiden.dwellir.com",
+        "api-shiden.n.dwellir.com",
+        "api-unique.dwellir.com",
+        "api-unique.n.dwellir.com",
+        "darwinia-rpc.dwellir.com",
+        "westend-rpc.dwellir.com",
+        "westend-rpc.n.dwellir.com",
+        "xxnetwork-rpc.dwellir.com",
+        "xxnetwork-rpc.n.dwellir.com"
       ]
     }
   ]

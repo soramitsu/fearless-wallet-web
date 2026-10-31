@@ -7,6 +7,7 @@ import type { RequestArguments } from '@walletconnect/jsonrpc-types';
 import type State from '@extension-base/background/handlers/State';
 import type { EvmAppState, EvmProvider } from '@extension-base/background/types/types';
 import { stripUrl } from '@/extension/background/extension-base/src/background/helpers';
+import { APP_VERSION } from '@/consts/global';
 
 type EvmEmitterCallback = (eventName: EvmEventType, payload: unknown) => void;
 
@@ -18,7 +19,7 @@ export class EipService {
   async getNetworkVersion(url: string) {
     const chainId = await this.getEvmCurrentChainId(url);
 
-    return parseInt(chainId, 16);
+    return BigInt(chainId).toString();
   }
 
   private async getEvmProvider(url: string): Promise<EvmProvider | undefined> {
@@ -95,13 +96,9 @@ export class EipService {
   }
 
   private async getEvmCurrentAccount(url: string): Promise<string[]> {
-    return new Promise((resolve) => {
-      this.state.getAuthInfo(url).then((authInfo) => {
-        const result = authInfo?.evmAuthorizedAccount ? [authInfo.evmAuthorizedAccount] : [];
+    const authInfo = await this.state.getAuthInfo(url);
 
-        resolve(result);
-      });
-    });
+    return authInfo?.isAllowed === true && authInfo.evmAuthorizedAccount ? [authInfo.evmAuthorizedAccount] : [];
   }
 
   async requestEvmPermission(url: string, id: string, request: RequestArguments, reConfirm = false) {
@@ -116,6 +113,8 @@ export class EipService {
 
   private async getEvmPermission(url: string, id: string) {
     const account = await this.getEvmCurrentAccount(url);
+
+    if (!account.length) return [];
 
     return [
       {
@@ -282,6 +281,8 @@ export class EipService {
           return this.getEvmCurrentChainId(url);
 
         case 'web3_clientVersion':
+          return `Fearless Wallet v${APP_VERSION}`;
+
         case 'net_version':
           return this.getNetworkVersion(url);
 

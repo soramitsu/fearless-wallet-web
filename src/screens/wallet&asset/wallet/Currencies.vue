@@ -17,13 +17,16 @@
       <Teleport :to="refreshSlot ?? 'body'" :disabled="!refreshSlot">
         <button
           class="portfolio-refresh"
+          :class="{ 'portfolio-refresh--busy': refreshing }"
           data-testid="portfolioRefresh"
           type="button"
+          :title="$t(refreshing ? 'portfolioPage.syncing' : 'portfolioPage.refresh')"
           :disabled="refreshing"
           :aria-busy="refreshing"
           @click="refreshPortfolio"
         >
-          {{ $t(refreshing ? 'portfolioPage.syncing' : 'portfolioPage.refresh') }}
+          <Icon icon="reload" width="18px" height="18px" :hover="false" class="refresh-icon" />
+          <span class="refresh-label">{{ $t(refreshing ? 'portfolioPage.syncing' : 'portfolioPage.refresh') }}</span>
         </button>
       </Teleport>
     </div>
@@ -62,11 +65,8 @@
             :key="row.id"
             :row="row"
             :manage="showAssetsManagementForm"
-            :forceExpanded="searching || hiddenOnly"
+            :forceExpanded="hiddenOnly"
             :search="searchQuery"
-            :canSend="canSendFrom(row)"
-            @send="openGroupPicker($event, 'send')"
-            @receive="openGroupPicker($event, 'receive')"
           />
 
           <PortfolioZeroNetworks
@@ -81,11 +81,8 @@
               :key="row.id"
               :row="row"
               :manage="showAssetsManagementForm"
-              :forceExpanded="searching || hiddenOnly"
-            :search="searchQuery"
-              :canSend="canSendFrom(row)"
-              @send="openGroupPicker($event, 'send')"
-              @receive="openGroupPicker($event, 'receive')"
+              :forceExpanded="hiddenOnly"
+              :search="searchQuery"
             />
           </PortfolioZeroNetworks>
         </div>
@@ -142,64 +139,33 @@
       />
     </template>
 
-    <!-- Teleported to the body, so the list's scroll box cannot clip it. -->
-    <PortfolioGroupNetworkPicker
-      v-if="groupPicker"
-      :action="groupPicker.action"
-      :symbol="groupPicker.symbol"
-      :options="groupPicker.options"
-      @pick="pickGroupNetwork"
-      @close="groupPicker = null"
-    />
   </Scroll>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { computed, defineComponent } from 'vue';
 import PortfolioNetworkSection from './PortfolioNetworkSection.vue';
 import PortfolioZeroNetworks from './PortfolioZeroNetworks.vue';
 import PortfolioExclusions from './PortfolioExclusions.vue';
 import PortfolioHiddenFundsNotice from './PortfolioHiddenFundsNotice.vue';
 import PortfolioLayoutNote from './PortfolioLayoutNote.vue';
 import PortfolioTokenRow from './PortfolioTokenRow.vue';
-import PortfolioGroupNetworkPicker from './PortfolioGroupNetworkPicker.vue';
-import type { NetworkJson } from '@extension-base/types';
 import SearchResultStatus from '@/components/SearchResultStatus.vue';
-import {
-  buildPortfolioSections,
-  filterSectionAssets,
-  filterSectionsBySearch,
-  splitZeroSections,
-  type PortfolioNetworkSection as PortfolioSection,
-} from '@/portfolio/assetIdentity';
-import {
-  hiddenFundsSignature,
-  resolvePortfolioSort,
-  type PortfolioSort,
-  type PortfolioViewSettings,
-} from '@/portfolio/portfolioViewSettings';
+import { splitZeroSections, type PortfolioNetworkSection as PortfolioSection } from '@/portfolio/assetIdentity';
+import { hiddenFundsSignature, type PortfolioViewSettings } from '@/portfolio/portfolioViewSettings';
 import { shouldShowLayoutNote } from '@/portfolio/layoutNotice';
-import { canonicalGroupIndexFor, type CanonicalGroupIndex } from '@/portfolio/tokenGroups';
-import {
-  buildTokenRows,
-  groupReceiveOptions,
-  groupSendOptions,
-  splitZeroTokenRows,
-  type GroupNetworkOption,
-  type PortfolioTokenRow as TokenRow,
-} from '@/portfolio/tokenLens';
+import { splitZeroTokenRows, type PortfolioTokenRow as TokenRow } from '@/portfolio/tokenLens';
 import { usePortfolio } from '@/portfolio/usePortfolio';
-import { isTestnetNetwork } from '@/portfolio/zeroRule';
+import { useWalletTokenRows } from '@/portfolio/useWalletTokenRows';
 import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-import { useExtensionStore } from '@/stores/extension';
-import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
-import { Components } from '@/router/routes';
-import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
 import { forceAssetDiscoverySweep } from '@/extension/messaging/asset-discovery';
 import { ALL_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { fetchNfts } from '@/extension/messaging/nfts';
+
+// One observer per list while it waits for the toolbar's Refresh place; kept off the reactive state.
+const refreshSlotObservers = new WeakMap<object, MutationObserver>();
 
 export default defineComponent({
   name: 'Currencies',
@@ -211,7 +177,6 @@ export default defineComponent({
     PortfolioHiddenFundsNotice,
     PortfolioLayoutNote,
     PortfolioTokenRow,
-    PortfolioGroupNetworkPicker,
   },
   props: {
     balances: Array,
@@ -223,43 +188,42 @@ export default defineComponent({
     refreshSlotId: { type: String, default: '' },
   },
   emits: ['toggleAssetsManagementForm', 'update:manageHiddenOnly', 'toggleNetworkManagementVisible'],
-  setup() {
+  setup(props) {
+    const portfolio = usePortfolio();
+    const { isFiltered, summary, filteredSummary, loadStatus } = portfolio;
+    const manage = computed(() => Boolean(props.showAssetsManagementForm));
+    const hiddenOnly = computed(() => manage.value && Boolean(props.manageHiddenOnly));
+    // Manage has no search field, so text typed before never narrows it (Review must list every hidden asset).
+    const search = computed(() => props.filterValue ?? '');
     const {
-      effectivePreferences,
-      preferenceSource,
-      legacyOrderIndex,
-      addressForNetwork,
-      walletScope,
-      networkFilter,
-      isFiltered,
-      zeroRule,
-      summary,
-      filteredSummary,
-      loadStatus,
-    } = usePortfolio();
+      searchQuery,
+      searching,
+      showsTestnets,
+      visibleSections,
+      tokenSort,
+      tokenRows,
+    } = useWalletTokenRows({ search, manage, hiddenOnly, portfolio });
 
     return {
-      effectivePreferences,
-      preferenceSource,
-      legacyOrderIndex,
-      addressForNetwork,
-      walletScope,
-      networkFilter,
       isFiltered,
-      zeroRule,
       summary,
       filteredSummary,
       loadStatus,
+      hiddenOnly,
+      searchQuery,
+      searching,
+      showsTestnets,
+      visibleSections,
+      tokenSort,
+      tokenRows,
     };
   },
   data() {
     return {
       networksStore: useNetworksStore(),
       accountsStore: useAccountsStore(),
-      extensionStore: useExtensionStore(),
       refreshing: false,
       refreshError: '',
-      groupPicker: null as null | { action: 'send' | 'receive'; symbol: string; options: GroupNetworkOption[] },
       refreshSlot: null as HTMLElement | null,
     };
   },
@@ -282,57 +246,6 @@ export default defineComponent({
     viewSettings(): PortfolioViewSettings {
       return this.accountsStore.portfolioView;
     },
-    // Manage has no search field, so a search typed before never narrows it (Review must list every hidden asset).
-    searching(): boolean {
-      return !this.showAssetsManagementForm && Boolean(this.filterValue?.trim());
-    },
-    /** A test network chosen as the only network is shown even with the Testnets switch off. */
-    selectedTestnet(): boolean {
-      const selected = this.networksStore.allNetworks.find(({ name }) =>
-        isSameString(name, this.accountsStore.selectedNetwork)
-      );
-
-      return Boolean(selected && isTestnetNetwork(selected));
-    },
-    showsTestnets(): boolean {
-      return this.viewSettings.showTestnets || (!this.hiddenOnly && this.selectedTestnet);
-    },
-    // Manage has no search field, so text typed before never narrows it.
-    searchQuery(): string {
-      return this.showAssetsManagementForm ? '' : this.filterValue?.trim() ?? '';
-    },
-    portfolioSections(): PortfolioSection[] {
-      return buildPortfolioSections({
-        groups: this.accountsStore.balances,
-        networks: this.networksStore.allNetworks,
-        prices: this.networksStore.assetsPrice.tokenPriceMap,
-        preferences: this.effectivePreferences,
-        preferenceSource: this.preferenceSource,
-        scanStates: this.accountsStore.networkScanStates,
-        surfaceDiscoveredAssets:
-          (this.extensionStore.features?.assetDiscoveryMode ??
-            this.extensionStore.features?.portfolio?.assetDiscoveryMode ??
-            'shadow') === 'visible',
-        addressForNetwork: this.addressForNetwork,
-        search: this.searchQuery,
-        isSelectedNetwork: (network: NetworkJson) => isSameString(network.name, this.accountsStore.selectedNetwork),
-        mode: this.showAssetsManagementForm ? 'manage' : 'view',
-        hideZero: this.viewSettings.hideZero,
-        showHidden: this.viewSettings.showHidden,
-        showTestnets: this.showsTestnets,
-        isDefaultVisibleAtZero: (network, asset) => this.zeroRule(network, asset.key),
-        walletScope: this.walletScope,
-        // The Hidden list is wallet-wide, like the notice, the footer and the "Hidden (N)" count that open it.
-        networkFilter: this.hiddenOnly ? undefined : this.networkFilter,
-      });
-    },
-    visibleSections(): PortfolioSection[] {
-      const sections = this.hiddenOnly
-        ? filterSectionAssets(this.portfolioSections, (asset) => asset.hidden)
-        : this.portfolioSections;
-
-      return this.searching ? filterSectionsBySearch(sections, this.filterValue) : sections;
-    },
     searchResultCount(): number {
       return this.visibleSections.reduce((count, section) => count + section.assets.length + section.detectedAssets.length, 0);
     },
@@ -342,26 +255,6 @@ export default defineComponent({
     /** "By token" is the default lens (portfolio contract §6); the choice is stored per wallet. */
     tokenLens(): boolean {
       return this.viewSettings.lens === 'token';
-    },
-    groupIndex(): CanonicalGroupIndex {
-      return canonicalGroupIndexFor(this.networksStore.allNetworks);
-    },
-    // The 3.0.5 custom order is kept for wallets that had one (D7) until the user picks Value.
-    tokenSort(): PortfolioSort {
-      return resolvePortfolioSort(this.viewSettings, this.legacyOrderIndex.size > 0);
-    },
-    tokenRows(): TokenRow[] {
-      const ranks = new Map<string, number>(
-        this.networksStore.allNetworks.map(({ name, rank }) => [name, Number.isFinite(rank) ? Number(rank) : Number.POSITIVE_INFINITY])
-      );
-
-      return buildTokenRows({
-        sections: this.visibleSections,
-        index: this.groupIndex,
-        networkRank: (name) => ranks.get(name) ?? Number.POSITIVE_INFINITY,
-        sort: this.tokenSort,
-        legacyOrderIndex: this.legacyOrderIndex,
-      });
     },
     splitTokenRows(): { funded: TokenRow[]; zeroOnly: TokenRow[] } {
       return splitZeroTokenRows(this.tokenRows);
@@ -417,9 +310,6 @@ export default defineComponent({
     zeroNetworksExpanded(): boolean {
       return this.zeroNetworksLocked || this.viewSettings.zeroNetworksExpanded;
     },
-    hiddenOnly(): boolean {
-      return this.showAssetsManagementForm && this.manageHiddenOnly;
-    },
     // Nothing to list, or no funded row in view (zero-balance networks stay below, collapsed). Funds the user
     // hid in this view are explained by the hidden-funds notice and the "hidden not included · Manage" footer.
     showEmptyState(): boolean {
@@ -464,20 +354,41 @@ export default defineComponent({
     },
   },
   // A kept-alive wallet screen off the page still follows the route, so this list can be created where the toolbar's
-  // slot is not in the document yet. Look it up again whenever the screen is back on the page.
+  // slot is not in the document yet; the dashboard's toolbar also arrives a moment after the list. Look it up whenever
+  // the screen is back on the page, and keep looking until it is there.
   mounted() {
-    this.findRefreshSlot();
+    this.watchRefreshSlot();
   },
   activated() {
-    this.findRefreshSlot();
+    this.watchRefreshSlot();
   },
-  // The picker lives in the body: a kept-alive list must not leave it open over another screen.
   deactivated() {
-    this.groupPicker = null;
+    this.stopWatchingRefreshSlot();
+  },
+  beforeUnmount() {
+    this.stopWatchingRefreshSlot();
   },
   methods: {
     findRefreshSlot() {
       this.refreshSlot = this.refreshSlotId ? document.getElementById(this.refreshSlotId) : null;
+    },
+    watchRefreshSlot() {
+      this.stopWatchingRefreshSlot();
+      this.findRefreshSlot();
+      if (this.refreshSlot || !this.refreshSlotId || typeof MutationObserver === 'undefined') return;
+
+      refreshSlotObservers.set(
+        this,
+        new MutationObserver(() => {
+          this.findRefreshSlot();
+          if (this.refreshSlot) this.stopWatchingRefreshSlot();
+        })
+      );
+      refreshSlotObservers.get(this)?.observe(document.body, { childList: true, subtree: true });
+    },
+    stopWatchingRefreshSlot() {
+      refreshSlotObservers.get(this)?.disconnect();
+      refreshSlotObservers.delete(this);
     },
     async refreshPortfolio() {
       if (this.refreshing) return;
@@ -522,38 +433,6 @@ export default defineComponent({
       this.accountsStore.updatePortfolioView({ lens: 'network' });
       this.accountsStore.dismissPortfolioLayoutNote();
     },
-    canSendOn(networkName: string): boolean {
-      const network = this.networksStore.allNetworks.find(({ name }) => name === networkName);
-
-      return Boolean(network) && network!.active !== false && isNetworkTransferEnabled(network, useSendKillSwitchStore().vetoes);
-    },
-    canSendFrom(row: TokenRow): boolean {
-      return groupSendOptions(row, this.canSendOn).length > 0;
-    },
-    // Send and Receive from a token always ask for the network first, with the wrong-network warning.
-    openGroupPicker(row: TokenRow, action: 'send' | 'receive') {
-      const options =
-        action === 'send'
-          ? groupSendOptions(row, this.canSendOn)
-          : groupReceiveOptions({
-              row,
-              group: row.groupId ? this.groupIndex.groups.get(row.groupId) : undefined,
-              networks: this.networksStore.allNetworks,
-              inScope: this.walletScope,
-            });
-
-      this.groupPicker = { action, symbol: row.symbol, options };
-    },
-    pickGroupNetwork(option: GroupNetworkOption) {
-      const action = this.groupPicker?.action;
-      this.groupPicker = null;
-      if (!action) return;
-
-      this.$router.push({
-        name: action === 'send' ? Components.SendForm : Components.ReceiveForm,
-        params: { assetId: option.assetId, network: option.networkName },
-      });
-    },
   },
 });
 </script>
@@ -582,19 +461,61 @@ export default defineComponent({
   }
 }
 
+// An icon among the list's tools; its word stays for screen readers and as the tooltip.
 .portfolio-refresh {
-  padding: 4px 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   border: 0;
+  border-radius: 50%;
   background: transparent;
   color: palette($pink-color, var(--fw-link));
   cursor: pointer;
   font: inherit;
-  font-size: 0.72rem;
+
+  &:hover:not(:disabled) {
+    background: var(--fw-raised-2);
+  }
 
   &:disabled {
     cursor: default;
     opacity: 0.55;
   }
+}
+
+@media (max-width: 380px) {
+  .portfolio-refresh {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.portfolio-refresh--busy .refresh-icon {
+  animation: refresh-spin 1s linear infinite;
+}
+
+@keyframes refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-refresh--busy .refresh-icon {
+    animation: none;
+  }
+}
+
+.refresh-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .refresh-error {

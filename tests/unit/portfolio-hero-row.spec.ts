@@ -2,7 +2,6 @@ import { mount, shallowMount, type VueWrapper } from '@vue/test-utils';
 import { ref } from 'vue';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { dashboardI18n } from './support/dashboardI18n';
-import type { AllocationGroup } from '@/portfolio/dashboard/allocation';
 
 const dashboard = {
   scope: ref('wallet'),
@@ -33,19 +32,15 @@ vi.mock('@/screens/portfolio/PortfolioSyncSheet.vue', () => ({ default: { name: 
 import PortfolioDashboard from '@/screens/portfolio/PortfolioDashboard.vue';
 import PortfolioHero from '@/screens/portfolio/PortfolioHero.vue';
 
-const groups: AllocationGroup[] = [
-  { key: 'eth', name: 'ETH', value: 75, share: 75, rays: 75, slot: 1 },
-  { key: 'dot', name: 'DOT', value: 25, share: 25, rays: 25, slot: 2 },
-];
 const wrappers: VueWrapper[] = [];
 const hero = (props: Record<string, unknown> = {}) => {
   const wrapper = mount(PortfolioHero, {
     props: {
       total: '1930', changeAmount: '0', changePercent: '0', caption: '', hiddenCount: 0, unpricedCount: 0,
       unavailableCount: 0, poolStakesExcluded: false, loading: false,
-      sync: { kind: 'live', savedWallets: [], staleNetworks: [] }, groups, activeKey: null, showSwap: true, ...props,
+      sync: { kind: 'live', savedWallets: [], staleNetworks: [] }, showSwap: true, showSend: true, showReceive: true, ...props,
     },
-    global: { stubs: { Icon: true, Shimmer: true, PortfolioSky: true } },
+    global: { stubs: { Icon: true, Shimmer: true } },
   });
   wrappers.push(wrapper);
   return wrapper;
@@ -64,13 +59,26 @@ describe('the portfolio hero', () => {
     expect(caption).toBe('Showing Ethereum · $1,620.00 · Balance update failed · Pool stakes not included');
   });
 
-  it('keeps Swap at the end of the legend row rather than on a row of its own', () => {
+  it('puts Send, Receive and Swap in one row under the balance, as Exodus does', async () => {
     const wrapper = hero();
-    const row = wrapper.get('[data-testid="heroLegend"]').element.parentElement;
+    const actions = wrapper.get('[data-testid="heroActions"]');
 
-    expect(wrapper.get('[data-testid="heroSwap"]').element.closest('.hero-row')).toBe(row);
-    expect(hero({ groups: [] }).find('.hero-row [data-testid="heroSwap"]').exists()).toBe(true);
-    expect(hero({ groups: [], showSwap: false }).find('.hero-row').exists()).toBe(false);
+    expect(actions.findAll('button').map((button) => [button.attributes('data-testid'), button.text()])).toEqual([
+      ['heroSend', 'Send'],
+      ['heroReceive', 'Receive'],
+      ['heroSwap', 'Swap'],
+    ]);
+    expect(actions.get('[data-testid="heroSwap"]').attributes('aria-label')).toBe('Swap on Polkaswap');
+
+    await actions.get('[data-testid="heroSend"]').trigger('click');
+    await actions.get('[data-testid="heroReceive"]').trigger('click');
+    await actions.get('[data-testid="heroSwap"]').trigger('click');
+    expect([wrapper.emitted('send'), wrapper.emitted('receive'), wrapper.emitted('swap')]).toEqual([[[]], [[]], [[]]]);
+  });
+
+  it('leaves out what the wallet cannot do, and the whole row when it can do nothing', () => {
+    expect(hero({ showReceive: false, showSwap: false }).findAll('[data-testid="heroActions"] button').map((button) => button.attributes('data-testid'))).toEqual(['heroSend']);
+    expect(hero({ showSend: false, showReceive: false, showSwap: false }).find('[data-testid="heroActions"]').exists()).toBe(false);
   });
 
   it('offers no Swap to a wallet that cannot swap', () => {

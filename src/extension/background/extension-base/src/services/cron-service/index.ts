@@ -51,7 +51,7 @@ export class CronService {
   }
 
   init() {
-    if (!this.state.isReady) return;
+    if (!this.state.isReady()) return;
 
     if (!this.state.currentAccount?.address) return;
 
@@ -105,22 +105,25 @@ export class CronService {
     this.logger.log('Stopping cron jobs');
 
     this.removeAllCrons();
+    this.isRunning = false;
   }
 
-  recoverApiMap() {
+  async recoverApiMap() {
     if (!navigator.onLine) return;
 
     const { substrate } = this.state.networkService.getApiMap;
 
     this.state.networkService.evmApiHandler.recoverClosedApis();
 
-    Object.entries(substrate).forEach(([network, apiProp]) => {
-      if (!apiProp?.api?.isConnected) {
-        apiProp.api?.disconnect().finally(() => {
-          this.state.networkService.substrateApiHandler.refreshDotSamaApi(network);
-        });
-      }
-    });
+    await Promise.all(Object.entries(substrate).map(async ([network, apiProp]) => {
+      const api = apiProp.api;
+      if (!api || api.isConnected) return;
+      try { await api.disconnect(); }
+      catch { this.logger.error('Unable to disconnect unavailable API'); }
+      if (!navigator.onLine || this.state.networkService.getApiMap.substrate[network] !== apiProp || apiProp.api !== api) return;
+      try { await this.state.networkService.substrateApiHandler.refreshDotSamaApi(network); }
+      catch { this.logger.error('Unable to recover unavailable API'); }
+    }));
   }
 
   updateApiMapStatus() {
@@ -135,8 +138,14 @@ export class CronService {
     Object.entries(evm).forEach(([key, api]) => {
       api.api?.provider
         ._waitUntilReady()
-        .then(() => this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED))
-        .catch(() => this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING));
+        .then(() => {
+          if (this.state.networkService.getApiMap.evm[key] === api)
+            this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
+        })
+        .catch(() => {
+          if (this.state.networkService.getApiMap.evm[key] === api)
+            this.state.networkService.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING);
+        });
     });
   }
 

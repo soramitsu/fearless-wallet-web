@@ -1,3 +1,4 @@
+import { Subscription } from 'rxjs';
 import { checkIfDenied } from '@polkadot/phishing';
 import { chrome } from '@extension-base/utils/crossenv';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
@@ -36,7 +37,6 @@ import type {
   ResponseTypes,
   SubscriptionMessageTypes,
 } from '@extension-base/background/types/types';
-import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
 import type {
@@ -153,12 +153,13 @@ export default class Tabs {
   async solanaSubscribeAccounts(url: string, id: string, port: Port): Promise<boolean> {
     const cb = this.state.subscriptionService.createSubscription<'solana(events.subscribe)'>(id, port);
     let previousPayload = '';
+    let active = true;
 
     const emitIfChanged = async (): Promise<void> => {
       const payload = await this.solanaAccountsAuthorized(url);
       const nextPayload = JSON.stringify(payload);
 
-      if (nextPayload === previousPayload) return;
+      if (!active || nextPayload === previousPayload) return;
 
       previousPayload = nextPayload;
       cb(payload);
@@ -175,6 +176,7 @@ export default class Tabs {
     });
 
     this.state.subscriptionService.setUnsubscriptionHandle(id, () => {
+      active = false;
       accountSubscription.unsubscribe();
       addressSubscription.unsubscribe();
       authSubscription.unsubscribe();
@@ -189,7 +191,8 @@ export default class Tabs {
   async irohaAccountsAuthorized(url: string, request?: IrohaConnectRequest | null): Promise<IrohaConnectResponse> {
     const network = request?.network ?? 'nexus';
     const authInfo = await this.state.getAuthInfo(url);
-    const authorizedAddress = authInfo?.irohaAuthorizedAccount;
+    if (authInfo?.isAllowed !== true) return { accounts: [] };
+    const authorizedAddress = authInfo.irohaAuthorizedAccount;
     const accounts = this.getAllIrohaAccounts(network).filter(({ address }) => address === authorizedAddress);
 
     return { accounts };
@@ -227,12 +230,13 @@ export default class Tabs {
   ): Promise<boolean> {
     const cb = this.state.subscriptionService.createSubscription<'iroha(events.subscribe)'>(id, port);
     let previousPayload = '';
+    let active = true;
 
     const emitIfChanged = async (): Promise<void> => {
       const payload = await this.irohaAccountsAuthorized(url, request);
       const nextPayload = JSON.stringify(payload);
 
-      if (nextPayload === previousPayload) return;
+      if (!active || nextPayload === previousPayload) return;
 
       previousPayload = nextPayload;
       cb(payload);
@@ -249,6 +253,7 @@ export default class Tabs {
     });
 
     this.state.subscriptionService.setUnsubscriptionHandle(id, () => {
+      active = false;
       accountSubscription.unsubscribe();
       addressSubscription.unsubscribe();
       authSubscription.unsubscribe();
@@ -319,22 +324,32 @@ export default class Tabs {
   async accountsSubscribeAuthorized(url: string, id: string, port: Port): Promise<string> {
     const cb = this.state.subscriptionService.createSubscription<'pub(accounts.subscribe)'>(id, port);
 
-    this.accountSubs[id] = {
-      subscription: this.state.keyringService.accountSubject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
-        const transformedAccounts = transformAccounts({ accounts });
-        const transformedMobileAccount = transformAddresses({
-          accounts: this.state.keyringService.addressSubject.value,
-        });
-        const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
-
-        chrome.storage.local.set({ transformAccounts: allAccounts });
-
-        const auths = await this.filterForAuthorizedAccounts(allAccounts, url);
-
-        cb(auths);
-      }),
-      url,
+    const subscription = new Subscription();
+    this.accountSubs[id] = { subscription, url };
+    let previousPayload = '';
+    let publishRevision = 0;
+    const publish = async (): Promise<void> => {
+      const revision = ++publishRevision;
+      const transformedAccounts = transformAccounts({ accounts: this.state.keyringService.accountSubject.value });
+      const transformedMobileAccount = transformAddresses({
+        accounts: this.state.keyringService.addressSubject.value,
+      });
+      const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
+      void Promise.resolve(chrome.storage.local.set({ transformAccounts: allAccounts })).catch(console.error);
+      const auths = await this.filterForAuthorizedAccounts(allAccounts, url);
+      const payload = JSON.stringify(auths);
+      if (subscription.closed || revision !== publishRevision || payload === previousPayload) return;
+      previousPayload = payload;
+      cb(auths);
     };
+    const update = () => { void publish().catch(console.error); };
+    subscription.add(this.state.keyringService.accountSubject.subscribe(update));
+    subscription.add(this.state.keyringService.addressSubject.subscribe(update));
+    subscription.add(this.state.requestService.subscribeAuthorizeUrlSubject.subscribe(update));
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => {
+      subscription.unsubscribe();
+      if (this.accountSubs[id]?.subscription === subscription) delete this.accountSubs[id];
+    });
 
     port.onDisconnect.addListener((): void => {
       this.accountsUnsubscribe(url, { id });

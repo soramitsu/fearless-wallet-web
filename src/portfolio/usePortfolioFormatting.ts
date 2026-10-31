@@ -1,5 +1,6 @@
 import type { CanonicalMemberRole } from '@/portfolio/canonicalGroups';
 import { formatDecimalString } from '@/helpers/numbers';
+import { FPNumber } from '@/sora/number';
 import { useI18n } from '@/locales/useI18n';
 import { useAccountsStore } from '@/stores/accounts';
 
@@ -34,10 +35,21 @@ export function usePortfolioFormatting() {
   const formatFiat = (value: string | null): string =>
     value === null ? t('portfolioPage.priceUnavailable') : formatFiatValue(value);
 
+  /** A unit price: cents above one unit of fiat, four places below it, and a tiny price keeps its first digits. */
+  const formatPrice = (value: string): string => {
+    const below1 = new FPNumber(value).lt(FPNumber.ONE);
+
+    return `${accountsStore.fiatSymbol}${formatDecimalString(value, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: below1 ? 4 : 2,
+      preserveSmallValue: true,
+    })}`;
+  };
+
   const roleLabel = (role: CanonicalMemberRole | undefined): string => {
     const key = memberRoleLabelKey(role);
     return key ? t(key) : '';
   };
 
-  return { formatAmount, formatFiat, formatFiatValue, roleLabel };
+  return { formatAmount, formatFiat, formatFiatValue, formatPrice, roleLabel };
 }

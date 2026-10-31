@@ -160,6 +160,7 @@ function runAutomatedReleaseGates(yarnPath) {
     ['test:all'],
     ['build:web'],
     ['test:e2e:extension'],
+    ['test:smoke:chrome:side-panel'],
     ['test:smoke:bitcoin'],
     // Bitcoin and Solana sends against bitcoind -regtest and solana-test-validator.
     ['test:e2e:local-chains'],

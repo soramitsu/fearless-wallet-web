@@ -66,7 +66,8 @@ const evmProvider = () => ({
   getTransactionCount: vi.fn(async () => 0),
   estimateGas: vi.fn(async () => 21000n),
   getFeeData: vi.fn(async () => ({ gasPrice: 1n, maxFeePerGas: null, maxPriorityFeePerGas: null })),
-  broadcastTransaction: vi.fn(async (_signed: string) => ({ hash: '0x1234' })),
+  // The wallet sends with eth_sendRawTransaction alone.
+  send: vi.fn(async (_method: string, _params: unknown[]): Promise<unknown> => null),
 });
 async function queueEvm(method: string, params: unknown[]) {
   const context = await captureEvmSigningContext(state, url, method, params);
@@ -148,19 +149,22 @@ describe('cancelling a request whose transaction an approval is submitting', () 
   it('keeps an EVM transaction whose broadcast is in flight and gives the dApp its hash', async () => {
     const { dapp } = await queueEvm('eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
     const provider = evmProvider();
-    const broadcast = deferred<{ hash: string }>();
-    provider.broadcastTransaction.mockReturnValueOnce(broadcast.promise);
+    const broadcast = deferred<unknown>();
+    provider.send.mockReturnValueOnce(broadcast.promise);
     vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
     const approving = extension.signEvmApprove({ id: 'first' });
-    await vi.waitFor(() => expect(provider.broadcastTransaction).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(provider.send).toHaveBeenCalledOnce());
 
     expect(extension.signingCancel({ id: 'first', kind: 'evm' })).toBe(false);
     expect(evm.getEvmSignRequest('first')).toBeDefined();
 
-    broadcast.resolve({ hash: '0xfeed' });
+    const [method, [serialized]] = provider.send.mock.calls[0] as [string, [string]];
+    const sent = Transaction.from(serialized);
+    expect(method).toBe('eth_sendRawTransaction');
+    broadcast.resolve(sent.hash);
     expect(await approving).toBe(true);
-    expect(await dapp).toEqual({ value: { id: 'first', payload: '0xfeed' } });
-    expect(Transaction.from(provider.broadcastTransaction.mock.calls[0][0]).from).toBe(address);
+    expect(await dapp).toEqual({ value: { id: 'first', payload: sent.hash } });
+    expect(sent.from).toBe(address);
   });
 
   it('keeps a Solana sign-and-send whose broadcast is in flight and gives the dApp its signature', async () => {

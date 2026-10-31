@@ -120,22 +120,6 @@ const loadWalletStorage = retryableInitialization(async () => {
 
 const walletStorageReady = () => withDeadline(loadWalletStorage(), STORAGE_WAIT_MS, WALLET_STORAGE_UNAVAILABLE);
 
-function getActiveTabs() {
-  // quering the current active tab in the current window should only ever return 1 tab
-  // although an array is specified here
-
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const request: TransportRequestMessage<'pri(tabs.update.activeTabsUrl)'> = {
-      id: 'background',
-      message: 'pri(tabs.update.activeTabsUrl)',
-      origin: 'background',
-      request: { tabs },
-    };
-
-    handlers(request);
-  });
-}
-
 async function onInstalled(details: chrome.runtime.InstalledDetails) {
   // onInstall chooses a default account only when none is stored, so it must see the stored
   // one. Nobody waits on this event, so it waits for the read itself rather than a deadline.
@@ -157,8 +141,6 @@ async function onInstalled(details: chrome.runtime.InstalledDetails) {
   state.onboardingService.init();
 
   initStorage().then(() => state.onInstall());
-
-  getActiveTabs();
 }
 
 async function handleMessage(data: TransportRequestMessage<MessageTypes>, port: Port): Promise<void> {
@@ -170,7 +152,6 @@ async function handleMessage(data: TransportRequestMessage<MessageTypes>, port: 
 export const backgroundRuntime = {
   handleMessage,
   onInstalled,
-  getActiveTabs,
   async onAlarm(alarm: chrome.alarms.Alarm) {
     if (alarm.name === REGISTRY_RETRY_ALARM && state.isReady()) {
       if (await state.networkService.retryRegistryIfNeeded()) state.updateServiceInfo();

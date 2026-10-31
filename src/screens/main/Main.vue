@@ -9,6 +9,7 @@
     />
 
     <LegacyWalletUpgradeNotice />
+    <UniversalWalletPasswordNotice />
 
     <SelectWalletPopup
       v-if="showSelectWalletPopup"
@@ -67,6 +68,7 @@ import FiatsPopup from './FiatsPopup.vue';
 import AboutPopup from './AboutPopup.vue';
 import LanguagePopup from './LanguagePopup.vue';
 import LegacyWalletUpgradeNotice from './LegacyWalletUpgradeNotice.vue';
+import UniversalWalletPasswordNotice from './UniversalWalletPasswordNotice.vue';
 import ManageAuths from '@/screens/extension-ui/ManageAuths.vue';
 import AccountAccessBanner from '@/components/AccountAccessBanner.vue';
 import LegacyExposureBanner from '@/components/LegacyExposureBanner.vue';
@@ -87,6 +89,7 @@ export default defineComponent({ name: 'Main',
     SelectWalletPopup,
     WalletDetailsPopup,
     LegacyWalletUpgradeNotice,
+    UniversalWalletPasswordNotice,
   },
   data() {
     return {

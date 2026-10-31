@@ -22,6 +22,7 @@ vi.mock('@/screens/main/FiatsPopup.vue', () => part('FiatsPopup'));
 vi.mock('@/screens/main/AboutPopup.vue', () => part('AboutPopup'));
 vi.mock('@/screens/main/LanguagePopup.vue', () => part('LanguagePopup'));
 vi.mock('@/screens/main/LegacyWalletUpgradeNotice.vue', () => part('LegacyWalletUpgradeNotice'));
+vi.mock('@/screens/main/UniversalWalletPasswordNotice.vue', () => part('UniversalWalletPasswordNotice'));
 vi.mock('@/screens/extension-ui/ManageAuths.vue', () => part('ManageAuths'));
 vi.mock('@/components/AccountAccessBanner.vue', () => part('AccountAccessBanner'));
 vi.mock('@/components/LegacyExposureBanner.vue', () => part('LegacyExposureBanner'));

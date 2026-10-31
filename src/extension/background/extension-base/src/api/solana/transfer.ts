@@ -14,6 +14,7 @@ import {
 import { assertSendCapability } from '@extension-base/services/send-kill-switch-service';
 import { type BalanceItem } from '@extension-base/api/evm/types';
 import { type BasicTxResponse, type ResponseSolanaTransferQuote } from '@extension-base/background/types/types';
+import { exportUniversalWalletSecret } from '@extension-base/services/keyring-service/UniversalWalletPassword';
 import {
   getDefaultSolanaPendingSendStore,
   isConfirmedSolanaStatus,
@@ -95,6 +96,8 @@ type SolanaTransferParams = {
 type SolanaTransferSource = {
   accountAddress: string;
   mnemonicOrSeed: string;
+  /** The wallet password when it opens this account; '' for every account the words alone open. */
+  passphrase: string;
   solanaAddress: string;
   walletEcosystem?: WalletEcosystem;
 };
@@ -495,6 +498,7 @@ async function prepareSolanaTransfer(
   const signed = signSolanaSerializedTransaction({
     expectedSigner: plan.source.solanaAddress,
     mnemonic: plan.source.mnemonicOrSeed,
+    passphrase: plan.source.passphrase,
     transaction: plan.unsignedTransaction,
   });
 
@@ -899,20 +903,23 @@ function resolveSolanaTransferSource(state: State, from: string): SolanaTransfer
 
   const meta = account.meta as FWKeyringMeta;
   const solanaAddress = normalizeSolanaAddress(meta.solanaAddress ?? account.address, 'invalid_solana_source_address');
-  const { seed } = state.keyringService.exportMnemonic({
-    address: account.address,
-    walletEcosystem: meta.walletEcosystem,
-  });
+  const { seed, passphrase } = exportUniversalWalletSecret(
+    state.keyringService,
+    { address: account.address, walletEcosystem: meta.walletEcosystem },
+    'solana',
+    meta
+  );
 
   if (!seed) throw new Error('solana_mnemonic_unavailable');
 
-  const derived = deriveSolanaAccount({ mnemonic: seed });
+  const derived = deriveSolanaAccount({ mnemonic: seed, passphrase });
 
   if (derived.address !== solanaAddress) throw new Error('invalid_solana_source_address');
 
   return {
     accountAddress: account.address,
     mnemonicOrSeed: seed,
+    passphrase,
     solanaAddress,
     walletEcosystem: meta.walletEcosystem,
   };

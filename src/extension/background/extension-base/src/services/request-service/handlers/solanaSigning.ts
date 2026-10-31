@@ -18,12 +18,14 @@ type SolanaKeyringAccount = {
   };
 };
 
-type ExportMnemonic = (payload: { address: string; walletEcosystem: string }) => { seed?: string };
+/** The phrase and, for accounts a wallet password protects, that password as BIP39 passphrase. */
+type ExportMnemonic = (payload: { address: string; walletEcosystem: string }) => { seed?: string; passphrase?: string };
 type BroadcastSolanaTransaction = (
   transactionBase64: string,
   options?: SolanaSignAndSendTransactionOptions
 ) => Promise<string>;
 type SolanaSigningMaterial = {
+  passphrase: string;
   seed: string;
   solanaAddress: string;
 };
@@ -52,7 +54,7 @@ export function resolveSolanaSigning({
   exportMnemonic: ExportMnemonic;
   request: SolanaRequestsSubjectPayload;
 }): SolanaSigningResponse {
-  const { seed, solanaAddress } = resolveSolanaSigningMaterial({ accounts, exportMnemonic, request });
+  const { passphrase, seed, solanaAddress } = resolveSolanaSigningMaterial({ accounts, exportMnemonic, request });
 
   if (request.method === 'signMessage') {
     if (!request.messageBase64) throw new Error('Invalid Solana message payload');
@@ -60,6 +62,7 @@ export function resolveSolanaSigning({
     const signature = signSolanaMessage({
       message: base64ToBytes(request.messageBase64),
       mnemonic: seed,
+      passphrase,
     });
 
     if (signature.address !== solanaAddress) throw new Error('Solana signing account mismatch');
@@ -77,6 +80,7 @@ export function resolveSolanaSigning({
     const signed = signSolanaSerializedTransaction({
       expectedSigner: solanaAddress,
       mnemonic: seed,
+      passphrase,
       transaction: request.transactionBase64,
     });
 
@@ -95,6 +99,7 @@ export function resolveSolanaSigning({
     signSolanaSerializedTransaction({
       expectedSigner: solanaAddress,
       mnemonic: seed,
+      passphrase,
       transaction,
     })
   );
@@ -120,10 +125,11 @@ export async function resolveSolanaSignAndSendTransaction({
   if (request.method !== 'signAndSendTransaction') throw new Error('Invalid Solana sign-and-send request');
   if (!request.transactionBase64) throw new Error('Invalid Solana transaction payload');
 
-  const { seed, solanaAddress } = resolveSolanaSigningMaterial({ accounts, exportMnemonic, request });
+  const { passphrase, seed, solanaAddress } = resolveSolanaSigningMaterial({ accounts, exportMnemonic, request });
   const signed = signSolanaSerializedTransaction({
     expectedSigner: solanaAddress,
     mnemonic: seed,
+    passphrase,
     transaction: request.transactionBase64,
   });
   let signature: string;
@@ -171,11 +177,11 @@ function resolveSolanaSigningMaterial({
 
   const walletEcosystem =
     typeof account.meta.walletEcosystem === 'string' ? account.meta.walletEcosystem : SUBSTRATE_ECOSYSTEM;
-  const { seed } = exportMnemonic({ address: account.address, walletEcosystem });
+  const { seed, passphrase = '' } = exportMnemonic({ address: account.address, walletEcosystem });
 
   if (!seed) throw new Error('Unable to export Solana signing seed');
 
-  return { seed, solanaAddress };
+  return { passphrase, seed, solanaAddress };
 }
 
 function base64ToBytes(value: string): Uint8Array {

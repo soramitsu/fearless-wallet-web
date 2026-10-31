@@ -833,3 +833,28 @@ describe('BalanceService Iroha routing', () => {
     });
   });
 });
+
+describe('IrohaBalanceService funds probe (Universal Wallet password)', () => {
+  it('counts any asset as funded, no assets as empty, and failures as unchecked', async () => {
+    const taira = irohaNetwork('Taira', TAIRA_CHAIN_ID);
+    const { state, updateBalanceStore } = createState([taira]);
+    const asset = (quantity: string) => ({ account_id: TAIRA_ACCOUNT_ID, asset: TAIRA_XOR_ASSET_ID, quantity, scope: 'global' });
+    const client: IrohaBalanceClient = {
+      getAccountAssets: vi.fn().mockResolvedValueOnce(routeBody({ items: [asset('0.5')] })),
+      getAssetDefinitions: vi.fn(),
+    };
+    const service = new IrohaBalanceService(state, vi.fn(() => client));
+
+    await expect(service.probeAddressFunds(TAIRA_ACCOUNT_ID)).resolves.toBe('funded');
+    vi.mocked(client.getAccountAssets).mockResolvedValueOnce(routeBody({ next_cursor: null, items: [asset('0')] }));
+    await expect(service.probeAddressFunds(TAIRA_ACCOUNT_ID)).resolves.toBe('empty');
+    vi.mocked(client.getAccountAssets).mockResolvedValueOnce(routeBody({ next_cursor: null, items: [] }));
+    await expect(service.probeAddressFunds(TAIRA_ACCOUNT_ID)).resolves.toBe('empty');
+    vi.mocked(client.getAccountAssets).mockRejectedValueOnce(new Error('torii unavailable'));
+    await expect(service.probeAddressFunds(TAIRA_ACCOUNT_ID)).resolves.toBe('unknown');
+    // A Nexus address is not a Taira account: nothing is asked.
+    await expect(service.probeAddressFunds(fixture.vectors[0].expected.iroha.nexus.i105)).resolves.toBe('unknown');
+    expect(client.getAccountAssets).toHaveBeenCalledTimes(4);
+    expect(updateBalanceStore).not.toHaveBeenCalled();
+  });
+});

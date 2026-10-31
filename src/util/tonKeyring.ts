@@ -23,6 +23,8 @@ const TON_WALLET_V4R2_CODE = Cell.fromBase64(
 
 type TonDerivationPayload = {
   mnemonic: string;
+  /** The wallet password as BIP39 passphrase; '' for wallets without one and for every earlier address. */
+  passphrase?: string;
   path?: string;
   workchain?: number;
 };
@@ -62,6 +64,7 @@ export class TonKeyringError extends Error {
 
 export function deriveTonAccount({
   mnemonic,
+  passphrase = '',
   path = TON_DEFAULT_DERIVATION_PATH,
   workchain = TON_DEFAULT_WORKCHAIN,
 }: TonDerivationPayload): TonDerivedAccount {
@@ -69,7 +72,11 @@ export function deriveTonAccount({
 
   assertSupportedWorkchain(workchain);
 
-  const privateSeed = deriveSlip10Ed25519Seed(mnemonicToSeedSync(normalizedMnemonic), path, createTonPathError);
+  const privateSeed = deriveSlip10Ed25519Seed(
+    mnemonicToSeedSync(normalizedMnemonic, passphrase),
+    path,
+    createTonPathError
+  );
   const { publicKey, secretKey } = keyPairFromSeed(Buffer.from(privateSeed));
   const publicKeyBytes = Uint8Array.from(publicKey);
   const secretKeyBytes = Uint8Array.from(secretKey);

@@ -33,6 +33,14 @@
         <div v-if="isMnemonic">
           <MnemonicBackupForm :mnemonicArray="mnemonicArray" :mnemonicLength="mnemonicLength">
             <Hint
+              v-if="hasUniversalWalletPassword"
+              class="as-typed-hint"
+              iconName="warning"
+              text="ux.universalWalletPasswordBackup"
+              role="note"
+              data-testid="universalWalletPasswordBackup"
+            />
+            <Hint
               v-if="isPhraseAsTyped"
               class="as-typed-hint"
               iconName="warning"
@@ -75,7 +83,7 @@ import { defineComponent } from 'vue';
 
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import BaseApi from '@/util/BaseApi';
-import { exportJSON, exportMnemonic, exportRowSeed } from '@/extension/messaging';
+import { exportJSON, exportMnemonic, exportRowSeed, universalWalletPasswordStatus } from '@/extension/messaging';
 import { isSameString, setClipboard } from '@/helpers';
 import { downloadJsonAccount } from '@/helpers/files';
 import { getAccountAccessErrorLocaleKey } from '@/helpers/transferErrors';
@@ -105,6 +113,7 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
       json: {} as KeyringPair$Json,
       isLoading: false,
       seed: '',
+      hasUniversalWalletPassword: false,
       /** Why the export could not run; the screen then offers the next step instead of a phrase. */
       errorKey: '',
       canUnlockAccount: false,
@@ -175,6 +184,12 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
         const { seed } = await exportMnemonic(address, this.password, walletEcosystem);
 
         this.seed = seed;
+        // The words alone no longer restore Bitcoin, Solana, TON and Taira of a wallet with a password.
+        this.hasUniversalWalletPassword = await (async () => {
+          const { state } = await universalWalletPasswordStatus(address);
+
+          return state === 'protected' || state === 'legacy';
+        })().catch(() => false);
       } else if (this.isRowSeed) {
         const { seed } = await exportRowSeed(this.addressByNetwork, this.password, this.isEthereumNetwork);
 

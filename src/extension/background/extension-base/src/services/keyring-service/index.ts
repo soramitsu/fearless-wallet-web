@@ -1,6 +1,7 @@
 import {
   isEthereumAddress,
   base64Decode,
+  keyExtractSuri,
   mnemonicToMiniSecret,
   mnemonicGenerate,
   mnemonicValidate,
@@ -50,6 +51,17 @@ import {
 import { commitMasterPasswordChange } from './MasterPasswordChange';
 import { upgradePasswordVerifier } from './PasswordVerifier';
 import { WalletSecurityProvenance, withoutWalletSecurityClaims } from './WalletSecurityProvenance';
+import {
+  checkWatchedUniversalWalletNetworks,
+  findUniversalWalletLegacyNetworks,
+  probeUniversalWalletLegacyAccounts,
+  withArrivedUniversalWalletNetworks,
+  withLegacyUniversalWalletAccounts,
+  universalWalletNetworkAddress,
+  withProtectedUniversalWalletAccounts,
+  type UniversalWalletFundsProbe,
+  type UniversalWalletSwitchOutcome,
+} from './UniversalWalletPassword';
 import type { TonStoreAccount } from '@extension-base/stores/TonStore';
 import type { EventService } from '@extension-base/services';
 import type {
@@ -66,12 +78,16 @@ import type {
   RequestRecoverAccountWithPassword,
   RequestRecoverAccountWithPhrase,
   RequestUnlockExtension,
+  RequestUniversalWalletPasswordPath,
   RequestValidateMnemonic,
   ResponseExportPrivateKey,
   ResponseExportSeed,
   ResponseRecoverAccountWithPassword,
   ResponseRecoverAccountWithPhrase,
   ResponseRestoreDeletedWallet,
+  ResponseUniversalWalletPasswordPath,
+  ResponseUniversalWalletWatchedCheck,
+  UniversalWalletPasswordStatus,
 } from '../../background/types/types';
 import type { FWKeyringMeta } from '@extension-base/types';
 import type { KeypairType } from '@subwallet/keyring/types';
@@ -86,6 +102,14 @@ import { decodeMnemonicFromJsonBackup } from '@/util/keyringJson';
 import { TonKeyringError, type TonImportChoice } from '@/util/tonKeyring';
 import { buildWebUniversalWalletMigrationSnapshot } from '@/util/universalWalletKeyringMigration';
 import { withUniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMeta';
+import { deriveUniversalWalletNetworkFields } from '@/util/universalWalletKeyringFields';
+import {
+  openUniversalWalletPassphrase,
+  sealUniversalWalletPassphrase,
+  suriPassword,
+  universalWalletLegacyNetworks,
+  type UniversalWalletPasswordNetwork,
+} from '@/util/universalWalletPassphrase';
 
 export type WordCount = 12 | 15 | 18 | 21 | 24;
 
@@ -116,6 +140,12 @@ export class KeyringService {
   private accountsStore?: AccountsStore;
   private accountAccess?: AccountAccessService;
   private password = '';
+  // Opened Universal Wallet passwords, by account and sealed record; cleared whenever the keyring locks.
+  private universalPassphraseCache?: Map<string, string>;
+
+  private get universalPassphrases(): Map<string, string> {
+    return this.universalPassphraseCache ??= new Map();
+  }
   private walletSecurityProvenance?: WalletSecurityProvenance;
 
   private get securityProvenance(): WalletSecurityProvenance {
@@ -131,6 +161,7 @@ export class KeyringService {
   private enrollmentEpoch = 0;
   private enrollmentWork: Promise<void> = Promise.resolve();
   private enrollmentGate: (address: string) => boolean = () => true;
+  private universalWalletFundsProbe?: UniversalWalletFundsProbe;
   private resetting = false;
   private resetRevision = 0;
   private resetWork?: Promise<boolean>;
@@ -152,6 +183,12 @@ export class KeyringService {
 
   // Accounts the gate refuses keep exactly the networks they have (LegacyExposureService holds back
   // accounts that may be exposed until the security notice is acknowledged).
+  // Checks the no-password address of a network a password wallet is about to gain (rule: keep it when funded or
+  // unchecked). Without a probe every such address counts as unchecked.
+  setUniversalWalletFundsProbe(probe: UniversalWalletFundsProbe): void {
+    this.universalWalletFundsProbe = probe;
+  }
+
   setLegacyNetworkEnrollmentGate(gate: (address: string) => boolean): void {
     this.enrollmentGate = gate;
   }
@@ -178,7 +215,18 @@ export class KeyringService {
         if (this.enrollmentGate && !this.enrollmentGate(account.address)) continue;
         const pair = this.getPair(account.address);
         if (!pair) continue;
-        try { await enrollLegacyAccountNetworks(pair, password, isCurrent); } catch { /* Retry on a later unlock. */ }
+        try {
+          await enrollLegacyAccountNetworks(pair, password, isCurrent, undefined, {
+            passphrase: () => this.universalWalletPassphraseCandidates(pair.address)[0] ?? '',
+            probe: this.universalWalletFundsProbe,
+          });
+        } catch { /* Retry on a later unlock. */ }
+        // Old addresses a password wallet moved away from are looked at again on every unlock (an EVM child is
+        // covered by its parent).
+        const isLinkedChild = this.getAllAccounts().some(({ address: other, meta }) =>
+          other !== pair.address && isSameString((meta as FWKeyringMeta).ethereumAddress ?? '', pair.address));
+        if (!isCurrent() || isLinkedChild) continue;
+        try { await this.checkWatchedUniversalWalletAccounts(pair.address); } catch { /* Retry on a later unlock. */ }
       }
     }).catch(() => {});
   }
@@ -423,8 +471,271 @@ export class KeyringService {
     return this.tonKeyring.vault.exclusive(async () => {
       const pair = keyring.createFromUri(suri, { ...meta, isMobile: false, walletEcosystem }, type);
       const effectiveEcosystem = isEthereumAddress(pair.address) ? WalletEcosystem.Evm : walletEcosystem;
+      // The SURI's password protects this wallet's Universal Wallet accounts; keep it, sealed, so they can sign.
+      const password = this.mnemonicSuriPassword(suri);
+      if (password) pair.setMeta({ universalWalletPassphrase: this.sealUniversalWalletPassphrase(pair, password) });
       return importLocalAccount(pair, effectiveEcosystem, () => this.password);
     });
+  }
+
+  private mnemonicSuriPassword(suri: string): string {
+    try {
+      return mnemonicValidate(keyExtractSuri(suri.trim()).phrase) ? suriPassword(suri) : '';
+    } catch {
+      return '';
+    }
+  }
+
+  // The seal key comes from this account's own secret, which its password derived.
+  private sealUniversalWalletPassphrase(pair: KeyringPair, passphrase: string) {
+    const json = pair.toJson(this.password);
+    const decoded = decodePair(this.password, base64Decode(json.encoded), json.encoding.type);
+
+    try {
+      return sealUniversalWalletPassphrase(passphrase, decoded.secretKey, decoded.publicKey);
+    } finally {
+      decoded.secretKey.fill(0);
+    }
+  }
+
+  // The password sealed in this account's metadata, '' when there is none or it does not open.
+  private universalWalletPassphraseOf(address: string): string {
+    const pair = this.getPair(address);
+    const record = (pair?.meta as FWKeyringMeta | undefined)?.universalWalletPassphrase;
+
+    if (!pair || !record || !this.password) return '';
+
+    const cacheKey = `${pair.address}\u0000${record.nonce}\u0000${record.sealed}`;
+    const cached = this.universalPassphrases.get(cacheKey);
+
+    if (cached !== undefined) return cached;
+
+    const json = this.backupAccount(pair.address, this.password);
+
+    if (!json) return '';
+
+    const decoded = decodePair(this.password, base64Decode(json.encoded), json.encoding.type);
+
+    try {
+      const passphrase = openUniversalWalletPassphrase(record, decoded.secretKey, decoded.publicKey) ?? '';
+
+      this.universalPassphrases.set(cacheKey, passphrase);
+
+      return passphrase;
+    } finally {
+      decoded.secretKey.fill(0);
+    }
+  }
+
+  // A wallet's Substrate account and its EVM child are created from the same words; either may hold the
+  // password (rule: Substrate first). Signing still follows the stored address, so a wrong candidate only fails.
+  universalWalletPassphraseCandidates(address: string): string[] {
+    const pair = this.getPair(address);
+
+    if (!pair) return [];
+
+    const ethereumAddress = (pair.meta as FWKeyringMeta).ethereumAddress;
+    const linked = this.getAllAccounts()
+      .filter(({ address: other, meta }) =>
+        other !== pair.address && ((ethereumAddress && isSameString(other, ethereumAddress)) ||
+          isSameString((meta as FWKeyringMeta).ethereumAddress ?? '', pair.address)))
+      .map(({ address: other }) => other);
+    const ordered = isEthereumAddress(pair.address) ? [...linked, pair.address] : [pair.address, ...linked];
+
+    return [...new Set(ordered.map((candidate) => {
+      try {
+        return this.universalWalletPassphraseOf(candidate);
+      } catch {
+        return '';
+      }
+    }).filter(Boolean))];
+  }
+
+  /** Which Universal Wallet accounts of a wallet still open with its recovery words alone. */
+  universalWalletPasswordStatus(address: string): UniversalWalletPasswordStatus {
+    const pair = this.getPair(address);
+    const meta = pair?.meta as FWKeyringMeta | undefined;
+
+    if (!pair || !meta || meta.isMnemonicUnverified || !['sr25519', 'ed25519', 'ecdsa', 'ethereum'].includes(pair.type)) {
+      return { state: 'none' };
+    }
+
+    const networks = universalWalletLegacyNetworks(meta.universalWalletLegacyNetworks)
+      .filter((network) => !!universalWalletNetworkAddress(meta, network));
+    const arrivedNetworks = universalWalletLegacyNetworks(meta.universalWalletArrivedNetworks);
+    const [passphrase] = this.universalWalletPassphraseCandidates(pair.address);
+
+    if (passphrase) {
+      if (!networks.length && !arrivedNetworks.length) return { state: 'protected' };
+
+      const { seed } = this.exportMnemonic({ address: pair.address, walletEcosystem: meta.walletEcosystem });
+      const arrived = seed ? arrivedNetworks.map((network) => ({
+        network,
+        legacyAddress: universalWalletNetworkAddress(deriveUniversalWalletNetworkFields(network, seed, ''), network)!,
+      })) : [];
+
+      return {
+        state: 'legacy',
+        rows: networks.map((network) => ({
+          network,
+          legacyAddress: universalWalletNetworkAddress(meta, network)!,
+          protectedAddress: seed
+            ? universalWalletNetworkAddress(deriveUniversalWalletNetworkFields(network, seed, passphrase), network)
+            : undefined,
+        })),
+        ...(arrived.length ? { arrived } : {}),
+      };
+    }
+
+    // Wallets saved before this version kept no password. A key the bare phrase does not open was made with a
+    // path, which may end in ///password: only the person can say, by entering it.
+    if (!meta.bitcoinAddress && !meta.solanaAddress && !meta.tonAddress && !meta.irohaAddress) return { state: 'none' };
+
+    const { seed } = this.exportMnemonic({ address: pair.address, walletEcosystem: meta.walletEcosystem });
+    const bare = seed ? this.pairFromPhrase(pair, seed) : undefined;
+
+    bare?.lock();
+
+    return seed && !bare ? { state: 'password-unknown' } : { state: 'none' };
+  }
+
+  /** Keeps the password of a wallet saved before this version: the typed path must reproduce its key. */
+  async addUniversalWalletPasswordPath({
+    address,
+    derivationPath,
+  }: RequestUniversalWalletPasswordPath): Promise<ResponseUniversalWalletPasswordPath> {
+    if (!this.password || keyring.keyring.isLocked) return { ok: false, code: 'locked' };
+
+    const pair = this.getPair(address);
+    const meta = pair?.meta as FWKeyringMeta | undefined;
+
+    if (!pair || !meta) return { ok: false, code: 'not_found' };
+
+    const { seed } = this.exportMnemonic({ address: pair.address, walletEcosystem: meta.walletEcosystem });
+
+    if (!seed) return { ok: false, code: 'not_found' };
+
+    const path = derivationPath.trim();
+    const copy = this.pairFromPhrase(pair, seed, path);
+
+    if (!copy) return { ok: false, code: 'path_mismatch' };
+    copy.lock();
+
+    const password = suriPassword(`${seed}${isEthereumAddress(pair.address) && !path.startsWith('/') ? `/${path}` : path}`);
+
+    if (!password) return { ok: false, code: 'no_password' };
+
+    const sealed = this.sealUniversalWalletPassphrase(pair, password);
+    const committed = await updateAccountMetadata(pair, (current) => ({
+      ...current,
+      universalWalletPassphrase: sealed,
+      universalWalletLegacyNetworks: findUniversalWalletLegacyNetworks(current, seed, password),
+    }), () => !!this.password, false).catch(() => false);
+
+    return committed ? { ok: true, status: this.universalWalletPasswordStatus(pair.address) } : { ok: false, code: 'storage_failed' };
+  }
+
+  /**
+   * Moves each no-password account of a password wallet to its protected account once a probe confirms the old
+   * address holds nothing. Funded and unchecked addresses stay exactly as they are.
+   */
+  async switchUniversalWalletAccounts(
+    address: string,
+    probe: UniversalWalletFundsProbe
+  ): Promise<{ network: UniversalWalletPasswordNetwork; outcome: UniversalWalletSwitchOutcome }[]> {
+    const pair = this.getPair(address);
+    const meta = pair?.meta as FWKeyringMeta | undefined;
+
+    if (!pair || !meta || !this.password) return [];
+
+    const [passphrase] = this.universalWalletPassphraseCandidates(pair.address);
+    const networks = universalWalletLegacyNetworks(meta.universalWalletLegacyNetworks);
+    const { seed } = this.exportMnemonic({ address: pair.address, walletEcosystem: meta.walletEcosystem });
+
+    if (!passphrase || !networks.length || !seed) return [];
+
+    const probed = await probeUniversalWalletLegacyAccounts(probe, seed, networks);
+    const results = probed.map(({ network, address: legacyAddress, funds }) => ({
+      network,
+      // Only the address the wallet shows may be judged; anything else is left for the person to check.
+      outcome: (legacyAddress === universalWalletNetworkAddress(meta, network) && funds === 'empty'
+        ? 'switched' : funds === 'empty' ? 'unknown' : funds) as UniversalWalletSwitchOutcome,
+    }));
+    const switched = results.filter(({ outcome }) => outcome === 'switched').map(({ network }) => network);
+
+    if (!switched.length) return results;
+
+    for (const account of this.universalWalletPairs(pair)) {
+      const committed = await updateAccountMetadata(account, (current) => {
+        // Only accounts still showing the probed addresses move; anything else changed meanwhile.
+        const movable = switched.filter((network) =>
+          universalWalletNetworkAddress(current, network) === universalWalletNetworkAddress(meta, network));
+        return movable.length
+          ? withProtectedUniversalWalletAccounts(account.address, current, seed, passphrase, movable)
+          : undefined;
+      }, () => !!this.password, false).catch(() => false);
+
+      if (!committed && account === pair) {
+        return results.map((result) => result.outcome === 'switched' ? { ...result, outcome: 'unknown' } : result);
+      }
+    }
+
+    return results;
+  }
+
+  // The accounts that carry one wallet's Universal Wallet fields: it and its linked EVM child or parent.
+  private universalWalletPairs(pair: KeyringPair): KeyringPair[] {
+    const ethereumAddress = (pair.meta as FWKeyringMeta).ethereumAddress ?? '';
+
+    return [pair, ...this.getAllAccounts()
+      .filter(({ address: other, meta: otherMeta }) => other !== pair.address &&
+        (isSameString(other, ethereumAddress) || isSameString((otherMeta as FWKeyringMeta).ethereumAddress ?? '', pair.address)))
+      .map(({ address: other }) => this.getPair(other))
+      .filter((other): other is KeyringPair => !!other)];
+  }
+
+  /**
+   * Looks at the old addresses a password wallet moved away from. Funds that reach one go back into the wallet
+   * when its protected account is confirmed empty; otherwise they are reported and the protected account stays.
+   */
+  async checkWatchedUniversalWalletAccounts(
+    address: string,
+    probe: UniversalWalletFundsProbe | undefined = this.universalWalletFundsProbe
+  ): Promise<ResponseUniversalWalletWatchedCheck> {
+    const pair = this.getPair(address);
+    const meta = pair?.meta as FWKeyringMeta | undefined;
+    const status = () => this.universalWalletPasswordStatus(address);
+
+    if (!pair || !meta || !this.password || !probe) return { changed: false, status: status() };
+    if (!universalWalletLegacyNetworks(meta.universalWalletWatchedNetworks).length) return { changed: false, status: status() };
+
+    const [passphrase] = this.universalWalletPassphraseCandidates(pair.address);
+    const { seed } = this.exportMnemonic({ address: pair.address, walletEcosystem: meta.walletEcosystem });
+
+    if (!passphrase || !seed) return { changed: false, status: status() };
+
+    const { revert, arrived, cleared } = await checkWatchedUniversalWalletNetworks(probe, meta, seed, passphrase);
+    const reported = universalWalletLegacyNetworks(meta.universalWalletArrivedNetworks);
+    const newlyArrived = arrived.filter((network) => !reported.includes(network));
+
+    if (!revert.length && !newlyArrived.length && !cleared.length) return { changed: false, status: status() };
+
+    for (const account of this.universalWalletPairs(pair)) {
+      await updateAccountMetadata(account, (current) => {
+        // Only a network still showing the protected account the probe judged moves back.
+        const back = revert.filter((network) => universalWalletNetworkAddress(current, network) ===
+          universalWalletNetworkAddress(deriveUniversalWalletNetworkFields(network, seed, passphrase), network));
+        const next = withArrivedUniversalWalletNetworks(
+          withLegacyUniversalWalletAccounts(account.address, current, seed, back),
+          arrived,
+          cleared
+        );
+
+        return JSON.stringify(next) === JSON.stringify(current) ? undefined : next;
+      }, () => !!this.password, false).catch(() => false);
+    }
+
+    return { changed: revert.length > 0 || newlyArrived.length > 0, status: status() };
   }
 
   saveAddress(address: string, meta: FWKeyringMeta, type: KeyringAddressType, options: PublicAddressUpdateOptions = {}) {
@@ -1064,6 +1375,7 @@ export class KeyringService {
       this.authenticationRevision = (this.authenticationRevision ?? 0) + 1;
 
       this.password = '';
+      this.universalPassphraseCache?.clear();
       this.enrollmentEpoch = (this.enrollmentEpoch ?? 0) + 1;
       this.access.cancelScan();
       if (wasUnlocked) this.lockSubject?.next();
@@ -1111,6 +1423,7 @@ export class KeyringService {
             if (!IS_EXTENSION) KeyringStoreWeb.commitReset();
           } finally {
             this.password = '';
+            this.universalPassphraseCache?.clear();
             this.access.reset();
           }
         });

@@ -1,10 +1,12 @@
 import { APIItemState } from '@extension-base/api/types/networks';
 import { BitcoinEsploraClient, type BitcoinAddressBalance } from '@extension-base/services/bitcoin-indexer-service';
 import { isAccountAccessError } from '@extension-base/services/keyring-service/AccountAccessErrors';
+import { exportUniversalWalletSecret } from '@extension-base/services/keyring-service/UniversalWalletPassword';
 import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { FetchBalancePayload, ResponseBalanceRequest, TokenGroup } from '@extension-base/background/types/types';
-import type { NetworkJson } from '@extension-base/types';
+import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
+import type { UniversalWalletFunds } from '@/util/universalWalletPassphrase';
 import { isSameString } from '@/helpers';
 import { getBitcoinAddressNetwork, isBitcoinAddress, type BitcoinNetworkKind } from '@/util/bitcoin';
 import {
@@ -16,6 +18,7 @@ import {
   type BitcoinWalletDiscoveryResult,
 } from '@/util/bitcoinDiscovery';
 import { deriveBitcoinReceiveAddress, getBitcoinReceivePath } from '@/util/bitcoinKeyring';
+import { withTimeout } from '@/util/endpointFailover';
 
 type BitcoinBalanceClient = Pick<BitcoinEsploraClient, 'getBalance'> & Partial<BitcoinDiscoveryClient>;
 type BitcoinBalanceClientFactory = (network: NetworkJson, bitcoinNetwork: BitcoinNetworkKind) => BitcoinBalanceClient;
@@ -36,6 +39,8 @@ const BITCOIN_FALLBACK_ASSET_ID = 'BTC';
 const BITCOIN_BALANCE_ADDRESS_CONCURRENCY = 8;
 const BITCOIN_FALLBACK_ICON = 'bitcoin';
 const BITCOIN_FALLBACK_PRECISION = 8;
+// Discovery reads both address chains up to the gap limit, so it gets longer than one address lookup.
+const BITCOIN_FUNDS_PROBE_TIMEOUT_MS = 20_000;
 
 export default class BitcoinBalanceService {
   constructor(
@@ -68,6 +73,46 @@ export default class BitcoinBalanceService {
     return results;
   }
 
+  /** Whether the account the words open with `passphrase` holds bitcoin now (the Universal Wallet password
+   * checks). Read-only: nothing is cached or stored, and a failed or slow lookup is `unknown`. */
+  async probeAccountFunds(
+    mnemonic: string,
+    bitcoinNetwork: BitcoinNetworkKind,
+    passphrase = ''
+  ): Promise<UniversalWalletFunds> {
+    const network = [
+      ...(this.state.networkService.activeNetworkByEcosystem.bitcoin ?? []),
+      ...Object.values(this.state.networkService.networkMap),
+    ].find((candidate) => candidate?.ecosystem === 'bitcoin' && this.getBitcoinNetworkKind(candidate) === bitcoinNetwork);
+
+    if (!network) return 'unknown';
+
+    try {
+      const client = this.clientFactory(network, bitcoinNetwork);
+
+      if (typeof client.getAddress !== 'function') return 'unknown';
+
+      const discovery = await withTimeout(
+        discoverBitcoinWalletAddresses({
+          client: client as BitcoinDiscoveryClient,
+          gapLimit: this.discoveryOptions.gapLimit,
+          maxLookahead: this.discoveryOptions.maxLookahead,
+          mnemonicOrSeed: mnemonic,
+          network: bitcoinNetwork,
+          passphrase,
+        }),
+        BITCOIN_FUNDS_PROBE_TIMEOUT_MS,
+        () => new Error('bitcoin_funds_probe_timeout')
+      );
+
+      return aggregateBitcoinDiscoveryBalance(discovery.addresses).totalSats > 0 ? 'funded' : 'empty';
+    } catch (error) {
+      console.warn('Bitcoin funds probe failed', error);
+
+      return 'unknown';
+    }
+  }
+
   private async fetchNetworkBalance(
     accountAddress: string,
     walletAddresses: { bitcoinAddress?: string; bitcoinTestnetAddress?: string },
@@ -89,17 +134,18 @@ export default class BitcoinBalanceService {
 
     try {
       client = this.clientFactory(network, bitcoinNetwork);
-      const mnemonicOrSeed = this.resolveMnemonic(accountAddress, wallet, bitcoinNetwork);
-      const storedAddresses = mnemonicOrSeed
+      const secret = this.resolveMnemonic(accountAddress, wallet, bitcoinNetwork);
+      const storedAddresses = secret
         ? []
         : this.getStoredBitcoinAddresses(accountAddress, wallet, network, bitcoinNetwork);
-      const discovery = mnemonicOrSeed && typeof client.getAddress === 'function'
+      const discovery = secret && typeof client.getAddress === 'function'
         ? await discoverBitcoinWalletAddresses({
             client: client as BitcoinDiscoveryClient,
             gapLimit: this.discoveryOptions.gapLimit,
             maxLookahead: this.discoveryOptions.maxLookahead,
-            mnemonicOrSeed,
+            mnemonicOrSeed: secret.seed,
             network: bitcoinNetwork,
+            passphrase: secret.passphrase,
           })
         : undefined;
       const balance = discovery
@@ -171,7 +217,11 @@ export default class BitcoinBalanceService {
     }
   }
 
-  private resolveMnemonic(accountAddress: string, walletAddress: string, network: BitcoinNetworkKind): string | null {
+  private resolveMnemonic(
+    accountAddress: string,
+    walletAddress: string,
+    network: BitcoinNetworkKind
+  ): { seed: string; passphrase: string } | null {
     const account = this.state.keyringService?.getAllAccounts?.().find(({ address, meta }) => {
       const bitcoinAddress = meta.bitcoinAddress as string | undefined;
       const bitcoinTestnetAddress = meta.bitcoinTestnetAddress as string | undefined;
@@ -186,12 +236,15 @@ export default class BitcoinBalanceService {
     if (!account) return null;
 
     let seed: string;
+    let passphrase: string;
 
     try {
-      ({ seed } = this.state.keyringService.exportMnemonic({
-        address: account.address,
-        walletEcosystem: account.meta.walletEcosystem,
-      }));
+      ({ seed, passphrase } = exportUniversalWalletSecret(
+        this.state.keyringService,
+        { address: account.address, walletEcosystem: account.meta.walletEcosystem },
+        network === 'testnet' ? 'bitcoinTestnet' : 'bitcoin',
+        account.meta as FWKeyringMeta
+      ));
     } catch (error) {
       // An account waiting for its password still shows the balance of its stored addresses.
       if (isAccountAccessError(error)) return null;
@@ -201,11 +254,11 @@ export default class BitcoinBalanceService {
 
     if (!seed) return null;
 
-    const firstReceiveAddress = deriveBitcoinReceiveAddress({ mnemonicOrSeed: seed, network });
+    const firstReceiveAddress = deriveBitcoinReceiveAddress({ mnemonicOrSeed: seed, network, passphrase });
 
     if (!isSameString(firstReceiveAddress, walletAddress)) throw new Error('bitcoin_account_seed_mismatch');
 
-    return seed;
+    return { seed, passphrase };
   }
 
   private getStoredBitcoinAddresses(

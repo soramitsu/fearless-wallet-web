@@ -66,8 +66,14 @@ export const buildBitcoinReceiveSuri = ({
 
 const hash160 = (value: Uint8Array): Uint8Array => ripemd160(sha256(value));
 
-const deriveKey = (mnemonicOrSeed: string, path: string): { privateKey: Uint8Array; publicKey: Uint8Array } => {
-  const root = HDKey.fromMasterSeed(mnemonicToSeedSync(mnemonicOrSeed.trim()));
+// The passphrase is the wallet password (BIP39 normalises it with NFKD); '' derives the accounts of every
+// earlier version.
+const deriveKey = (
+  mnemonicOrSeed: string,
+  path: string,
+  passphrase = ''
+): { privateKey: Uint8Array; publicKey: Uint8Array } => {
+  const root = HDKey.fromMasterSeed(mnemonicToSeedSync(mnemonicOrSeed.trim(), passphrase));
   const child = root.derive(path);
 
   if (!child.publicKey) throw new Error(`Unable to derive Bitcoin public key for path ${path}`);
@@ -85,14 +91,16 @@ const encodeP2wpkhAddress = (publicKey: Uint8Array, network: BitcoinDerivationNe
 export const deriveBitcoinKey = ({
   mnemonicOrSeed,
   network = 'mainnet',
+  passphrase,
   path,
 }: {
   mnemonicOrSeed: string;
   network?: BitcoinDerivationNetwork;
+  passphrase?: string;
   path?: string;
 }): BitcoinDerivedKey => {
   const receivePath = path ?? getBitcoinFirstReceivePath(network);
-  const key = deriveKey(mnemonicOrSeed, receivePath);
+  const key = deriveKey(mnemonicOrSeed, receivePath, passphrase);
 
   return {
     ...key,
@@ -104,11 +112,13 @@ export const deriveBitcoinKey = ({
 export const deriveBitcoinReceiveAddress = ({
   mnemonicOrSeed,
   network = 'mainnet',
+  passphrase,
   path,
 }: {
   mnemonicOrSeed: string;
   network?: BitcoinDerivationNetwork;
+  passphrase?: string;
   path?: string;
 }): string => {
-  return deriveBitcoinKey({ mnemonicOrSeed, network, path }).address;
+  return deriveBitcoinKey({ mnemonicOrSeed, network, passphrase, path }).address;
 };

@@ -15,6 +15,8 @@ export const SOLANA_DEFAULT_DERIVATION_PATH = UNIVERSAL_WALLET_DERIVATION_PATHS.
 
 type SolanaDerivationPayload = {
   mnemonic: string;
+  /** The wallet password as BIP39 passphrase; '' for wallets without one and for every earlier address. */
+  passphrase?: string;
   path?: string;
 };
 
@@ -50,10 +52,15 @@ export class SolanaKeyringError extends Error {
 
 export function deriveSolanaAccount({
   mnemonic,
+  passphrase = '',
   path = SOLANA_DEFAULT_DERIVATION_PATH,
 }: SolanaDerivationPayload): SolanaDerivedAccount {
   const normalizedMnemonic = normalizeMnemonic(mnemonic);
-  const privateSeed = deriveSlip10Ed25519Seed(mnemonicToSeedSync(normalizedMnemonic), path, createSolanaPathError);
+  const privateSeed = deriveSlip10Ed25519Seed(
+    mnemonicToSeedSync(normalizedMnemonic, passphrase),
+    path,
+    createSolanaPathError
+  );
   const { publicKey } = ed25519PairFromSeed(privateSeed);
 
   return {

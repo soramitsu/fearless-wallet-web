@@ -99,6 +99,7 @@ import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH, INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import { UNIVERSAL_WALLET_DEFAULT_WORD_COUNT } from '@/consts/universalWallet';
 import { deriveUniversalWalletKeyringFields } from '@/util/universalWalletKeyringFields';
+import { resolveUniversalWalletPassphrase } from '@/util/universalWalletPassphrase';
 import BaseApi from '@/util/BaseApi';
 import {
   addAccount,
@@ -396,7 +397,14 @@ export default defineComponent({ name: 'CreateGoogle',
           };
 
           if (this.mnemonic) {
-            Object.assign(meta, deriveUniversalWalletKeyringFields(this.mnemonic));
+            // Fresh words: no earlier address exists, so a password protects every Universal Wallet account.
+            Object.assign(
+              meta,
+              deriveUniversalWalletKeyringFields(
+                this.mnemonic,
+                resolveUniversalWalletPassphrase(this.suriSubstrate, this.suriEthereum)
+              )
+            );
           }
 
           const {

@@ -8,6 +8,8 @@ export const IROHA_DEFAULT_DERIVATION_PATH = UNIVERSAL_WALLET_DERIVATION_PATHS.i
 
 type IrohaDerivationPayload = {
   mnemonic: string;
+  /** The wallet password as BIP39 passphrase; '' for wallets without one and for every earlier address. */
+  passphrase?: string;
   path?: string;
 };
 
@@ -31,13 +33,14 @@ type IrohaDerivedAddress = IrohaDerivedAccount & {
 
 export const deriveIrohaSigningKey = ({
   mnemonic,
+  passphrase = '',
   path = IROHA_DEFAULT_DERIVATION_PATH,
 }: IrohaDerivationPayload): IrohaDerivedSigningKey => {
   const normalizedMnemonic = mnemonic.trim().replace(/\s+/g, ' ');
 
   if (!validateMnemonic(normalizedMnemonic)) throw new Error('Invalid Iroha mnemonic');
 
-  const seed = mnemonicToSeedSync(normalizedMnemonic);
+  const seed = mnemonicToSeedSync(normalizedMnemonic, passphrase);
   try {
     const privateSeed = deriveSlip10Ed25519Seed(seed, path, createIrohaPathError);
     const publicKeyHex = bytesToHex(keyPairFromSeed(Buffer.from(privateSeed)).publicKey);
@@ -66,10 +69,11 @@ export const deriveIrohaAccount = (payload: IrohaDerivationPayload): IrohaDerive
 
 export const deriveIrohaAddress = ({
   mnemonic,
+  passphrase,
   path,
   network = 'taira',
 }: IrohaAddressDerivationPayload): IrohaDerivedAddress => {
-  const account = deriveIrohaAccount({ mnemonic, path });
+  const account = deriveIrohaAccount({ mnemonic, passphrase, path });
 
   return {
     ...account,

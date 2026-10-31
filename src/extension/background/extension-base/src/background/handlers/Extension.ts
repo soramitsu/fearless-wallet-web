@@ -97,6 +97,11 @@ import {
   requireEnabledIrohaConnect,
   subscribeIrohaConnectState,
 } from '@extension-base/services/iroha-connect-service/releaseGate';
+import {
+  balanceServiceFundsProbe,
+  exportUniversalWalletSecret,
+  probeUniversalWalletLegacyAccounts,
+} from '@extension-base/services/keyring-service/UniversalWalletPassword';
 import { type MakeCrossChainProps } from '../../api/substrate/types';
 import { EXTENSION_URL } from '../../const';
 import { makeTonTransfer, MAX_TON_FEE } from '../../api/ton/transfer';
@@ -175,6 +180,12 @@ import type {
   RequestGenerateMnemonic,
   RequestValidateMnemonic,
   RequestTonImportCandidates,
+  RequestUniversalWalletPasswordAccount,
+  RequestUniversalWalletPasswordDiscovery,
+  RequestUniversalWalletPasswordPath,
+  UniversalWalletPasswordDiscoveryItem,
+  UniversalWalletPasswordStatus,
+  UniversalWalletPasswordSwitchResult,
   TonImportCandidateInfo,
   RequestUpdateCurrentAccount,
   ResponseBalanceRequest,
@@ -206,7 +217,7 @@ import type {
   NftTx,
 } from '@extension-base/services/nft-service/types';
 import type { RequestUpdateLegacyExposure } from '@extension-base/services/legacy-exposure-service';
-import type { NetworkJson } from '@extension-base/types';
+import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
 import type State from '@extension-base/background/handlers/State';
 import type { ProposalTypes, SessionTypes } from '@walletconnect/types';
 import type { HexString } from '@polkadot/util/types';
@@ -463,6 +474,29 @@ export default class Extension extends FWExtensionBase {
       ...candidate,
       ...(activity[candidate.address] ?? { activity: 'unknown' }),
     }));
+  }
+
+  // A password import keeps each no-password address that holds funds, or that could not be checked, as the
+  // TON chooser does; the rest open only with the password. Nothing is looked up for wallets without one.
+  async universalWalletPasswordDiscovery({
+    mnemonic,
+  }: RequestUniversalWalletPasswordDiscovery): Promise<UniversalWalletPasswordDiscoveryItem[]> {
+    return probeUniversalWalletLegacyAccounts(balanceServiceFundsProbe(this.state.balanceService), mnemonic);
+  }
+
+  universalWalletPasswordStatus({ address }: RequestUniversalWalletPasswordAccount): UniversalWalletPasswordStatus {
+    try {
+      return this.state.keyringService.universalWalletPasswordStatus(address);
+    } catch (error) {
+      // An account waiting for its password, or one the phrase cannot open, has nothing to offer here yet.
+      console.warn('Universal Wallet password status unavailable', error);
+
+      return { state: 'none' };
+    }
+  }
+
+  universalWalletPasswordSwitch({ address }: RequestUniversalWalletPasswordAccount): Promise<UniversalWalletPasswordSwitchResult[]> {
+    return this.state.keyringService.switchUniversalWalletAccounts(address, balanceServiceFundsProbe(this.state.balanceService));
   }
 
   accountsValidatePassword({ password }: RequestAccountValidate): boolean {
@@ -824,11 +858,11 @@ export default class Extension extends FWExtensionBase {
       this.assertNonEvmSigningAuthorization(request);
       const exportMnemonic = ({ address, walletEcosystem }: { address: string; walletEcosystem: string }) => {
         this.assertNonEvmSigningAuthorization(request);
-        return this.state.keyringService.exportMnemonic({
+        return exportUniversalWalletSecret(this.state.keyringService, {
           address,
           password: this.state.keyringService.getPassword(),
           walletEcosystem: walletEcosystem as WalletEcosystem,
-        });
+        }, 'solana', this.state.keyringService.getPair(address)?.meta as FWKeyringMeta | undefined);
       };
       // A dApp's sign-and-send moves funds too, so the Solana send kill switch
       // covers it; sign-only requests are unaffected.
@@ -2667,6 +2701,19 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(keyring.tonImportCandidates)':
         return this.tonImportCandidates(request as RequestTonImportCandidates);
+      case 'pri(keyring.universalWalletPasswordDiscovery)':
+        return this.universalWalletPasswordDiscovery(request as RequestUniversalWalletPasswordDiscovery);
+      case 'pri(accounts.universalWalletPassword.status)':
+        return this.universalWalletPasswordStatus(request as RequestUniversalWalletPasswordAccount);
+      case 'pri(accounts.universalWalletPassword.addPath)':
+        return this.state.keyringService.addUniversalWalletPasswordPath(request as RequestUniversalWalletPasswordPath);
+      case 'pri(accounts.universalWalletPassword.switch)':
+        return this.universalWalletPasswordSwitch(request as RequestUniversalWalletPasswordAccount);
+      case 'pri(accounts.universalWalletPassword.checkWatched)':
+        return this.state.keyringService.checkWatchedUniversalWalletAccounts(
+          (request as RequestUniversalWalletPasswordAccount).address,
+          balanceServiceFundsProbe(this.state.balanceService)
+        );
 
       case 'pri(networkMap.getSubscription)':
         return this.subscribeNetworkMap(id, port);

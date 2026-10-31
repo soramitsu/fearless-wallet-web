@@ -13,7 +13,12 @@ import type {
   ResponsePortfolioHoldings,
   ResponseAccountExport,
   ResponseExportSeed,
+  ResponseUniversalWalletPasswordPath,
+  ResponseUniversalWalletWatchedCheck,
   TonImportCandidateInfo,
+  UniversalWalletPasswordDiscoveryItem,
+  UniversalWalletPasswordStatus,
+  UniversalWalletPasswordSwitchResult,
 } from '@extension-base/background/types/types';
 import type { DerivationPath, NetworkName, TonEventTokens } from '@/interfaces';
 import type { WordCount } from '@extension-base/services';
@@ -75,6 +80,29 @@ export function mnemonicValidate(walletEcosystem = WalletEcosystem.Substrate, se
 
 export function tonImportCandidates(mnemonic: string): Promise<TonImportCandidateInfo[]> {
   return sendMessage('pri(keyring.tonImportCandidates)', { mnemonic });
+}
+
+export function universalWalletPasswordDiscovery(mnemonic: string): Promise<UniversalWalletPasswordDiscoveryItem[]> {
+  return sendMessage('pri(keyring.universalWalletPasswordDiscovery)', { mnemonic });
+}
+
+export function universalWalletPasswordStatus(address: string): Promise<UniversalWalletPasswordStatus> {
+  return sendMessage('pri(accounts.universalWalletPassword.status)', { address });
+}
+
+export function addUniversalWalletPasswordPath(
+  address: string,
+  derivationPath: string
+): Promise<ResponseUniversalWalletPasswordPath> {
+  return sendMessage('pri(accounts.universalWalletPassword.addPath)', { address, derivationPath });
+}
+
+export function switchUniversalWalletAccounts(address: string): Promise<UniversalWalletPasswordSwitchResult[]> {
+  return sendMessage('pri(accounts.universalWalletPassword.switch)', { address });
+}
+
+export function checkUniversalWalletWatched(address: string): Promise<ResponseUniversalWalletWatchedCheck> {
+  return sendMessage('pri(accounts.universalWalletPassword.checkWatched)', { address });
 }
 
 export function accountUpdateName(address: string, name: string, walletEcosystem: WalletEcosystem): Promise<boolean> {

@@ -168,6 +168,11 @@ import { Components } from '@/router/routes';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import { UNIVERSAL_WALLET_DEFAULT_WORD_COUNT } from '@/consts/universalWallet';
 import { deriveUniversalWalletKeyringFields } from '@/util/universalWalletKeyringFields';
+import {
+  resolveUniversalWalletPassphrase,
+  UNIVERSAL_WALLET_PASSWORD_NETWORKS,
+  type UniversalWalletPasswordNetwork,
+} from '@/util/universalWalletPassphrase';
 import { normalizeTonImportPhrase, type TonImportChoice, type TonImportDerivation } from '@/util/tonKeyring';
 import {
   forgetAccount,
@@ -180,6 +185,7 @@ import {
   generateMnemonic,
   mnemonicValidate,
   tonImportCandidates,
+  universalWalletPasswordDiscovery,
 } from '@/extension/messaging';
 import { IS_POPUP, IS_SIDE_PANEL } from '@/consts/globalClient';
 import { useAccountsStore } from '@/stores/accounts';
@@ -722,7 +728,17 @@ export default defineComponent({ name: 'AddWallet',
           if (this.isTonImport) return this.saveTonImport(meta);
 
           if (this.mnemonic) {
-            Object.assign(meta, deriveUniversalWalletKeyringFields(this.mnemonic));
+            const passphrase = resolveUniversalWalletPassphrase(this.suriSubstrate, this.suriEthereum);
+            // Imported words may already hold funds at the addresses they open without the password: those stay.
+            const legacyNetworks = passphrase && !this.isCreateWallet ? await this.universalWalletLegacyNetworks() : [];
+
+            Object.assign(meta, deriveUniversalWalletKeyringFields(this.mnemonic, passphrase, legacyNetworks));
+            if (legacyNetworks.length) meta.universalWalletLegacyNetworks = legacyNetworks;
+            // Old addresses found empty stay watched: funds can still reach them after the protected ones show.
+            const watched = passphrase && !this.isCreateWallet
+              ? UNIVERSAL_WALLET_PASSWORD_NETWORKS.filter((network) => !legacyNetworks.includes(network))
+              : [];
+            if (watched.length) meta.universalWalletWatchedNetworks = watched;
           }
 
           const {
@@ -747,6 +763,19 @@ export default defineComponent({ name: 'AddWallet',
           const address = await addAccount(this.suriSubstrate, substrateKeypairType, meta, this.walletEcosystem, this.isCreateWallet);
 
           return address;
+    },
+    // A no-password address that holds funds, or that could not be checked, keeps its network; as with the
+    // TON chooser, nothing is guessed when the network cannot answer.
+    async universalWalletLegacyNetworks(): Promise<UniversalWalletPasswordNetwork[]> {
+      try {
+        const found = await universalWalletPasswordDiscovery(this.mnemonic);
+
+        return UNIVERSAL_WALLET_PASSWORD_NETWORKS.filter(
+          (network) => found.find((item) => item.network === network)?.funds !== 'empty'
+        );
+      } catch {
+        return [...UNIVERSAL_WALLET_PASSWORD_NETWORKS];
+      }
     },
     // Saves the address picked on the import screen; the background refuses any other.
     async saveTonImport(meta: FWKeyringMeta) {

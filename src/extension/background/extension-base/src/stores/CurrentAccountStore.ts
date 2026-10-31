@@ -29,6 +29,12 @@ function selection(value: CurrentAccountState | undefined): CurrentAccountState 
   return value ?? null;
 }
 
+// 2.x could store a selection without an address. One that fails the shape check selects nothing, so the
+// wallet still opens; the record stays until a new choice replaces it.
+function storedSelection(value: CurrentAccountState | undefined): CurrentAccountState {
+  try { return selection(value); } catch { return null; }
+}
+
 export default class CurrentAccountStore extends SubscribableStore<CurrentAccountState> {
   // Hold a selection slot across a compensating write. A later user choice may
   // never be overwritten by rollback from an earlier, cancelled operation.
@@ -56,7 +62,7 @@ export default class CurrentAccountStore extends SubscribableStore<CurrentAccoun
   readSelection(): Promise<CurrentAccountState> {
     return this.enqueue(async () => {
       await this.recover();
-      return selection(await super.getAndWait('CurrentAccountInfo'));
+      return storedSelection(await super.getAndWait('CurrentAccountInfo'));
     });
   }
 
@@ -76,7 +82,7 @@ export default class CurrentAccountStore extends SubscribableStore<CurrentAccoun
       await this.recover();
       let previous: CurrentAccountState = null;
       await super.updateAndWait('CurrentAccountInfo', (current) => {
-        previous = structuredClone(selection(current));
+        previous = structuredClone(storedSelection(current));
         assertCurrent?.();
         return snapshot;
       }, undefined, false);

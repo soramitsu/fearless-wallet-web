@@ -167,10 +167,10 @@ describe('current account selection persistence', () => {
     expect(service.currentAccountSubject.value).toEqual(second);
   });
 
-  it('refuses malformed saved selection without publishing or overwriting it', async () => {
+  it('treats a malformed saved selection as no selection without overwriting it', async () => {
     fixture.data[key] = true;
-    expect(await observe(service.restoreCurrentAccount())).toBe('rejected');
-    expect(service.currentAccountSubject.value).toEqual(first);
+    expect(await observe(service.restoreCurrentAccount())).toBe('resolved');
+    expect(service.currentAccountSubject.value).toBeNull();
     expect(fixture.data[key]).toBe(true);
   });
 

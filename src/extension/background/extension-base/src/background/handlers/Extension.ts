@@ -974,6 +974,21 @@ export default class Extension extends FWExtensionBase {
 
     assert(queued, 'Unable to find request');
 
+    // An approval that submits the transaction may already have sent it. The dApp then gets that outcome, not
+    // Cancelled, which it could answer by asking the user to pay again.
+    if (isSolanaSignRequest(queued)) {
+      if (queued.method === 'signAndSendTransaction' && this.pendingSiteApprovals.has(queued)) return false;
+    } else if (isEvmSignRequest(queued) && queued.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
+      const handler = this.state.requestService.evmRequestHandler;
+
+      // An approval in progress holds the request, so it cannot be claimed.
+      try {
+        handler.releaseEvmSignRequest(handler.claimEvmSignRequest(id));
+      } catch {
+        return false;
+      }
+    }
+
     queued.reject(new Error('Cancelled'));
 
     return true;

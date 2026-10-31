@@ -58,6 +58,11 @@ import { commitMasterPasswordChange } from './MasterPasswordChange';
 import { upgradePasswordVerifier } from './PasswordVerifier';
 import { WalletSecurityProvenance, withoutWalletSecurityClaims } from './WalletSecurityProvenance';
 import {
+  createSubstratePairFromUri,
+  substratePasswordRecoveryAttempts,
+  type SubstratePasswordRule,
+} from './SubstratePassword';
+import {
   checkWatchedUniversalWalletNetworks,
   findUniversalWalletLegacyNetworks,
   probeUniversalWalletLegacyAccounts,
@@ -533,13 +538,16 @@ export class KeyringService {
     walletEcosystem: WalletEcosystem,
     type?: KeypairType,
     tonImport?: TonImportChoice | boolean,
-    requireFreshGeneration = false
+    requireFreshGeneration = false,
+    substratePasswordRule: SubstratePasswordRule = 'nfkd'
   ) {
     if (typeof tonImport === 'boolean') requireFreshGeneration = tonImport;
     // A secret URI that starts with a path has no phrase or seed. The keyring would derive it from the
     // public development phrase, whose keys anyone can sign with.
     if (suri.trim().startsWith('/')) throw new Error('A recovery phrase or seed is required.');
     meta = this.getAccountCreationMeta(suri, meta, requireFreshGeneration);
+    // Only an import can be an account an earlier web version made; new words always use the current rule.
+    const passwordRule = requireFreshGeneration ? 'nfkd' : substratePasswordRule;
     if (walletEcosystem === 'ton') {
       const account = await this.tonKeyring.createAccount(suri, meta, typeof tonImport === 'object' ? tonImport : undefined);
 
@@ -547,7 +555,7 @@ export class KeyringService {
     }
 
     return this.tonKeyring.vault.exclusive(async () => {
-      const pair = keyring.createFromUri(suri, { ...meta, isMobile: false, walletEcosystem }, type);
+      const pair = createSubstratePairFromUri(suri, { ...meta, isMobile: false, walletEcosystem }, type, passwordRule);
       const effectiveEcosystem = isEthereumAddress(pair.address) ? WalletEcosystem.Evm : walletEcosystem;
       // The SURI's password protects this wallet's Universal Wallet accounts; keep it, sealed, so they can sign.
       const password = this.mnemonicSuriPassword(suri);
@@ -1881,12 +1889,17 @@ export class KeyringService {
 
     for (const candidate of new Set([words, words.toLowerCase()])) {
       if (!candidate) continue;
+      const typed = `${candidate}${suriPath}`;
 
       try {
-        const copy = keyring.createFromUri(`${candidate}${suriPath}`, { ...pair.meta }, pair.type);
-        const sameAddress = isEthereum ? isSameString(copy.address, pair.address) : copy.address === pair.address;
+        // Earlier web versions read a path password differently (SubstratePassword.ts): accept the one that
+        // reproduces the stored key.
+        for (const { suri, rule } of substratePasswordRecoveryAttempts(typed, pair.type)) {
+          const copy = createSubstratePairFromUri(suri, { ...pair.meta }, pair.type, rule);
+          const sameAddress = isEthereum ? isSameString(copy.address, pair.address) : copy.address === pair.address;
 
-        if (sameAddress) return copy;
+          if (sameAddress) return copy;
+        }
       } catch {
         // Not a phrase or path for this key type.
       }

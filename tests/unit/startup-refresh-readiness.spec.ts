@@ -25,10 +25,14 @@ function fixture() {
       { address: 'wallet-a', meta: { walletEcosystem: WalletEcosystem.Substrate } },
       { address: 'wallet-b', meta: { walletEcosystem: WalletEcosystem.Substrate, ethereumAddress: '0xb' } },
       { address: 'ton-wallet', meta: { walletEcosystem: WalletEcosystem.Ton } },
+      { address: 'universal', meta: { universalWallet: { publicAccounts: [
+        { ecosystem: WalletEcosystem.Substrate, address: 'universal-substrate' },
+        { ecosystem: WalletEcosystem.Solana, address: 'universal-solana' },
+      ] } } },
     ] },
     networkService: { activeNetworkByEcosystem: {
       substrate: [network('Polkadot'), network('Kusama')],
-      substrateList: ['polkadot', 'kusama'], evmList: ['ethereum'], tonList: ['ton mainnet'], solanaList: [], bitcoinList: [], irohaList: [],
+      substrateList: ['polkadot', 'kusama'], evmList: ['ethereum'], tonList: ['ton mainnet'], solanaList: ['solana'], bitcoinList: [], irohaList: [],
     } },
     // Polkadot loads its metadata late; Kusama never does.
     getSubstrateApiMap: {
@@ -53,7 +57,7 @@ function fixture() {
           throw error;
         }
       }),
-      substrateBalanceService: { subscribeSubstrateBalances: vi.fn().mockReturnValue([]) },
+      substrateBalanceService: { fetchBalance: vi.fn().mockResolvedValue([]), subscribeSubstrateBalances: vi.fn().mockReturnValue([]) },
     },
   };
   return { state, polkadotReady, refreshed, service: new SubscriptionService(state as unknown as State) };
@@ -70,20 +74,33 @@ afterEach(() => {
 });
 
 describe('start-up refresh of the other wallets', () => {
-  it('reads Substrate balances only from connections that loaded their metadata', async () => {
+  it('starts every other ecosystem at once, without Substrate', async () => {
+    const { service, state } = fixture();
+
+    await service.start();
+
+    const requests = state.balanceService.fetchBalance.mock.calls.map(([request]) => request);
+    expect(requests.map(({ address }) => address)).toEqual(['wallet-b', 'ton-wallet', 'universal']);
+    expect(requests[0]).toMatchObject({ substrateNetworks: [], evmNetworks: ['ethereum'], tonNetworks: ['ton mainnet'], isFirstRun: true });
+    expect(state.balanceService.substrateBalanceService.fetchBalance).not.toHaveBeenCalled();
+  });
+
+  it('reads Substrate balances only from connections that loaded their metadata, and nothing else again', async () => {
     const { service, state, polkadotReady } = fixture();
 
     await service.start();
     await vi.advanceTimersByTimeAsync(1000);
-    expect(state.balanceService.fetchBalance).not.toHaveBeenCalled();
+    expect(state.balanceService.substrateBalanceService.fetchBalance).not.toHaveBeenCalled();
 
     polkadotReady.resolve();
     await vi.advanceTimersByTimeAsync(DOTSAMA_API_TIMEOUT);
 
-    const requests = state.balanceService.fetchBalance.mock.calls.map(([request]) => request);
-    expect(requests.map(({ address }) => address)).toEqual(['wallet-b', 'ton-wallet']);
-    expect(requests.every(({ substrateNetworks }) => substrateNetworks.join() === 'polkadot')).toBe(true);
-    expect(requests[0]).toMatchObject({ evmNetworks: ['ethereum'], tonNetworks: ['ton mainnet'], isFirstRun: true });
+    expect(state.balanceService.substrateBalanceService.fetchBalance.mock.calls.map(([request]) => request)).toEqual([
+      { address: 'wallet-b', networks: ['polkadot'], ethereumAddress: '0xb' },
+      { address: 'universal-substrate', networks: ['polkadot'], ethereumAddress: '' },
+    ]);
+    // No second full refresh: an empty list would make the Solana service read its default network again.
+    expect(state.balanceService.fetchBalance).toHaveBeenCalledTimes(3);
   });
 
   it('marks a network that is not ready by the deadline as not refreshed, for the wallets that hold it', async () => {

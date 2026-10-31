@@ -9,7 +9,7 @@ import type {
   SubscriptionMessageTypes,
   Subscriptions,
 } from '@extension-base/background/types/types';
-import type { NetworkJson } from '@extension-base/types';
+import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
 import type { NetworkName } from '@/interfaces';
 import { WalletEcosystem } from '@/interfaces';
 import { isSameString } from '@/helpers';
@@ -155,26 +155,31 @@ export class SubscriptionService {
       .filter(({ address }) => !isSameString(address, this.state.currentAccount?.address));
     const networks = this.state.networkService.activeNetworkByEcosystem;
 
-    // The other wallets are read once the Substrate connections are ready. One that is not ready in time is marked as
-    // not refreshed for the wallets that hold it, so their cached amounts are not shown as current.
+    accountsExceptCurrent.forEach(({ address, meta }) =>
+      this.fetchNetworkBalances({
+        address,
+        bitcoinAddress: meta.bitcoinAddress as string | undefined,
+        bitcoinTestnetAddress: meta.bitcoinTestnetAddress as string | undefined,
+        ethereumAddress: meta.ethereumAddress ?? '',
+        irohaAddress: meta.irohaAddress as string | undefined,
+        solanaAddress: meta.solanaAddress as string | undefined,
+        walletEcosystem: meta.walletEcosystem!,
+        // Read below, once the connections are ready.
+        substrateNetworks: [],
+        evmNetworks: networks.evmList,
+        tonNetworks: networks.tonList,
+        solanaNetworks: networks.solanaList,
+        bitcoinNetworks: networks.bitcoinList,
+        irohaNetworks: networks.irohaList,
+        isFirstRun: true,
+      })
+    );
+
+    // The other wallets' Substrate balances are read once the connections are ready. One that is not ready in time is
+    // marked as not refreshed for the wallets that hold it, so their cached amounts are not shown as current.
     if (accountsExceptCurrent.length) void this.readySubstrateNetworks(networks.substrate).then(({ ready, unavailable }) =>
       accountsExceptCurrent.forEach(({ address, meta }) => {
-        this.fetchNetworkBalances({
-          address,
-          bitcoinAddress: meta.bitcoinAddress as string | undefined,
-          bitcoinTestnetAddress: meta.bitcoinTestnetAddress as string | undefined,
-          ethereumAddress: meta.ethereumAddress ?? '',
-          irohaAddress: meta.irohaAddress as string | undefined,
-          solanaAddress: meta.solanaAddress as string | undefined,
-          walletEcosystem: meta.walletEcosystem!,
-          substrateNetworks: ready,
-          evmNetworks: networks.evmList,
-          tonNetworks: networks.tonList,
-          solanaNetworks: networks.solanaList,
-          bitcoinNetworks: networks.bitcoinList,
-          irohaNetworks: networks.irohaList,
-          isFirstRun: true,
-        });
+        if (ready.length) this.fetchSubstrateBalances(address, meta, ready);
         unavailable.forEach((network) => this.markNotRefreshed(address, network));
       })
     );
@@ -297,6 +302,27 @@ export class SubscriptionService {
       ready: results.filter(({ ready }) => ready).map(({ name }) => name.toLowerCase()),
       unavailable: results.filter(({ ready }) => !ready).map(({ name }) => name),
     };
+  }
+
+  // The Substrate part of balanceService.fetchBalance, with its choice of address. A second full refresh would read
+  // Solana, Bitcoin and Iroha again: an empty network list makes those services read the active or default network.
+  private fetchSubstrateBalances(address: string, meta: FWKeyringMeta, networks: NetworkName[]) {
+    const publicAccounts = meta.universalWallet?.publicAccounts ?? [];
+    const ecosystems = new Set(publicAccounts.map(({ ecosystem }) => ecosystem));
+    const ethereumAddress = meta.ethereumAddress ?? '';
+    const read = (substrateAddress: string) => this.state.balanceService.substrateBalanceService
+      .fetchBalance({ address: substrateAddress, networks, ethereumAddress })
+      .catch(() => this.logger.error('Unable to refresh Substrate balances'));
+
+    if (ecosystems.size > 1) {
+      if (ecosystems.has(WalletEcosystem.Substrate))
+        void read(publicAccounts.find(({ ecosystem }) => ecosystem === WalletEcosystem.Substrate)?.address ?? address);
+      return;
+    }
+
+    const walletEcosystem = walletEcosystemOf(address, meta.walletEcosystem);
+    const otherEcosystems = [WalletEcosystem.Ton, WalletEcosystem.Solana, WalletEcosystem.Bitcoin, WalletEcosystem.Iroha];
+    if (!otherEcosystems.includes(walletEcosystem)) void read(address);
   }
 
   // The scan state the portfolio reads: stale, with the last successful read kept.

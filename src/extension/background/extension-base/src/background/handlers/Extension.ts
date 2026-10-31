@@ -72,6 +72,7 @@ import {
   resolveSolanaSignAndSendTransaction,
   resolveSolanaSigning,
 } from '@extension-base/services/request-service/handlers/solanaSigning';
+import { siteApprovalsInProgress } from '@extension-base/services/request-service/siteApprovals';
 import { createClusterBoundSolanaRpcClient } from '@extension-base/services/solana-rpc-service';
 import { assertSendCapability } from '@extension-base/services/send-kill-switch-service';
 import { IrohaTransactionStatusUnknownError } from '@extension-base/services/iroha-torii-service';
@@ -289,7 +290,7 @@ export default class Extension extends FWExtensionBase {
     ], address, recoveryAction);
   }
 
-  private readonly pendingSiteApprovals = new WeakSet<object>();
+  private readonly pendingSiteApprovals = siteApprovalsInProgress;
 
   private assertSigningRequestCurrent(request: { id: string }): void {
     this.state.keyringLockService?.lockIfExpired();
@@ -821,10 +822,11 @@ export default class Extension extends FWExtensionBase {
     const request = this.state.requestService.getSignRequest(id, 'solana') as SolanaRequestsSubjectPayload | undefined;
 
     assert(request, 'Unable to find request');
+    // Checked before the request is marked as under approval: a refusal here must not leave it marked, which would
+    // keep Reject and a closed page from ending it.
+    this.assertNormalWalletUse(request.account.publicKey);
     if (this.pendingSiteApprovals.has(request)) throw new Error('Signing approval already pending');
     this.pendingSiteApprovals.add(request);
-
-    this.assertNormalWalletUse(request.account.publicKey);
 
     try {
       await this.assertSigningSiteAllowed(request);

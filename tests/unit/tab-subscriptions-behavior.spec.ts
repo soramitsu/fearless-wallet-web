@@ -111,8 +111,8 @@ describe('tab account discovery and subscription lifecycle', () => {
     });
     it(`${protocol} requests a protocol-specific grant`, async () => {
       expect((await connect()).accounts).toHaveLength(1);
-      expect(state.requestService.authorizeUrl).toHaveBeenCalledWith(url, expect.objectContaining({ origin: 'Public app', accountAuthType: protocol }));
-      if (protocol === 'iroha') expect(state.requestService.authorizeUrl).toHaveBeenCalledWith(url, expect.objectContaining({ allowedAccounts: [irohaAddress] }));
+      expect(state.requestService.authorizeUrl).toHaveBeenCalledWith(url, expect.objectContaining({ origin: 'Public app', accountAuthType: protocol }), undefined);
+      if (protocol === 'iroha') expect(state.requestService.authorizeUrl).toHaveBeenCalledWith(url, expect.objectContaining({ allowedAccounts: [irohaAddress] }), undefined);
     });
     it(`${protocol} does not open approval with no compatible accounts`, async () => {
       accounts.next({}); addresses.next({});
@@ -248,7 +248,7 @@ describe('tab signing and provider boundaries', () => {
     ['solana(signAllTransactions)', 'confirmSignAllTransactions', { transactionsBase64: ['AQID'], origin: 'Public app' }],
   ] as const)('%s forwards only the authorized account to approval', async (type, method, request) => {
     await call(type, request);
-    expect(state.requestService.solanaRequestHandler[method]).toHaveBeenCalledWith(url, request, { address: solanaAddress, name: 'Public fixture', publicKey: solanaAddress });
+    expect(state.requestService.solanaRequestHandler[method]).toHaveBeenCalledWith(url, request, { address: solanaAddress, name: 'Public fixture', publicKey: solanaAddress }, undefined, expect.any(AbortSignal));
     grants[url].isAllowed = false;
     await expect(call(type, request)).rejects.toThrow('not authorized');
     expect(state.requestService.solanaRequestHandler[method]).toHaveBeenCalledTimes(1);
@@ -265,10 +265,10 @@ describe('tab signing and provider boundaries', () => {
   it.each(['pub(bytes.sign)', 'pub(extrinsic.sign)'] as const)('%s releases the page message id, never the private queue key', async (type) => {
     const request = { address: 'public-substrate', data: '0x1234', type: 'bytes', version: 4 };
     expect(await call(type, request)).toEqual({ id: 'page-request', payload: { signature: '0x1234' } });
-    expect(state.requestService.substrateRequestHandler.sign).toHaveBeenCalledWith(url, expect.objectContaining({ payload: request }), expect.objectContaining({ name: 'Public fixture', address: 'public-substrate', ethereumAddress: '0x1234' }));
+    expect(state.requestService.substrateRequestHandler.sign).toHaveBeenCalledWith(url, expect.objectContaining({ payload: request }), expect.objectContaining({ name: 'Public fixture', address: 'public-substrate', ethereumAddress: '0x1234' }), undefined, undefined, expect.any(AbortSignal));
     vi.mocked(state.keyringService.getAddress).mockReturnValue(undefined);
     await call(type, request);
-    expect(state.requestService.substrateRequestHandler.sign).toHaveBeenLastCalledWith(url, expect.anything(), { address: 'public-substrate', name: '', ethereumAddress: '' });
+    expect(state.requestService.substrateRequestHandler.sign).toHaveBeenLastCalledWith(url, expect.anything(), { address: 'public-substrate', name: '', ethereumAddress: '' }, undefined, undefined, expect.any(AbortSignal));
   });
   it('projects metadata and forwards provided metadata for approval', async () => {
     expect(await call('pub(metadata.list)')).toEqual([{ genesisHash: '0xabc', specVersion: 7 }]);

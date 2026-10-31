@@ -58,7 +58,7 @@ describe('EVM signing admission', () => {
       authorizationRevision: 0,
       account: { address, name: 'Public fixture', isMobile: false },
       network: { name: 'Ethereum', chainId: '1', genesisHash: '0x1234', symbol: 'ETH', decimals: 18 },
-    });
+    }, undefined);
   });
   it('supports an admitted registry EVM network absent from the legacy name allowlist', async () => {
     network.isEthereum = false;

@@ -189,7 +189,8 @@ function qualifyWcRequest(
     getTransactionCount: vi.fn(async () => 0),
     estimateGas: vi.fn(async () => 21000n),
     getFeeData: vi.fn(async () => ({ gasPrice: 1n, maxFeePerGas: null, maxPriorityFeePerGas: null })),
-    broadcastTransaction: vi.fn(async (_signed: string) => ({ hash: '0xfeed' })),
+    // A node that takes the transaction answers eth_sendRawTransaction with its hash.
+    send: vi.fn(async (_method: string, [signed]: string[]) => Transaction.from(signed).hash),
   };
   Object.assign(state, {
     walletConnectService: { getSession: () => session, getSessionRevision: () => 0, isRequestExpired: () => false },
@@ -290,11 +291,10 @@ describe('WalletConnect approval with a parent that still needs its legacy passw
       Extension.prototype.wcRequestApprove.call(extension, { address: child.address, approvalId: 'public-approval' })
     ).resolves.toBe(true);
 
-    expect(provider.broadcastTransaction).toHaveBeenCalledOnce();
-    expect(Transaction.from(provider.broadcastTransaction.mock.calls[0][0]).from?.toLowerCase()).toBe(
-      child.address.toLowerCase()
-    );
-    expect(request.resolve).toHaveBeenCalledExactlyOnceWith({ id: TOPIC, payload: '0xfeed' });
+    expect(provider.send).toHaveBeenCalledOnce();
+    const signed = Transaction.from(provider.send.mock.calls[0][1][0]);
+    expect(signed.from?.toLowerCase()).toBe(child.address.toLowerCase());
+    expect(request.resolve).toHaveBeenCalledExactlyOnceWith({ id: TOPIC, payload: signed.hash });
     expect(request.reject).not.toHaveBeenCalled();
     expect(() => keyringService.unlockPair(parent.address)).toThrow('legacy_password_required');
   });
@@ -334,7 +334,7 @@ describe('WalletConnect approval with a parent that still needs its legacy passw
         .rejects.toThrow('recovery-only');
       expect(claim).not.toHaveBeenCalled();
       expect(exportKey).not.toHaveBeenCalled();
-      expect(provider.broadcastTransaction).not.toHaveBeenCalled();
+      expect(provider.send).not.toHaveBeenCalled();
       expect(request.resolve).not.toHaveBeenCalled();
     }
   );

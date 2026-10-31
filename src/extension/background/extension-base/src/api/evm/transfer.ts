@@ -122,11 +122,12 @@ async function findSentTransaction(networkKey: string, hash: string): Promise<bo
 }
 
 /**
- * Sends a signed transaction with eth_sendRawTransaction alone and says whether the network has it; throws only when
- * the node refused it. ethers' broadcastTransaction also waited for the block number and chain ID, so a failure of
- * either, or a provider replaced meanwhile, reported a send the node had taken as failed, and sending again paid twice.
+ * Sends a signed transaction with eth_sendRawTransaction alone and says whether the node answered with its hash; throws
+ * only when the node refused it. ethers' broadcastTransaction also waited for the block number and chain ID, so a
+ * failure of either, or a provider replaced meanwhile, reported a send the node had taken as failed, and sending again
+ * paid twice.
  */
-async function sendEvmTransaction(api: EvmProvider, networkKey: string, serialized: string, hash: string): Promise<boolean> {
+async function submitEvmTransaction(api: EvmProvider, serialized: string, hash: string): Promise<boolean> {
   try {
     const answer: unknown = await withTimeout(
       api.send('eth_sendRawTransaction', [serialized]),
@@ -143,7 +144,24 @@ async function sendEvmTransaction(api: EvmProvider, networkKey: string, serializ
     console.warn(error);
   }
 
-  return findSentTransaction(networkKey, hash);
+  return false;
+}
+
+/** Sends a signed transaction and says whether the network has it; throws only when the node refused it. */
+async function sendEvmTransaction(api: EvmProvider, networkKey: string, serialized: string, hash: string): Promise<boolean> {
+  return (await submitEvmTransaction(api, serialized, hash)) || findSentTransaction(networkKey, hash);
+}
+
+/**
+ * Sends a transaction a site asked for and returns its hash. Only the node's refusal throws: after any other failure
+ * the network may have the transaction, and a site told it failed may send it again with a fresh nonce.
+ */
+export async function sendDappEvmTransaction(api: EvmProvider, signed: string): Promise<string> {
+  const hash = Transaction.from(signed).hash!;
+
+  await submitEvmTransaction(api, signed, hash);
+
+  return hash;
 }
 
 export async function handleTransfer({

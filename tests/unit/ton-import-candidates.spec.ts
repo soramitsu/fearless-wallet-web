@@ -339,7 +339,7 @@ async function background(lookup: (address: string) => unknown = () => { throw n
   const state = {
     keyringService,
     getTonApiMap: tonApi,
-    networkService: { networksGithub: [tonNetwork], tonApiHandler: { initApi, destroyApi } },
+    networkService: { networksGithub: [tonNetwork], networkValues: [tonNetwork], tonApiHandler: { initApi, destroyApi } },
     balanceService: { setBalanceItem },
     updateCurrentAccount: vi.fn(),
   } as unknown as State;
@@ -727,8 +727,8 @@ describe('TON address lookup for the import chooser', PBKDF2_SUITE, () => {
       { activity: 'unknown' },
     ]);
 
-    // No TON network in the registry at all: still two addresses to choose from.
-    (state.networkService as { networksGithub: NetworkJson[] }).networksGithub = [];
+    // No TON network in the wallet's network map at all: still two addresses to choose from.
+    Object.assign(state.networkService, { networksGithub: [], networkValues: [] });
     expect((await candidates(REAL_BUILD.mnemonic)).map(({ activity }) => activity)).toEqual(['unknown', 'unknown']);
   });
 

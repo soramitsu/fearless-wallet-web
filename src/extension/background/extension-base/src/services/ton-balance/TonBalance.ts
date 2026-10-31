@@ -51,14 +51,12 @@ export class TonBalance {
 
   async fetchBalance(address: string, networks: NetworkName[]): Promise<ResponseBalanceRequest[]> {
     const promises: Promise<ResponseBalanceRequest[]>[] = networks.map(async (networkKey) => {
-      const {
-        assets,
-        chainId,
-        ecosystem,
-        name: networkName,
-        icon,
-      } = this.state.networkService.networksGithub.find(({ name }) => isSameString(name, networkKey))!;
+      const network = this.findNetwork(networkKey);
 
+      // A network the wallet no longer has has no balance row to refresh.
+      if (!network) return [];
+
+      const { assets, chainId, ecosystem, name: networkName, icon } = network;
       const { precision, symbol, id: tonId, priceId } = assets[0];
 
       const tonBalance = await this.fetchUtilityAsset(address, networkKey, precision, tonId);
@@ -168,7 +166,7 @@ export class TonBalance {
   async fetchAddressActivity(addresses: string[]): Promise<Record<string, TonAddressActivityResult>> {
     const unknown = (): Record<string, TonAddressActivityResult> =>
       Object.fromEntries(addresses.map((address) => [address, { activity: 'unknown' }]));
-    const network = this.state.networkService.networksGithub.find(({ name }) => isTonMainnet(name));
+    const network = this.state.networkService.networkValues.find(({ name }) => isTonMainnet(name));
 
     if (!network) return unknown();
 
@@ -242,9 +240,7 @@ export class TonBalance {
 
   async fetchJettonsAsset(address: string, networkName: NetworkName): Promise<TonJettonScanResult> {
     try {
-      const network = this.state.networkService.networksGithub.find(({ name }) =>
-        isSameString(name, networkName)
-      );
+      const network = this.findNetwork(networkName);
 
       const walletContract = this.getWalletContract(address);
 
@@ -299,6 +295,11 @@ export class TonBalance {
 
       return { balances: this.getCachedJettonBalances(address, networkName), complete: false, partial: false };
     }
+  }
+
+  // The network map also holds the bundled TON network, so this works when the GitHub registry did not load.
+  private findNetwork(networkName: NetworkName) {
+    return this.state.networkService.networkValues.find(({ name }) => isSameString(name, networkName));
   }
 
   private provider(networkName: NetworkName): TonProviderRouter {

@@ -1,0 +1,25 @@
+{
+  "name": "minimatch",
+  "version": "11.0.3",
+  "private": true,
+  "description": "Fearless wrapper of minimatch 11.0.3 (GHSA-g3hv-75wg-m249) that keeps the 10.x makeRe export as a fail-closed stub",
+  "main": "index.cjs",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./index.d.ts",
+        "default": "./index.mjs"
+      },
+      "require": {
+        "types": "./index.d.ts",
+        "default": "./index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "minimatch-upstream": "npm:minimatch@11.0.3"
+  },
+  "license": "Apache-2.0"
+}

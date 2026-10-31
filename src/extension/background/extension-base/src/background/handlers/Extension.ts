@@ -100,7 +100,7 @@ import {
 } from '@extension-base/services/iroha-connect-service/releaseGate';
 import { type MakeCrossChainProps } from '../../api/substrate/types';
 import { EXTENSION_URL } from '../../const';
-import { makeTonTransfer, MAX_TON_FEE } from '../../api/ton/transfer';
+import { makeTonTransfer, maxTonTransferFee } from '../../api/ton/transfer';
 import type { NetworkMapEdit } from '@extension-base/services/network-service/preferences';
 import type { SigningRequestKind } from '@extension-base/services/request-service/signingRequestId';
 import type {
@@ -1561,7 +1561,8 @@ export default class Extension extends FWExtensionBase {
         });
       }
     } else if (isTonNetwork(networkKey)) {
-      fee = MAX_TON_FEE;
+      // A jetton send also gives its jetton wallet TON to pay for the transfer, so the TON balance must cover both.
+      fee = maxTonTransferFee(balance);
     } else {
       // Estimate with DotSama API
       fee = await estimateFee(networkKey, to, amount, tokenBalance, this.state);

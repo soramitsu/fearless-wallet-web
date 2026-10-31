@@ -59,9 +59,11 @@ export class TonBalance {
       const { assets, chainId, ecosystem, name: networkName, icon } = network;
       const { precision, symbol, id: tonId, priceId } = assets[0];
 
-      const tonBalance = await this.fetchUtilityAsset(address, networkKey, precision, tonId);
-
-      const jettonScan = await this.fetchJettonsAsset(address, networkKey);
+      // Read together, so TI answers both from one balance request.
+      const [tonBalance, jettonScan] = await Promise.all([
+        this.fetchUtilityAsset(address, networkKey, precision, tonId),
+        this.fetchJettonsAsset(address, networkKey),
+      ]);
       const jettonsBalance = jettonScan.balances;
       const scanCoverage = jettonScan.partial ? 'limited' : 'complete';
 

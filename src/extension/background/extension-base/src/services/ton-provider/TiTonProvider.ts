@@ -82,6 +82,7 @@ class TiTonProvider implements TonDataProvider {
   readonly source = 'ti' as const;
   readonly baseUrl: string;
   private serviceInfo?: TiServiceInfo;
+  private readonly balanceRequests = new Map<string, Promise<TiBalanceResponse>>();
 
   constructor(
     baseUrl: string,
@@ -223,7 +224,16 @@ class TiTonProvider implements TonDataProvider {
   }
 
   private getBalanceResponse(address: Address): Promise<TiBalanceResponse> {
-    return this.requestForNetwork<TiBalanceResponse>(`${accountPath(address)}/balance`);
+    const path = `${accountPath(address)}/balance`;
+    // The TON and jetton reads of one refresh share the request in flight; a later read asks again.
+    let response = this.balanceRequests.get(path);
+
+    if (!response) {
+      response = this.requestForNetwork<TiBalanceResponse>(path).finally(() => this.balanceRequests.delete(path));
+      this.balanceRequests.set(path, response);
+    }
+
+    return response;
   }
 
   private async requestForNetwork<T extends { network: string }>(path: string): Promise<T> {

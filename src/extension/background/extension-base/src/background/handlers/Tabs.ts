@@ -1,5 +1,6 @@
 import { Subscription } from 'rxjs';
 import { checkIfDenied } from '@polkadot/phishing';
+import { isEthereumAddress } from '@polkadot/util-crypto';
 import { chrome } from '@extension-base/utils/crossenv';
 import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
 import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
@@ -469,12 +470,16 @@ export default class Tabs {
 
     if (requiresGenericUrlAuthorization(type)) await this.state.requestService.ensureUrlAuthorized(url);
 
+    // Each protocol answers only a wallet that holds an account for it. An imported EVM key has no Substrate parent,
+    // and a Substrate refusal must fail enable() rather than leave the page with an unusable connection.
+    if (type === 'pub(authorize.tab)' && this.state.keyringService.getAllSubstrateAccounts().length === 0)
+      throw new Error('This wallet has no Substrate account');
+
     if (
-      (type === 'pub(authorize.tab)' ||
-        type === 'evm(authorizeUrl)' ||
-        type === 'evm(events.subscribe)' ||
-        type === 'evm(request)') &&
-      this.state.keyringService.getAllSubstrateAccounts().length === 0
+      (type === 'evm(authorizeUrl)' || type === 'evm(events.subscribe)' || type === 'evm(request)') &&
+      !this.state.keyringService
+        .getAllAccounts()
+        .some(({ address, meta }) => isEthereumAddress(address) || !!meta.ethereumAddress)
     )
       return;
 

@@ -65,6 +65,7 @@ import BalanceService from '@/extension/background/extension-base/src/services/b
 import { WalletEcosystem } from '@/interfaces';
 import { getTabAuthorizationTarget, stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
 import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
+import { walletEcosystemOf } from '@/extension/background/extension-base/src/background/helpers/walletEcosystem';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
 import { encodeIrohaI105Address, resolveCanonicalIrohaAddressNetwork, type IrohaNetworkInput } from '@/util/iroha';
@@ -525,7 +526,8 @@ export default class State {
               (!item.chainId || isSameString(item.chainId, network.chainId) || item.chainId.includes(network.chainId))
           )?.address;
         const supports = (walletEcosystem: WalletEcosystem) =>
-          meta.walletEcosystem === walletEcosystem || publicAccounts.some((item) => item.ecosystem === walletEcosystem);
+          walletEcosystemOf(account.address, meta.walletEcosystem) === walletEcosystem ||
+          publicAccounts.some((item) => item.ecosystem === walletEcosystem);
         const evmAddress = resolveAssetDiscoveryEvmAddress({
           primaryAddress: account.address,
           primaryEcosystem: meta.walletEcosystem,
@@ -633,7 +635,9 @@ export default class State {
   ): Promise<void> {
     const updateContext = (committed: CurrentAccountState) => {
       this.poolsService.unsubscribePools();
-      const pair = committed?.address && !committed.isMobile && committed.walletEcosystem === WalletEcosystem.Substrate
+      // The selected-wallet record written by 1.x-2.7.x has no walletEcosystem.
+      const pair = committed?.address && !committed.isMobile &&
+        walletEcosystemOf(committed.address, committed.walletEcosystem) === WalletEcosystem.Substrate
         ? this.keyringService.getPair(committed.address) : undefined;
       const soraAccount = pair ? { json: null, pair } : undefined;
       // The SDK exposes these fields as protected; clear the old signing pair

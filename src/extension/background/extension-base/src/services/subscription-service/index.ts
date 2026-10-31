@@ -11,6 +11,7 @@ import type {
 import type { NetworkName } from '@/interfaces';
 import { WalletEcosystem } from '@/interfaces';
 import { isSameString } from '@/helpers';
+import { walletEcosystemOf } from '@/extension/background/extension-base/src/background/helpers/walletEcosystem';
 import { IS_EXTENSION_SMOKE } from '@/consts/global';
 
 type UpdateSub = {
@@ -293,7 +294,8 @@ export class SubscriptionService {
       substrateNetworks: [], // Удаялем сабстрейт сети потому что подписываемся на балансы через WS
     });
 
-    if (walletEcosystem === WalletEcosystem.Substrate) this.subscribeSubstrateBalances(props);
+    // The selected-wallet record written by 1.x-2.7.x has no walletEcosystem.
+    if (walletEcosystemOf(address, walletEcosystem) === WalletEcosystem.Substrate) this.subscribeSubstrateBalances(props);
   }
 
   async subscribeSubstrateBalances(props: GetBalancesProps) {

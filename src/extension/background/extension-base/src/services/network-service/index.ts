@@ -15,6 +15,7 @@ import type { NetworkJson } from '@extension-base/types';
 import type State from '@extension-base/background/handlers/State';
 import { WalletEcosystem, type NetworkName } from '@/interfaces';
 import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
+import { walletEcosystemOf } from '@/extension/background/extension-base/src/background/helpers/walletEcosystem';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { URLS } from '@/consts/urls';
 import { isSameString } from '@/helpers';
@@ -371,11 +372,13 @@ export class NetworkService {
 
       if (!account) return;
 
-      const isSubstrateAddress = account?.meta.walletEcosystem === WalletEcosystem.Substrate;
-      const isTonAddress = account?.meta.walletEcosystem === WalletEcosystem.Ton;
-      const isSolanaAddress = account?.meta.walletEcosystem === WalletEcosystem.Solana;
-      const isBitcoinAddress = account?.meta.walletEcosystem === WalletEcosystem.Bitcoin;
-      const isIrohaAddress = account?.meta.walletEcosystem === WalletEcosystem.Iroha;
+      // Accounts written by 1.x-2.7.x have no walletEcosystem.
+      const walletEcosystem = walletEcosystemOf(account.address, account.meta.walletEcosystem);
+      const isSubstrateAddress = walletEcosystem === WalletEcosystem.Substrate;
+      const isTonAddress = walletEcosystem === WalletEcosystem.Ton;
+      const isSolanaAddress = walletEcosystem === WalletEcosystem.Solana;
+      const isBitcoinAddress = walletEcosystem === WalletEcosystem.Bitcoin;
+      const isIrohaAddress = walletEcosystem === WalletEcosystem.Iroha;
 
       if (value === ALL_NETWORKS) {
         this.networkValues.forEach((network) => {

@@ -491,6 +491,15 @@ export class KeyringService {
     return this.archiveWallet(address, true, beforeRemoval, assertCurrent);
   }
 
+  // The same phrase imported again with another Substrate path links the same EVM account, and so
+  // does a phrase whose EVM key was imported on its own first. That key stays while another wallet links it.
+  isEthereumAccountLinkedElsewhere(ethereumAddress: string, walletAddress: string): boolean {
+    const wallet = walletAddressIdentity(walletAddress);
+
+    return this.getAllAccounts().some(({ address, meta }) => !isEthereumAddress(address) &&
+      walletAddressIdentity(address) !== wallet && isSameString(meta.ethereumAddress as string | undefined, ethereumAddress));
+  }
+
   forgetAddress(address: string, beforeRemoval?: () => Promise<void>, assertCurrent?: () => void): Promise<void> {
     return this.tonKeyring.vault.exclusive(() => this.withAccountRemoval(
       [address], beforeRemoval, () => removePublicAddress(address, assertCurrent)
@@ -501,7 +510,7 @@ export class KeyringService {
    * Keeps every stored record that holds this wallet's keys (its account, its linked Ethereum account, the records an
    * ECDSA account had before, its TON phrase) exactly as stored, in one entry Account access can restore
    * (DeletedWallets.ts). Settles once that entry is written and rejects if it is not, so a wallet is deleted only
-   * when its keys are kept.
+   * when its keys are kept. A linked Ethereum account that another wallet also links stays live and out of the entry.
    */
   async archiveWallet(address: string, remove = false, beforeRemoval?: () => Promise<void>, assertCurrent?: () => void): Promise<void> {
     // Import, password rotation and TON repair share this queue; metadata shares
@@ -511,7 +520,11 @@ export class KeyringService {
       const ton = this.tonKeyring.accountSubject.value[address];
       const pair = ton ? null : this.getPair(address);
       const ethereumAddress = pair?.meta.ethereumAddress as string | undefined;
-      const ethereumPair = ethereumAddress ? this.getPair(ethereumAddress) : null;
+      const linkedPair = ethereumAddress ? this.getPair(ethereumAddress) : null;
+      const keepsEthereum = () => !!linkedPair && linkedPair !== pair &&
+        this.isEthereumAccountLinkedElsewhere(linkedPair.address, address);
+      const keptEthereum = keepsEthereum();
+      const ethereumPair = keptEthereum ? null : linkedPair;
       const pairs = [...new Set([pair, ethereumPair].filter((candidate): candidate is KeyringPair => !!candidate))];
       const accountKeys = walletRecordKeys(pairs);
       const keys = [...accountKeys, ...(ton ? [`ton:${address}`] : [])];
@@ -519,7 +532,7 @@ export class KeyringService {
       const persist = () => store.mutateRecordsAndWait(keys, (current) => {
         assertCurrent?.();
         if (pairs.some((candidate) => !isCurrentAccountPair(candidate)) ||
-          (ton && !this.tonKeyring.accountSubject.value[address]))
+          (ton && !this.tonKeyring.accountSubject.value[address]) || keepsEthereum() !== keptEthereum)
           throw new Error('Wallet changed before removal.');
         // A live private key without its durable primary record is not safe to delete.
         if (pairs.some((candidate) => !current[accountStoreKey(candidate)]) || (ton && !current[`ton:${address}`]))

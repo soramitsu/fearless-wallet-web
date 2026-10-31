@@ -346,13 +346,18 @@ export default class Extension extends FWExtensionBase {
     const solanaAddress = meta?.solanaAddress as string | undefined;
     const irohaAddress = meta?.irohaAddress as string | undefined;
     const topic = mobileAccount?.meta.wcTopic;
+    // An EVM account that another wallet also links keeps its key, site grants and sessions.
+    const linkedElsewhere = () => !!ethereumAddress &&
+      this.state.keyringService.isEthereumAccountLinkedElsewhere(ethereumAddress, address);
+    const keepsEthereum = linkedElsewhere();
+    const removedEthereumAddress = keepsEthereum ? undefined : ethereumAddress;
     const assertCurrent = () => {
       const currentPair = this.state.keyringService.getPair(address);
       const currentMobile = type === 'mobile' ? this.state.keyringService.getAddress(address) : undefined;
       const currentMeta = currentPair?.meta ?? currentMobile?.meta;
       if (currentPair !== pair || currentMeta?.ethereumAddress !== ethereumAddress ||
         currentMeta?.solanaAddress !== solanaAddress || currentMeta?.irohaAddress !== irohaAddress ||
-        currentMobile?.meta.wcTopic !== topic)
+        currentMobile?.meta.wcTopic !== topic || linkedElsewhere() !== keepsEthereum)
         throw new Error('Wallet changed during removal. Retry with the current wallet.');
     };
 
@@ -360,7 +365,7 @@ export default class Extension extends FWExtensionBase {
       for (const auth of Object.values(authUrls)) {
         auth.authorizedAccounts = auth.authorizedAccounts.filter((candidate) => walletAddressIdentity(candidate) !== walletAddressIdentity(address));
         if (auth.evmAuthorizedAccount && ((isEthereumAddress(address) && isSameString(auth.evmAuthorizedAccount, address)) ||
-          (ethereumAddress && isSameString(auth.evmAuthorizedAccount, ethereumAddress)))) auth.evmAuthorizedAccount = '';
+          (removedEthereumAddress && isSameString(auth.evmAuthorizedAccount, removedEthereumAddress)))) auth.evmAuthorizedAccount = '';
         if (auth.solanaAuthorizedAccount === address || (solanaAddress && auth.solanaAuthorizedAccount === solanaAddress))
           auth.solanaAuthorizedAccount = '';
         if (auth.irohaAuthorizedAccount === address || (irohaAddress && auth.irohaAuthorizedAccount === irohaAddress))
@@ -374,14 +379,14 @@ export default class Extension extends FWExtensionBase {
       assertCurrent();
       const selected = this.state.currentAccount?.address;
       if (!selected || (walletAddressIdentity(selected) !== walletAddressIdentity(address) &&
-        (!ethereumAddress || walletAddressIdentity(selected) !== walletAddressIdentity(ethereumAddress)))) return;
+        (!removedEthereumAddress || walletAddressIdentity(selected) !== walletAddressIdentity(removedEthereumAddress)))) return;
       await this.state.setCurrentAccount(null, undefined, assertCurrent);
       clearedSelection = true;
       clearedRevision = this.state.keyringService.currentAccountRevision;
     };
 
     if (type === 'native') {
-      await this.state.walletConnectService.removeSessions(address, ethereumAddress);
+      await this.state.walletConnectService.removeSessions(address, removedEthereumAddress);
 
       try { await this.state.keyringService.forgetAccount(address, beforeRemoval, assertCurrent); }
       catch (error) { console.error(error); return false; }

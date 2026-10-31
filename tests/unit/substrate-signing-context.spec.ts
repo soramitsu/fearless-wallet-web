@@ -248,3 +248,21 @@ describe('captured Substrate metadata and network', () => {
     expect(handler.numSubstrateRequests).toBe(0);
   });
 });
+
+describe('a Substrate request whose page closes', () => {
+  it('is dropped as Reject would, and a page already closed queues nothing', async () => {
+    const page = new AbortController();
+    const account = { address: pair.address, name: 'Public fixture' } as AccountJson;
+    const result = handler.sign(url, new RequestExtrinsicSign(payload()), account, 'public', undefined, page.signal);
+    await vi.waitFor(() => expect(handler.getSignRequest('public')).toBeDefined());
+
+    page.abort();
+
+    await expect(result).rejects.toThrow('Cancelled');
+    expect(handler.numSubstrateRequests).toBe(0);
+    await expect(
+      handler.sign(url, new RequestExtrinsicSign(payload()), account, 'late', undefined, page.signal)
+    ).rejects.toThrow('Cancelled');
+    expect(handler.numSubstrateRequests).toBe(0);
+  });
+});

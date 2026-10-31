@@ -1,6 +1,7 @@
 import { BehaviorSubject } from 'rxjs';
 import { createSigningRequestId } from '@extension-base/services/request-service/signingRequestId';
 import { assertSolanaMessageIsNotTransaction } from '@extension-base/services/request-service/handlers/solanaSigning';
+import { siteApprovalsInProgress } from '@extension-base/services/request-service/siteApprovals';
 import type { RequestService } from '@extension-base/services/request-service';
 import type {
   SolanaRequestPayload,
@@ -65,7 +66,8 @@ export default class SolanaRequestHandler {
     url: string,
     request: SolanaSignMessageRequest,
     account: SolanaAccountInfo,
-    id = createSigningRequestId('solana')
+    id = createSigningRequestId('solana'),
+    signal?: AbortSignal
   ): Promise<SolanaSigningResponse> {
     assertSolanaMessageRequest(request);
 
@@ -80,14 +82,15 @@ export default class SolanaRequestHandler {
       url,
     };
 
-    return this.confirmSign(payload, id);
+    return this.confirmSign(payload, id, undefined, signal);
   }
 
   confirmSignTransaction(
     url: string,
     request: SolanaSignTransactionRequest,
     account: SolanaAccountInfo,
-    id = createSigningRequestId('solana')
+    id = createSigningRequestId('solana'),
+    signal?: AbortSignal
   ): Promise<SolanaSigningResponse> {
     assertSolanaTransactionRequest(request);
 
@@ -102,7 +105,9 @@ export default class SolanaRequestHandler {
         transactionPreview: previewSolanaTransaction(request.transactionBase64),
         url,
       },
-      id
+      id,
+      undefined,
+      signal
     );
   }
 
@@ -112,7 +117,8 @@ export default class SolanaRequestHandler {
     account: SolanaAccountInfo,
     id = createSigningRequestId('solana'),
     simulateTransaction?: SimulateSolanaTransaction,
-    estimateFee?: EstimateSolanaTransactionFee
+    estimateFee?: EstimateSolanaTransactionFee,
+    signal?: AbortSignal
   ): Promise<SolanaSigningResponse> {
     const options = assertSolanaSignAndSendTransactionRequest(request);
 
@@ -136,7 +142,8 @@ export default class SolanaRequestHandler {
         if (simulateTransaction)
           this.updateSignAndSendSimulation(queued, capturedTransaction, simulateTransaction).catch(console.error);
         if (estimateFee) this.updateSignAndSendFee(queued, capturedTransaction, estimateFee).catch(console.error);
-      }
+      },
+      signal
     );
   }
 
@@ -144,7 +151,8 @@ export default class SolanaRequestHandler {
     url: string,
     request: SolanaSignAllTransactionsRequest,
     account: SolanaAccountInfo,
-    id = createSigningRequestId('solana')
+    id = createSigningRequestId('solana'),
+    signal?: AbortSignal
   ): Promise<SolanaSigningResponse> {
     assertSolanaAllTransactionsRequest(request);
 
@@ -159,7 +167,9 @@ export default class SolanaRequestHandler {
         transactionsBase64: request.transactionsBase64,
         url,
       },
-      id
+      id,
+      undefined,
+      signal
     );
   }
 
@@ -182,14 +192,23 @@ export default class SolanaRequestHandler {
   private confirmSign(
     payload: SolanaRequestPayload,
     id: string,
-    onQueued?: (request: SolanaRequestsSubjectPayload) => void
+    onQueued?: (request: SolanaRequestsSubjectPayload) => void,
+    signal?: AbortSignal
   ): Promise<SolanaSigningResponse> {
     return new Promise<SolanaSigningResponse>((resolve, reject): void => {
       if (this.solanaRequests[id] || this.requestService.hasSigningRequest?.(id)) throw new Error('Duplicate Solana request ID');
+      // The page that asked has closed; it would only ask again.
+      if (signal?.aborted) throw new Error('Cancelled');
       let settled = false;
+      // A closed page drops its request as Reject would, unless an approval may already be sending it.
+      const cancel = () => {
+        if (queued.method !== 'signAndSendTransaction' || !siteApprovalsInProgress.has(queued))
+          queued.reject(new Error('Cancelled'));
+      };
       const complete = () => {
         if (settled || this.solanaRequests[id] !== queued) return false;
         settled = true;
+        signal?.removeEventListener('abort', cancel);
         delete this.solanaRequests[id];
         this.publish(true);
         return true;
@@ -209,6 +228,7 @@ export default class SolanaRequestHandler {
         },
       };
       this.solanaRequests[id] = queued;
+      signal?.addEventListener('abort', cancel, { once: true });
 
       this.publish();
       this.requestService.popupOpen();

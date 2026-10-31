@@ -101,12 +101,22 @@ export class EipService {
     return authInfo?.isAllowed === true && authInfo.evmAuthorizedAccount ? [authInfo.evmAuthorizedAccount] : [];
   }
 
-  async requestEvmPermission(url: string, id: string, request: RequestArguments, reConfirm = false) {
-    await this.state.requestService.authorizeUrl(url, {
-      origin: request.params.origin,
-      accountAuthType: 'evm',
-      reConfirm,
-    });
+  async requestEvmPermission(
+    url: string,
+    id: string,
+    request: RequestArguments,
+    reConfirm = false,
+    signal?: AbortSignal
+  ) {
+    await this.state.requestService.authorizeUrl(
+      url,
+      {
+        origin: request.params.origin,
+        accountAuthType: 'evm',
+        reConfirm,
+      },
+      signal
+    );
 
     return this.getEvmPermission(url, id);
   }
@@ -255,7 +265,12 @@ export class EipService {
 
   // `_messageId` is the page's own message id. It is never a queue key: the page chooses it, so it could equal the key
   // of a request another site queued, and approving the request on screen would then sign this one instead.
-  private async evmSign(_messageId: string, url: string, { method, params }: RequestArguments): Promise<string> {
+  private async evmSign(
+    _messageId: string,
+    url: string,
+    { method, params }: RequestArguments,
+    signal?: AbortSignal
+  ): Promise<string> {
     const data = structuredClone(params);
     const context = await captureEvmSigningContext(this.state, url, method, data);
     const signResult = await this.state.requestService.evmRequestHandler.confirmSign(
@@ -263,18 +278,20 @@ export class EipService {
       url,
       method,
       data,
-      context
+      context,
+      signal
     );
 
     if (signResult) return signResult.payload;
     else throw new Error('Failed to sign message');
   }
 
-  async evmSendTransaction(id: string, url: string, payload: RequestArguments): Promise<string> {
-    return this.evmSign(id, url, payload);
+  async evmSendTransaction(id: string, url: string, payload: RequestArguments, signal?: AbortSignal): Promise<string> {
+    return this.evmSign(id, url, payload, signal);
   }
 
-  async handleEvmRequest(id: string, url: string, request: RequestArguments): Promise<unknown> {
+  // `signal` is aborted when the page's port closes; the requests this call queued then end.
+  async handleEvmRequest(id: string, url: string, request: RequestArguments, signal?: AbortSignal): Promise<unknown> {
     try {
       switch (request.method) {
         case 'eth_chainId':
@@ -290,7 +307,7 @@ export class EipService {
           return this.getEvmCurrentAccount(url);
 
         case 'wallet_requestPermissions':
-          return this.requestEvmPermission(url, id, { ...request }, true);
+          return this.requestEvmPermission(url, id, { ...request }, true, signal);
 
         case 'wallet_getPermissions':
           return this.getEvmPermission(url, id);
@@ -302,7 +319,7 @@ export class EipService {
           return this.switchEvmNetwork(url, request);
 
         case 'eth_sendTransaction':
-          return this.evmSendTransaction(id, url, request);
+          return this.evmSendTransaction(id, url, request, signal);
 
         case 'eth_sign':
         case 'personal_sign':
@@ -310,7 +327,7 @@ export class EipService {
         case 'eth_signTypedData_v1':
         case 'eth_signTypedData_v3':
         case 'eth_signTypedData_v4':
-          return this.evmSign(id, url, request);
+          return this.evmSign(id, url, request, signal);
 
         default:
           return this.performWeb3Method(id, url, request);

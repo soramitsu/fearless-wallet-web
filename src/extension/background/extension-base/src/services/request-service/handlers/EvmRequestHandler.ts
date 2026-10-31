@@ -20,6 +20,8 @@ export default class EvmRequestHandler {
   private readonly wcRequests = new Map<string, WCSignRequest>();
   private evmRequests: EvmRequestsSubject = {};
   private readonly pendingApprovals = new WeakSet<EvmRequestsSubjectPayload>();
+  // Transactions whose page closed while an approval held them; dropped if the approval ends without settling them.
+  private readonly closedPageRequests = new WeakSet<EvmRequestsSubjectPayload>();
   private readonly pendingWcApprovals = new WeakSet<WCSignRequest>();
   public readonly signWcSubject = new BehaviorSubject<WalletConnectTransactionRequest[]>([]);
   public readonly signEvmSubject = new BehaviorSubject<EvmRequests>({});
@@ -82,6 +84,7 @@ export default class EvmRequestHandler {
 
   releaseEvmSignRequest(request: EvmRequestsSubjectPayload): void {
     this.pendingApprovals.delete(request);
+    if (this.closedPageRequests.delete(request)) request.reject(new Error('Cancelled'));
   }
 
   private publishEvmRequests(): void {
@@ -114,7 +117,8 @@ export default class EvmRequestHandler {
     url: string,
     method: string,
     params: EvmRequestParams,
-    context: EvmSigningContext
+    context: EvmSigningContext,
+    signal?: AbortSignal
   ): Promise<ResponseSigning> {
     return new Promise<ResponseSigning>((resolve, reject): void => {
       if (this.requestService.keyringService?.isResetting) throw new Error('Wallet reset is in progress');
@@ -122,11 +126,20 @@ export default class EvmRequestHandler {
       if (authorization && authorization.revision !== context.authorizationRevision)
         throw new Error('Signing authorization changed; request approval again');
       if (this.evmRequests[id] || this.requestService.hasSigningRequest?.(id)) throw new Error('Duplicate EVM request ID');
+      // The page that asked has closed; it would only ask again.
+      if (signal?.aborted) throw new Error('Cancelled');
       const snapshot = structuredClone({ url, method, data: params, id, ...context });
       let settled = false;
+      // A closed page drops its request as Reject would, unless an approval may already be sending the transaction.
+      const cancel = () => {
+        if (method === 'eth_sendTransaction' && this.pendingApprovals.has(request))
+          this.closedPageRequests.add(request);
+        else request.reject(new Error('Cancelled'));
+      };
       const complete = () => {
         if (settled || this.evmRequests[id] !== request) return false;
         settled = true;
+        signal?.removeEventListener('abort', cancel);
         this.onComplete(id, 'evmRequests');
         return true;
       };
@@ -140,6 +153,7 @@ export default class EvmRequestHandler {
         },
       };
       this.evmRequests[id] = request;
+      signal?.addEventListener('abort', cancel, { once: true });
       this.publishEvmRequests();
 
       this.requestService.updateIcon();

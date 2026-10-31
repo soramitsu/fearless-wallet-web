@@ -92,7 +92,8 @@ export class SubstrateRequestHandler {
     request: RequestSign,
     account: AccountJson,
     _id?: string,
-    walletConnectContext?: PolkadotSigningContext
+    walletConnectContext?: PolkadotSigningContext,
+    signal?: AbortSignal
   ): Promise<ResponseSigning> {
     const resetRevision = this.state.keyringService.walletResetRevision;
     if (this.state.keyringService.isResetting) throw new Error('Wallet reset is in progress');
@@ -121,10 +122,15 @@ export class SubstrateRequestHandler {
 
     return new Promise((resolve, reject): void => {
       if (this.substrateRequests[id] || this.requestService.hasSigningRequest?.(id)) throw new Error('Duplicate Substrate request ID');
+      // The page that asked has closed; it would only ask again.
+      if (signal?.aborted) throw new Error('Cancelled');
       let settled = false;
+      // A closed page drops its request as Reject would; an approval under way then delivers no signature.
+      const cancel = () => queued.reject(new Error('Cancelled'));
       const complete = () => {
         if (settled || this.substrateRequests[id] !== queued) return false;
         settled = true;
+        signal?.removeEventListener('abort', cancel);
         delete this.substrateRequests[id];
         this.updateIconSign(true);
         return true;
@@ -149,6 +155,7 @@ export class SubstrateRequestHandler {
         },
       };
       this.substrateRequests[id] = queued;
+      signal?.addEventListener('abort', cancel, { once: true });
 
       this.updateIconSign();
       this.requestService.popupOpen();

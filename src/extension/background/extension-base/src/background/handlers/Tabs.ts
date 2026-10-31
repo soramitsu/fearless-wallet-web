@@ -57,9 +57,26 @@ import {
   transformSolanaAccounts,
 } from '@/extension/background/extension-base/src/background/helpers/accounts';
 
+// Messages that can queue a signing request or a connection prompt for the user.
+const PAGE_REQUEST_MESSAGES = new Set<MessageTypes>([
+  'pub(authorize.tab)',
+  'pub(bytes.sign)',
+  'pub(extrinsic.sign)',
+  'evm(authorizeUrl)',
+  'evm(request)',
+  'solana(authorizeUrl)',
+  'solana(signMessage)',
+  'solana(signTransaction)',
+  'solana(signAndSendTransaction)',
+  'solana(signAllTransactions)',
+  'iroha(authorizeUrl)',
+]);
+
 export default class Tabs {
   accountSubs: Record<string, AccountSub> = {};
   eipService: EipService;
+  // One signal per page port, aborted when the port closes. Another tab of the same site has its own port.
+  private readonly portSignals = new WeakMap<Port, AbortSignal>();
 
   constructor(public state: State) {
     this.eipService = new EipService(state);
@@ -130,14 +147,18 @@ export default class Tabs {
     return { accounts };
   }
 
-  async solanaAuthorizeUrl(url: string, request: SolanaConnectRequest): Promise<SolanaConnectResponse> {
+  async solanaAuthorizeUrl(
+    url: string,
+    request: SolanaConnectRequest,
+    signal?: AbortSignal
+  ): Promise<SolanaConnectResponse> {
     if (request.silent) return this.solanaAccountsAuthorized(url);
     if (this.getAllSolanaAccounts().length === 0) return { accounts: [] };
 
     await this.state.requestService.authorizeUrl(url, {
       origin: request.origin,
       accountAuthType: 'solana',
-    });
+    }, signal);
 
     return this.solanaAccountsAuthorized(url);
   }
@@ -199,7 +220,11 @@ export default class Tabs {
     return { accounts };
   }
 
-  async irohaAuthorizeUrl(url: string, request: IrohaConnectRequest): Promise<IrohaConnectResponse> {
+  async irohaAuthorizeUrl(
+    url: string,
+    request: IrohaConnectRequest,
+    signal?: AbortSignal
+  ): Promise<IrohaConnectResponse> {
     if (request.silent) return this.irohaAccountsAuthorized(url, request);
     const accounts = this.getAllIrohaAccounts(request.network ?? 'nexus');
 
@@ -209,7 +234,7 @@ export default class Tabs {
       origin: request.origin,
       accountAuthType: 'iroha',
       allowedAccounts: accounts.map(({ address }) => address),
-    });
+    }, signal);
 
     return this.irohaAccountsAuthorized(url, request);
   }
@@ -266,23 +291,27 @@ export default class Tabs {
     return true;
   }
 
-  async solanaSignMessage(url: string, request: SolanaSignMessageRequest) {
+  async solanaSignMessage(url: string, request: SolanaSignMessageRequest, signal?: AbortSignal) {
     return this.state.requestService.solanaRequestHandler.confirmSignMessage(
       url,
       request,
-      await this.getAuthorizedSolanaAccount(url)
+      await this.getAuthorizedSolanaAccount(url),
+      undefined,
+      signal
     );
   }
 
-  async solanaSignTransaction(url: string, request: SolanaSignTransactionRequest) {
+  async solanaSignTransaction(url: string, request: SolanaSignTransactionRequest, signal?: AbortSignal) {
     return this.state.requestService.solanaRequestHandler.confirmSignTransaction(
       url,
       request,
-      await this.getAuthorizedSolanaAccount(url)
+      await this.getAuthorizedSolanaAccount(url),
+      undefined,
+      signal
     );
   }
 
-  async solanaSignAndSendTransaction(url: string, request: SolanaSignAndSendTransactionRequest) {
+  async solanaSignAndSendTransaction(url: string, request: SolanaSignAndSendTransactionRequest, signal?: AbortSignal) {
     const rpcClient = createClusterBoundSolanaRpcClient({ network: 'mainnet' });
     const preflightCommitment = request.options?.preflightCommitment ?? 'confirmed';
 
@@ -297,15 +326,18 @@ export default class Tabs {
           replaceRecentBlockhash: true,
           sigVerify: false,
         }),
-      (messageBase64) => rpcClient.getFeeForMessage(messageBase64, preflightCommitment)
+      (messageBase64) => rpcClient.getFeeForMessage(messageBase64, preflightCommitment),
+      signal
     );
   }
 
-  async solanaSignAllTransactions(url: string, request: SolanaSignAllTransactionsRequest) {
+  async solanaSignAllTransactions(url: string, request: SolanaSignAllTransactionsRequest, signal?: AbortSignal) {
     return this.state.requestService.solanaRequestHandler.confirmSignAllTransactions(
       url,
       request,
-      await this.getAuthorizedSolanaAccount(url)
+      await this.getAuthorizedSolanaAccount(url),
+      undefined,
+      signal
     );
   }
 
@@ -381,24 +413,24 @@ export default class Tabs {
     return { id: messageId, payload };
   }
 
-  async bytesSign(url: string, request: SignerPayloadRaw): Promise<ResponseSigning> {
+  async bytesSign(url: string, request: SignerPayloadRaw, signal?: AbortSignal): Promise<ResponseSigning> {
     const meta = this.state.keyringService.getAddress(this.state.keyringService.encodeAddress(request.address))?.meta;
     return this.state.requestService.substrateRequestHandler.sign(url, new RequestBytesSign(request), {
       ...meta,
       address: request.address,
       name: (meta?.name as string) ?? '',
       ethereumAddress: (meta?.ethereumAddress as string) ?? '',
-    });
+    }, undefined, undefined, signal);
   }
 
-  async extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
+  async extrinsicSign(url: string, request: SignerPayloadJSON, signal?: AbortSignal): Promise<ResponseSigning> {
     const meta = this.state.keyringService.getAddress(this.state.keyringService.encodeAddress(request.address))?.meta;
     return this.state.requestService.substrateRequestHandler.sign(url, new RequestExtrinsicSign(request), {
       ...meta,
       address: request.address,
       name: (meta?.name as string) ?? '',
       ethereumAddress: (meta?.ethereumAddress as string) ?? '',
-    });
+    }, undefined, undefined, signal);
   }
 
   metadataProvide(url: string, request: MetadataDef): Promise<boolean> {
@@ -459,6 +491,21 @@ export default class Tabs {
     return await checkIfDenied(url);
   }
 
+  // A closed page can no longer be answered, and its retry would ask again: its requests end with its port.
+  private portSignal(port: Port): AbortSignal {
+    let signal = this.portSignals.get(port);
+
+    if (!signal) {
+      const controller = new AbortController();
+
+      signal = controller.signal;
+      this.portSignals.set(port, signal);
+      port.onDisconnect.addListener(() => controller.abort());
+    }
+
+    return signal;
+  }
+
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -467,6 +514,9 @@ export default class Tabs {
     port: Port
   ): Promise<ResponseTypes[keyof ResponseTypes]> {
     if (type === 'pub(phishing.redirectIfDenied)') return this.redirectIfPhishing(url);
+
+    // Taken before any await, so a port that closes meanwhile still ends what this message queues.
+    const signal = PAGE_REQUEST_MESSAGES.has(type) ? this.portSignal(port) : undefined;
 
     if (requiresGenericUrlAuthorization(type)) await this.state.requestService.ensureUrlAuthorized(url);
 
@@ -485,7 +535,7 @@ export default class Tabs {
 
     switch (type) {
       case 'pub(authorize.tab)':
-        return this.state.requestService.authorizeUrl(url, request as RequestAuthorizeTab);
+        return this.state.requestService.authorizeUrl(url, request as RequestAuthorizeTab, signal);
 
       // These use the account's secret key without a confirmation popup: only an account the user shared with
       // this site (AUDIT-01, as in 3.0.6).
@@ -509,10 +559,10 @@ export default class Tabs {
         return this.accountsUnsubscribe(url, request as RequestAccountUnsubscribe);
 
       case 'pub(bytes.sign)':
-        return this.pageSignature(id, this.bytesSign(url, request as SignerPayloadRaw));
+        return this.pageSignature(id, this.bytesSign(url, request as SignerPayloadRaw, signal));
 
       case 'pub(extrinsic.sign)':
-        return this.pageSignature(id, this.extrinsicSign(url, request as SignerPayloadJSON));
+        return this.pageSignature(id, this.extrinsicSign(url, request as SignerPayloadJSON, signal));
 
       case 'pub(metadata.list)':
         return this.metadataList();
@@ -537,20 +587,20 @@ export default class Tabs {
 
       //EVM
       case 'evm(authorizeUrl)':
-        return this.eipService.requestEvmPermission(url, id, request as RequestArguments);
+        return this.eipService.requestEvmPermission(url, id, request as RequestArguments, false, signal);
 
       case 'evm(events.subscribe)':
         return this.eipService.evmSubscribeEvents(url, id, port);
 
       case 'evm(request)':
-        return this.eipService.handleEvmRequest(id, url, request as RequestArguments);
+        return this.eipService.handleEvmRequest(id, url, request as RequestArguments, signal);
 
       case 'evm(provider.send)':
         return this.eipService.handleEvmSend(id, url, port, request as RequestEvmProviderSend);
 
       // Solana
       case 'solana(authorizeUrl)':
-        return this.solanaAuthorizeUrl(url, request as SolanaConnectRequest);
+        return this.solanaAuthorizeUrl(url, request as SolanaConnectRequest, signal);
 
       case 'solana(accounts)':
         return this.solanaAccountsAuthorized(url);
@@ -562,20 +612,20 @@ export default class Tabs {
         return this.solanaSubscribeAccounts(url, id, port);
 
       case 'solana(signMessage)':
-        return this.solanaSignMessage(url, request as SolanaSignMessageRequest);
+        return this.solanaSignMessage(url, request as SolanaSignMessageRequest, signal);
 
       case 'solana(signTransaction)':
-        return this.solanaSignTransaction(url, request as SolanaSignTransactionRequest);
+        return this.solanaSignTransaction(url, request as SolanaSignTransactionRequest, signal);
 
       case 'solana(signAndSendTransaction)':
-        return this.solanaSignAndSendTransaction(url, request as SolanaSignAndSendTransactionRequest);
+        return this.solanaSignAndSendTransaction(url, request as SolanaSignAndSendTransactionRequest, signal);
 
       case 'solana(signAllTransactions)':
-        return this.solanaSignAllTransactions(url, request as SolanaSignAllTransactionsRequest);
+        return this.solanaSignAllTransactions(url, request as SolanaSignAllTransactionsRequest, signal);
 
       // Iroha/Nexus
       case 'iroha(authorizeUrl)':
-        return this.irohaAuthorizeUrl(url, request as IrohaConnectRequest);
+        return this.irohaAuthorizeUrl(url, request as IrohaConnectRequest, signal);
 
       case 'iroha(accounts)':
         return this.irohaAccountsAuthorized(url, request as IrohaConnectRequest | null);

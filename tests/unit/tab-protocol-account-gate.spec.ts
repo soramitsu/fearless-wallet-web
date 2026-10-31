@@ -106,6 +106,6 @@ describe('dApp requests are gated on accounts of their own protocol', () => {
     const call = tabsFor([substrateOnly]);
 
     expect(await call('pub(authorize.tab)', { origin: 'Public app' })).toBe(true);
-    expect(authorizeUrl).toHaveBeenCalledWith(url, { origin: 'Public app' });
+    expect(authorizeUrl).toHaveBeenCalledWith(url, { origin: 'Public app' }, expect.any(AbortSignal));
   });
 });

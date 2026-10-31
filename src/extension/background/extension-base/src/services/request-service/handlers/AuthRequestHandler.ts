@@ -345,7 +345,7 @@ export class AuthRequestHandler {
     };
   };
 
-  public async authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<boolean> {
+  public async authorizeUrl(url: string, request: RequestAuthorizeTab, signal?: AbortSignal): Promise<boolean> {
     const resetRevision = this.keyringService.walletResetRevision;
     this.assertWalletAvailable(resetRevision);
     // Every connect path ends here, and a site can skip the page's own check.
@@ -395,6 +395,9 @@ export class AuthRequestHandler {
     }
 
     return new Promise((resolve, reject): void => {
+      // The page that asked has closed; it would only ask again.
+      if (signal?.aborted) throw new Error('Cancelled');
+
       const id = getId();
 
       this.authRequests[id] = {
@@ -406,6 +409,8 @@ export class AuthRequestHandler {
         accountAuthType: mergeAuthType(existedAuth?.accountAuthType, accountAuthType),
         currentEvmNetworkKey: existedAuth ? existedAuth.currentEvmNetworkKey : 'Ethereum',
       };
+      // A closed page drops its prompt as Reject would. The listener keeps only the id.
+      signal?.addEventListener('abort', () => this.authRequests[id]?.reject(new Error('Cancelled')), { once: true });
 
       this.updateIconAuth();
 

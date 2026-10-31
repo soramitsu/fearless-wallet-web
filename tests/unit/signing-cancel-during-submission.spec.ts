@@ -69,10 +69,10 @@ const evmProvider = () => ({
   // The wallet sends with eth_sendRawTransaction alone.
   send: vi.fn(async (_method: string, _params: unknown[]): Promise<unknown> => null),
 });
-async function queueEvm(method: string, params: unknown[]) {
+async function queueEvm(method: string, params: unknown[], page?: AbortSignal) {
   const context = await captureEvmSigningContext(state, url, method, params);
   // Wrapped so that awaiting the queueing does not wait for the dApp's answer.
-  return { dapp: outcome(evm.confirmSign('first', url, method, params, context)) };
+  return { dapp: outcome(evm.confirmSign('first', url, method, params, context, page)) };
 }
 // A legacy System Program transfer of one lamport that the wallet's Solana account signs.
 function solanaTransactionBase64(): string {
@@ -82,13 +82,13 @@ function solanaTransactionBase64(): string {
   ];
   return Buffer.from(Uint8Array.from([1, ...new Uint8Array(64), ...message])).toString('base64');
 }
-function queueSolana(method: 'signAndSendTransaction' | 'signTransaction') {
+function queueSolana(method: 'signAndSendTransaction' | 'signTransaction', page?: AbortSignal) {
   const request = { origin: 'Public fixture', transactionBase64: solanaTransactionBase64() };
   const account = { address: solanaAddress, name: 'Public fixture', publicKey: solanaAddress };
   return outcome(
     method === 'signAndSendTransaction'
-      ? solana.confirmSignAndSendTransaction(url, request, account, 'first')
-      : solana.confirmSignTransaction(url, request, account, 'first')
+      ? solana.confirmSignAndSendTransaction(url, request, account, 'first', undefined, undefined, page)
+      : solana.confirmSignTransaction(url, request, account, 'first', page)
   );
 }
 
@@ -192,6 +192,17 @@ describe('cancelling a request whose transaction an approval is submitting', () 
     expect(await solanaDapp).toEqual({ error: 'Cancelled' });
   });
 
+  it('still cancels a request whose approval the wallet refused before it began', async () => {
+    const dapp = queueSolana('signAndSendTransaction');
+    vi.mocked(state.keyringService.getAllAccounts).mockReturnValue([
+      { address: 'substrate-root', meta: { name: 'Public fixture', solanaAddress, walletSecurityGeneration: 0 } },
+    ] as never);
+
+    await expect(extension.signSolanaApprove({ id: 'first' })).rejects.toThrow('recovery-only');
+    expect(extension.signingCancel({ id: 'first', kind: 'solana' })).toBe(true);
+    expect(await dapp).toEqual({ error: 'Cancelled' });
+  });
+
   it('still cancels a sign-only request while its approval runs, so nothing is signed', async () => {
     const dapp = queueSolana('signTransaction');
     const check = deferred<boolean>();
@@ -200,6 +211,81 @@ describe('cancelling a request whose transaction an approval is submitting', () 
 
     expect(extension.signingCancel({ id: 'first', kind: 'solana' })).toBe(true);
     check.resolve(false);
+    expect(await approving).toBe(false);
+    expect(await dapp).toEqual({ error: 'Cancelled' });
+    expect(state.keyringService.exportMnemonic).not.toHaveBeenCalled();
+  });
+});
+
+describe('closing the page whose request an approval is submitting', () => {
+  it('leaves an EVM transaction whose broadcast is in flight to finish', async () => {
+    const page = new AbortController();
+    const { dapp } = await queueEvm('eth_sendTransaction', [{ from: address, to: address, value: '0x1' }], page.signal);
+    const provider = evmProvider();
+    const broadcast = deferred<{ hash: string }>();
+    provider.broadcastTransaction.mockReturnValueOnce(broadcast.promise);
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
+    const approving = extension.signEvmApprove({ id: 'first' });
+    await vi.waitFor(() => expect(provider.broadcastTransaction).toHaveBeenCalledOnce());
+
+    page.abort();
+    expect(evm.getEvmSignRequest('first')).toBeDefined();
+
+    broadcast.resolve({ hash: '0xfeed' });
+    expect(await approving).toBe(true);
+    expect(await dapp).toEqual({ value: { id: 'first', payload: '0xfeed' } });
+  });
+
+  it('drops an EVM transaction whose approval then ends without sending it', async () => {
+    const page = new AbortController();
+    const { dapp } = await queueEvm('eth_sendTransaction', [{ from: address, to: address, value: '0x1' }], page.signal);
+    const provider = evmProvider();
+    const chain = deferred<{ chainId: bigint }>();
+    provider.getNetwork.mockReturnValueOnce(chain.promise);
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
+    const approving = extension.signEvmApprove({ id: 'first' });
+    await vi.waitFor(() => expect(provider.getNetwork).toHaveBeenCalledOnce());
+
+    page.abort();
+    chain.resolve({ chainId: 137n });
+
+    await expect(approving).rejects.toThrow('reviewed network');
+    expect(await dapp).toEqual({ error: 'Cancelled' });
+    expect(evm.getEvmSignRequest('first')).toBeUndefined();
+    expect(provider.broadcastTransaction).not.toHaveBeenCalled();
+  });
+
+  it('leaves a Solana sign-and-send whose broadcast is in flight to finish', async () => {
+    const page = new AbortController();
+    const dapp = queueSolana('signAndSendTransaction', page.signal);
+    const broadcast = deferred<string>();
+    mocks.solanaBroadcast.mockReturnValueOnce(broadcast.promise);
+    const approving = extension.signSolanaApprove({ id: 'first' });
+    await vi.waitFor(() => expect(mocks.solanaBroadcast).toHaveBeenCalledOnce());
+
+    page.abort();
+    expect(solana.getSolanaSignRequest('first')).toBeDefined();
+
+    broadcast.resolve('landed-signature');
+    expect(await approving).toBe(true);
+    expect(await dapp).toMatchObject({ value: { publicKey: solanaAddress, signature: 'landed-signature' } });
+  });
+
+  it('cancels a request no approval holds, and a sign-only one under approval, so nothing is signed', async () => {
+    const page = new AbortController();
+    const transaction = [{ from: address, to: address, value: '0x1' }];
+    const { dapp: transfer } = await queueEvm('eth_sendTransaction', transaction, page.signal);
+    page.abort();
+    expect(await transfer).toEqual({ error: 'Cancelled' });
+
+    const signOnly = new AbortController();
+    const dapp = queueSolana('signTransaction', signOnly.signal);
+    const check = deferred<boolean>();
+    vi.mocked(checkIfDenied).mockReturnValueOnce(check.promise);
+    const approving = extension.signSolanaApprove({ id: 'first' });
+    signOnly.abort();
+    check.resolve(false);
+
     expect(await approving).toBe(false);
     expect(await dapp).toEqual({ error: 'Cancelled' });
     expect(state.keyringService.exportMnemonic).not.toHaveBeenCalled();

@@ -696,7 +696,8 @@ export default class State {
     if (this.networkService.selectedNetworks[address]) {
       delete this.networkService.selectedNetworks[address];
 
-      storage.set({ selectedNetworks: this.networkService.selectedNetworks });
+      // Not before the saved choices were read; they would all be replaced.
+      this.networkService.saveSelectedNetworks();
     }
 
     this.nftService.deleteSavedNfts(address);

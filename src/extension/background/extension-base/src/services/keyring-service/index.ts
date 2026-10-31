@@ -195,10 +195,20 @@ export class KeyringService {
     // Concurrent startup retries are reads, not competing user choices.
     const request = this.selectionRequestRevision ?? 0;
     const currentAccount = await this.currentAccountStore.readSelection();
-    // A cancelled mobile selection whose compensation failed cannot regain
-    // authority after worker restart, even if the SDK retains its old session.
-    const retired = currentAccount?.isMobile && currentAccount.wcTopic &&
-      !sessionIsApproved(await new WalletConnectRetiredSessions().readPolicy(), currentAccount.wcTopic);
+    let retired = false;
+    let unconfirmed = false;
+    if (currentAccount?.isMobile && currentAccount.wcTopic) {
+      try {
+        // A cancelled mobile selection whose compensation failed cannot regain
+        // authority after worker restart, even if the SDK retains its old session.
+        retired = !sessionIsApproved(await new WalletConnectRetiredSessions().readPolicy(), currentAccount.wcTopic);
+      } catch (error) {
+        // A retirement record that cannot be read or parsed leaves this mobile wallet unselected,
+        // without writing, instead of keeping every start from opening the wallet.
+        console.error(error);
+        unconfirmed = true;
+      }
+    }
     if (this.selectionRequestRevision !== request) return;
     if (retired) {
       if (!IS_EXTENSION && KeyringStoreWeb.readOnly) {
@@ -210,7 +220,7 @@ export class KeyringService {
       return;
     }
     this.selectionRevision = this.currentAccountRevision + 1;
-    this.currentAccountSubject.next(currentAccount);
+    this.currentAccountSubject.next(unconfirmed ? null : currentAccount);
   }
 
   get addressSubject() {

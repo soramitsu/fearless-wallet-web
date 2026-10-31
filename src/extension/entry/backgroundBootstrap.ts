@@ -45,7 +45,7 @@ export function registerBackgroundListeners(api: typeof chrome, ready: Promise<B
     if (alarm?.periodInMinutes !== periodInMinutes) await api.alarms.create(name, { periodInMinutes });
   };
   keepAlarm('fearless-asset-discovery-sweep', 60).catch(reportError);
-  keepAlarm('fearless-network-registry-retry', 1).catch(reportError);
+  // The registry retry alarm exists only while the registry is unavailable (NetworkService).
   api.alarms.onAlarm.addListener((alarm) => dispatch((runtime) => runtime.onAlarm(alarm)));
   // No tab or window listeners: each event woke the worker and ran the whole start-up, but the extension build
   // ignores a request without a port (handlers), and the wallet pages read the active tab themselves.

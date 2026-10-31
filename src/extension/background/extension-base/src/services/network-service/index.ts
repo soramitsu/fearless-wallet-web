@@ -5,6 +5,7 @@ import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { EvmApiHandler } from '@extension-base/services/network-service/handlers/EvmApiHandler';
 import { SubstrateApiHandler } from '@extension-base/services/network-service/handlers/SubstrateApiHandler';
 import { logger as createLogger } from '@polkadot/util';
+import { chrome } from '@extension-base/utils/crossenv';
 import { TonApiHandler } from './handlers/TonApiHandler';
 import { withAcceptedRegistryNodes } from './nodeUrlPolicy';
 import { nodePreferences, sameNodePreferences, type NodePreferences } from './preferences';
@@ -28,6 +29,9 @@ import { withoutUntrustedPrices } from '@/portfolio/untrustedAssets';
 import { withDeadline } from '@/bootstrap/boundedAttempts';
 
 export type NetworkMap = Record<string, NetworkJson>;
+
+// The extension retries an unavailable registry when this alarm fires (backgroundRuntime.ts).
+export const REGISTRY_RETRY_ALARM = 'fearless-network-registry-retry';
 
 type NetworkPreferences = Pick<NetworkJson, 'favorite' | 'currentProvider' | 'customNodes' | 'customProviders' | 'isManual'>;
 
@@ -77,6 +81,7 @@ export class NetworkService {
   private registryAttemptAt = 0;
   private registryInitialization?: Promise<void>;
   private registryRetry?: Promise<boolean>;
+  private registryAlarmUpdate = Promise.resolve();
   private preferenceRevision = 0;
   private selectedNetworksRead = false;
   private readonly networkPreferenceRevision: Record<string, number> = {};
@@ -174,8 +179,22 @@ export class NetworkService {
   }
 
   public initNetworkMap(): Promise<void> {
-    this.registryInitialization ??= this.loadNetworkMap().finally(() => { this.registryInitialization = undefined; });
+    this.registryInitialization ??= this.loadNetworkMap().finally(() => {
+      this.registryInitialization = undefined;
+      this.updateRegistryRetryAlarm();
+    });
     return this.registryInitialization;
+  }
+
+  // The retry alarm wakes the worker every minute, so it exists only while retryRegistryIfNeeded has work to do: the
+  // bundled list is in use or the cached settings could not be read. Updates run in order, each from the latest state.
+  private updateRegistryRetryAlarm() {
+    const alarms = chrome?.alarms;
+    if (!alarms) return;
+    this.registryAlarmUpdate = this.registryAlarmUpdate.then(async () => {
+      if (this.registryAvailable && this.cacheReadable) await alarms.clear(REGISTRY_RETRY_ALARM);
+      else if ((await alarms.get(REGISTRY_RETRY_ALARM))?.periodInMinutes !== 1) await alarms.create(REGISTRY_RETRY_ALARM, { periodInMinutes: 1 });
+    }).catch((error) => console.warn('Registry retry alarm could not be updated', error));
   }
 
   retryRegistryIfNeeded(): Promise<boolean> {

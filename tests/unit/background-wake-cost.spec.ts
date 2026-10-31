@@ -45,26 +45,26 @@ describe('what wakes the extension background', () => {
     expect(api.alarms.onAlarm.addListener).toHaveBeenCalledOnce();
   });
 
-  it('keeps alarms that already exist so a restart does not postpone them', async () => {
-    const api = extensionApi({ 'fearless-asset-discovery-sweep': 60, 'fearless-network-registry-retry': 1 });
+  it('keeps the sweep alarm that already exists so a restart does not postpone it', async () => {
+    const api = extensionApi({ 'fearless-asset-discovery-sweep': 60 });
 
     registerBackgroundListeners(api as unknown as typeof chrome, never);
     await settle();
 
-    expect(api.alarms.get).toHaveBeenCalledTimes(2);
+    expect(api.alarms.get).toHaveBeenCalledExactlyOnceWith('fearless-asset-discovery-sweep');
     expect(api.alarms.create).not.toHaveBeenCalled();
   });
 
-  it('creates a missing alarm and replaces one with another period', async () => {
-    const api = extensionApi({ 'fearless-network-registry-retry': 5 });
+  it('creates a missing sweep alarm, replaces one with another period, and leaves the registry retry alone', async () => {
+    for (const existing of [{}, { 'fearless-asset-discovery-sweep': 5 }]) {
+      const api = extensionApi(existing);
 
-    registerBackgroundListeners(api as unknown as typeof chrome, never);
-    await settle();
+      registerBackgroundListeners(api as unknown as typeof chrome, never);
+      await settle();
 
-    expect(api.alarms.create.mock.calls).toEqual([
-      ['fearless-asset-discovery-sweep', { periodInMinutes: 60 }],
-      ['fearless-network-registry-retry', { periodInMinutes: 1 }],
-    ]);
+      // The registry retry alarm is created only while the registry is unavailable (registry-retry-alarm.spec.ts).
+      expect(api.alarms.create.mock.calls).toEqual([['fearless-asset-discovery-sweep', { periodInMinutes: 60 }]]);
+    }
   });
 });
 

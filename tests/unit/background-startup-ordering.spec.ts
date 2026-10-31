@@ -210,7 +210,6 @@ afterEach(() => {
 describe('background start-up ordering (W10)', () => {
   it('wakes the bounded registry retry and publishes only a refreshed catalog', async () => {
     const background = await startBackground();
-    await vi.waitFor(() => expect(background.api.alarms.create).toHaveBeenCalledWith('fearless-network-registry-retry', { periodInMinutes: 1 }));
     background.state.isReady.mockReturnValue(true);
     background.api.alarms.onAlarm.emit({ name: 'fearless-network-registry-retry' });
     await vi.waitFor(() => expect(background.state.updateServiceInfo).toHaveBeenCalledOnce());

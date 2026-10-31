@@ -246,6 +246,12 @@ earlier version derived. Owner decision of 2026-10-31 (design A):
   alone open the rest.
 - A wallet with such old addresses gets one notice listing them with their
   protected addresses. Switch replaces only those a lookup confirms empty.
+- An old address the wallet moved away from (Switch, or an import or later
+  network that found it empty) stays watched, because funds can still arrive there:
+  it is looked at again on every unlock and when the wallet's screen opens. If it
+  holds funds and the protected account is confirmed empty, it becomes the wallet's
+  account again; otherwise the protected account stays and the notice reports the
+  funds at the old address.
 - The background keeps the password sealed in the account metadata
   (`universalWalletPassphrase`, XSalsa20-Poly1305 under an HKDF key of the
   account's own secret, so the recovery words alone cannot open it). Wallets saved

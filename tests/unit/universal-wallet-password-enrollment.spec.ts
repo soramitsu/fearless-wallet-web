@@ -28,6 +28,7 @@ vi.mock('vite-plugin-node-polyfills/shims/buffer', async () => {
 import { enrollLegacyAccountNetworks } from '@extension-base/services/keyring-service/LegacyNetworkEnrollment';
 import {
   balanceServiceFundsProbe,
+  checkWatchedUniversalWalletNetworks,
   findUniversalWalletLegacyNetworks,
   matchUniversalWalletPassphrase,
   probeUniversalWalletLegacyAccounts,
@@ -92,6 +93,8 @@ describe('networks a password wallet gains later (backfill)', () => {
       irohaAddress: PROTECTED.irohaAddress,
       irohaPublicKeyHex: PROTECTED.irohaPublicKeyHex,
       universalWalletLegacyNetworks: ['bitcoin', 'ton'],
+      // Protected because their old address was empty: that address stays watched.
+      universalWalletWatchedNetworks: ['bitcoinTestnet', 'solana', 'iroha'],
     });
   });
 
@@ -101,6 +104,7 @@ describe('networks a password wallet gains later (backfill)', () => {
     await enroll(pair, PASSWORD);
 
     expect(pair.meta).toMatchObject({ ...LEGACY, universalWalletLegacyNetworks: ['bitcoin', 'bitcoinTestnet', 'solana', 'ton', 'iroha'] });
+    expect((pair.meta as FWKeyringMeta).universalWalletWatchedNetworks).toBeUndefined();
   });
 
   it('never probes or changes anything for a wallet without a password', async () => {
@@ -170,6 +174,31 @@ describe('Universal Wallet password helpers', () => {
       .toBeUndefined();
   });
 
+  it('judges watched old addresses: back when the protected account is empty, reported otherwise', async () => {
+    const meta = { ...PROTECTED, universalWalletWatchedNetworks: ['bitcoin', 'solana', 'ton', 'iroha'],
+      universalWalletArrivedNetworks: ['iroha'] } as FWKeyringMeta;
+    const funds: Record<string, 'funded' | 'empty' | 'unknown'> = {
+      'bitcoin:': 'funded', [`bitcoin:${PASSWORD}`]: 'empty',
+      'solana:': 'funded', [`solana:${PASSWORD}`]: 'funded',
+      'ton:': 'funded', [`ton:${PASSWORD}`]: 'unknown',
+      'iroha:': 'empty',
+    };
+    const probe = vi.fn<UniversalWalletFundsProbe>(async (network, _mnemonic, fields, passphrase = '') => {
+      // Each probe gets the account its passphrase opens.
+      const expected = (passphrase ? PROTECTED : LEGACY) as Record<string, string>;
+      const key = { bitcoin: 'bitcoinAddress', solana: 'solanaAddress', ton: 'tonAddress', iroha: 'irohaAddress' }[network as string]!;
+      expect((fields as Record<string, string>)[key]).toBe(expected[key]);
+      return funds[`${network}:${passphrase}`] ?? 'unknown';
+    });
+
+    expect(await checkWatchedUniversalWalletNetworks(probe, meta, MNEMONIC, PASSWORD)).toEqual({
+      revert: ['bitcoin'], arrived: ['solana', 'ton'], cleared: ['iroha'],
+    });
+    // Unchecked old addresses change nothing.
+    expect(await checkWatchedUniversalWalletNetworks(vi.fn(async () => 'unknown' as const), meta, MNEMONIC, PASSWORD))
+      .toEqual({ revert: [], arrived: [], cleared: [] });
+  });
+
   it('probes no-password addresses and treats every failure as unchecked', async () => {
     const probe = vi.fn<UniversalWalletFundsProbe>(async (network) => {
       if (network === 'solana') throw new Error('rpc down');
@@ -198,7 +227,9 @@ describe('Universal Wallet password helpers', () => {
 
     expect(await probe('bitcoin', MNEMONIC, {})).toBe('funded');
     expect(await probe('bitcoinTestnet', MNEMONIC, {})).toBe('funded');
-    expect(balances.bitcoinBalanceService.probeAccountFunds.mock.calls).toEqual([[MNEMONIC, 'mainnet'], [MNEMONIC, 'testnet']]);
+    expect(balances.bitcoinBalanceService.probeAccountFunds.mock.calls).toEqual([[MNEMONIC, 'mainnet', ''], [MNEMONIC, 'testnet', '']]);
+    await probe('bitcoin', MNEMONIC, {}, PASSWORD);
+    expect(balances.bitcoinBalanceService.probeAccountFunds).toHaveBeenLastCalledWith(MNEMONIC, 'mainnet', PASSWORD);
     expect(await probe('solana', MNEMONIC, { solanaAddress: LEGACY.solanaAddress })).toBe('empty');
     expect(balances.solanaBalanceService.probeAddressFunds).toHaveBeenCalledWith(LEGACY.solanaAddress);
     expect(await probe('iroha', MNEMONIC, { irohaAddress: LEGACY.irohaAddress })).toBe('unknown');

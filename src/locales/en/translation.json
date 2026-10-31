@@ -1416,6 +1416,7 @@
     "tonAddressAsTypedDescription": "The Fearless Android app kept a typed TON phrase with its spacing and capital letters. Choose this if your phrase comes from there.",
     "tonAddressInWallet": "Already in your wallet",
     "tonPhraseAsTyped": "This TON phrase works only when entered exactly as it was saved, with the same spacing and capital letters. Use Copy to clipboard to keep it exactly.",
+    "universalWalletPasswordBackup": "This wallet has a password (the text after /// in its derivation path). Bitcoin, Solana, TON and Taira need it together with these words.",
     "tonAddressUnchecked": "We could not check these addresses right now, so the first one is selected. If this phrase comes from an earlier Fearless app, choose the address that app used.",
     "tonAddressBothHint": "Not sure? Nothing is lost by choosing any of them. You can import this phrase again later to add another address.",
     "storageUnavailable": "Your wallet data could not be read. Nothing was changed. Please try again."

@@ -734,6 +734,11 @@ export default defineComponent({ name: 'AddWallet',
 
             Object.assign(meta, deriveUniversalWalletKeyringFields(this.mnemonic, passphrase, legacyNetworks));
             if (legacyNetworks.length) meta.universalWalletLegacyNetworks = legacyNetworks;
+            // Old addresses found empty stay watched: funds can still reach them after the protected ones show.
+            const watched = passphrase && !this.isCreateWallet
+              ? UNIVERSAL_WALLET_PASSWORD_NETWORKS.filter((network) => !legacyNetworks.includes(network))
+              : [];
+            if (watched.length) meta.universalWalletWatchedNetworks = watched;
           }
 
           const {

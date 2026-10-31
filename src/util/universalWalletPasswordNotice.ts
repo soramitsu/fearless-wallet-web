@@ -8,7 +8,8 @@ const CLOSED_NOTICES_STORAGE_KEY = 'fearless:universal-wallet-password-notice:v1
 export const universalWalletPasswordNoticeRequest = ref<string | null>(null);
 
 export function needsUniversalWalletPasswordNotice(status: UniversalWalletPasswordStatus | undefined): boolean {
-  return status?.state === 'legacy' || status?.state === 'password-unknown';
+  return (status?.state === 'legacy' && (status.rows.length > 0 || !!status.arrived?.length)) ||
+    status?.state === 'password-unknown';
 }
 
 export function readClosedUniversalWalletPasswordNotices(): string[] {
@@ -17,6 +18,18 @@ export function readClosedUniversalWalletPasswordNotices(): string[] {
     return Array.isArray(stored) ? stored.filter((address): address is string => typeof address === 'string') : [];
   } catch {
     return [];
+  }
+}
+
+/** Something new happened at an old address: the notice may open by itself again. */
+export function forgetClosedUniversalWalletPasswordNotice(address: string): void {
+  try {
+    const closed = readClosedUniversalWalletPasswordNotices();
+    if (closed.includes(address)) {
+      localStorage.setItem(CLOSED_NOTICES_STORAGE_KEY, JSON.stringify(closed.filter((item) => item !== address)));
+    }
+  } catch {
+    // Without storage nothing was remembered.
   }
 }
 

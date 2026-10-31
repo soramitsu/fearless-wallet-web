@@ -93,6 +93,8 @@ describe('Universal Wallet accounts of a wallet with a ///password', () => {
     const { meta } = await saveWallet('create', PATH);
 
     expect(universalWalletPasswordDiscovery).not.toHaveBeenCalled();
+    // Fresh words: no old address ever existed, so nothing is watched.
+    expect(meta.universalWalletWatchedNetworks).toBeUndefined();
     expect(meta.bitcoinAddress).toBe(protectedAccounts.bitcoin.mainnet.firstReceiveAddress);
     expect(meta.bitcoinTestnetAddress).toBe(protectedAccounts.bitcoin.testnet.firstReceiveAddress);
     expect(meta.solanaAddress).toBe(protectedAccounts.solana.address);
@@ -110,6 +112,8 @@ describe('Universal Wallet accounts of a wallet with a ///password', () => {
 
     expect(universalWalletPasswordDiscovery).toHaveBeenCalledWith(import12.mnemonic);
     expect(meta.universalWalletLegacyNetworks).toEqual(['bitcoin', 'ton']);
+    // The empty old addresses stay watched in case funds reach them later.
+    expect(meta.universalWalletWatchedNetworks).toEqual(['bitcoinTestnet', 'solana', 'iroha']);
     expect(meta.bitcoinAddress).toBe(legacy.bitcoin.mainnet.firstReceiveAddress);
     expect(meta.tonPublicKeyHex).toBe(legacy.ton.publicKeyHex);
     expect(meta.bitcoinTestnetAddress).toBe(protectedAccounts.bitcoin.testnet.firstReceiveAddress);

@@ -168,6 +168,10 @@ export interface FWKeyringMeta extends KeyringPair$Meta {
   universalWalletPassphrase?: SealedUniversalWalletPassphrase;
   /** Universal Wallet networks this password wallet still shows at the address its words alone open. */
   universalWalletLegacyNetworks?: UniversalWalletPasswordNetwork[];
+  /** Networks that left the address the words alone open; that address stays watched for late deposits. */
+  universalWalletWatchedNetworks?: UniversalWalletPasswordNetwork[];
+  /** Watched networks whose old address received funds while the protected account holds or may hold some. */
+  universalWalletArrivedNetworks?: UniversalWalletPasswordNetwork[];
   name?: string;
   walletEcosystem?: WalletEcosystem;
 }

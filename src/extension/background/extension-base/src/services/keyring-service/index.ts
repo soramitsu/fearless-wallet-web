@@ -52,8 +52,11 @@ import { commitMasterPasswordChange } from './MasterPasswordChange';
 import { upgradePasswordVerifier } from './PasswordVerifier';
 import { WalletSecurityProvenance, withoutWalletSecurityClaims } from './WalletSecurityProvenance';
 import {
+  checkWatchedUniversalWalletNetworks,
   findUniversalWalletLegacyNetworks,
   probeUniversalWalletLegacyAccounts,
+  withArrivedUniversalWalletNetworks,
+  withLegacyUniversalWalletAccounts,
   universalWalletNetworkAddress,
   withProtectedUniversalWalletAccounts,
   type UniversalWalletFundsProbe,
@@ -83,6 +86,7 @@ import type {
   ResponseRecoverAccountWithPhrase,
   ResponseRestoreDeletedWallet,
   ResponseUniversalWalletPasswordPath,
+  ResponseUniversalWalletWatchedCheck,
   UniversalWalletPasswordStatus,
 } from '../../background/types/types';
 import type { FWKeyringMeta } from '@extension-base/types';
@@ -217,6 +221,12 @@ export class KeyringService {
             probe: this.universalWalletFundsProbe,
           });
         } catch { /* Retry on a later unlock. */ }
+        // Old addresses a password wallet moved away from are looked at again on every unlock (an EVM child is
+        // covered by its parent).
+        const isLinkedChild = this.getAllAccounts().some(({ address: other, meta }) =>
+          other !== pair.address && isSameString((meta as FWKeyringMeta).ethereumAddress ?? '', pair.address));
+        if (!isCurrent() || isLinkedChild) continue;
+        try { await this.checkWatchedUniversalWalletAccounts(pair.address); } catch { /* Retry on a later unlock. */ }
       }
     }).catch(() => {});
   }
@@ -552,12 +562,17 @@ export class KeyringService {
 
     const networks = universalWalletLegacyNetworks(meta.universalWalletLegacyNetworks)
       .filter((network) => !!universalWalletNetworkAddress(meta, network));
+    const arrivedNetworks = universalWalletLegacyNetworks(meta.universalWalletArrivedNetworks);
     const [passphrase] = this.universalWalletPassphraseCandidates(pair.address);
 
     if (passphrase) {
-      if (!networks.length) return { state: 'protected' };
+      if (!networks.length && !arrivedNetworks.length) return { state: 'protected' };
 
       const { seed } = this.exportMnemonic({ address: pair.address, walletEcosystem: meta.walletEcosystem });
+      const arrived = seed ? arrivedNetworks.map((network) => ({
+        network,
+        legacyAddress: universalWalletNetworkAddress(deriveUniversalWalletNetworkFields(network, seed, ''), network)!,
+      })) : [];
 
       return {
         state: 'legacy',
@@ -568,6 +583,7 @@ export class KeyringService {
             ? universalWalletNetworkAddress(deriveUniversalWalletNetworkFields(network, seed, passphrase), network)
             : undefined,
         })),
+        ...(arrived.length ? { arrived } : {}),
       };
     }
 
@@ -649,13 +665,7 @@ export class KeyringService {
 
     if (!switched.length) return results;
 
-    const wallet = [pair, ...this.getAllAccounts()
-      .filter(({ address: other, meta: otherMeta }) => other !== pair.address &&
-        (isSameString(other, meta.ethereumAddress ?? '') || isSameString((otherMeta as FWKeyringMeta).ethereumAddress ?? '', pair.address)))
-      .map(({ address: other }) => this.getPair(other))
-      .filter((other): other is KeyringPair => !!other)];
-
-    for (const account of wallet) {
+    for (const account of this.universalWalletPairs(pair)) {
       const committed = await updateAccountMetadata(account, (current) => {
         // Only accounts still showing the probed addresses move; anything else changed meanwhile.
         const movable = switched.filter((network) =>
@@ -671,6 +681,61 @@ export class KeyringService {
     }
 
     return results;
+  }
+
+  // The accounts that carry one wallet's Universal Wallet fields: it and its linked EVM child or parent.
+  private universalWalletPairs(pair: KeyringPair): KeyringPair[] {
+    const ethereumAddress = (pair.meta as FWKeyringMeta).ethereumAddress ?? '';
+
+    return [pair, ...this.getAllAccounts()
+      .filter(({ address: other, meta: otherMeta }) => other !== pair.address &&
+        (isSameString(other, ethereumAddress) || isSameString((otherMeta as FWKeyringMeta).ethereumAddress ?? '', pair.address)))
+      .map(({ address: other }) => this.getPair(other))
+      .filter((other): other is KeyringPair => !!other)];
+  }
+
+  /**
+   * Looks at the old addresses a password wallet moved away from. Funds that reach one go back into the wallet
+   * when its protected account is confirmed empty; otherwise they are reported and the protected account stays.
+   */
+  async checkWatchedUniversalWalletAccounts(
+    address: string,
+    probe: UniversalWalletFundsProbe | undefined = this.universalWalletFundsProbe
+  ): Promise<ResponseUniversalWalletWatchedCheck> {
+    const pair = this.getPair(address);
+    const meta = pair?.meta as FWKeyringMeta | undefined;
+    const status = () => this.universalWalletPasswordStatus(address);
+
+    if (!pair || !meta || !this.password || !probe) return { changed: false, status: status() };
+    if (!universalWalletLegacyNetworks(meta.universalWalletWatchedNetworks).length) return { changed: false, status: status() };
+
+    const [passphrase] = this.universalWalletPassphraseCandidates(pair.address);
+    const { seed } = this.exportMnemonic({ address: pair.address, walletEcosystem: meta.walletEcosystem });
+
+    if (!passphrase || !seed) return { changed: false, status: status() };
+
+    const { revert, arrived, cleared } = await checkWatchedUniversalWalletNetworks(probe, meta, seed, passphrase);
+    const reported = universalWalletLegacyNetworks(meta.universalWalletArrivedNetworks);
+    const newlyArrived = arrived.filter((network) => !reported.includes(network));
+
+    if (!revert.length && !newlyArrived.length && !cleared.length) return { changed: false, status: status() };
+
+    for (const account of this.universalWalletPairs(pair)) {
+      await updateAccountMetadata(account, (current) => {
+        // Only a network still showing the protected account the probe judged moves back.
+        const back = revert.filter((network) => universalWalletNetworkAddress(current, network) ===
+          universalWalletNetworkAddress(deriveUniversalWalletNetworkFields(network, seed, passphrase), network));
+        const next = withArrivedUniversalWalletNetworks(
+          withLegacyUniversalWalletAccounts(account.address, current, seed, back),
+          arrived,
+          cleared
+        );
+
+        return JSON.stringify(next) === JSON.stringify(current) ? undefined : next;
+      }, () => !!this.password, false).catch(() => false);
+    }
+
+    return { changed: revert.length > 0 || newlyArrived.length > 0, status: status() };
   }
 
   saveAddress(address: string, meta: FWKeyringMeta, type: KeyringAddressType, options: PublicAddressUpdateOptions = {}) {

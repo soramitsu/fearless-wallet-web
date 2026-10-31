@@ -30,6 +30,9 @@ export const universalWalletPasswordMessages = {
     pathWithoutPassword: 'This path has no password, so there is nothing to protect.',
     failed: 'Something went wrong. Try again.',
     reopen: 'Old addresses without password',
+    arrivedTitle: 'Funds arrived at your old address',
+    arrivedDescription:
+      'Your recovery words alone open it. To move these funds, import the words without the password as another wallet.',
     bitcoin: 'Bitcoin',
     bitcoinTestnet: 'Bitcoin testnet',
     solana: 'Solana',

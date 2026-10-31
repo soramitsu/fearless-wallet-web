@@ -225,6 +225,8 @@ describe('a password wallet saved by Fearless 4.2.x', SCRYPT_SUITE, () => {
       solanaAddress: legacy.solana.address,
       tonPublicKeyHex: legacy.ton.publicKeyHex,
       universalWalletLegacyNetworks: ['bitcoinTestnet', 'solana', 'ton'],
+      // The old addresses of switched networks stay watched for late deposits.
+      universalWalletWatchedNetworks: ['bitcoin', 'iroha'],
     });
     const accounts = Object.fromEntries(metaOf(pair).universalWallet!.publicAccounts.map(({ accountId, address }) => [accountId, address]));
     expect(accounts).toMatchObject({
@@ -244,6 +246,56 @@ describe('a password wallet saved by Fearless 4.2.x', SCRYPT_SUITE, () => {
     expect((await keyring.switchUniversalWalletAccounts(pair.address, probeAll({ solana: 'funded' })))
       .map(({ outcome }) => outcome)).toEqual(['unknown', 'funded', 'unknown']);
     expect(record(pair)).toEqual(after);
+  });
+
+  it('brings back an old address that is paid after the switch when the protected account is empty', async () => {
+    const pair = storedPasswordWalletFrom42();
+    const keyring = unlocked();
+    await keyring.addUniversalWalletPasswordPath({ address: pair.address, derivationPath: `//polkadot///${PASSWORD}` });
+    // The probe read Bitcoin index 0 as empty; the deposit lands there before or after the replacement commits.
+    await keyring.switchUniversalWalletAccounts(pair.address, probeAll({ bitcoin: 'empty' }));
+    expect(metaOf(pair).bitcoinAddress).toBe(protectedAccounts.bitcoin.mainnet.firstReceiveAddress);
+    const paid = vi.fn<UniversalWalletFundsProbe>(async (network, _mnemonic, _fields, passphrase = '') =>
+      network === 'bitcoin' && passphrase === '' ? 'funded' : 'empty');
+
+    const result = await keyring.checkWatchedUniversalWalletAccounts(pair.address, paid);
+
+    expect(result.changed).toBe(true);
+    expect(paid.mock.calls.map(([network, , , passphrase]) => [network, passphrase])).toEqual([['bitcoin', ''], ['bitcoin', PASSWORD]]);
+    expect(metaOf(pair)).toMatchObject({
+      bitcoinAddress: legacy.bitcoin.mainnet.firstReceiveAddress,
+      universalWalletLegacyNetworks: ['bitcoin', 'bitcoinTestnet', 'solana', 'ton', 'iroha'],
+    });
+    expect(metaOf(pair).universalWalletWatchedNetworks).toBeUndefined();
+    expect(secret(keyring, pair, 'bitcoin').passphrase).toBe('');
+    expect(result.status).toMatchObject({ state: 'legacy' });
+    expect((result.status as { rows: { network: string }[] }).rows.map(({ network }) => network)).toContain('bitcoin');
+  });
+
+  it('keeps a funded protected account and reports funds that reach its old address', async () => {
+    const pair = storedPasswordWalletFrom42();
+    const keyring = unlocked();
+    await keyring.addUniversalWalletPasswordPath({ address: pair.address, derivationPath: `//polkadot///${PASSWORD}` });
+    await keyring.switchUniversalWalletAccounts(pair.address, probeAll({ bitcoin: 'empty', iroha: 'empty' }));
+    const funds: Record<string, 'funded' | 'empty' | 'unknown'> = { 'iroha:': 'funded', [`iroha:${PASSWORD}`]: 'unknown' };
+    const probe = vi.fn<UniversalWalletFundsProbe>(async (network, _mnemonic, _fields, passphrase = '') =>
+      funds[`${network}:${passphrase}`] ?? 'empty');
+
+    const result = await keyring.checkWatchedUniversalWalletAccounts(pair.address, probe);
+
+    expect(result.changed).toBe(true);
+    expect(metaOf(pair)).toMatchObject({
+      irohaPublicKeyHex: protectedAccounts.iroha.taira.publicKeyHex,
+      universalWalletWatchedNetworks: ['bitcoin', 'iroha'],
+      universalWalletArrivedNetworks: ['iroha'],
+    });
+    expect(result.status).toMatchObject({ state: 'legacy', arrived: [{ network: 'iroha', legacyAddress: legacy.iroha.taira.i105 }] });
+    // Reported once: the same funds do not count as new, and an emptied old address clears the report.
+    expect((await keyring.checkWatchedUniversalWalletAccounts(pair.address, probe)).changed).toBe(false);
+    funds['iroha:'] = 'empty';
+    await keyring.checkWatchedUniversalWalletAccounts(pair.address, probe);
+    expect(metaOf(pair).universalWalletArrivedNetworks).toBeUndefined();
+    expect(metaOf(pair).universalWalletWatchedNetworks).toEqual(['bitcoin', 'iroha']);
   });
 
   it('still opens the sealed password after the master password changes', async () => {

@@ -172,6 +172,8 @@ export interface FWKeyringMeta extends KeyringPair$Meta {
   universalWalletWatchedNetworks?: UniversalWalletPasswordNetwork[];
   /** Watched networks whose old address received funds while the protected account holds or may hold some. */
   universalWalletArrivedNetworks?: UniversalWalletPasswordNetwork[];
+  /** The person entered this restored wallet's derivation path, so whether it has a password is known. */
+  universalWalletPasswordKnown?: boolean;
   name?: string;
   walletEcosystem?: WalletEcosystem;
 }

@@ -684,21 +684,24 @@ export interface UniversalWalletPasswordRow {
   protectedAddress?: string;
 }
 
-/**
- * `legacy`: some accounts still open with the words alone; `password-unknown`: a wallet saved before passwords
- * were kept whose key was made with a derivation path, which may include a password.
- */
 /** Funds that reached an old address after the wallet moved to its protected account, which keeps its own. */
 export interface UniversalWalletArrivedRow {
   network: UniversalWalletPasswordNetwork;
   legacyAddress: string;
 }
 
+/**
+ * `legacy`: some accounts still open with the words alone; `password-unknown`: a wallet saved before passwords
+ * were kept whose key was made with a derivation path, which may include a password; `path-required`: a wallet
+ * restored from a JSON or Google Drive backup whose words open its key only with a derivation path, so it shows
+ * no Bitcoin, Solana, TON or Taira accounts until the path is entered.
+ */
 export type UniversalWalletPasswordStatus =
   | { state: 'none' }
   | { state: 'protected' }
   | { state: 'legacy'; rows: UniversalWalletPasswordRow[]; arrived?: UniversalWalletArrivedRow[] }
-  | { state: 'password-unknown' };
+  | { state: 'password-unknown' }
+  | { state: 'path-required' };
 
 export interface RequestUniversalWalletPasswordPath {
   address: string;

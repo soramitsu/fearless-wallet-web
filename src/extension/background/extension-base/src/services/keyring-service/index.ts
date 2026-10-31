@@ -31,6 +31,12 @@ import { decodeJsonAccount } from './JsonAccountImport';
 import { walletResetMutation } from './WalletReset';
 import { enrollLegacyAccountNetworks } from './LegacyNetworkEnrollment';
 import {
+  commitRestoredWalletPhrase,
+  prefetchedFundsProbe,
+  readRestoredWalletPhrase,
+  waitsForDerivationPath,
+} from './RestoredWalletPath';
+import {
   AccountAccessService,
   decodesWithPassword,
   isMasterPasswordPair,
@@ -235,6 +241,9 @@ export class KeyringService {
         const pair = this.getPair(account.address);
         if (!pair) continue;
         try {
+          await this.verifyStandardPathRestore(pair, password, isCurrent);
+          // A linked Ethereum account follows its wallet: it gains nothing while the wallet's key waits for its path.
+          if (this.linkedWalletWaitsForPath(pair)) continue;
           await enrollLegacyAccountNetworks(pair, password, isCurrent, undefined, {
             passphrase: () => this.universalWalletPassphraseCandidates(pair.address)[0] ?? '',
             probe: this.universalWalletFundsProbe,
@@ -248,6 +257,25 @@ export class KeyringService {
         try { await this.checkWatchedUniversalWalletAccounts(pair.address); } catch { /* Retry on a later unlock. */ }
       }
     }).catch(() => {});
+  }
+
+  // Restores before this version left every Ethereum key unverified, also one at the standard path Fearless makes
+  // each Ethereum key at. Its words need no path from the person.
+  private async verifyStandardPathRestore(pair: KeyringPair, password: string, isCurrent: () => boolean): Promise<void> {
+    if (pair.type !== 'ethereum' || !waitsForDerivationPath(pair)) return;
+
+    const stored = await readRestoredWalletPhrase(pair, password);
+    const copy = stored && isCurrent() ? this.pairFromPhrase(pair, stored.phrase) : undefined;
+
+    if (!stored || !copy) return;
+    copy.lock();
+    await commitRestoredWalletPhrase(pair, stored.snapshot, isCurrent);
+  }
+
+  private linkedWalletWaitsForPath(pair: KeyringPair): boolean {
+    return isEthereumAddress(pair.address) && this.getAccounts().some(({ address, meta }) =>
+      !isEthereumAddress(address) && isSameString(meta.ethereumAddress ?? '', pair.address) &&
+      waitsForDerivationPath(this.getPair(address)));
   }
 
   constructor(eventService: EventService) {
@@ -606,9 +634,8 @@ export class KeyringService {
     const pair = this.getPair(address);
     const meta = pair?.meta as FWKeyringMeta | undefined;
 
-    if (!pair || !meta || meta.isMnemonicUnverified || !['sr25519', 'ed25519', 'ecdsa', 'ethereum'].includes(pair.type)) {
-      return { state: 'none' };
-    }
+    if (!pair || !meta || !['sr25519', 'ed25519', 'ecdsa', 'ethereum'].includes(pair.type)) return { state: 'none' };
+    if (meta.isMnemonicUnverified) return this.restoredWalletPasswordStatus(pair);
 
     const networks = universalWalletLegacyNetworks(meta.universalWalletLegacyNetworks)
       .filter((network) => !!universalWalletNetworkAddress(meta, network));
@@ -639,6 +666,7 @@ export class KeyringService {
 
     // Wallets saved before this version kept no password. A key the bare phrase does not open was made with a
     // path, which may end in ///password: only the person can say, by entering it.
+    if (meta.universalWalletPasswordKnown) return { state: 'none' };
     if (!meta.bitcoinAddress && !meta.solanaAddress && !meta.tonAddress && !meta.irohaAddress) return { state: 'none' };
 
     const { seed } = this.exportMnemonic({ address: pair.address, walletEcosystem: meta.walletEcosystem });
@@ -649,7 +677,28 @@ export class KeyringService {
     return seed && !bare ? { state: 'password-unknown' } : { state: 'none' };
   }
 
-  /** Keeps the password of a wallet saved before this version: the typed path must reproduce its key. */
+  // A restored key at the standard Ethereum path is verified by the next enrollment without asking.
+  private restoredWalletPasswordStatus(pair: KeyringPair): UniversalWalletPasswordStatus {
+    if (!waitsForDerivationPath(pair) || !this.password) return { state: 'none' };
+    if (pair.type === 'ethereum') {
+      let standard: KeyringPair | undefined;
+
+      try {
+        standard = this.pairFromPhrase(pair, keyring.getPair(pair.address).exportMnemonic(this.password));
+      } catch {
+        // Words this password cannot read are asked about like any others.
+      }
+      standard?.lock();
+      if (standard) return { state: 'none' };
+    }
+
+    return { state: 'path-required' };
+  }
+
+  /**
+   * Keeps the password of a wallet saved before this version: the typed path must reproduce its key. For a restored
+   * wallet whose words did not open its key alone, the path first shows the words are its root.
+   */
   async addUniversalWalletPasswordPath({
     address,
     derivationPath,
@@ -660,6 +709,9 @@ export class KeyringService {
     const meta = pair?.meta as FWKeyringMeta | undefined;
 
     if (!pair || !meta) return { ok: false, code: 'not_found' };
+    if (meta.isMnemonicUnverified) {
+      return waitsForDerivationPath(pair) ? this.addRestoredWalletPath(pair, derivationPath) : { ok: false, code: 'not_found' };
+    }
 
     const { seed } = this.exportMnemonic({ address: pair.address, walletEcosystem: meta.walletEcosystem });
 
@@ -683,6 +735,58 @@ export class KeyringService {
     }), () => !!this.password, false).catch(() => false);
 
     return committed ? { ok: true, status: this.universalWalletPasswordStatus(pair.address) } : { ok: false, code: 'storage_failed' };
+  }
+
+  /**
+   * Gives a restored wallet back its Bitcoin, Solana, TON and Taira accounts once the stored words with the typed
+   * path reproduce its key. They are added as for any password import: an address the words alone open stays while
+   * it holds funds or cannot be checked; without a password every account is the one earlier versions showed.
+   */
+  private async addRestoredWalletPath(pair: KeyringPair, derivationPath: string): Promise<ResponseUniversalWalletPasswordPath> {
+    const password = this.password;
+    const isCurrent = () => !!password && this.password === password && !keyring.keyring.isLocked;
+    const stored = await readRestoredWalletPhrase(pair, password);
+
+    if (!isCurrent()) return { ok: false, code: 'locked' };
+    if (!stored) return { ok: false, code: 'not_found' };
+
+    const path = derivationPath.trim();
+    const copy = this.pairFromPhrase(pair, stored.phrase, path);
+
+    if (!copy) return { ok: false, code: 'path_mismatch' };
+    copy.lock();
+
+    const passphrase = suriPassword(`${stored.phrase}${isEthereumAddress(pair.address) && !path.startsWith('/') ? `/${path}` : path}`);
+    // Every address is checked before anything is written, so a slow network leaves the wallet as it was.
+    const probe = passphrase && this.universalWalletFundsProbe
+      ? await prefetchedFundsProbe(this.universalWalletFundsProbe, stored.phrase)
+      : this.universalWalletFundsProbe;
+
+    if (!isCurrent()) return { ok: false, code: 'locked' };
+
+    const verified = await commitRestoredWalletPhrase(pair, stored.snapshot, isCurrent, {
+      universalWalletPasswordKnown: true,
+      ...(passphrase ? { universalWalletPassphrase: this.sealUniversalWalletPassphrase(pair, passphrase) } : {}),
+    });
+
+    if (!verified) return { ok: false, code: isCurrent() ? 'storage_failed' : 'locked' };
+
+    // The wallet's own key first, then its linked Ethereum key, which holds the same words.
+    for (const account of this.universalWalletPairs(pair)) {
+      if (!isCurrent()) break;
+      if (this.enrollmentGate && !this.enrollmentGate(account.address)) continue;
+      try {
+        await this.verifyStandardPathRestore(account, password, isCurrent);
+        await enrollLegacyAccountNetworks(account, password, isCurrent, undefined, {
+          passphrase: () => this.universalWalletPassphraseCandidates(account.address)[0] ?? '',
+          probe,
+        });
+      } catch {
+        // The next unlock adds whatever is still missing.
+      }
+    }
+
+    return { ok: true, status: this.universalWalletPasswordStatus(pair.address) };
   }
 
   /**

@@ -544,6 +544,10 @@ export default defineComponent({ name: 'AddWallet',
     },
     closeAddEthereumAccountPopup() {
       this.showAddEthereumAccountPopup = false;
+      // An Ethereum seed or JSON entered before going Back must not be imported after "Don't need".
+      this.ethereumRawSeed = '';
+      this.ethereumJson = '';
+      this.passwordEthereumJson = '';
 
           this.step += 2;
     },

@@ -52,6 +52,11 @@ watch(password, () => {
   isWrongPassword.value = false;
 });
 
+// A password typed while one wallet was selected does not export another.
+watch(() => accountsStore.selectedWallet.address, () => {
+  password.value = '';
+});
+
 const network = computed(() => (Array.isArray(route.params.network) ? route.params.network[0] : route.params.network) ?? '');
 
 onMounted(() => {
@@ -87,7 +92,10 @@ const checkPassword = async () => {
     return;
   }
 
+  const { address } = accountsStore.selectedWallet;
   const validatePass = await validatePassword(password.value);
+
+  if (accountsStore.selectedWallet.address !== address) return;
 
   isWrongPassword.value = !validatePass;
 

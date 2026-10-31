@@ -10,10 +10,12 @@ vi.mock('@extension-base/signers/KeyringSigner', () => ({
 }));
 
 const ADDRESS = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY';
+const CHAIN_ID = 'e143f23803ac50e8f6f8e62695d1ce9e4e1d68aa36c1cd2cfd15340213f3423e';
 
 function setup(finalGuard: () => void) {
   const order: string[] = [];
   const api = {
+    genesisHash: { toHex: () => `0x${CHAIN_ID}` },
     registry: {},
     rpc: {
       system: {
@@ -26,6 +28,7 @@ function setup(finalGuard: () => void) {
     },
   };
   const extrinsic = {
+    registry: api.registry,
     signAsync: vi.fn(async () => {
       order.push('sign');
     }),
@@ -36,6 +39,7 @@ function setup(finalGuard: () => void) {
       {
         address: ADDRESS,
         apiProps: { api } as unknown as ApiProps,
+        chainId: CHAIN_ID,
         extrinsic: extrinsic as unknown as SubmittableExtrinsic<'promise'>,
         isMobile: false,
         finalGuard: () => {

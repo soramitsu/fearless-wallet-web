@@ -8,7 +8,6 @@ export const WALLET_STORAGE_UNAVAILABLE = 'Wallet storage could not be read.';
 export interface BackgroundRuntime {
   handleMessage(data: TransportRequestMessage<MessageTypes>, port: Port): Promise<void>;
   onInstalled(details: chrome.runtime.InstalledDetails): Promise<void>;
-  getActiveTabs(): void;
   onAlarm(alarm: chrome.alarms.Alarm): void | Promise<void>;
 }
 
@@ -38,14 +37,17 @@ export function registerBackgroundListeners(api: typeof chrome, ready: Promise<B
 
   api.runtime.onInstalled.addListener((details) => dispatch((runtime) => runtime.onInstalled(details)));
   api.runtime.onUpdateAvailable.addListener(() => api.runtime.reload());
-  api.alarms.create('fearless-asset-discovery-sweep', { periodInMinutes: 60 });
-  api.alarms.create('fearless-network-registry-retry', { periodInMinutes: 1 });
+  // Creating an alarm again reschedules it, so a worker that restarts more often than the period would keep
+  // postponing it. An alarm that already exists with the same period is kept.
+  // When the lookup fails the alarm is created, as before.
+  const keepAlarm = async (name: string, periodInMinutes: number) => {
+    const alarm = await Promise.resolve().then(() => api.alarms.get(name)).catch(() => undefined);
+    if (alarm?.periodInMinutes !== periodInMinutes) await api.alarms.create(name, { periodInMinutes });
+  };
+  keepAlarm('fearless-asset-discovery-sweep', 60).catch(reportError);
+  keepAlarm('fearless-network-registry-retry', 1).catch(reportError);
   api.alarms.onAlarm.addListener((alarm) => dispatch((runtime) => runtime.onAlarm(alarm)));
-  api.tabs.onUpdated.addListener((_, changeInfo) => {
-    if (changeInfo.url) dispatch((runtime) => runtime.getActiveTabs());
-  });
-  api.windows.onFocusChanged.addListener(() => dispatch((runtime) => runtime.getActiveTabs()));
-  api.tabs.onActivated.addListener(() => dispatch((runtime) => runtime.getActiveTabs()));
-  api.tabs.onRemoved.addListener(() => dispatch((runtime) => runtime.getActiveTabs()));
+  // No tab or window listeners: each event woke the worker and ran the whole start-up, but the extension build
+  // ignores a request without a port (handlers), and the wallet pages read the active tab themselves.
   registerToolbarSurface(api, reportError);
 }

@@ -8,12 +8,19 @@ import { isSameString } from '@/helpers';
 
 export class ScamService {
   scamMap: Nullable<ScamAddressList>;
+  private loading?: Promise<void>;
 
   constructor(public state: State) {
     this.refreshScamAddressList();
   }
 
-  async refreshScamAddressList() {
+  // The list is 2 MB. Start-up and State.init both ask for it, so a request already running is shared.
+  refreshScamAddressList(): Promise<void> {
+    this.loading ??= this.loadScamAddressList().finally(() => { this.loading = undefined; });
+    return this.loading;
+  }
+
+  private async loadScamAddressList() {
     const response = await axios.get<string>(URLS.SCAM).catch(() => {
       console.info('onboarding fetch error');
 

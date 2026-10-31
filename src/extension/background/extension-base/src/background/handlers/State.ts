@@ -454,6 +454,7 @@ export default class State {
   }
 
   async init() {
+    const wasReady = this.ready;
     await this.eventService.waitCryptoReady;
     await Promise.all([
       this.networkService.initNetworkMap(),
@@ -473,7 +474,8 @@ export default class State {
     await this.balanceService.hydrateBalanceStorage(accounts.map(({ address }) => address));
 
     this.ready = true; // Set true if chain json is parsed and data is preped for init apis
-    this.scamService.refreshScamAddressList();
+    // The scam service loads the list when the worker starts. The daily refresh, or a start whose load failed, loads it again.
+    if (wasReady || !this.scamService.scamMap) this.scamService.refreshScamAddressList();
 
     this.networkService.initNetworkApis();
     this.onReady();

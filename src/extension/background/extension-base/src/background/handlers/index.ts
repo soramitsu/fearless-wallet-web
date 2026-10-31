@@ -50,7 +50,9 @@ export function handlers<TMessageType extends MessageTypes>(
   if (!port && IS_EXTENSION) return Promise.resolve();
 
   const sender = port?.sender as chrome.runtime.MessageSender;
-  const from = isExtension ? 'extension' : (sender.tab && sender.tab.url) || sender.url || '<unknown>';
+  // The site is the port's own document. The tab's URL names the page on screen, which for a prerendered or
+  // unloading page is another site. An opaque origin ('null') stays as it is and is refused.
+  const from = isExtension ? 'extension' : sender.origin ?? sender.url ?? '<unknown>';
   // const source = `${from}: ${id}: ${message}: ${
   //   message === 'evm(request)' && request && 'method' in request ? request?.method : ''
   // }`;
@@ -61,6 +63,8 @@ export function handlers<TMessageType extends MessageTypes>(
     if (!IS_EXTENSION && KeyringStoreWeb.readOnly && !isWebPasswordRecoveryRequest(message))
       KeyringStoreWeb.assertWritable();
     if (isExtension && port && !isWalletPagePort(port)) throw new Error('Unauthorized sender');
+    // The content script runs in top frames only. Another frame id is a subframe or a page still being prerendered.
+    if (!isExtension && sender.frameId !== 0) throw new Error('Unauthorized sender');
     state.keyringLockService.lockIfExpired();
     return isExtension ? extension.handle(id, message, request, port) : tabs.handle(id, message, request, from, port);
   });

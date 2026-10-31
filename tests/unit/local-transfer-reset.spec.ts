@@ -12,6 +12,10 @@ vi.mock('@extension-base/background/handlers', () => ({ state: fixture.state }))
 vi.mock('@/sora/cosigner', () => ({ decryptForCosigner: vi.fn(), encryptForCosigners: vi.fn() }));
 vi.mock('@extension-base/services', () => ({}));
 
+// Polkadot's genesis, which the fixture nodes report.
+const CHAIN_ID = '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3';
+const genesisHash = { toHex: () => `0x${CHAIN_ID}` };
+
 let state: State;
 const reset = () => Object.assign(state.keyringService, { isResetting: false, walletResetRevision: 1 });
 beforeEach(() => {
@@ -136,10 +140,11 @@ describe('local transfer reset ownership', () => {
   it('revalidates the caller guard after the nonce lookup and before signing', async () => {
     let nonceRead = false;
     const finalGuard = vi.fn(() => { if (nonceRead) throw new Error('Public changed reviewed route'); });
-    const extrinsic = { signAsync: vi.fn(), send: vi.fn() };
-    const api = { registry: {}, rpc: { system: { accountNextIndex: async () => { nonceRead = true; return 0; } } } };
-    await expect(signAndSendExtrinsic({ address: 'public address', apiProps: { api } as never, extrinsic: extrinsic as never,
-      isMobile: false, errorMessage: 'Public fixture', finalGuard }, state)).rejects.toThrow('Public changed reviewed route');
+    const api = { genesisHash, registry: {}, rpc: { system: { accountNextIndex: async () => { nonceRead = true; return 0; } } } };
+    const extrinsic = { registry: api.registry, signAsync: vi.fn(), send: vi.fn() };
+    await expect(signAndSendExtrinsic({ address: 'public address', apiProps: { api } as never, chainId: CHAIN_ID,
+      extrinsic: extrinsic as never, isMobile: false, errorMessage: 'Public fixture', finalGuard }, state))
+      .rejects.toThrow('Public changed reviewed route');
     expect(extrinsic.signAsync).not.toHaveBeenCalled();
     expect(extrinsic.send).not.toHaveBeenCalled();
   });
@@ -177,7 +182,9 @@ describe('local transfer reset ownership', () => {
 
   it.each(['nonce lookup', 'signer callback', 'signature completion'])('does not sign or submit Substrate after reset during %s', async boundary => {
     const sign = vi.fn(() => ({ signature: '0x0102' }));
+    const registry = { createType: vi.fn(() => ({ sign })) };
     const extrinsic = {
+      registry,
       signAsync: vi.fn(async (_address, { signer }) => {
         if (boundary === 'signer callback') reset();
         await signer.signPayload({ version: 4 });
@@ -185,11 +192,11 @@ describe('local transfer reset ownership', () => {
       }),
       send: vi.fn(async () => vi.fn()),
     };
-    const api = { registry: { createType: vi.fn(() => ({ sign })) }, rpc: { system: { accountNextIndex: async () => {
+    const api = { genesisHash, registry, rpc: { system: { accountNextIndex: async () => {
       if (boundary === 'nonce lookup') reset();
       return 0;
     } } } };
-    await expect(signAndSendExtrinsic({ address: 'public address', apiProps: { api } as never,
+    await expect(signAndSendExtrinsic({ address: 'public address', apiProps: { api } as never, chainId: CHAIN_ID,
       extrinsic: extrinsic as never, isMobile: false, errorMessage: 'Public fixture' }, state))
       .rejects.toThrow('Wallet changed during transfer');
     expect(extrinsic.send).not.toHaveBeenCalled();

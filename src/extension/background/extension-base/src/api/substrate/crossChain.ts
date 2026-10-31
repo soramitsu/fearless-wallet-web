@@ -398,7 +398,17 @@ async function signAndTrackCrossChain(
   syncFinalGuard();
 
   const { extrinsic } = finalQuote;
-  await signExtrinsic({ address, apiProps: initial.apiProps, extrinsic, isMobile, finalGuard: syncFinalGuard }, state);
+  await signExtrinsic(
+    {
+      address,
+      apiProps: initial.apiProps,
+      chainId: props.execution.originChainId,
+      extrinsic,
+      isMobile,
+      finalGuard: syncFinalGuard,
+    },
+    state
+  );
 
   // Written before the extrinsic leaves the wallet; without it the send does not happen.
   const record = await sendRecordFor(props, address, extrinsic, initial.apiProps.api as unknown as CrossChainSendResolutionApi);

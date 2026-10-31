@@ -15,12 +15,13 @@ interface SignAndSendExtrinsicProps extends Partial<PrepareExternalRequest> {
   address: string;
   errorMessage: string;
   apiProps: ApiProps;
+  chainId: string;
   isMobile: boolean;
   finalGuard?: () => void;
 }
 
 export const signAndSendExtrinsic = async (
-  { address, apiProps, callback, errorMessage, extrinsic, txState = {}, isMobile, finalGuard }: SignAndSendExtrinsicProps,
+  { address, apiProps, callback, chainId, errorMessage, extrinsic, txState = {}, isMobile, finalGuard }: SignAndSendExtrinsicProps,
   state: State
 ) => {
   const resetGuard = captureWalletResetGuard(state);
@@ -37,6 +38,7 @@ export const signAndSendExtrinsic = async (
     {
       address,
       apiProps,
+      chainId,
       extrinsic,
       isMobile,
       finalGuard: assertCurrent,

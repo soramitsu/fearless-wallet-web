@@ -237,7 +237,7 @@ import {
   assertWalletAllowsRecoveryAction, isRecoveryStakingAction, isRecoveryPoolAction,
   isRecoveryDemeterAction, isRecoveryPolkamarktAction,
 } from '@/util/walletRecoveryActions';
-import { ALL_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
+import { ALL_NETWORKS } from '@/consts/networks';
 import { SORA_NETWORK_NAME } from '@/consts/sora';
 import { XOR } from '@/sora/runtime';
 import { validateReviewedCrossChainRequest, type ValidatedCrossChainRoute } from '@/cross-chain/requestValidation';
@@ -1058,8 +1058,9 @@ export default class Extension extends FWExtensionBase {
   private async fetchEvmBalance({ assetId, ethereumAddress }: FetchBalancePayload) {
     if (!this.state.isReady()) return;
 
+    // Every active EVM network, as at start-up; a fixed list left out networks such as Kaia and ZetaChain.
     this.state.balanceService.evmBalanceService.fetchBalance({
-      networks: NATIVE_ETHEREUM_NETWORKS,
+      networks: this.state.networkService.activeNetworkByEcosystem.evmList,
       assetId,
       ethereumAddress,
     });

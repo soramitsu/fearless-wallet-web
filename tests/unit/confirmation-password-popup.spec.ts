@@ -140,6 +140,24 @@ describe('confirmation password transaction failures', () => {
     expect(makeTransfer).toHaveBeenCalledTimes(1);
   });
 
+  it('shows an EVM send of unknown outcome with its 0x hash', async () => {
+    const wrapper = await mountPopup();
+    const hash = `0x${'ab'.repeat(32)}`;
+
+    transferCallback?.({
+      status: false,
+      outcome: 'unknown',
+      transactionHash: hash,
+      errors: [{ message: 'evm_broadcast_ambiguous' }],
+    });
+    await nextTick();
+
+    expect(wrapper.get('[data-testid="transactionUnknownMessage"]').text())
+      .toBe('assets.transactionStatusUnknownDetails');
+    expect(wrapper.get('[data-testid="unknownTransactionHash"]').text()).toBe(hash);
+    expect(wrapper.find('[data-testid="transactionErrorMessage"]').exists()).toBe(false);
+  });
+
   it('surfaces insufficient balance and does not expose raw provider diagnostics', async () => {
     const wrapper = await mountPopup();
 

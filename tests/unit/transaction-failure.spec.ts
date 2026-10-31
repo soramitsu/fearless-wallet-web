@@ -62,6 +62,25 @@ describe('transaction failure presentation', () => {
     expect(getter).not.toHaveBeenCalled();
   });
 
+  it('accepts an EVM hash, shown with its 0x, as the hash of an unknown outcome', () => {
+    const hash = `0x${'ab'.repeat(32)}`;
+    const response = {
+      status: false,
+      outcome: 'unknown',
+      transactionHash: `0x${'AB'.repeat(32)}`,
+      errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: 'evm_broadcast_ambiguous' }],
+    };
+
+    expect(getUnknownTransactionHash(response)).toBe(hash);
+    expect(getTransactionOutcome(response)).toBe('unconfirmed');
+    expect(getTransactionFailurePresentation(response)).toEqual({ key: 'assets.transactionStatusUnknownDetails' });
+    expect(getUnknownTransactionHash({ ...response, transactionHash: hash.slice(0, -1) })).toBeNull();
+    expect(getUnknownTransactionHash({ ...response, transactionHash: `${hash}0` })).toBeNull();
+    expect(getUnknownTransactionHash({ ...response, transactionHash: `0x0x${'ab'.repeat(31)}` })).toBeNull();
+    // A settled cross-chain hash stays bare hex.
+    expect(getSettledTransactionHash({ status: true, transactionHash: hash })).toBeNull();
+  });
+
   it('accepts a Solana signature, case preserved, as the hash of an unknown outcome', () => {
     const signature = '5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUW';
     const response = { status: false, outcome: 'unknown', transactionHash: signature };

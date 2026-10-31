@@ -41,8 +41,8 @@ describe('local transfer reset ownership', () => {
   it.each(['locked', 're-unlocked', 'password changed'])('does not sign a retained EVM key after the wallet is %s during nonce population', async boundary => {
     Object.assign(state.keyringService, { keyringIsLocked: false, walletAuthenticationRevision: 0 });
     const sender = new Wallet('0x' + '11'.repeat(32));
-    const broadcastTransaction = vi.fn();
-    const provider = { broadcastTransaction,
+    const send = vi.fn();
+    const provider = { send,
       estimateGas: async () => 21000n, getBlock: async () => ({ baseFeePerGas: 0n }),
       getFeeData: async () => ({ maxFeePerGas: 2n, maxPriorityFeePerGas: 1n, gasPrice: 1n }),
     };
@@ -65,7 +65,7 @@ describe('local transfer reset ownership', () => {
     resolve(populated!);
     await expect(sending).rejects.toThrow('Wallet changed during transfer');
     expect(sign).not.toHaveBeenCalled();
-    expect(broadcastTransaction).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
   });
 
   it.each(['bitcoin', 'solana'])('does not retry %s broadcast against another endpoint after reset', async kind => {
@@ -84,8 +84,8 @@ describe('local transfer reset ownership', () => {
   it('submits an ordinary EVM transfer as a verified signed envelope when no reset occurs', async () => {
     const sender = new Wallet('0x' + '11'.repeat(32));
     const recipient = '0x' + '22'.repeat(20);
-    const broadcastTransaction = vi.fn(async (_signed: string) => ({ hash: 'public hash' }));
-    const provider = { broadcastTransaction,
+    const send = vi.fn(async (_method: string, [signed]: string[]) => Transaction.from(signed).hash);
+    const provider = { send,
       estimateGas: async () => 21000n, getBlock: async () => ({ baseFeePerGas: 0n }),
       getFeeData: async () => ({ maxFeePerGas: 2n, maxPriorityFeePerGas: 1n, gasPrice: 1n }),
     };
@@ -96,7 +96,8 @@ describe('local transfer reset ownership', () => {
     const callback = vi.fn();
     await makeEVMTransfer({ from: sender.address, to: recipient, networkKey: 'Ethereum', amount: '1', privateKey: sender.privateKey,
       balance: { isUtility: true, id: 'ETH' } as never, callback }, state);
-    const signed = Transaction.from(broadcastTransaction.mock.calls[0][0]);
+    expect(send.mock.calls[0][0]).toBe('eth_sendRawTransaction');
+    const signed = Transaction.from(send.mock.calls[0][1][0]);
     expect(signed.from).toBe(sender.address);
     expect(signed.to?.toLowerCase()).toBe(recipient);
     expect(signed.value).toBe(10n ** 18n);
@@ -108,7 +109,7 @@ describe('local transfer reset ownership', () => {
 
   it('does not yield between the final EVM guard and the actual cryptographic signature', async () => {
     const sender = new Wallet('0x' + '11'.repeat(32));
-    const provider = { broadcastTransaction: vi.fn(async () => ({ hash: 'public hash' })),
+    const provider = { send: vi.fn(async (_method: string, [signed]: string[]) => Transaction.from(signed).hash),
       estimateGas: async () => 21000n, getBlock: async () => ({ baseFeePerGas: 0n }),
       getFeeData: async () => ({ maxFeePerGas: 2n, maxPriorityFeePerGas: 1n, gasPrice: 1n }),
     };
@@ -150,8 +151,8 @@ describe('local transfer reset ownership', () => {
   });
 
   it.each(['fee lookup', 'nonce population', 'signature'])('does not send EVM bytes after reset during %s', async boundary => {
-    const broadcastTransaction = vi.fn(async (_signed: string) => ({ hash: 'public hash' }));
-    const provider = { broadcastTransaction,
+    const send = vi.fn(async (_method: string, [signed]: string[]) => Transaction.from(signed).hash);
+    const provider = { send,
       estimateGas: vi.fn(async () => 21000n), getBlock: vi.fn(async () => ({ baseFeePerGas: 0n })),
       getFeeData: vi.fn(async () => {
         if (boundary === 'fee lookup') reset();
@@ -175,7 +176,7 @@ describe('local transfer reset ownership', () => {
       amount: '1', privateKey: '0x' + '11'.repeat(32), balance: { isUtility: true, id: 'ETH' } as never }, state))
       .rejects.toThrow('Wallet changed during transfer');
     expect(legacySend).not.toHaveBeenCalled();
-    expect(broadcastTransaction).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
     if (boundary === 'fee lookup') expect(populate).not.toHaveBeenCalled();
     if (boundary !== 'signature') expect(sign).not.toHaveBeenCalled();
   });

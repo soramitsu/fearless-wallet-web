@@ -222,18 +222,19 @@ describe('closing the page whose request an approval is submitting', () => {
     const page = new AbortController();
     const { dapp } = await queueEvm('eth_sendTransaction', [{ from: address, to: address, value: '0x1' }], page.signal);
     const provider = evmProvider();
-    const broadcast = deferred<{ hash: string }>();
-    provider.broadcastTransaction.mockReturnValueOnce(broadcast.promise);
+    const broadcast = deferred<unknown>();
+    provider.send.mockReturnValueOnce(broadcast.promise);
     vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
     const approving = extension.signEvmApprove({ id: 'first' });
-    await vi.waitFor(() => expect(provider.broadcastTransaction).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(provider.send).toHaveBeenCalledOnce());
 
     page.abort();
     expect(evm.getEvmSignRequest('first')).toBeDefined();
 
-    broadcast.resolve({ hash: '0xfeed' });
+    const sent = Transaction.from((provider.send.mock.calls[0] as [string, [string]])[1][0]);
+    broadcast.resolve(sent.hash);
     expect(await approving).toBe(true);
-    expect(await dapp).toEqual({ value: { id: 'first', payload: '0xfeed' } });
+    expect(await dapp).toEqual({ value: { id: 'first', payload: sent.hash } });
   });
 
   it('drops an EVM transaction whose approval then ends without sending it', async () => {
@@ -252,7 +253,7 @@ describe('closing the page whose request an approval is submitting', () => {
     await expect(approving).rejects.toThrow('reviewed network');
     expect(await dapp).toEqual({ error: 'Cancelled' });
     expect(evm.getEvmSignRequest('first')).toBeUndefined();
-    expect(provider.broadcastTransaction).not.toHaveBeenCalled();
+    expect(provider.send).not.toHaveBeenCalledWith('eth_sendRawTransaction', expect.anything());
   });
 
   it('leaves a Solana sign-and-send whose broadcast is in flight to finish', async () => {

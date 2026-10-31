@@ -23,6 +23,10 @@
         <span class="label" data-testid="walletDetails">{{ $t('walletDetailsPopup.details') }}</span>
       </button>
 
+      <button v-if="needsPasswordNotice" type="button" class="row" data-testid="universalWalletPasswordReopen" @click="openPasswordNotice">
+        <span class="label">{{ passwordNoticeLabel }}</span>
+      </button>
+
       <button v-if="isExportPossible" type="button" class="row" :disabled="isAuthFlowInit" :aria-busy="isAuthFlowInit" @click="exportToGoogleDrive">
         <span class="label google" data-testid="exportToGoogle">{{ $t('walletDetailsPopup.exportToGoogle') }}</span>
       </button>
@@ -40,7 +44,9 @@ import { defineComponent } from 'vue';
 
 import DeleteWalletPopup from './DeleteWalletPopup.vue';
 import { Components } from '@/router/routes';
-import { initGoogleAuth, updateCurrentAccount } from '@/extension/messaging';
+import { initGoogleAuth, universalWalletPasswordStatus, updateCurrentAccount } from '@/extension/messaging';
+import { universalWalletPasswordMessages } from '@/locales/universalWalletPassword';
+import { needsUniversalWalletPasswordNotice, universalWalletPasswordNoticeRequest } from '@/util/universalWalletPasswordNotice';
 import { useAccountsStore } from '@/stores/accounts';
 import { IS_EXTENSION } from '@/consts/global';
 import { WalletEcosystem } from '@/interfaces';
@@ -61,6 +67,8 @@ export default defineComponent({ name: 'WalletDetailsPopup' ,
       googleAuthError: false,
       isActive: true,
       authRevision: 0,
+      needsPasswordNotice: false,
+      passwordNoticeLabel: universalWalletPasswordMessages['en-EN'].reopen,
     };
   },
   computed: {
@@ -81,10 +89,39 @@ export default defineComponent({ name: 'WalletDetailsPopup' ,
   },
   beforeUnmount() { this.abandon(); },
   watch: {
-    selectedWalletAddress() { this.authRevision++; this.googleAuthError = false; this.isAuthFlowInit = false; },
+    selectedWalletAddress: {
+      handler() {
+        this.authRevision++;
+        this.googleAuthError = false;
+        this.isAuthFlowInit = false;
+        void this.loadPasswordNotice();
+      },
+      immediate: true,
+    },
   },
   methods: {
     abandon() { this.isActive = false; this.authRevision++; },
+    async loadPasswordNotice() {
+      const address = this.selectedWalletAddress;
+      this.needsPasswordNotice = false;
+      if (!address) return;
+      try {
+        const status = await universalWalletPasswordStatus(address);
+        if (this.isActive && this.selectedWalletAddress === address) this.needsPasswordNotice = needsUniversalWalletPasswordNotice(status);
+      } catch {
+        // The row is optional; without an answer it stays hidden.
+      }
+    },
+    async openPasswordNotice() {
+      const address = this.selectedWalletAddress;
+      if (!address) return;
+      const walletInfo = this.accountsStore.accounts.find((account) => account.address === address);
+      // The notice belongs to the selected wallet's screen.
+      if (this.accountsStore.selectedWallet.address !== address) await updateCurrentAccount(address, walletInfo?.walletEcosystem);
+      universalWalletPasswordNoticeRequest.value = address;
+      this.$emit('closeSelectWalletPopup');
+      this.close();
+    },
     close() {
       this.abandon();
       this.$emit('close');

@@ -19,6 +19,17 @@ interface TransferParams {
 }
 
 export const MAX_TON_FEE = '0.02';
+// The TON a jetton send gives the sender's own jetton wallet to pay for the transfer. TEP-74 reference jetton wallets
+// refuse (exit code 709) less than twice their gas plus their storage reserve, about 0.03 TON before forward fees; the
+// jetton wallet returns what it does not use to the response destination, the sender.
+export const JETTON_TRANSFER_TON = '0.05';
+// What a jetton send may cost in TON: the amount it gives the jetton wallet and the wallet's own fees.
+export const MAX_JETTON_TRANSFER_FEE = '0.07';
+
+/** The most a send of this balance item costs in TON, which is what the Send screen checks the TON balance against. */
+export function maxTonTransferFee(balance: Pick<BalanceItem, 'walletAddress'> | undefined): string {
+  return balance?.walletAddress ? MAX_JETTON_TRANSFER_FEE : MAX_TON_FEE;
+}
 
 function jettonUnits(amount: string, precision: number): bigint {
   if (!Number.isInteger(precision) || precision < 0 || precision > 255) {
@@ -84,8 +95,9 @@ export async function makeTonTransfer(params: TransferParams, state: State): Pro
   const internalMessage = walletAddress
     ? internal({
         to: walletAddress!,
-        value: toNano(MAX_TON_FEE),
-        bounce: false,
+        value: toNano(JETTON_TRANSFER_TON),
+        // A jetton wallet that refuses the transfer sends the TON back.
+        bounce: true,
         body: messageBody,
       })
     : internal({

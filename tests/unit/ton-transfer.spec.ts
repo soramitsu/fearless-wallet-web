@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Address, beginCell, type MessageRelaxed } from '@ton/core';
-import { makeTonTransfer } from '@extension-base/api/ton/transfer';
+import { makeTonTransfer, maxTonTransferFee } from '@extension-base/api/ton/transfer';
 
 function setup(precision = 6, jetton = true) {
   const owner = new Address(0, Buffer.alloc(32, 1));
@@ -49,7 +49,9 @@ describe('TON transfer amounts', () => {
     expect(message.info.type).toBe('internal');
     if (message.info.type !== 'internal') throw new Error('Expected an internal transfer');
     expect(message.info.dest.toRawString()).toBe(jettonWallet.toRawString());
-    expect(message.info.value.coins).toBe(20_000_000n);
+    // Enough for a TEP-74 jetton wallet, which refuses less than about 0.03 TON; a refusal bounces it back.
+    expect(message.info.value.coins).toBe(50_000_000n);
+    expect(message.info.bounce).toBe(true);
     const body = message.body.beginParse();
     expect(body.loadUint(32)).toBe(0x0f8a7ea5);
     body.loadUintBig(64);
@@ -75,6 +77,13 @@ describe('TON transfer amounts', () => {
     if (message.info.type !== 'internal') throw new Error('Expected an internal transfer');
     expect(message.info.dest.toRawString()).toBe(recipient.toRawString());
     expect(message.info.value.coins).toBe(123_456_789n);
+    expect(message.info.bounce).toBe(false);
     expect(broadcast).toHaveBeenCalledOnce();
+  });
+
+  it('checks a jetton send against the TON it gives the jetton wallet as well as the fees', () => {
+    expect(maxTonTransferFee({ walletAddress: new Address(0, Buffer.alloc(32, 3)) } as never)).toBe('0.07');
+    expect(maxTonTransferFee({} as never)).toBe('0.02');
+    expect(maxTonTransferFee(undefined)).toBe('0.02');
   });
 });

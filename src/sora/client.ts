@@ -14,6 +14,8 @@ import { isDefiniteSubstratePoolRejection } from '@/util/substratePoolRejection'
 
 export class SoraClient {
   api: Runtime = null;
+  /** The registry chainId (genesis hash without 0x) of the SORA network this client connects to. */
+  chainId?: string;
   provider: WsProvider | null = null;
   account: { json: unknown; pair: KeyringPair } | null = null;
   shouldPairBeLocked = false;
@@ -45,6 +47,13 @@ export class SoraClient {
     this.dex.ids = ids;
     this.dex.baseAssetsIds = [...ids.keys()];
   }
+  private servesNetwork(): boolean {
+    let genesisHash: string | undefined;
+    try {
+      genesisHash = this.api?.genesisHash?.toHex().toLowerCase();
+    } catch { /* The node has not reported it yet. */ }
+    return /^[0-9a-f]{64}$/i.test(this.chainId ?? '') && genesisHash === `0x${this.chainId!.toLowerCase()}`;
+  }
   async fee(extrinsic: Runtime): Promise<string> {
     const address = this.account?.pair?.address ?? encodeAddress(new Uint8Array(32), 69);
     return codec((await extrinsic.paymentInfo(address)).partialFee);
@@ -52,6 +61,9 @@ export class SoraClient {
   async submit(extrinsic: Runtime, expectedPair = this.account?.pair): Promise<void> {
     if (!expectedPair || expectedPair !== this.account?.pair || expectedPair.isLocked) throw new Error('SORA signer changed or is locked');
     if (!this.connected) throw new Error('SORA is disconnected');
+    // The extrinsic is signed for the genesis of the node it was built with. A node of another chain (a wrong custom or
+    // registry node) would have it move that chain's funds.
+    if (!this.servesNetwork()) throw new Error('substrate_network_genesis_mismatch');
     if (extrinsic.registry !== this.api.registry) throw new Error('SORA runtime changed; review the transaction again');
     // No mnemonic export, account enumeration, or HTTP request is involved in signing.
     await new Promise<void>((resolve, reject) => {

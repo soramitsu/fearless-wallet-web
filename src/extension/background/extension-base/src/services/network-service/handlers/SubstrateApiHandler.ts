@@ -93,7 +93,7 @@ export class SubstrateApiHandler {
     this.api[networkName].apiStatus = NETWORK_STATUS.CONNECTING;
     this.api[networkName].apiRetry = 0;
 
-    if (isSora(networkName)) return SoraApiHandler.initApi(currentProvider, eventListeners);
+    if (isSora(networkName)) return SoraApiHandler.initApi(currentProvider, eventListeners, network.chainId);
 
     // A replaced connection would stay open and keep reconnecting. Its events no longer count (connectionRevision).
     const { api: replacedApi, provider: replacedProvider } = this.api[networkName];

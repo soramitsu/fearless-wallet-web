@@ -5,10 +5,12 @@ import SubstrateBalanceService from '@extension-base/services/balance-service/Su
 
 afterEach(() => vi.restoreAllMocks());
 
-// Pendulum's tokens pallet takes { XCM: id }; the wallet asks for { Token: 'USDT' }, which does not encode there.
+// Pendulum's tokens pallet takes { XCM: id }, which its USDT is now asked for by; a { Token: symbol } key, which
+// 4.2.3 used for USDT, does not encode there.
 const assets = [
   { id: 'pen', symbol: 'pen', precision: 12, type: 'normal' },
   { id: 'usdt', symbol: 'usdt', precision: 6, type: 'xcm', currencyId: '1' },
+  { id: 'unencodable', symbol: 'ksm', precision: 12, type: 'ormlChain' },
 ];
 const encodes = (args: unknown[]) => !args.some((arg) => typeof arg === 'object' && arg !== null && 'Token' in arg);
 const accountInfo = { data: { free: '1000000000000', reserved: '0', frozen: '0' } };
@@ -68,7 +70,8 @@ it('subscribes the balances a chain can encode when another asset key cannot be 
   await new Promise((resolve) => setTimeout(resolve, 0));
 
   expect(call(f.setBalanceItem, 'pen')).toEqual(['Pendulum', expect.objectContaining({ state: APIItemState.READY }), 'wallet']);
-  expect(call(f.setBalanceItem, 'usdt')).toEqual(['Pendulum', expect.objectContaining({ state: APIItemState.ERROR }), 'wallet']);
+  expect(call(f.setBalanceItem, 'usdt')).toEqual(['Pendulum', expect.objectContaining({ state: APIItemState.READY }), 'wallet']);
+  expect(call(f.setBalanceItem, 'unencodable')).toEqual(['Pendulum', expect.objectContaining({ state: APIItemState.ERROR }), 'wallet']);
   unsubscribe();
 });
 
@@ -83,7 +86,7 @@ it('marks an asset failed when its subscription fails instead of leaving it pend
   await new Promise((resolve) => setTimeout(resolve, 0));
 
   expect(f.setBalanceItem.mock.calls.map(([, item]) => [item.id, item.state])).toEqual([
-    ['pen', APIItemState.ERROR], ['usdt', APIItemState.ERROR],
+    ['pen', APIItemState.ERROR], ['usdt', APIItemState.ERROR], ['unencodable', APIItemState.ERROR],
   ]);
 });
 
@@ -103,4 +106,5 @@ it('reads the balances a chain can encode when another asset key cannot be encod
   await new Promise((resolve) => setTimeout(resolve, 0));
 
   expect(call(f.setBalanceItem, 'pen')).toEqual(['Pendulum', expect.objectContaining({ state: APIItemState.READY }), 'wallet']);
+  expect(call(f.setBalanceItem, 'usdt')).toEqual(['Pendulum', expect.objectContaining({ state: APIItemState.READY }), 'wallet']);
 });

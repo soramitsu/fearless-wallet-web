@@ -25,6 +25,14 @@ export class EipService {
   private async getEvmProvider(url: string): Promise<EvmProvider | undefined> {
     const evmState = await this.getEvmState(url);
 
+    // The network a site switched to is connected for it, not made the wallet's selection, so a restarted wallet
+    // connects it again when the site uses it. Only for a site the wallet is connected to.
+    if (!evmState.web3 && evmState.networkKey && (await this.state.getAuthInfo(url))?.isAllowed) {
+      await this.state.activateDappNetwork(evmState.networkKey);
+
+      return (await this.getEvmState(url)).web3;
+    }
+
     return evmState.web3;
   }
 

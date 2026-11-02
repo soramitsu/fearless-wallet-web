@@ -80,6 +80,20 @@ describe('background state startup and network selection', () => {
     state.ready = true; await state.setActiveNetworks(ALL_NETWORKS); expect(state.networkService.initNetworkApis).toHaveBeenCalledTimes(1); expect(publish).toHaveBeenCalledTimes(2);
     state.currentAccount = null; await state.setActiveNetworks('Ethereum'); expect(state.networkService.saveSelectedNetworks).toHaveBeenCalledTimes(2);
   });
+  // wallet_switchEthereumChain to a network outside the selection made that network the wallet's whole selection.
+  it('connects a network a site uses without changing the wallet selection or other connections', async () => {
+    const { state, ethereum, polkadot } = fixture(); const publish = vi.fn(); state.serviceInfoSubject.subscribe(publish);
+    state.networkService.selectedNetworks.alice = POPULAR_NETWORKS; ethereum.active = false;
+    state.networkService.getNetworkJson = (name: string) => [polkadot, ethereum].find((network) => network.name.toLowerCase() === name.toLowerCase());
+    await state.activateDappNetwork('ethereum');
+    expect(ethereum.active).toBe(true); expect(polkadot.active).toBe(true); expect(state.networkService.selectedNetworks.alice).toBe(POPULAR_NETWORKS);
+    expect(state.networkService.destroyApi).not.toHaveBeenCalled(); expect(state.networkService.saveSelectedNetworks).not.toHaveBeenCalled();
+    expect(state.networkService.initNetworkApis).not.toHaveBeenCalled(); expect(state.networkService.updateNetworkStore).toHaveBeenCalledOnce(); expect(publish).toHaveBeenCalledOnce();
+    ethereum.active = false; state.ready = true; await state.activateDappNetwork('Ethereum'); expect(state.networkService.initNetworkApis).toHaveBeenCalledOnce();
+    await state.activateDappNetwork('Ethereum'); await state.activateDappNetwork('Unknown');
+    Object.assign(ethereum, { active: false, disabled: true }); await state.activateDappNetwork('Ethereum');
+    expect(ethereum.active).toBe(false); expect(state.networkService.updateNetworkStore).toHaveBeenCalledTimes(2);
+  });
   it('forwards metadata to both storage and the chain registry', () => {
     const { state } = fixture(); const metadata = { chain: 'Public test' } as never;
     state.saveMetadata(metadata); expect(state.requestService.saveMetadata).toHaveBeenCalledWith(metadata); expect(boundary.metadata).toHaveBeenCalledWith(metadata);

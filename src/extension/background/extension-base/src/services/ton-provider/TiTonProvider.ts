@@ -2,6 +2,7 @@ import { Address, type Cell } from '@ton/core';
 import {
   TonProviderError,
   type TonAccountBalance,
+  type TonAccountStatus,
   type TonDataProvider,
   type TonHistoryAction,
   type TonHistoryEvent,
@@ -186,6 +187,16 @@ class TiTonProvider implements TonDataProvider {
 
       return { seqno: 0, deployed: false };
     }
+  }
+
+  async getAccountStatus(address: Address): Promise<TonAccountStatus> {
+    const { account_state: accountState } = await this.requestForNetwork<TiStateResponse>(`${accountPath(address)}/state`);
+
+    // TI reports an address it has never seen as uninitialized.
+    if (accountState == null) return 'nonexist';
+    if (accountState === 'active' || accountState === 'uninitialized' || accountState === 'frozen') return accountState;
+
+    throw new TonProviderError('ton_provider_invalid_response', `account_state ${String(accountState)}`);
   }
 
   async sendMessage(boc: Cell): Promise<void> {

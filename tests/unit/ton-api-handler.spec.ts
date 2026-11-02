@@ -9,7 +9,7 @@ import {
 } from '@extension-base/services/ton-provider';
 import registrySnapshot from '../fixtures/legacy-305/chains-v13.snapshot.json';
 import tiResponses from '../fixtures/ton/ti-responses-20261011.json';
-import type { TonApiClientLike } from '@extension-base/services/ton-provider/RegistryNodeTonProvider';
+import { RegistryNodeTonProvider, type TonApiClientLike } from '@extension-base/services/ton-provider/RegistryNodeTonProvider';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkJson } from '@extension-base/types';
 import { UNIVERSAL_WALLET_TON_PROVIDER } from '@/consts/universalWallet';
@@ -234,6 +234,33 @@ describe('TON provider selection', () => {
     const noFallback = router(mainnetTi(), { registryNodeFallback: false });
     await expect(noFallback.ton.broadcaster()).rejects.toMatchObject({ code: 'ton_broadcast_unavailable' });
     expect(noFallback.node.createTonApiClient).not.toHaveBeenCalled();
+  });
+});
+
+describe('TON registry node account status', () => {
+  it('reports any account\'s TonAPI status, such as a transfer recipient\'s, only once the node proved the network', async () => {
+    const node = (status: string) =>
+      new RegistryNodeTonProvider(TONAPI, 'mainnet', {
+        accounts: { getAccount: vi.fn(async () => ({ balance: 0n, status })) },
+        blockchain: { getBlockchainMasterchainHead: vi.fn(async () => ({ globalId: -239 })) },
+      } as unknown as TonApiClientLike);
+
+    await expect(node('active').getAccountStatus(ADDRESS)).rejects.toMatchObject({ code: 'ton_provider_unverified' });
+
+    for (const [status, expected] of [
+      ['active', 'active'],
+      ['frozen', 'frozen'],
+      ['uninit', 'uninitialized'],
+      ['nonexist', 'nonexist'],
+    ] as const) {
+      const provider = node(status);
+      await provider.verify();
+      await expect(provider.getAccountStatus(ADDRESS)).resolves.toBe(expected);
+    }
+
+    const unknown = node('deleted');
+    await unknown.verify();
+    await expect(unknown.getAccountStatus(ADDRESS)).rejects.toMatchObject({ code: 'ton_provider_invalid_response' });
   });
 });
 

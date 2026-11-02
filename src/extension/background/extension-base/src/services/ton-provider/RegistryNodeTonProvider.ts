@@ -1,6 +1,7 @@
 import {
   TonProviderError,
   type TonAccountBalance,
+  type TonAccountStatus,
   type TonDataProvider,
   type TonHistoryAction,
   type TonHistoryEvent,
@@ -109,6 +110,17 @@ class RegistryNodeTonProvider implements TonDataProvider {
     const { seqno } = await this.client.wallet.getAccountSeqno(address);
 
     return { seqno, deployed: true };
+  }
+
+  async getAccountStatus(address: Address): Promise<TonAccountStatus> {
+    this.assertVerified();
+
+    const status = String((await this.client.accounts.getAccount(address)).status);
+
+    if (status === 'uninit') return 'uninitialized';
+    if (status === 'active' || status === 'frozen' || status === 'nonexist') return status;
+
+    throw new TonProviderError('ton_provider_invalid_response', `account status ${status}`);
   }
 
   async sendMessage(boc: Cell): Promise<void> {

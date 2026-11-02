@@ -142,6 +142,9 @@ export class SubstrateApiHandler {
     });
 
     this.state.balanceService.updateUtilityED(networkName);
+    this.state.balanceService
+      .updateAssetMinimums(networkName)
+      .catch((error: unknown) => console.warn(`[Balances] ${networkName}: asset minimums not read`, error));
   }
 
   async onDisconnected(networkName: NetworkName) {

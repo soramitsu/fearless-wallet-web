@@ -47,7 +47,7 @@ export class Eip155RequestHandler {
     const network = this.state.networkService.networkMap[context.network.name];
     if (snapshot.params.request.method === 'eth_sendTransaction' && !network.active) {
       this.state
-        .setActiveNetworks(context.network.name)
+        .activateDappNetwork(context.network.name)
         .then(createRequest)
         .catch((error) => this.handleError(topic, id, error));
     } else {

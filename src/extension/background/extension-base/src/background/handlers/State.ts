@@ -335,6 +335,24 @@ export default class State {
     this.updateServiceInfo();
   }
 
+  /**
+   * Connects a network a site uses (wallet_switchEthereumChain, a WalletConnect transaction) without changing the
+   * wallet's network selection. setActiveNetworks(network) made that one network the selection, which hid the wallet's
+   * other balances and disconnected every other network.
+   */
+  async activateDappNetwork(networkKey: string): Promise<void> {
+    const network = this.networkService.getNetworkJson(networkKey);
+
+    if (!network || network.active || network.disabled) return;
+
+    this.networkService.networkMap[network.name].active = true;
+
+    if (this.ready) this.networkService.initNetworkApis();
+
+    this.networkService.updateNetworkStore();
+    this.updateServiceInfo();
+  }
+
   getActiveNetworksCurrentWallet(address: string) {
     const uniqNetworks = new Set<NetworkJson>();
     const networks = this.networkService.networkValues;
@@ -815,8 +833,7 @@ export default class State {
     const initial = this.getEvmAuthorizationSnapshot(shortenUrl);
     if (!initial.authorization?.isAllowed || !initial.authorization.evmAuthorizedAccount)
       throw new Error('EVM account is not authorized for this site');
-    const network = this.networkService.getNetworkJson(networkKey);
-    if (!network.active) await this.setActiveNetworks(networkKey);
+    await this.activateDappNetwork(networkKey);
     await this.requestService.mutateAuthorizations((entries) => {
       if (this.getEvmAuthorizationSnapshot(shortenUrl).revision !== initial.revision || !entries[shortenUrl])
         throw new Error('Site authorization changed during network activation');

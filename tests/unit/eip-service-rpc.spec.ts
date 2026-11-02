@@ -119,4 +119,29 @@ describe('EIP service RPC request settlement', () => {
     await expect(service.handleEvmRequest('request-1', url, request)).rejects.toThrow('EVM provider is unavailable');
     expect(send).not.toHaveBeenCalled();
   });
+
+  // A site's network is connected for it, not made the wallet's selection, so a restarted wallet has it off.
+  it('connects the network of a site the wallet is connected to when it is off, then answers', async () => {
+    const { service, send, api, state } = createService();
+    delete api.ethereum;
+    state.getAuthInfo.mockResolvedValue({ isAllowed: true, currentEvmNetworkKey: 'Ethereum' });
+    const activateDappNetwork = vi.fn(async () => {
+      api.ethereum = { api: { _send: send } };
+    });
+    Object.assign(state, { activateDappNetwork });
+    send.mockResolvedValue([{ id: 'request-1', jsonrpc: '2.0', result: '0x42' }]);
+
+    await expect(service.handleEvmRequest('request-1', url, request)).resolves.toBe('0x42');
+    expect(activateDappNetwork).toHaveBeenCalledExactlyOnceWith('Ethereum');
+  });
+
+  it('connects no network for a site the wallet is not connected to', async () => {
+    const { service, api, state } = createService();
+    delete api.ethereum;
+    const activateDappNetwork = vi.fn();
+    Object.assign(state, { activateDappNetwork });
+
+    await expect(service.handleEvmRequest('request-1', url, request)).rejects.toThrow('EVM provider is unavailable');
+    expect(activateDappNetwork).not.toHaveBeenCalled();
+  });
 });

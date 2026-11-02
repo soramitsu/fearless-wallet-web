@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Provider from '@walletconnect/universal-provider';
 import { WalletConnectDAppService } from '@extension-base/services/wallet-connect-service/dapp';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
+import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import type { RequestService } from '@extension-base/services/request-service';
 import type State from '@extension-base/background/handlers/State';
 import type { SessionTypes } from '@walletconnect/types';
@@ -362,6 +363,22 @@ describe('durable mobile session retirement', () => {
   });
 });
 
+
+// Start-up refuses a record it cannot read, and Reset wallet read it too, so neither WalletConnect nor Reset could
+// be used again.
+describe('Reset wallet over a saved session record that cannot be read', () => {
+  it('replaces the record with one that approves no session, after which WalletConnect starts again', async () => {
+    fixture.data[key] = { version: 1, topics: [null] };
+    const replaced = { version: 1, topics: [topic], generation: 1, approvedTopics: [] };
+
+    await expect(new WalletConnectRetiredSessions().reset([topic])).resolves.toEqual(replaced);
+    expect(fixture.data[key]).toEqual(replaced);
+
+    const service = await open();
+    // The SDK still has the session, but nothing approves it after a reset.
+    expect(() => service.getSession(topic)).toThrow();
+  });
+});
 
 describe('pairing cancellation retirement acknowledgement', () => {
   async function pairing() {

@@ -233,9 +233,15 @@ export default class State {
   private async selectableAccounts() {
     const accounts = this.keyringService.getAllMainAccounts();
     if (!accounts.some((account) => account.meta.isMobile && account.meta.wcTopic)) return accounts;
-    const policy = await new WalletConnectRetiredSessions().readPolicy();
+    // A saved session record that cannot be read approves no mobile wallet; the wallet's own accounts stay selectable,
+    // where start-up used to choose none.
+    const policy = await new WalletConnectRetiredSessions().readPolicy().catch((error: unknown) => {
+      console.warn('[WalletConnect] The saved session record could not be read', error);
+
+      return undefined;
+    });
     return this.keyringService.getAllMainAccounts().filter((account) =>
-      !account.meta.isMobile || sessionIsApproved(policy, account.meta.wcTopic as string));
+      !account.meta.isMobile || (policy !== undefined && sessionIsApproved(policy, account.meta.wcTopic as string)));
   }
 
   async onInstall() {

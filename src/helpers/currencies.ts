@@ -362,6 +362,41 @@ export function getSummaryTransferableBalanceFilteredByActiveNetworks(
   );
 }
 
+// What the portfolio list counts for a balance: the total, staked and locked funds included.
+function heldAmount({ total, free, transferable }: BalanceItem): FPNumber {
+  try {
+    const amount = new FPNumber(String(total ?? free ?? transferable ?? '0').trim());
+
+    return amount.isFinity() && amount.isGteZero() ? amount : FPNumber.ZERO;
+  } catch {
+    return FPNumber.ZERO;
+  }
+}
+
+/** What the wallet holds of a token on the network on screen, counted exactly as the portfolio list counts it. */
+export function getSummaryHeldBalanceFilteredByActiveNetworks(token: TokenGroup, network: string = ALL_NETWORKS): string {
+  if (!isNetworkGroup(network)) {
+    const balance = token.balances?.find(({ name }) => isSameString(name, network));
+
+    return balance ? heldAmount(balance).toString() : '0';
+  }
+
+  const networksStore = useNetworksStore();
+  const address = useAccountsStore().selectedWallet.address;
+
+  return (token.balances ?? [])
+    .reduce((sum, balance) => {
+      const entry: NetworkJson = networksStore.getNetwork(balance.name);
+
+      if (balance.state !== APIItemState.READY || !entry?.active || !matchesNetworkSelection(entry, network, address)) {
+        return sum;
+      }
+
+      return sum.add(heldAmount(balance));
+    }, FPNumber.ZERO)
+    .toString();
+}
+
 export {
   getCurrencyOptions,
   getTransferAssetOptions,

@@ -20,7 +20,7 @@ import App from '@/App.vue';
 
 describe('account updates during Google backup flows', () => {
   const runUpdate = (routeName: string) => {
-    const context = { accountsStore: { selectedWallet: { address: 'old-public-wallet' }, setAccounts: vi.fn(), setSelectedWallet: vi.fn(), setSelectedNetwork: vi.fn() },
+    const context = { accountsStore: { selectedWallet: { address: 'old-public-wallet' }, setAccounts: vi.fn(), setSelectedWallet: vi.fn(), seedSelectedNetwork: vi.fn() },
       $route: { name: routeName }, $router: { push: vi.fn().mockResolvedValue(undefined) } };
     const selected = { address: 'new-public-wallet', active: true, network: 'all' };
     (App as unknown as { methods: { onAccountUpdate(this: typeof context, accounts: typeof selected[]): void } }).methods.onAccountUpdate.call(context, [selected]);

@@ -51,6 +51,7 @@ class AccountController {
   private readonly assetPreferences = 'asset-preferences-v1';
   private readonly portfolioView = 'portfolio-view-v1';
   private readonly portfolioLayout = 'portfolio-layout-v1';
+  private readonly networkFilters = 'network-filters-v1';
   private readonly agreeSwapDisclaimer = 'agree-swap-disclaimer';
   private readonly hidingPoolsBanner = 'hiding-pools-banner';
   private readonly hiddenWarningNetworks = 'hidden-warning-networks';
@@ -153,6 +154,15 @@ class AccountController {
 
   public setPortfolioViewSettings(settings: Record<WalletAddress, Record<string, unknown>>): void {
     this.lsAccount.set(this.portfolioView, settings);
+  }
+
+  /** The network filter each wallet's network list was set to: all, popular or favourite networks, or one network. */
+  public getNetworkFilters(): Record<WalletAddress, string> {
+    return this.safeGet(this.networkFilters, (value) => recordOf(value, parseString), {});
+  }
+
+  public setNetworkFilters(filters: Record<WalletAddress, string>): void {
+    this.lsAccount.set(this.networkFilters, filters);
   }
 
   /**

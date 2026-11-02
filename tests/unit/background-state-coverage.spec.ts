@@ -13,6 +13,11 @@ vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}
 vi.mock('@extension-base/utils/crossenv', () => ({ chrome: { runtime: { getURL: (path: string) => path } } }));
 vi.mock('@extension-base/stores/Storage', () => ({ storage: { get: boundary.get, set: boundary.set } }));
 vi.mock('@polkadot/extension-chains', () => ({ addMetadata: boundary.metadata }));
+const retired = vi.hoisted(() => ({ readPolicy: vi.fn() }));
+vi.mock('@extension-base/stores/WalletConnectRetiredSessions', async (original) => ({
+  ...(await original<typeof import('@extension-base/stores/WalletConnectRetiredSessions')>()),
+  default: class { readPolicy = retired.readPolicy; },
+}));
 const deferred = <T,>() => { let resolve!: (value: T) => void; const promise = new Promise<T>(yes => { resolve = yes; }); return { promise, resolve }; };
 const settle = async () => { for (let i = 0; i < 8; i++) await Promise.resolve(); };
 function fixture() {
@@ -93,6 +98,21 @@ describe('background state startup and network selection', () => {
     await state.activateDappNetwork('Ethereum'); await state.activateDappNetwork('Unknown');
     Object.assign(ethereum, { active: false, disabled: true }); await state.activateDappNetwork('Ethereum');
     expect(ethereum.active).toBe(false); expect(state.networkService.updateNetworkStore).toHaveBeenCalledTimes(2);
+  });
+  // A saved session record that could not be read made start-up choose no wallet at all.
+  it('chooses the wallet itself, not a mobile wallet, when the saved session record cannot be read', async () => {
+    const { state } = fixture(); state.currentAccount = null; state.setCurrentAccount = vi.fn().mockResolvedValue(undefined);
+    const own = { address: 'alice', meta: { name: 'Own', walletEcosystem: WalletEcosystem.Substrate } };
+    const phone = { address: 'phone', meta: { name: 'Phone', isMobile: true, wcTopic: 'public-topic', walletEcosystem: WalletEcosystem.Substrate } };
+    state.keyringService.getAllMainAccounts.mockReturnValue([phone, own]);
+    retired.readPolicy.mockRejectedValueOnce(new Error('Invalid saved session retirement state.'));
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    await state.ensureCurrentAccount();
+    expect(state.setCurrentAccount).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ address: 'alice' }));
+    retired.readPolicy.mockResolvedValueOnce({ version: 1, topics: [] }); state.currentAccount = null; state.setCurrentAccount.mockClear();
+    state.keyringService.getAllMainAccounts.mockReturnValue([phone]);
+    await state.ensureCurrentAccount();
+    expect(state.setCurrentAccount).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ address: 'phone' }));
   });
   it('forwards metadata to both storage and the chain registry', () => {
     const { state } = fixture(); const metadata = { chain: 'Public test' } as never;

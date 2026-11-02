@@ -141,7 +141,7 @@ export default defineComponent({
 
       this.networksStore.setNetworks({ networks: Object.values(nets) });
 
-      await subscribeSelectedNetworks((network) => this.accountsStore.setSelectedNetwork(network));
+      await subscribeSelectedNetworks((network) => this.accountsStore.seedSelectedNetwork(network));
     },
     async setupPrice() {
       const prices = await subscribePrice((priceUpdates) => {
@@ -171,7 +171,7 @@ export default defineComponent({
 
       if (selectedAccount) {
         this.accountsStore.setSelectedWallet(selectedAccount);
-        this.accountsStore.setSelectedNetwork(selectedAccount?.network ?? ALL_NETWORKS);
+        this.accountsStore.seedSelectedNetwork(selectedAccount?.network ?? ALL_NETWORKS);
       }
       markAccountsReady();
     },

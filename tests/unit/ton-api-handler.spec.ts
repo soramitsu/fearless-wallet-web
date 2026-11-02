@@ -7,9 +7,9 @@ import {
   tonNetworkKindOf,
   type TonProviderOptions,
 } from '@extension-base/services/ton-provider';
+import { RegistryNodeTonProvider, type TonApiClientLike } from '@extension-base/services/ton-provider/RegistryNodeTonProvider';
 import registrySnapshot from '../fixtures/legacy-305/chains-v13.snapshot.json';
 import tiResponses from '../fixtures/ton/ti-responses-20261011.json';
-import { RegistryNodeTonProvider, type TonApiClientLike } from '@extension-base/services/ton-provider/RegistryNodeTonProvider';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkJson } from '@extension-base/types';
 import { UNIVERSAL_WALLET_TON_PROVIDER } from '@/consts/universalWallet';

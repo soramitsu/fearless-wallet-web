@@ -3,7 +3,6 @@ import { cryptoWaitReady, decodeAddress, mnemonicToMiniSecret, sr25519PairFromSe
 import { u8aToHex } from '@polkadot/util';
 import { keyring } from '@subwallet/ui-keyring';
 import { BehaviorSubject } from 'rxjs';
-import { decryptForCosigner, encryptForCosigners } from '@/sora/cosigner';
 
 const fixture = vi.hoisted(() => ({
   data: {} as Record<string, unknown>,
@@ -37,6 +36,7 @@ import { TonKeyringService } from '@extension-base/services/keyring-service/TonK
 import AccountsStore from '@extension-base/stores/Accounts';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import CurrentAccountStore from '@extension-base/stores/CurrentAccountStore';
+import { decryptForCosigner, encryptForCosigners } from '@/sora/cosigner';
 import { WalletEcosystem } from '@/interfaces';
 
 const PASSWORD = 'Public cosigner fixture password';

@@ -93,7 +93,6 @@ import type { TabWallet } from '@/interfaces';
 import WalletSettings from '@/screens/wallet&asset/wallet/WalletSettings.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
-import { accountController } from '@/controllers/accountController';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
@@ -106,7 +105,6 @@ import { resolvePortfolioSort, type PortfolioLens, type PortfolioSort } from '@/
 import { formatDecimalString } from '@/helpers/numbers';
 import { CONTENT_FORM_HEIGHT, IS_EXTENSION } from '@/consts/global';
 import { networksIsPending } from '@/helpers/shimmers';
-import BaseApi from '@/util/BaseApi';
 import { fetchEvmBalance } from '@/extension/messaging';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';

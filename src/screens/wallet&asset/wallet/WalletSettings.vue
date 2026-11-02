@@ -129,7 +129,6 @@ interface TabsOptions {
 
 export default defineComponent({ name: 'ContentSettings' ,
   props: {
-    tokenGroups: Array,
     hideZero: Boolean,
     showTestnets: Boolean,
     lens: { type: String, default: 'token' },

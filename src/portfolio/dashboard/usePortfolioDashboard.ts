@@ -38,6 +38,29 @@ interface DashboardInputs {
  * is. The selected wallet is computed here from the popup's own balances (as the header is); the other wallets come
  * from the background's read, polled while All wallets is on screen. Nothing here writes a balance or signs.
  */
+type Holdings = ReturnType<typeof buildWalletHoldings>;
+
+// The dashboard and the token locations build the selected wallet's holdings from the same summary input, which a
+// balance, price or network update replaces; they share one build of each.
+const holdingsBuilt = new WeakMap<PortfolioSummaryInput, { address: string; scanStates: unknown; hidden: string; holdings: Holdings }>();
+
+function selectedWalletHoldings(
+  address: string,
+  input: PortfolioSummaryInput,
+  scanStates: PortfolioSummaryInput['scanStates'],
+  hiddenKeys: string[]
+): Holdings {
+  const hidden = hiddenKeys.join('\n');
+  const built = holdingsBuilt.get(input);
+
+  if (built && built.address === address && built.scanStates === scanStates && built.hidden === hidden) return built.holdings;
+
+  const holdings = buildWalletHoldings(address, { ...input, scanStates }, hiddenKeys);
+  holdingsBuilt.set(input, { address, scanStates, hidden, holdings });
+
+  return holdings;
+}
+
 export function usePortfolioDashboard({ summaryInput, hiddenKeys }: DashboardInputs) {
   const store = usePortfolioDashboardStore();
   const accountsStore = useAccountsStore();
@@ -60,11 +83,7 @@ export function usePortfolioDashboard({ summaryInput, hiddenKeys }: DashboardInp
 
   const selectedAddress = computed(() => accountsStore.selectedWallet.address);
   const selected = computed<WalletPortfolio>(() => ({
-    ...buildWalletHoldings(
-      selectedAddress.value,
-      { ...summaryInput.value, scanStates: accountsStore.networkScanStates },
-      [...hiddenKeys.value]
-    ),
+    ...selectedWalletHoldings(selectedAddress.value, summaryInput.value, accountsStore.networkScanStates, [...hiddenKeys.value]),
     name: accountsStore.selectedWallet.name,
   }));
 

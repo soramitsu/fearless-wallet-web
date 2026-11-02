@@ -2,6 +2,7 @@ import { APIItemState } from '@extension-base/api/types/networks';
 import { storage } from '@extension-base/stores/Storage';
 import { Subject } from 'rxjs';
 import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
+import { getAssetOptions } from '@extension-base/api/substrate';
 import { type GetBalancesProps } from '../subscription-service';
 import { TonBalance } from '../ton-balance/TonBalance';
 import SubstrateBalanceService from './SubstrateBalanceService';
@@ -388,6 +389,54 @@ export default class BalanceService {
       this.balanceMap[address][currencyIndex].balances[index].existentialDeposit =
         existentialDeposit?.toString() ?? '0';
     });
+  }
+
+  /**
+   * The minimum balance (pallet-assets `min_balance`) of each assets-pallet token of a network, such as Asset Hub USDT,
+   * which the registry does not list. A balance sent below it is removed, so the Send screen asks first, as it does
+   * for the native existential deposit.
+   */
+  public async updateAssetMinimums(networkName: NetworkName): Promise<void> {
+    const network = Object.values(this.state.networkService.networkMap).find(({ name }) => isSameString(name, networkName));
+    const assetDetails = this.state.networkService.substrateApiHandler.api[networkName]?.api?.query?.assets?.asset;
+    const assets = network?.assets.filter(({ type, existentialDeposit }) => type === 'assets' && !existentialDeposit) ?? [];
+
+    if (!network || !assetDetails || !assets.length) return;
+
+    const minimums = new Map<string, string>();
+
+    await Promise.all(
+      assets.map(async ({ id }) => {
+        try {
+          const details = (await assetDetails(getAssetOptions(id, this.state.networkService.assetsMap))) as unknown as {
+            isSome: boolean;
+            unwrap: () => { minBalance: { toString: () => string } };
+          };
+
+          if (details.isSome) minimums.set(id, details.unwrap().minBalance.toString());
+        } catch (error) {
+          console.warn(`[Balances] ${network.name}: could not read the minimum balance of ${id}`, error);
+        }
+      })
+    );
+
+    let changed = false;
+
+    Object.values(this.balanceMap).forEach((groups) =>
+      groups.forEach(({ balances }) =>
+        balances.forEach((item) => {
+          const minimum = minimums.get(item.id);
+
+          if (minimum === undefined || !isSameString(PREP_NETWORKS_NAME[item.name] ?? item.name, network.name)) return;
+          if (item.existentialDeposit === minimum) return;
+
+          item.existentialDeposit = minimum;
+          changed = true;
+        })
+      )
+    );
+
+    if (changed) this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 500);
   }
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {

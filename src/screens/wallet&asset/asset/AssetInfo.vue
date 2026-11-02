@@ -32,11 +32,11 @@
 
           <!-- The last amount a provider confirmed, marked as out of date. -->
           <span v-else-if="balanceFailed && !balanceUnavailable" class="asset__failed" data-testid="assetBalanceFailed">
-            {{ transferableFiatBalanceInNetworkString }} · {{ $t('portfolioPage.balanceStatus.failed') }}
+            {{ heldFiatBalanceString }} · {{ $t('portfolioPage.balanceStatus.failed') }}
           </span>
 
           <span v-else-if="!balanceUnavailable" class="asset__balance asset__balance--fiat" data-testid="fiatAssetBalance">
-            {{ transferableFiatBalanceInNetworkString }}
+            {{ heldFiatBalanceString }}
           </span>
 
           <div v-if="!balanceUnavailable" class="asset__locked" @click="toggleBalanceDetailsPopup">
@@ -78,7 +78,9 @@ import { defineComponent } from 'vue';
 
 import { APIItemState } from '@extension-base/api/types/networks';
 
-import { getSummaryTransferableBalanceFilteredByActiveNetworks } from '@/helpers/currencies';
+import { getSummaryHeldBalanceFilteredByActiveNetworks } from '@/helpers/currencies';
+import { formatDecimalString } from '@/helpers/numbers';
+import { FPNumber } from '@/sora/number';
 import { getSummaryLockedBalance, isNetworkGroup } from '@/helpers/common';
 import { isSameString } from '@/helpers';
 import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
@@ -99,7 +101,7 @@ export default defineComponent({ name: 'AssetInfo',
       accountsStore: useAccountsStore(),
       showBalanceDetailsPopup: false,
       showDetailsPopup: false,
-      transferableAssetBalance: 0,
+      heldAssetBalance: '0',
     };
   },
   computed: {
@@ -158,7 +160,7 @@ export default defineComponent({ name: 'AssetInfo',
     },
     fiatPriceChangeString() {
       return `(${this.accountsStore.fiatSymbol}${this.$n(
-            this.transferableFiatBalance * this.price.priceChange,
+            Number(this.heldFiatBalance) * this.price.priceChange,
             'price'
           )})`;
     },
@@ -178,18 +180,25 @@ export default defineComponent({ name: 'AssetInfo',
 
           return `${this.$n(lockedBalance, 'decimal')} ${this.selectedAssetUpper}`;
     },
-    transferableFiatBalance() {
-      return this.transferableAssetBalance * this.price.price;
+    // The amount and its value are what the portfolio list shows for this asset: the total, staked and locked funds
+    // included, rounded down to 4 decimals with a nonzero amount never shown as 0. They used to show the transferable
+    // amount, rounded half up.
+    heldFiatBalance() {
+      return new FPNumber(this.heldAssetBalance).mul(new FPNumber(this.price?.price ?? 0)).toString();
     },
-    transferableFiatBalanceInNetworkString() {
+    heldFiatBalanceString() {
       if (!this.currency) return `${this.accountsStore.fiatSymbol} 0`;
 
-          return `${this.accountsStore.fiatSymbol} ${this.$n(this.transferableFiatBalance, 'price')}`;
+          return `${this.accountsStore.fiatSymbol} ${formatDecimalString(this.heldFiatBalance, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     },
     countAssetsString() {
       if (!this.currency) return `0 ${this.selectedAssetUpper}`;
 
-          const total = this.$n(this.transferableAssetBalance, 'decimal');
+          const total = formatDecimalString(this.heldAssetBalance, {
+            minimumFractionDigits: 4,
+            maximumFractionDigits: 4,
+            preserveSmallValue: true,
+          });
 
           return `${total} ${this.selectedAssetUpper}`;
     },
@@ -201,15 +210,15 @@ export default defineComponent({ name: 'AssetInfo',
     },
   },
   watch: {
-    "pickedNetwork": 'transferableAssetBalanceUpdate',
-    "currency": { handler: 'transferableAssetBalanceUpdate', ...{ deep: true } },
+    "pickedNetwork": 'heldAssetBalanceUpdate',
+    "currency": { handler: 'heldAssetBalanceUpdate', ...{ deep: true } },
   },
   mounted() {
-    this.transferableAssetBalanceUpdate();
+    this.heldAssetBalanceUpdate();
   },
   methods: {
-    transferableAssetBalanceUpdate() {
-      this.transferableAssetBalance = +getSummaryTransferableBalanceFilteredByActiveNetworks(
+    heldAssetBalanceUpdate() {
+      this.heldAssetBalance = getSummaryHeldBalanceFilteredByActiveNetworks(
             this.currency,
             this.pickedNetwork
           );

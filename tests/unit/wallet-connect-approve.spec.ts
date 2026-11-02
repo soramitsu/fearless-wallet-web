@@ -234,6 +234,7 @@ describe('WalletConnect approval with a parent that still needs its legacy passw
           evmRequestHandler: {
             claimWCSignRequest: () => request,
             getSignWCRequest: () => request,
+            markWCSubmitting: vi.fn(),
             releaseWCSignRequest: vi.fn(),
           },
         },
@@ -278,6 +279,7 @@ describe('WalletConnect approval with a parent that still needs its legacy passw
           evmRequestHandler: {
             claimWCSignRequest: () => request,
             getSignWCRequest: () => request,
+            markWCSubmitting: vi.fn(),
             releaseWCSignRequest: vi.fn(),
           },
         },
@@ -323,7 +325,12 @@ describe('WalletConnect approval with a parent that still needs its legacy passw
         state: {
           keyringService,
           requestService: {
-            evmRequestHandler: { claimWCSignRequest: claim, getSignWCRequest: () => request, releaseWCSignRequest: vi.fn() },
+            evmRequestHandler: {
+              claimWCSignRequest: claim,
+              getSignWCRequest: () => request,
+              markWCSubmitting: vi.fn(),
+              releaseWCSignRequest: vi.fn(),
+            },
           },
         },
       }) as Extension;

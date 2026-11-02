@@ -20,9 +20,14 @@ export default class EvmRequestHandler {
   private readonly wcRequests = new Map<string, WCSignRequest>();
   private evmRequests: EvmRequestsSubject = {};
   private readonly pendingApprovals = new WeakSet<EvmRequestsSubjectPayload>();
-  // Transactions whose page closed while an approval held them; dropped if the approval ends without settling them.
-  private readonly closedPageRequests = new WeakSet<EvmRequestsSubjectPayload>();
+  // Transactions an approval has signed and is sending.
+  private readonly submittingApprovals = new WeakSet<EvmRequestsSubjectPayload>();
+  // Transactions cancelled (page closed, or wallet locked or reset while being sent) that an approval held: it may
+  // already have sent them, so it settles them, with the hash or its own error. The cancellation applies if it did not.
+  private readonly deferredRejections = new WeakMap<EvmRequestsSubjectPayload, Error>();
   private readonly pendingWcApprovals = new WeakSet<WCSignRequest>();
+  private readonly submittingWcApprovals = new WeakSet<WCSignRequest>();
+  private readonly deferredWcRejections = new WeakMap<WCSignRequest, Error>();
   public readonly signWcSubject = new BehaviorSubject<WalletConnectTransactionRequest[]>([]);
   public readonly signEvmSubject = new BehaviorSubject<EvmRequests>({});
 
@@ -42,9 +47,27 @@ export default class EvmRequestHandler {
     this.cancelPending(new Error('Reset wallet'));
   }
 
+  // An approval that has not sent its transaction yet fails its identity check once the request is gone, before it
+  // uses a key; one that is sending it settles the request itself.
   cancelPending(error: Error): void {
-    for (const request of Object.values(this.evmRequests)) request.reject(error);
-    for (const request of [...this.wcRequests.values()]) request.reject(error);
+    for (const request of Object.values(this.evmRequests)) {
+      if (this.submittingApprovals.has(request)) this.deferredRejections.set(request, error);
+      else request.reject(error);
+    }
+
+    for (const request of [...this.wcRequests.values()]) {
+      if (this.submittingWcApprovals.has(request)) this.deferredWcRejections.set(request, error);
+      else request.reject(error);
+    }
+  }
+
+  /** Called by an approval right before it sends the transaction it signed. */
+  markEvmSubmitting(request: EvmRequestsSubjectPayload): void {
+    if (this.pendingApprovals.has(request)) this.submittingApprovals.add(request);
+  }
+
+  markWCSubmitting(request: WCSignRequest): void {
+    if (this.pendingWcApprovals.has(request)) this.submittingWcApprovals.add(request);
   }
 
   getSignWCRequest(approvalId: string): WCSignRequest | undefined {
@@ -61,6 +84,11 @@ export default class EvmRequestHandler {
 
   releaseWCSignRequest(request: WCSignRequest): void {
     this.pendingWcApprovals.delete(request);
+    this.submittingWcApprovals.delete(request);
+    const error = this.deferredWcRejections.get(request);
+    if (!error) return;
+    this.deferredWcRejections.delete(request);
+    request.reject(error);
   }
 
   rejectWCSignRequest(approvalId: string): boolean {
@@ -84,7 +112,11 @@ export default class EvmRequestHandler {
 
   releaseEvmSignRequest(request: EvmRequestsSubjectPayload): void {
     this.pendingApprovals.delete(request);
-    if (this.closedPageRequests.delete(request)) request.reject(new Error('Cancelled'));
+    this.submittingApprovals.delete(request);
+    const error = this.deferredRejections.get(request);
+    if (!error) return;
+    this.deferredRejections.delete(request);
+    request.reject(error);
   }
 
   private publishEvmRequests(): void {
@@ -133,7 +165,7 @@ export default class EvmRequestHandler {
       // A closed page drops its request as Reject would, unless an approval may already be sending the transaction.
       const cancel = () => {
         if (method === 'eth_sendTransaction' && this.pendingApprovals.has(request))
-          this.closedPageRequests.add(request);
+          this.deferredRejections.set(request, new Error('Cancelled'));
         else request.reject(new Error('Cancelled'));
       };
       const complete = () => {

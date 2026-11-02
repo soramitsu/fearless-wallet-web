@@ -1055,7 +1055,12 @@ export class KeyringService {
     }
   }
 
+  // The SORA cosigner key: an sr25519 account's own secret key, as other cosigners address its public key. Derived
+  // from the phrase alone it was the root account's, which a wallet made with a derivation path or ///password is
+  // not, so such a wallet could neither open envelopes sent to it nor send ones others could open.
   public accountExportSecretKey(request: RequestExportSeed): Uint8Array | null {
+    if (this.getPair(request.address)?.type === 'sr25519') return hexToU8a(this.accountExportPrivateKey(request).privateKey);
+
     const { seed } = this.exportMnemonic(request);
 
     if (!seed) return null;

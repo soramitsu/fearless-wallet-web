@@ -184,6 +184,21 @@ describe('WalletConnect connection approval', () => {
     const request = proposal(expired ? { expiry: 1 } : {}); expect(await call('pri(walletConnect.session.reject)', { id: 'proposal' })).toBe(true); expect(request.reject).toHaveBeenCalledOnce();
     expect(state.walletConnectService.rejectSession).toHaveBeenCalledTimes(expired ? 0 : 1);
   });
+  // As WalletConnect 2.23 delivers a proposal: no expiry, the deadline in expiryTimestamp (seconds), and every chain in
+  // optionalNamespaces, where the dApp's SDK moves requiredNamespaces.
+  const current = (overrides: Record<string, unknown> = {}) => proposal({ expiry: undefined, expiryTimestamp: Math.floor(Date.now() / 1000) + 300, requiredNamespaces: {}, optionalNamespaces: { eip155: { chains: ['eip155:1', 'eip155:999'], methods: ['personal_sign', 'eth_sendTransaction'], events: ['accountsChanged', 'chainChanged'] } }, ...overrides });
+  it('approves a current SDK proposal before its expiryTimestamp, with its chains only in optionalNamespaces', async () => {
+    const request = current(); expect(await call('pri(walletConnect.session.approve)', { id: 'proposal', accounts: ['alice'] })).toMatchObject({ status: true });
+    expect(state.walletConnectService.approveSession).toHaveBeenCalledWith({ id: 17, relayProtocol: 'irn', namespaces: { eip155: { accounts: ['eip155:1:alice'], chains: ['eip155:1'], methods: expect.arrayContaining(['personal_sign', 'eth_sendTransaction']), events: ['accountsChanged', 'chainChanged'] } } }); expect(request.resolve).toHaveBeenCalledOnce();
+  });
+  it.each([['past its expiryTimestamp, even with a later expiry', { expiryTimestamp: Math.floor(Date.now() / 1000) - 1, expiry: Math.floor(Date.now() / 1000) + 3600 }], ['without a deadline', { expiryTimestamp: undefined }]])('refuses a current SDK proposal %s', async (_, overrides) => {
+    const request = current(overrides); expect(await call('pri(walletConnect.session.approve)', { id: 'proposal', accounts: ['alice'] })).toEqual({ status: false, message: 'walletConnect.notifications.sessionExpired.message', title: 'walletConnect.notifications.sessionExpired.title' });
+    expect(request.reject).toHaveBeenCalledOnce(); expect(state.walletConnectService.approveSession).not.toHaveBeenCalled();
+  });
+  it.each([false, true])('tells a current SDK dApp its proposal was rejected unless it expired, expired=%s', async expired => {
+    const request = current(expired ? { expiryTimestamp: Math.floor(Date.now() / 1000) - 1 } : {}); expect(await call('pri(walletConnect.session.reject)', { id: 'proposal' })).toBe(true); expect(request.reject).toHaveBeenCalledOnce();
+    expect(state.walletConnectService.rejectSession).toHaveBeenCalledTimes(expired ? 0 : 1);
+  });
   it('disconnects a selected session and rejects unsupported requests', async () => {
     expect(await call('pri(walletConnect.session.disconnect)', { topic: 'public-session' })).toBe(true); expect(state.walletConnectService.disconnect).toHaveBeenCalledWith('public-session');
     const reject = vi.fn(); state.requestService.getNotSupportWCRequest.mockReturnValue({ reject }); expect(await call('pri(walletConnect.notSupport.reject)', { id: 'unsupported' })).toBe(true); expect(reject).toHaveBeenCalledWith(expect.objectContaining({ message: 'USER_REJECTED' }));

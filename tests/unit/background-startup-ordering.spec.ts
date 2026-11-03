@@ -164,6 +164,7 @@ async function startBackground() {
     networkService: { retryRegistryIfNeeded: vi.fn(async () => true) },
     updateServiceInfo: vi.fn(),
     isReady: vi.fn(() => false),
+    workerSleepService: { hold: () => () => undefined, wake: () => Promise.resolve(), pageOpened: vi.fn() },
   };
   mocks.state = state;
   const answered: Record<string, unknown>[] = [];

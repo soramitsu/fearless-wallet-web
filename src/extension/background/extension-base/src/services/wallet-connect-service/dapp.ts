@@ -54,6 +54,8 @@ export class WalletConnectDAppService {
 
   private sessionChanged(topic: string): void {
     this.sessionRevisions.set(topic, (this.sessionRevisions.get(topic) ?? 0) + 1);
+    // An open session keeps the node connections open (WorkerSleepService).
+    this.state?.workerSleepService?.refresh();
   }
 
   invalidateSession(topic: string): void {
@@ -86,6 +88,7 @@ export class WalletConnectDAppService {
           await this.authority.load();
           this.app = app;
           this.setListeners();
+          this.state?.workerSleepService?.refresh();
         })
         .finally(() => {
           this.initialization = undefined;

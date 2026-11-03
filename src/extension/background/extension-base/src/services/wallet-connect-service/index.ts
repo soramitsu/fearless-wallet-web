@@ -75,6 +75,8 @@ export class WalletConnectService {
 
   private updateSessions() {
     this.sessionSubject.next(this.sessions);
+    // An open session keeps the node connections open (WorkerSleepService).
+    this.state?.workerSleepService?.refresh();
   }
 
   getSession(key: string): SessionTypes.Struct {

@@ -29,11 +29,12 @@ function fixture() {
     ready: false, tabStatusRevision: 0, currentAccount: { address: 'alice', ethereumAddress: '0x' + '11'.repeat(20) }, injectedProviders: new Map(), providers: {}, serviceInfoSubject: new Subject(),
     keyringService: { getAllMainAccounts: vi.fn(() => [{ address: 'alice', meta: { walletEcosystem: WalletEcosystem.Substrate } }]), encodeAddress: vi.fn((value: string) => `encoded-${value}`) },
     networkService: { networkMap: Object.fromEntries(networks.map(n => [n.name, n])), networkValues: networks, networksGithub: networks, selectedNetworks: {}, getApiMap: {}, substrateApiHandler: handler(), evmApiHandler: handler(), tonApiHandler: handler(),
-      getActiveNetworks: vi.fn(() => [polkadot]), initNetworkMap: vi.fn().mockResolvedValue(undefined), initNetworkApis: vi.fn(), destroyApi: vi.fn(), updateNetworkStore: vi.fn(), saveSelectedNetworks: vi.fn(), disableNetworkMap: vi.fn(), toggleFavoriteNetwork: vi.fn() },
+      getActiveNetworks: vi.fn(() => [polkadot]), initNetworkMap: vi.fn().mockResolvedValue(undefined), initNetworkApis: vi.fn(), connectNetwork: vi.fn(() => false), destroyApi: vi.fn(), updateNetworkStore: vi.fn(), saveSelectedNetworks: vi.fn(), disableNetworkMap: vi.fn(), toggleFavoriteNetwork: vi.fn() },
     requestService: { getAuthList: vi.fn().mockResolvedValue({}), getAuthorize: vi.fn().mockResolvedValue(undefined), authSubject: new Subject(), saveMetadata: vi.fn(), authRequestHandler: { getEvmAuthorizationSnapshot: vi.fn() } },
-    balanceService: { generateDefaultBalance: vi.fn(), hydrateBalanceStorage: vi.fn().mockResolvedValue(undefined), ...Object.fromEntries(['solana','bitcoin','iroha','ton','evm','substrate'].map(name => [`${name}BalanceService`, { fetchBalance: vi.fn().mockResolvedValue(undefined) }])) },
+    balanceService: { generateDefaultBalance: vi.fn(), hydrateBalanceStorage: vi.fn().mockResolvedValue(undefined), publishBalance: vi.fn(), ...Object.fromEntries(['solana','bitcoin','iroha','ton','evm','substrate'].map(name => [`${name}BalanceService`, { fetchBalance: vi.fn().mockResolvedValue(undefined) }])) },
     actionCapabilityService: { init: vi.fn().mockResolvedValue(undefined) }, sendKillSwitchService: { init: vi.fn().mockResolvedValue(undefined) }, soraDisclaimerService: { init: vi.fn().mockResolvedValue(undefined) },
     eventService: { waitCryptoReady: Promise.resolve() }, scamService: { refreshScamAddressList: vi.fn() }, subscriptionService: { start: vi.fn() }, cronService: { start: vi.fn() }, assetDiscoverySweepService: { runIfDue: vi.fn().mockResolvedValue(undefined) },
+    workerSleepService: { hold: () => () => undefined, refresh: vi.fn() },
   }, State.prototype) as Record<string, any>;
   // Model the handler's installed API identity so cleanup assertions concern an owned provider.
   const evmHandler = state.networkService.evmApiHandler;

@@ -1,7 +1,7 @@
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { formatJsonRpcError } from '@walletconnect/jsonrpc-utils';
 import WalletConnect from '@walletconnect/sign-client';
-import { getInternalError, getSdkError, isValidUrl } from '@walletconnect/utils';
+import { getInternalError, getSdkError, isValidUrl, type SdkErrorKey } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
 import { convertConnectRequest, convertNotSupportRequest } from '@extension-base/services/wallet-connect-service/utils';
 import { type ResultApproveWalletConnectSession } from '@extension-base/services/wallet-connect-service/types';
@@ -159,10 +159,10 @@ export class WalletConnectService {
     this.updateSessions();
   }
 
-  async rejectSession(id: number) {
+  async rejectSession(id: number, reason: SdkErrorKey = 'USER_REJECTED') {
     this.checkClient();
 
-    await this.client?.reject({ id, reason: getSdkError('USER_REJECTED') });
+    await this.client?.reject({ id, reason: getSdkError(reason) });
   }
 
   async disconnect(topic: string) {

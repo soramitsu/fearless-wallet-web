@@ -2,14 +2,13 @@ import { wrapBytes } from '@polkadot/extension-dapp/wrapBytes';
 import { u8aToHex } from '@polkadot/util';
 import { evmSigningAddress } from '@extension-base/services/request-service/handlers/evmSigningContext';
 import { getInternalError, getSdkError } from '@walletconnect/utils';
-import { PROJECT_ID_EXTENSION, WALLET_CONNECT_METADATA } from '@extension-base/services/wallet-connect-service/consts';
-import WalletConnectStorage, { hasWalletConnectData } from '@extension-base/services/wallet-connect-service/storage';
+import { hasWalletConnectData } from '@extension-base/services/wallet-connect-service/storage';
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import { walletAddressIdentity } from '@extension-base/services/keyring-service/DeletedWallets';
-import Provider from '@walletconnect/universal-provider';
 import { EIP155_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
 import { isSameAddress } from '@extension-base/utils';
 import { sessionAuthority } from './sessionAuthority';
+import { isWalletSession, walletConnectClient } from './client';
 import { validateMobileSigningContext } from './mobileSigningContext';
 import { captureMobilePairingAccount, mobilePairingProposal, sameMobileIdentity } from './pairingContext';
 import type { PairingSubjectType } from '@extension-base/services/wallet-connect-service/types';
@@ -18,6 +17,7 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { HexString } from '@polkadot/util/types';
 import type { MobileSigningContext } from './mobileSigningContext';
 import type State from '@extension-base/background/handlers/State';
+import type WalletConnect from '@walletconnect/sign-client';
 import type { EngineTypes, SessionTypes } from '@walletconnect/types';
 import type { Port, ResponseSigning } from '@extension-base/background/types/types';
 
@@ -40,7 +40,7 @@ type PairingAttempt = {
 };
 
 export class WalletConnectDAppService {
-  private app?: Provider;
+  private client?: WalletConnect;
   private initialization?: Promise<void>;
   private readonly sessionRevisions = new Map<string, number>();
   private readonly retiredTopics = new Set<string>();
@@ -65,26 +65,19 @@ export class WalletConnectDAppService {
   private readonly usedPairingIds = new Set<string>();
 
   constructor(private state: State) {
-    // The provider reads all of storage and starts a 5 s heartbeat, and its extension calls keep an MV3 worker awake.
+    // The client reads all of storage and starts a 5 s heartbeat, and its extension calls keep an MV3 worker awake.
     // With nothing stored there is no session to restore: the first mobile pairing starts it (initPairing).
-    hasWalletConnectData().then((stored) => (stored ? this.initApp() : undefined)).catch(console.error);
+    hasWalletConnectData().then((stored) => (stored ? this.initClient() : undefined)).catch(console.error);
   }
 
-  private initApp(): Promise<void> {
-    if (this.app) return Promise.resolve();
+  private initClient(): Promise<void> {
+    if (this.client) return Promise.resolve();
     if (!this.initialization) {
       this.initialization = this.authority.load()
-        .then(() => {
-          return Provider.init({
-            projectId: PROJECT_ID_EXTENSION,
-            metadata: WALLET_CONNECT_METADATA,
-            logger: undefined,
-            storage: new WalletConnectStorage(),
-          });
-        })
-        .then(async (app) => {
+        .then(() => walletConnectClient(this.state))
+        .then(async (client) => {
           await this.authority.load();
-          this.app = app;
+          this.client = client;
           this.setListeners();
         })
         .finally(() => {
@@ -94,12 +87,14 @@ export class WalletConnectDAppService {
     return this.initialization;
   }
 
+  // The client also holds the sessions dApps opened with Fearless as their wallet. They are never used here.
   public get sessions(): SessionTypes.Struct[] {
-    return (this.app?.client.session.values || []).filter((session) => !this.retiredTopics.has(session.topic) && this.authority.allows(session.topic));
+    return (this.client?.session.values || []).filter((session) => !isWalletSession(session) &&
+      !this.retiredTopics.has(session.topic) && this.authority.allows(session.topic));
   }
 
   private setListeners() {
-    const client = this.app?.client;
+    const client = this.client;
     if (!client || this.listenerClients.has(client)) return;
     this.listenerClients.add(client);
     client.on('session_update', ({ topic }) => this.sessionChanged(topic));
@@ -109,7 +104,7 @@ export class WalletConnectDAppService {
   }
 
   checkClient() {
-    if (!this.app) {
+    if (!this.client) {
       throw new Error(getInternalError('NOT_INITIALIZED').message);
     }
   }
@@ -143,10 +138,10 @@ export class WalletConnectDAppService {
     this.pairingAttempts.set(id, attempt);
     port?.onDisconnect.addListener(attempt.disconnectListener);
     try {
-      await this.initApp();
+      await this.initClient();
       if (!attempt.active) throw new Error('Mobile pairing was cancelled');
-      attempt.priorTopics = new Set((this.app?.client.session.values ?? []).map((session) => session.topic));
-      const pairing = await this.app!.client.connect(mobilePairingProposal(this.state.networkService.networkValues));
+      attempt.priorTopics = new Set((this.client?.session.values ?? []).map((session) => session.topic));
+      const pairing = await this.client!.connect(mobilePairingProposal(this.state.networkService.networkValues));
       // Observe exactly once, including a late approval after cancellation.
       pairing
         .approval()
@@ -244,7 +239,7 @@ export class WalletConnectDAppService {
       const reader = {
         getSessionRevision: (topic: string) => this.getSessionRevision(topic),
         getSession: (topic: string): SessionTypes.Struct => {
-          const live = this.app?.client.session.values.find(value => value.topic === topic);
+          const live = this.client?.session.values.find(value => value.topic === topic);
           if (!live || topic !== session.topic || !attempt.active || this.retiredTopics.has(topic) ||
             this.state.keyringService.isResetting || this.authority.revision !== attempt.authorityRevision)
             throw new Error('Mobile pairing context changed');
@@ -320,7 +315,7 @@ export class WalletConnectDAppService {
     await new WalletConnectRetiredSessions().retire(topic);
     // The persisted local veto is the acknowledgement. Relay cleanup may stay
     // pending offline and must not hold cancellation, selection repair or reset.
-    void Promise.resolve().then(() => this.app?.client.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') }))
+    void Promise.resolve().then(() => this.client?.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') }))
       .catch(console.error);
   }
 
@@ -329,7 +324,7 @@ export class WalletConnectDAppService {
     // whose SDK approval is still pending. Their late sessions are retired by
     // the existing completion path and cannot publish an account or selection.
     const topics = [...new Set([
-      ...(this.app?.client.session.values ?? []).map((session) => session.topic),
+      ...(this.client?.session.values ?? []).filter((session) => !isWalletSession(session)).map((session) => session.topic),
       ...this.state.keyringService.getAllAccounts().flatMap(({ meta }) =>
         typeof meta.wcTopic === 'string' && meta.wcTopic ? [meta.wcTopic] : []),
     ])];
@@ -341,7 +336,7 @@ export class WalletConnectDAppService {
     await Promise.all([retirement, ...[...this.pairingAttempts.values()].map(attempt => this.finishPairing(attempt))]);
     // Durable local retirement is authoritative even while the relay is offline.
     for (const topic of topics)
-      void this.app?.client.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') }).catch(console.error);
+      void this.client?.disconnect({ topic, reason: getSdkError('USER_DISCONNECTED') }).catch(console.error);
   }
 
   availableNetworks(address: string) {
@@ -419,8 +414,8 @@ export class WalletConnectDAppService {
       validateMobileSigningContext(this, context, intent);
     };
     validate();
-    if (!this.app) throw new Error('Wallet Connect is not init!');
-    const result = await this.app.client.request<{ signature: HexString }>({
+    if (!this.client) throw new Error('Wallet Connect is not init!');
+    const result = await this.client.request<{ signature: HexString }>({
       chainId: context.chainId,
       topic: context.topic,
       request: {
@@ -460,8 +455,8 @@ export class WalletConnectDAppService {
       request: { method, params: snapshot },
     };
 
-    if (!this.app) throw new Error('Wallet Connect is not init!');
-    const result = await this.app.client.request<unknown>(requestEvent);
+    if (!this.client) throw new Error('Wallet Connect is not init!');
+    const result = await this.client.request<unknown>(requestEvent);
     validate();
     // EIP-155 WalletConnect responses are the raw signature / transaction hash,
     // not an object with a payload field.

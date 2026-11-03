@@ -39,4 +39,8 @@ export class TonApiHandler {
 
     delete this.api[networkLower];
   }
+
+  destroyAll() {
+    Object.keys(this.api).forEach((key) => this.destroyApi(key));
+  }
 }

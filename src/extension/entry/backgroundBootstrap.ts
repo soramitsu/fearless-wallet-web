@@ -7,6 +7,8 @@ export const WALLET_STORAGE_UNAVAILABLE = 'Wallet storage could not be read.';
 
 export interface BackgroundRuntime {
   handleMessage(data: TransportRequestMessage<MessageTypes>, port: Port): Promise<void>;
+  // `closed` settles when the port disconnects, which may already have happened.
+  onConnect(port: Port, closed: Promise<void>): void;
   onInstalled(details: chrome.runtime.InstalledDetails): Promise<void>;
   onAlarm(alarm: chrome.alarms.Alarm): void | Promise<void>;
 }
@@ -20,7 +22,13 @@ export function registerBackgroundListeners(api: typeof chrome, ready: Promise<B
 
   api.runtime.onConnect.addListener((port: Port) => {
     let disconnected = false;
-    port.onDisconnect.addListener(() => { disconnected = true; });
+    let markClosed = () => {};
+    const closed = new Promise<void>((resolve) => { markClosed = resolve; });
+    port.onDisconnect.addListener(() => {
+      disconnected = true;
+      markClosed();
+    });
+    dispatch((runtime) => runtime.onConnect(port, closed));
     port.onMessage.addListener((data: TransportRequestMessage<MessageTypes>) => {
       void ready.then((runtime) => {
         if (!disconnected) return runtime.handleMessage(data, port);

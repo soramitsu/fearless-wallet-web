@@ -29,6 +29,7 @@ import {
   SoraDisclaimerService,
   LegacyExposureService,
   IrohaConnectService,
+  WorkerSleepService,
 } from '@extension-base/services';
 import { storage } from '@extension-base/stores/Storage';
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
@@ -56,6 +57,7 @@ import type {
   RequestUpdateCurrentAccount,
 } from '@extension-base/background/types/types';
 import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
+import type { RunAssetDiscoverySweepOptions } from '@extension-base/services/asset-discovery-service';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { SoraFees, NetworkName } from '@/interfaces';
@@ -69,6 +71,7 @@ import { walletEcosystemOf } from '@/extension/background/extension-base/src/bac
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
 import { encodeIrohaI105Address, resolveCanonicalIrohaAddressNetwork, type IrohaNetworkInput } from '@/util/iroha';
+import { IS_EXTENSION } from '@/consts/global';
 
 type Wallet = {
   address: string;
@@ -82,6 +85,9 @@ type Wallet = {
 
 export default class State {
   private ready = false;
+  // The init() in progress, and whether the last one opened the node connections (WorkerSleepService).
+  private initialization?: Promise<void>;
+  private networksConnected = false;
   private tabStatusRevision = 0;
   injectedProviders: Map<Port, ProviderInterface> = new Map();
   providers: Providers = {};
@@ -98,7 +104,7 @@ export default class State {
   evmContractService = new EvmContractService();
   keyringService = new KeyringService(this.eventService);
   networkService = new NetworkService(this.keyringService, this, () => {
-    if (this.ready) void this.assetDiscoverySweepService.runIfDue();
+    if (this.ready) void this.runAssetDiscovery();
   });
   requestService = new RequestService(this.keyringService, this);
   walletConnectService = new WalletConnectService(this, this.requestService);
@@ -112,6 +118,7 @@ export default class State {
       if (snapshot.phase === 'request-approval' && previous.phase !== 'request-approval') {
         this.requestService.popupOpen('/fearless/settings/iroha-connect');
       }
+      if (snapshot.phase !== previous.phase) this.workerSleepService.refresh();
     },
   });
   balanceService = new BalanceService(this);
@@ -149,8 +156,14 @@ export default class State {
   timeoutService = new TimeoutService(this);
   keyringLockService = new KeyringLockService(this);
   historyService = new HistoryService(this);
+  workerSleepService = new WorkerSleepService(
+    { hasOpenWork: () => this.hasOpenWork(), quiet: () => this.quiet(), restore: () => this.restore() },
+    IS_EXTENSION
+  );
 
   constructor() {
+    // The extension worker opens no node connection until a wallet page or a site needs the wallet.
+    if (this.workerSleepService.enabled) void this.networkService.suspend();
     this.injectFromStorage();
     this.init();
   }
@@ -349,7 +362,13 @@ export default class State {
   async activateDappNetwork(networkKey: string): Promise<void> {
     const network = this.networkService.getNetworkJson(networkKey);
 
-    if (!network || network.active || network.disabled) return;
+    if (!network || network.disabled) return;
+    // An active network's connection may have been closed while the wallet was quiet (WorkerSleepService).
+    if (network.active) {
+      if (this.ready && this.networkService.connectNetwork(network)) this.updateServiceInfo();
+
+      return;
+    }
 
     this.networkService.networkMap[network.name].active = true;
 
@@ -478,7 +497,18 @@ export default class State {
     return this.currentAccount?.address ?? '';
   }
 
-  async init() {
+  async init(): Promise<void> {
+    const run = this.load();
+
+    this.initialization = run;
+    try {
+      await run;
+    } finally {
+      if (this.initialization === run) this.initialization = undefined;
+    }
+  }
+
+  private async load(): Promise<void> {
     const wasReady = this.ready;
     await this.eventService.waitCryptoReady;
     await Promise.all([
@@ -497,15 +527,65 @@ export default class State {
     });
 
     await this.balanceService.hydrateBalanceStorage(accounts.map(({ address }) => address));
+    // A page that asked while the worker started gets the stored balances now, before they are read again.
+    void this.balanceService.publishBalance();
 
     this.ready = true; // Set true if chain json is parsed and data is preped for init apis
     // The scam service loads the list when the worker starts. The daily refresh, or a start whose load failed, loads it again.
     if (wasReady || !this.scamService.scamMap) this.scamService.refreshScamAddressList();
 
-    this.networkService.initNetworkApis();
-    this.onReady();
+    // A quiet wallet loads its settings and cached balances but opens nothing until restore() runs this again.
+    if (this.networkService.suspended) {
+      this.networksConnected = false;
+    } else {
+      this.networkService.initNetworkApis();
+      this.onReady();
+      this.networksConnected = true;
+    }
     this.updateServiceInfo();
-    void this.assetDiscoverySweepService.runIfDue();
+    void this.runAssetDiscovery();
+  }
+
+  /** Runs the discovery sweep when it is due. The worker keeps its connections meanwhile and closes what it opened. */
+  runAssetDiscovery(options?: RunAssetDiscoverySweepOptions) {
+    const release = this.workerSleepService.hold();
+
+    return this.assetDiscoverySweepService.runIfDue(options).finally(release);
+  }
+
+  /**
+   * Work that keeps the node connections open after the last wallet page closed: a request waiting for the person, a
+   * WalletConnect session of either role, an Iroha Connect session.
+   */
+  private hasOpenWork(): boolean {
+    const irohaConnectPhase = this.irohaConnectService.snapshot.phase;
+
+    return (
+      this.requestService.numRequests > 0 ||
+      this.walletConnectService.sessions.length > 0 ||
+      this.walletConnectDappService.sessions.length > 0 ||
+      (irohaConnectPhase !== 'idle' && irohaConnectPhase !== 'error')
+    );
+  }
+
+  /**
+   * Closes everything that kept the extension worker running once nothing needs the wallet (WorkerSleepService): the
+   * jobs, the balance subscriptions and every node connection. Cached balances stay in memory and storage.
+   */
+  private async quiet(): Promise<void> {
+    this.networksConnected = false;
+    this.cronService.stop();
+    this.subscriptionService.stop();
+    this.poolsService.unsubscribePools();
+    await this.networkService.suspend();
+  }
+
+  /** Opens the connections, subscriptions and jobs again, through init() as the daily refresh does. */
+  private async restore(): Promise<void> {
+    this.networkService.resume();
+    // A start-up or refresh in progress opens them itself unless it had passed that step.
+    await this.initialization?.catch(() => undefined);
+    if (!this.networksConnected) await this.init();
   }
 
   private async scanDiscoveryNetwork(registryNetwork: NetworkJson): Promise<void> {
@@ -647,7 +727,7 @@ export default class State {
       if (isNew) this.setActiveNetworks(activeValue);
 
       this.nftService.publishNfts();
-      if (isNew && this.ready) void this.assetDiscoverySweepService.runIfDue({ force: true });
+      if (isNew && this.ready) void this.runAssetDiscovery({ force: true });
       selectionContext?.onCommitted?.();
     }, selectionContext?.assertCurrent);
 

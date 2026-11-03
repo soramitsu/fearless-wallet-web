@@ -84,10 +84,11 @@ describe('scam address list per worker start', () => {
       sendKillSwitchService: { init: vi.fn().mockResolvedValue(undefined) },
       soraDisclaimerService: { init: vi.fn().mockResolvedValue(undefined) },
       keyringService: { getAllMainAccounts: () => [], currentAccountSubject: { value: null } },
-      balanceService: { generateDefaultBalance: vi.fn(), hydrateBalanceStorage: vi.fn().mockResolvedValue(undefined) },
+      balanceService: { generateDefaultBalance: vi.fn(), hydrateBalanceStorage: vi.fn().mockResolvedValue(undefined), publishBalance: vi.fn() },
       subscriptionService: { start: vi.fn() },
       cronService: { start: vi.fn() },
       assetDiscoverySweepService: { runIfDue: vi.fn().mockResolvedValue(undefined) },
+      workerSleepService: { hold: () => () => undefined },
     }, State.prototype) as State;
     state.scamService = new ScamService(state);
     return state;

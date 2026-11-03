@@ -45,7 +45,9 @@ describe('AssetDiscoverySweepService', () => {
 
     expect(catalogUpdate).toBeGreaterThan(-1);
     expect(notification).toBeGreaterThan(catalogUpdate);
-    expect(state).toContain('if (this.ready) void this.assetDiscoverySweepService.runIfDue();');
+    expect(state).toContain('if (this.ready) void this.runAssetDiscovery();');
+    // The sweep keeps the worker's connections while it runs (WorkerSleepService).
+    expect(state).toContain('return this.assetDiscoverySweepService.runIfDue(options).finally(release);');
     expect(state).toContain('getRegistryNetworks: () => this.networkService.authoritativeDiscoveryNetworks');
     expect(networkService).toContain('createAuthoritativeDiscoveryRegistryNetworks(this.networksGithub)');
     expect(networkService).not.toContain('createAuthoritativeDiscoveryRegistryNetworks(this.networkValues)');

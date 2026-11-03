@@ -179,4 +179,9 @@ export class EvmApiHandler {
 
     delete this.api[networkLower];
   }
+
+  /** Closes every provider as the wallet goes quiet. The failover position of each network is kept. */
+  destroyAll() {
+    Object.keys(this.api).forEach((key) => this.destroyApi(key));
+  }
 }

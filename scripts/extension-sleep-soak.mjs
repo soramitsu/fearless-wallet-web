@@ -856,12 +856,6 @@ async function startWalletConnectDapp() {
     metadata: { name: 'Fearless sleep soak', description: 'Background sleep soak dApp', url: 'https://fearlesswallet.io/', icons: [] },
     storage,
   });
-  // The wallet reads a proposal's `expiry` (isProposalExpired), which this SDK no longer sends: it sends only
-  // `expiryTimestamp`, and the wallet then refuses the proposal as expired. Like an older dApp, this one sends both.
-  const encode = client.core.crypto.encode.bind(client.core.crypto);
-  client.core.crypto.encode = (topic, payload, options) => encode(topic, payload?.method === 'wc_sessionPropose'
-    ? { ...payload, params: { ...payload.params, expiry: payload.params.expiryTimestamp } }
-    : payload, options);
   return { client, close: async () => client.core.relayer.transportClose() };
 }
 

@@ -205,6 +205,76 @@ describe('content script port', () => {
     expect(toPage).not.toHaveBeenCalled();
   });
 
+  // The wallet's worker stops when nothing needs it, which closes the port without the page knowing.
+  it("sends the page's accepted subscriptions again with its next request, keeping their answers from the page", async () => {
+    await loadContentScript();
+
+    const events = fromPage('events', 'evm(events.subscribe)');
+    const accounts = fromPage('accounts', 'pub(accounts.subscribe)');
+    fromPage('refused', 'solana(events.subscribe)');
+    ports[0].onMessage.emit({ id: 'events', response: true });
+    ports[0].onMessage.emit({ id: 'accounts', response: 'accounts' });
+    ports[0].onMessage.emit({ id: 'refused', error: 'Not authorized' });
+    toPage.mockClear();
+
+    ports[0].onDisconnect.emit();
+    expect(toPage).not.toHaveBeenCalled();
+    expect(mocks.connect).toHaveBeenCalledOnce();
+
+    const chainId = fromPage('chain', 'evm(request)');
+
+    expect(ports[1].postMessage.mock.calls).toEqual([[events], [accounts], [chainId]]);
+
+    ports[1].onMessage.emit({ id: 'events', response: true });
+    ports[1].onMessage.emit({ id: 'accounts', response: 'accounts' });
+    ports[1].onMessage.emit({ id: 'events', subscription: { type: 'chainChanged', payload: '0x89' } });
+    ports[1].onMessage.emit({ id: 'chain', response: '0x89' });
+
+    expect(toPage.mock.calls).toEqual([
+      [{ id: 'events', subscription: { type: 'chainChanged', payload: '0x89' }, origin: MESSAGE_ORIGIN_CONTENT }, '*'],
+      [{ id: 'chain', response: '0x89', origin: MESSAGE_ORIGIN_CONTENT }, '*'],
+    ]);
+  });
+
+  it('stops sending a subscription the page ended or the wallet no longer accepts', async () => {
+    await loadContentScript();
+
+    fromPage('accounts', 'pub(accounts.subscribe)');
+    const events = fromPage('events', 'evm(events.subscribe)');
+    ports[0].onMessage.emit({ id: 'accounts', response: 'accounts' });
+    ports[0].onMessage.emit({ id: 'events', response: true });
+    window.dispatchEvent(new MessageEvent('message', {
+      data: { id: 'unsubscribe', message: 'pub(accounts.unsubscribe)', origin: MESSAGE_ORIGIN_PAGE, request: { id: 'accounts' } },
+      source: window,
+    }));
+    ports[0].onDisconnect.emit();
+
+    const first = fromPage('first');
+
+    expect(ports[1].postMessage.mock.calls).toEqual([[events], [first]]);
+
+    // The site lost its permission meanwhile: the wallet refuses the subscription, and the page is not told twice.
+    toPage.mockClear();
+    ports[1].onMessage.emit({ id: 'events', error: 'Not authorized' });
+    expect(toPage).not.toHaveBeenCalled();
+    ports[1].onDisconnect.emit();
+
+    const second = fromPage('second');
+
+    expect(ports[2].postMessage.mock.calls).toEqual([[second]]);
+  });
+
+  it('does not send a subscription again that the closed port never answered', async () => {
+    await loadContentScript();
+
+    fromPage('events', 'evm(events.subscribe)');
+    ports[0].onDisconnect.emit();
+
+    const retry = fromPage('retry');
+
+    expect(ports[1].postMessage.mock.calls).toEqual([[retry]]);
+  });
+
   it('drops the port after a back/forward cache restore and fails its open requests', async () => {
     await loadContentScript();
 

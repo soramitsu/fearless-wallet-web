@@ -61,8 +61,10 @@ export class RequestService {
     this.solanaRequestHandler = new SolanaRequestHandler(this);
   }
 
+  // Called whenever a queue changes. A request waiting for the person keeps the node connections open.
   public updateIcon(shouldClose?: boolean): void {
     this.popupHandler.updateIcon(shouldClose);
+    this.state?.workerSleepService?.refresh();
   }
 
   public async resetWallet(): Promise<void> {

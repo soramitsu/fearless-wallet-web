@@ -46,6 +46,24 @@ describe('WalletConnect proposal approval UI', () => {
     const wrapper = form(); await approve(wrapper).trigger('click'); expect(boundary.approve).not.toHaveBeenCalled();
     wrapper.getComponent({ name: 'NotificationPopup' }).vm.$emit('handlerAccept'); await flushPromises(); expect(boundary.approve).toHaveBeenCalledOnce();
   });
+  // WalletConnect 2.23 dApps send every namespace as optional; older ones could add optional chains to a required one.
+  it.each([
+    ['only optional namespaces', {}, { eip155: { chains: ['eip155:1', 'eip155:999'], methods: ['personal_sign', 'wallet_switchEthereumChain'], events: [] } }],
+    ['an optional namespace beside a required one', { eip155: { chains: ['eip155:1'], methods: ['personal_sign'], events: [] } }, { eip155: { chains: ['eip155:137'], methods: ['wallet_switchEthereumChain'], events: [] } }],
+  ])('requires the extra acknowledgement for unsupported methods in %s the wallet approves', async (_, requiredNamespaces, optionalNamespaces) => {
+    Object.assign(boundary.extension.wcConnectRequests[0].request.params, { requiredNamespaces, optionalNamespaces });
+    const wrapper = form(); await approve(wrapper).trigger('click'); expect(boundary.approve).not.toHaveBeenCalled();
+    wrapper.getComponent({ name: 'NotificationPopup' }).vm.$emit('handlerAccept'); await flushPromises(); expect(boundary.approve).toHaveBeenCalledOnce();
+  });
+  it('ignores the methods of optional namespaces the wallet does not approve', async () => {
+    Object.assign(boundary.extension.wcConnectRequests[0].request.params, { requiredNamespaces: {}, optionalNamespaces: {
+      eip155: { chains: ['eip155:1'], methods: ['personal_sign'], events: [] },
+      polkadot: { chains: ['polkadot:91b171bb158e2d3848fa23a9f1c25182'], methods: ['polkadot_unknownMethod'], events: [] },
+      solana: { chains: ['solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'], methods: ['solana_signTransaction'], events: [] },
+    } });
+    const wrapper = form(); await approve(wrapper).trigger('click'); await flushPromises();
+    expect(wrapper.findComponent({ name: 'NotificationPopup' }).exists()).toBe(false); expect(boundary.approve).toHaveBeenCalledOnce();
+  });
   it.each(['wallets', 'network'])('shows a blocking alert for unavailable %s', async kind => {
     if (kind === 'wallets') boundary.accounts.accounts = boundary.accounts.accounts.filter((account: { isMobile?: boolean }) => account.isMobile);
     else boundary.extension.wcConnectRequests[0].request.params.requiredNamespaces.eip155.chains = ['eip155:999'];

@@ -43,6 +43,26 @@ export class SubstrateApiHandler {
     return true;
   }
 
+  /**
+   * Closes every connection, SORA's included, as the wallet goes quiet. Pending reconnects and the closed connections'
+   * events no longer count (connectionRevision), so nothing opens them again before initApi.
+   */
+  async destroyAll(): Promise<void> {
+    const entries = Object.entries(this.api);
+
+    for (const [key] of entries) {
+      this.connectionRevision[key] = (this.connectionRevision[key] ?? 0) + 1;
+      delete this.reconnectAttempts[key];
+      delete this.api[key];
+    }
+
+    SoraApiHandler.disconnect();
+    await Promise.allSettled(entries.map(async ([, { api, provider }]) => {
+      await api?.disconnect();
+      await provider?.disconnect();
+    }));
+  }
+
   refreshDotSamaApi(key: string) {
     const network = this.networkService.getNetworkJson(key);
 

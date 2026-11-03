@@ -11,10 +11,22 @@ import { APP_VERSION } from '@/consts/global';
 
 type EvmEmitterCallback = (eventName: EvmEventType, payload: unknown) => void;
 
+type NetworkCheck = { check: () => void; interval?: ReturnType<typeof setInterval> };
+
 export class EipService {
   private evmEventEmitterMap: Record<string, Record<string, EvmEmitterCallback>> = {};
+  // Each site's event subscription checks its network every few seconds, a request to the site's node. While the
+  // wallet is quiet (WorkerSleepService) none runs; they start again when it reconnects.
+  private readonly networkChecks = new Set<NetworkCheck>();
 
-  constructor(private state: State) {}
+  constructor(private state: State) {
+    state.networkService?.suspendedSubject?.subscribe((suspended) =>
+      this.networkChecks.forEach((entry) => {
+        clearInterval(entry.interval);
+        entry.interval = suspended ? undefined : setInterval(entry.check, CRON_GET_API_MAP_STATUS);
+      })
+    );
+  }
 
   async getNetworkVersion(url: string) {
     const chainId = await this.getEvmCurrentChainId(url);
@@ -202,7 +214,12 @@ export class EipService {
         .catch(console.error);
     };
 
-    const networkCheckInterval = setInterval(networkCheck, CRON_GET_API_MAP_STATUS);
+    const networkCheckEntry: NetworkCheck = {
+      check: networkCheck,
+      interval: this.state.networkService?.suspended ? undefined : setInterval(networkCheck, CRON_GET_API_MAP_STATUS),
+    };
+
+    this.networkChecks.add(networkCheckEntry);
 
     const provider = await this.getEvmProvider(url);
 
@@ -239,7 +256,8 @@ export class EipService {
       accountListSubscription.unsubscribe();
       authUrlSubscription.unsubscribe();
 
-      clearInterval(networkCheckInterval);
+      clearInterval(networkCheckEntry.interval);
+      this.networkChecks.delete(networkCheckEntry);
     });
 
     port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));

@@ -267,3 +267,70 @@ describe('balance subscription lifecycle', () => {
     expect(state.balanceService.substrateBalanceService.subscribeSubstrateBalances).toHaveBeenCalledWith(props, state, expect.any(Function));
   });
 });
+
+// The worker closes its connections when nothing needs the wallet (WorkerSleepService) and starts this again after.
+describe('balance subscriptions while the wallet is quiet', () => {
+  const fetches = (state: ReturnType<typeof fixture>['state']) => state.balanceService.fetchBalance.mock.calls.length;
+
+  it('ends every subscription and reads every balance again on the next start', async () => {
+    const { service, state } = fixture();
+    await service.start();
+    state.serviceInfoSubject.next(info(['polkadot']));
+    vi.advanceTimersByTime(1000);
+    expect(fetches(state)).toBe(1);
+    const unsub = vi.fn();
+    service.updateNetworkSubscription({ name: 'polkadot', func: unsub });
+
+    service.stop();
+    expect(unsub).toHaveBeenCalledOnce();
+    expect(service.subscriptionNetworksMap).toEqual({});
+    state.serviceInfoSubject.next(info(['polkadot']));
+    vi.advanceTimersByTime(1000);
+    expect(fetches(state)).toBe(1);
+    expect(state.cronService.updateCron).toHaveBeenCalledOnce();
+
+    await service.start();
+    // The same wallet and networks as before going quiet: everything is read again, not only what changed.
+    state.serviceInfoSubject.next(info(['polkadot']));
+    vi.advanceTimersByTime(1000);
+    expect(fetches(state)).toBe(2);
+    expect(state.balanceService.substrateBalanceService.subscribeSubstrateBalances).toHaveBeenLastCalledWith(
+      expect.objectContaining({ substrateNetworks: ['polkadot'] }), state, expect.any(Function)
+    );
+  });
+
+  it('drops an update that was waiting when the wallet went quiet', async () => {
+    const { service, state } = fixture();
+    await service.start();
+    state.serviceInfoSubject.next(info(['polkadot']));
+
+    service.stop();
+    vi.advanceTimersByTime(5000);
+
+    expect(fetches(state)).toBe(0);
+    expect(state.cronService.updateCron).not.toHaveBeenCalled();
+  });
+
+  it("stops waiting for other wallets' connections once quiet and reads nothing for them", async () => {
+    const { service, state } = fixture();
+    const others = [{ address: 'wallet-b', meta: { walletEcosystem: WalletEcosystem.Substrate } }];
+    const refreshNetworkBalances = vi.fn().mockResolvedValue(undefined);
+    const substrateFetch = vi.fn().mockResolvedValue(undefined);
+    Object.assign(state.keyringService, { getAllMainAccounts: vi.fn().mockReturnValue(others) });
+    Object.assign(state.networkService.activeNetworkByEcosystem, { substrate: [{ name: 'Polkadot' }] });
+    Object.assign(state, { getSubstrateApiMap: {} });
+    Object.assign(state.balanceService, {
+      refreshNetworkBalances,
+      balanceMap: { 'wallet-b': [{ balances: [{ name: 'Polkadot' }] }] },
+    });
+    Object.assign(state.balanceService.substrateBalanceService, { fetchBalance: substrateFetch });
+
+    await service.start();
+    await vi.advanceTimersByTimeAsync(3000);
+    service.stop();
+    await vi.advanceTimersByTimeAsync(60_000);
+
+    expect(refreshNetworkBalances).not.toHaveBeenCalled();
+    expect(substrateFetch).not.toHaveBeenCalled();
+  });
+});

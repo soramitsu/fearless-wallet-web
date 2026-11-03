@@ -1,10 +1,14 @@
 /* global Buffer, URL, clearInterval, clearTimeout, console, process, setInterval, setTimeout */
-// Real-Chrome soak of the extension worker sleeping (WorkerSleepService): with a wallet, the worker must end once no
-// wallet page or site needs it, and come back cleanly for the popup, a site's EVM RPC and an eth_sendTransaction
-// approval; a paired WalletConnect session keeps it running.
+// Real-Chrome soak of the extension worker sleeping (WorkerSleepService): with a wallet, the node connections must
+// close once no wallet page or site needs them; an unlocked wallet keeps its worker (and keys) until the 30-minute
+// session ends, a locked one lets it end; it comes back cleanly for the popup, a site's EVM RPC and an
+// eth_sendTransaction approval; a paired WalletConnect session keeps it running.
 //
 //   CHROME_BIN=<Chrome for Testing 147> node scripts/extension-sleep-soak.mjs --extension dist/extension/chrome \
-//     [--out build/reports/background-sleep-soak] [--baseline] [--offline] [--skip-walletconnect]
+//     [--out build/reports/background-sleep-soak] [--baseline] [--offline] [--skip-walletconnect] [--unlocked-deadline]
+//
+// `--unlocked-deadline` waits after step 1 for the unlocked wallet's session to end (30 minutes from the unlock) and
+// checks that the worker ends with it, then stops.
 //
 // The worker is watched through the browser's target list only: a DevTools session attached to the worker would keep
 // it running. Network use comes from Chrome's NetLog and CPU from the extension process. Ethereum is pointed at a
@@ -40,8 +44,13 @@ const fromApproval = process.argv.includes('--from-approval');
 const workerConsole = process.argv.includes('--debug-worker-console');
 // Debugging only: goes from the set-up straight to the WalletConnect step (step 6).
 const fromWalletConnect = process.argv.includes('--from-walletconnect');
+const unlockedDeadline = process.argv.includes('--unlocked-deadline');
 // About 2 minutes: the idle minute, Chrome's 30 s, and margin. Offline the registry retry alarm can start it again.
 const END_WITHIN_MS = offline ? 240_000 : 150_000;
+// The idle minute and margin: by then the node connections have closed.
+const QUIET_BY_MS = 75_000;
+const UNLOCKED_WINDOW_MS = 150_000;
+const SESSION_MS = 30 * 60_000;
 const chromeBinary = process.env.CHROME_BIN;
 const PORT_EXTENSION = 'fw-fearless-extension';
 const PASSWORD = 'fearless-sleep-soak-password';
@@ -409,7 +418,10 @@ async function createWallet(cdp, page, keyringFields, fakeNodeUrl) {
   });
   await call(cdp, page, 'pri(onboarding.setComplete)', null);
   await call(cdp, page, 'pri(accounts.update.current)', { address, walletEcosystem: 'substrate' });
+  // The session's 30 minutes start inside this call.
+  const unlockRequestedAt = Date.now();
   assert(await call(cdp, page, 'pri(keyring.unlock)', { password: PASSWORD }) === true, 'The new wallet did not unlock');
+  const unlockedAt = Date.now();
   // Ethereum through the local node, as a custom node the person chose.
   const networks = await call(cdp, page, 'pri(networkMap.getSubscription)', null, '(map) => !!map && !!Object.values(map).find((n) => n.name === "Ethereum")');
   const ethereum = Object.values(networks).find((network) => network.name === 'Ethereum');
@@ -418,7 +430,20 @@ async function createWallet(cdp, page, keyringFields, fakeNodeUrl) {
     network: { ...ethereum, customNodes: [{ name: 'Sleep soak node', url: fakeNodeUrl }], customProviders: { 'Sleep soak node': fakeNodeUrl }, currentProvider: fakeNodeUrl, isManual: true },
     expected,
   });
-  return { address, ethereumAddress, createdAt };
+  return { address, ethereumAddress, createdAt, unlockRequestedAt, unlockedAt };
+}
+
+// Locks the wallet as Settings' Lock does, from a wallet page that then closes.
+async function lockInPopup(cdp, extensionId) {
+  const page = await openWalletPage(cdp, extensionId);
+  await eventually(() => call(cdp, page, 'pri(app.isReady)', null), 'the popup to be answered');
+  assert(await call(cdp, page, 'pri(keyring.lock)', true) === true, 'The wallet did not lock');
+  // The popup reloads once the wallet locks, which drops the helper this harness put in it.
+  await eventually(async () => {
+    await evaluate(cdp, page.sessionId, MESSAGING);
+    return await call(cdp, page, 'pri(keyring.keyringIsLocked)', null) === true;
+  }, 'the wallet to read as locked');
+  await cdp.send('Target.closeTarget', { targetId: page.targetId });
 }
 
 // The dApp's provider calls, kept on the page so a later step can read them.
@@ -541,7 +566,7 @@ async function main() {
     let wallet = await openWalletPage(cdp, extensionId);
     await eventually(() => call(cdp, wallet, 'pri(app.isReady)', null), 'the background to answer');
     const account = await createWallet(cdp, wallet, keyringFields, node.url);
-    step('wallet created', { address: account.address, ethereumAddress: account.ethereumAddress });
+    step('wallet created', { address: account.address, ethereumAddress: account.ethereumAddress, unlockedAt: new Date(account.unlockedAt).toISOString() });
 
     // A dApp the wallet is connected to, which listens for the provider's events.
     const site = await openPage(cdp, dapp.url);
@@ -600,9 +625,32 @@ async function main() {
         step('baseline: 3 minutes after the popup closed', { workerRunning: worker.running, workerEnded: !!worker.endedSince(mark) });
         return;
       }
+      // Offline the wallet started again, so it is locked. Online it is still unlocked from the set-up.
+      if (!offline) {
+        // 1a. The unlocked wallet keeps its worker, and its keys, for the rest of its session (a local API call every
+        // 20 s); the node connections close after the idle minute all the same.
+        await sleep(UNLOCKED_WINDOW_MS);
+        windows.push({ name: 'popup closed, unlocked, first 75 s', from: mark, to: mark + QUIET_BY_MS });
+        windows.push({ name: 'unlocked, connections closed, 75 s', from: mark + QUIET_BY_MS, to: Date.now() });
+        step('unlocked wallet kept the worker', { workerRunning: worker.running, endedMeanwhile: !!worker.endedSince(mark) });
+        assert(worker.running && !worker.endedSince(mark), 'The worker ended while the wallet was unlocked');
+        if (unlockedDeadline) {
+          const from = Date.now();
+          await worker.waitForEnd(mark, account.unlockedAt + SESSION_MS + 3 * 60_000 - mark);
+          const ended = worker.endedSince(mark);
+          windows.push({ name: 'unlocked, connections closed, until the session ended', from, to: ended?.at ?? Date.now() });
+          step('worker ended with the unlock session', { msAfterUnlock: ended ? ended.at - account.unlockedAt : null, sessionMs: SESSION_MS });
+          assert(ended && ended.at >= account.unlockRequestedAt + SESSION_MS && ended.at <= account.unlockedAt + SESSION_MS + 90_000,
+            `The worker ended ${ended ? `${((ended.at - account.unlockedAt) / 1000).toFixed(1)} s` : 'never'} after the unlock`);
+          return;
+        }
+        // 1b. Locked in the popup, the wallet lets the worker end once the popup has closed.
+        await lockInPopup(cdp, extensionId);
+        mark = Date.now();
+      }
       const endAfterClose = await worker.waitForEnd(mark);
-      windows.push({ name: 'popup closed until the worker ended', from: mark, to: Date.now() });
-      step('worker ended after the popup closed', { ms: endAfterClose });
+      windows.push({ name: offline ? 'popup closed until the worker ended' : 'locked, popup closed until the worker ended', from: mark, to: Date.now() });
+      step(offline ? 'worker ended after the popup closed' : 'worker ended after the wallet locked and the popup closed', { ms: endAfterClose });
       assert(endAfterClose !== undefined && endAfterClose <= END_WITHIN_MS, `The worker did not end within ${END_WITHIN_MS / 1000} s (${endAfterClose})`);
 
       if (!fromApproval) {
@@ -708,10 +756,18 @@ async function main() {
       assert(sentResult.hash && broadcast?.chainId === 1, `The approval did not send the transaction: ${JSON.stringify(sentResult)}`);
       await cdp.send('Target.closeTarget', { targetId: approval.targetId }).catch(() => undefined);
       const closedApproval = Date.now();
-      const endAfterApproval = await worker.waitForEnd(closedApproval);
-      windows.push({ name: 'transaction request until the worker ended', from: mark, to: Date.now() });
-      step('worker ended after the approval', { ms: endAfterApproval });
-      assert(endAfterApproval !== undefined && endAfterApproval <= END_WITHIN_MS, 'The worker did not end after the approval');
+      // Unlocked in the request window, the wallet keeps its worker; the connections still close after the idle minute.
+      await sleep(UNLOCKED_WINDOW_MS);
+      windows.push({ name: 'transaction request until 75 s after the approval', from: mark, to: closedApproval + QUIET_BY_MS });
+      windows.push({ name: 'after the approval, unlocked, connections closed, 75 s', from: closedApproval + QUIET_BY_MS, to: Date.now() });
+      step('unlocked wallet kept the worker after the approval', { workerRunning: worker.running, endedMeanwhile: !!worker.endedSince(closedApproval) });
+      assert(worker.running && !worker.endedSince(closedApproval), 'The worker ended while the wallet was unlocked after the approval');
+      await lockInPopup(cdp, extensionId);
+      const lockedAt = Date.now();
+      const endAfterLock = await worker.waitForEnd(lockedAt);
+      windows.push({ name: 'locked after the approval until the worker ended', from: lockedAt, to: Date.now() });
+      step('worker ended after the wallet locked', { ms: endAfterLock });
+      assert(endAfterLock !== undefined && endAfterLock <= END_WITHIN_MS, 'The worker did not end after the wallet locked');
 
     }
     // 6. A paired WalletConnect session keeps the worker running without any page open.
@@ -739,6 +795,8 @@ async function main() {
       assert(approvedSession?.status === true, `The wallet did not approve the session: ${JSON.stringify(approvedSession)}`);
       const session = await sessionApproved;
       step('WalletConnect session paired', { topic: session.topic, accounts: session.namespaces.eip155?.accounts });
+      // Locked, so that only the session can keep the worker running.
+      assert(await call(cdp, wallet, 'pri(keyring.lock)', true) === true, 'The wallet did not lock');
       await cdp.send('Target.closeTarget', { targetId: wallet.targetId });
       mark = Date.now();
       await sleep(WALLETCONNECT_HOLD_MS);

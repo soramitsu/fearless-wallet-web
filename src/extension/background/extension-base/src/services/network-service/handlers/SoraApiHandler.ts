@@ -12,11 +12,13 @@ type Connection = ReturnType<typeof createConnection>;
 export class SoraApiHandler {
   private static current?: { connection: Connection; listeners: Listeners };
 
-  static initApi(currentProvider: string, eventListeners: Listeners) {
+  /** `chainId` is the registry chainId of the SORA network: SORA signs only through a node of that genesis. */
+  static initApi(currentProvider: string, eventListeners: Listeners, chainId?: string) {
     const previous = this.current;
     const connection = createConnection(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });
     this.current = { connection, listeners: eventListeners };
     apiSora.api = connection.api;
+    apiSora.chainId = chainId;
     apiSora.provider = connection.provider;
     // Invalidate old quotes/fees while the replacement node initializes.
     apiSora.dex = { baseAssetsIds: [], ids: new Map() };

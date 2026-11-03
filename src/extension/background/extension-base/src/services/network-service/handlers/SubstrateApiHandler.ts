@@ -93,7 +93,7 @@ export class SubstrateApiHandler {
     this.api[networkName].apiStatus = NETWORK_STATUS.CONNECTING;
     this.api[networkName].apiRetry = 0;
 
-    if (isSora(networkName)) return SoraApiHandler.initApi(currentProvider, eventListeners);
+    if (isSora(networkName)) return SoraApiHandler.initApi(currentProvider, eventListeners, network.chainId);
 
     // A replaced connection would stay open and keep reconnecting. Its events no longer count (connectionRevision).
     const { api: replacedApi, provider: replacedProvider } = this.api[networkName];
@@ -142,6 +142,9 @@ export class SubstrateApiHandler {
     });
 
     this.state.balanceService.updateUtilityED(networkName);
+    this.state.balanceService
+      .updateAssetMinimums(networkName)
+      .catch((error: unknown) => console.warn(`[Balances] ${networkName}: asset minimums not read`, error));
   }
 
   async onDisconnected(networkName: NetworkName) {

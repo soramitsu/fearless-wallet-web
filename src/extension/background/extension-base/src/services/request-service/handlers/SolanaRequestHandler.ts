@@ -1,7 +1,7 @@
 import { BehaviorSubject } from 'rxjs';
 import { createSigningRequestId } from '@extension-base/services/request-service/signingRequestId';
 import { assertSolanaMessageIsNotTransaction } from '@extension-base/services/request-service/handlers/solanaSigning';
-import { siteApprovalsInProgress } from '@extension-base/services/request-service/siteApprovals';
+import { siteApprovalsInProgress, siteTransactionsBeingSent } from '@extension-base/services/request-service/siteApprovals';
 import type { RequestService } from '@extension-base/services/request-service';
 import type {
   SolanaRequestPayload,
@@ -55,7 +55,10 @@ export default class SolanaRequestHandler {
   }
 
   cancelPending(error: Error): void {
-    for (const request of Object.values(this.solanaRequests)) request.reject(error);
+    for (const request of Object.values(this.solanaRequests)) {
+      // An approval sending a sign-and-send settles the request, with the signature or its own error.
+      if (!siteTransactionsBeingSent.has(request)) request.reject(error);
+    }
   }
 
   getSolanaSignRequest(id: string): SolanaRequestsSubjectPayload | undefined {

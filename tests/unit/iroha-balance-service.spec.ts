@@ -1,3 +1,4 @@
+import { getMockAssets } from '@extension-base/background/helpers/assets';
 import { APIItemState } from '@extension-base/api/types/networks';
 import BalanceService from '@extension-base/services/balance-service';
 import IrohaBalanceService, {
@@ -233,13 +234,47 @@ describe('IrohaBalanceService', () => {
 
     await expect(
       service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] })
-    ).resolves.toEqual([{ assetId: TAIRA_XOR_ASSET_ID, balance: '0', network: 'Taira' }]);
+    ).resolves.toEqual([]);
 
     expect(client.getAssetDefinitions).toHaveBeenCalled();
     expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).toMatchObject({
       id: TAIRA_XOR_ASSET_ID,
       state: APIItemState.ERROR,
     });
+    // Nothing was read, so the balance is unknown, not a guessed 0.
+    expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).toMatchObject({
+      total: undefined, transferable: undefined, free: undefined, timestamp: undefined,
+    });
+    warn.mockRestore();
+  });
+
+  // Seeded groups are named after their network, not "iroha": reads went into a second group, the seeded one stayed
+  // pending, and a failed read did not find the amount read before.
+  it('reads into the group seeded for the network and keeps its earlier amount when a read fails', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const taira = irohaNetwork('Taira', TAIRA_CHAIN_ID);
+    const seeded = getMockAssets({ Taira: taira }, WalletEcosystem.Iroha);
+    const { state } = createState([taira], { [SUBSTRATE_ADDRESS]: seeded });
+    const getAccountAssets = vi.fn().mockResolvedValue(routeBody({
+      items: [{ account_id: TAIRA_ACCOUNT_ID, asset: TAIRA_XOR_ASSET_ID, quantity: '2.5', scope: 'global' }],
+    }));
+    const client: IrohaBalanceClient = {
+      getAccountAssets,
+      getAssetDefinitions: vi.fn().mockResolvedValue(routeBody({ items: [{ id: TAIRA_XOR_ASSET_ID, name: 'XOR', spec: { scale: 9 } }] })),
+    };
+    const service = new IrohaBalanceService(state, vi.fn(() => client));
+    const read = () => service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] });
+
+    await read();
+    const groups = state.balanceService.balanceMap[SUBSTRATE_ADDRESS];
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toMatchObject({ groupId: TAIRA_XOR_ASSET_ID, relayChain: 'iroha' });
+    expect(groups[0].balances).toEqual([expect.objectContaining({ state: APIItemState.READY, total: '2.5' })]);
+
+    getAccountAssets.mockRejectedValueOnce(new Error('Torii is unavailable'));
+    await expect(read()).resolves.toEqual([{ assetId: TAIRA_XOR_ASSET_ID, balance: '2.5', network: 'Taira' }]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].balances).toEqual([expect.objectContaining({ state: APIItemState.ERROR, total: '2.5' })]);
     warn.mockRestore();
   });
 
@@ -265,7 +300,7 @@ describe('IrohaBalanceService', () => {
 
     await expect(
       service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] })
-    ).resolves.toEqual([{ assetId: TAIRA_XOR_ASSET_ID, balance: '0', network: 'Taira' }]);
+    ).resolves.toEqual([]);
 
     expect(getAccountAssets).toHaveBeenCalledTimes(10);
     expect(getAccountAssets).toHaveBeenNthCalledWith(1, TAIRA_ACCOUNT_ID, { cursor: undefined, limit: 100 });
@@ -297,7 +332,7 @@ describe('IrohaBalanceService', () => {
 
     await expect(
       service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] })
-    ).resolves.toEqual([{ assetId: TAIRA_XOR_ASSET_ID, balance: '0', network: 'Taira' }]);
+    ).resolves.toEqual([]);
 
     expect(getAssetDefinitions).toHaveBeenCalledTimes(20);
     expect(getAssetDefinitions).toHaveBeenLastCalledWith({ cursor: 'more', limit: 100 });
@@ -407,7 +442,7 @@ describe('IrohaBalanceService', () => {
 
         await expect(
           service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] })
-        ).resolves.toEqual([{ assetId: TAIRA_XOR_ASSET_ID, balance: '0', network: 'Taira' }]);
+        ).resolves.toEqual([]);
         expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0].state).toBe(APIItemState.ERROR);
       }
     } finally {
@@ -436,7 +471,7 @@ describe('IrohaBalanceService', () => {
 
     await expect(
       service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] })
-    ).resolves.toEqual([{ assetId: TAIRA_XOR_ASSET_ID, balance: '0', network: 'Taira' }]);
+    ).resolves.toEqual([]);
     expect(client.getAssetDefinitions).not.toHaveBeenCalled();
     expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0].state).toBe(APIItemState.ERROR);
     warn.mockRestore();
@@ -468,7 +503,7 @@ describe('IrohaBalanceService', () => {
 
     await expect(
       service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] })
-    ).resolves.toEqual([{ assetId: TAIRA_XOR_ASSET_ID, balance: '0', network: 'Taira' }]);
+    ).resolves.toEqual([]);
     expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0].state).toBe(APIItemState.ERROR);
     warn.mockRestore();
   });
@@ -500,7 +535,7 @@ describe('IrohaBalanceService', () => {
 
     await expect(
       service.fetchBalance({ address: SUBSTRATE_ADDRESS, irohaAddress: TAIRA_ACCOUNT_ID, networks: ['taira'] })
-    ).resolves.toEqual([{ assetId: TAIRA_XOR_ASSET_ID, balance: '0', network: 'Taira' }]);
+    ).resolves.toEqual([]);
     expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0].state).toBe(APIItemState.ERROR);
     warn.mockRestore();
   });
@@ -780,7 +815,7 @@ describe('IrohaBalanceService', () => {
         irohaAddress: NEXUS_ACCOUNT_ID,
         networks: ['nexus'],
       })
-    ).resolves.toEqual([{ assetId: 'xor#sora', balance: '0', network: 'Nexus' }]);
+    ).resolves.toEqual([]);
 
     expect(clientFactory).toHaveBeenCalledWith(nexus, 'nexus');
     expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).toMatchObject({

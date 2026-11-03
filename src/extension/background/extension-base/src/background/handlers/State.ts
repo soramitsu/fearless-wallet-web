@@ -233,9 +233,15 @@ export default class State {
   private async selectableAccounts() {
     const accounts = this.keyringService.getAllMainAccounts();
     if (!accounts.some((account) => account.meta.isMobile && account.meta.wcTopic)) return accounts;
-    const policy = await new WalletConnectRetiredSessions().readPolicy();
+    // A saved session record that cannot be read approves no mobile wallet; the wallet's own accounts stay selectable,
+    // where start-up used to choose none.
+    const policy = await new WalletConnectRetiredSessions().readPolicy().catch((error: unknown) => {
+      console.warn('[WalletConnect] The saved session record could not be read', error);
+
+      return undefined;
+    });
     return this.keyringService.getAllMainAccounts().filter((account) =>
-      !account.meta.isMobile || sessionIsApproved(policy, account.meta.wcTopic as string));
+      !account.meta.isMobile || (policy !== undefined && sessionIsApproved(policy, account.meta.wcTopic as string)));
   }
 
   async onInstall() {
@@ -332,6 +338,24 @@ export default class State {
     this.networkService.updateNetworkStore();
     this.networkService.saveSelectedNetworks();
 
+    this.updateServiceInfo();
+  }
+
+  /**
+   * Connects a network a site uses (wallet_switchEthereumChain, a WalletConnect transaction) without changing the
+   * wallet's network selection. setActiveNetworks(network) made that one network the selection, which hid the wallet's
+   * other balances and disconnected every other network.
+   */
+  async activateDappNetwork(networkKey: string): Promise<void> {
+    const network = this.networkService.getNetworkJson(networkKey);
+
+    if (!network || network.active || network.disabled) return;
+
+    this.networkService.networkMap[network.name].active = true;
+
+    if (this.ready) this.networkService.initNetworkApis();
+
+    this.networkService.updateNetworkStore();
     this.updateServiceInfo();
   }
 
@@ -815,8 +839,7 @@ export default class State {
     const initial = this.getEvmAuthorizationSnapshot(shortenUrl);
     if (!initial.authorization?.isAllowed || !initial.authorization.evmAuthorizedAccount)
       throw new Error('EVM account is not authorized for this site');
-    const network = this.networkService.getNetworkJson(networkKey);
-    if (!network.active) await this.setActiveNetworks(networkKey);
+    await this.activateDappNetwork(networkKey);
     await this.requestService.mutateAuthorizations((entries) => {
       if (this.getEvmAuthorizationSnapshot(shortenUrl).revision !== initial.revision || !entries[shortenUrl])
         throw new Error('Site authorization changed during network activation');

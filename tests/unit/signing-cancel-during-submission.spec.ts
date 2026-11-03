@@ -292,3 +292,115 @@ describe('closing the page whose request an approval is submitting', () => {
     expect(state.keyringService.exportMnemonic).not.toHaveBeenCalled();
   });
 });
+
+// Locking (the auto-lock or Lock) and Reset wallet cancel every signing request. They used to tell a dApp "Wallet
+// locked" while the transaction an approval was broadcasting landed, so a retry could pay twice.
+describe('locking the wallet while an approval submits a transaction', () => {
+  const locked = 'Wallet locked. Request approval again after unlocking.';
+  const lock = () => {
+    evm.cancelPending(new Error(locked));
+    solana.cancelPending(new Error(locked));
+  };
+
+  it('leaves an EVM transaction whose broadcast is in flight to finish and gives the dApp its hash', async () => {
+    const { dapp } = await queueEvm('eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
+    const provider = evmProvider();
+    const broadcast = deferred<unknown>();
+    provider.send.mockReturnValueOnce(broadcast.promise);
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
+    const approving = extension.signEvmApprove({ id: 'first' });
+    await vi.waitFor(() => expect(provider.send).toHaveBeenCalledOnce());
+
+    lock();
+    expect(evm.getEvmSignRequest('first')).toBeDefined();
+
+    const sent = Transaction.from((provider.send.mock.calls[0] as [string, [string]])[1][0]);
+    broadcast.resolve(sent.hash);
+    expect(await approving).toBe(true);
+    expect(await dapp).toEqual({ value: { id: 'first', payload: sent.hash } });
+  });
+
+  it('tells the dApp the wallet locked when the approval then ends without sending the transaction', async () => {
+    const { dapp } = await queueEvm('eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
+    const provider = evmProvider();
+    const chain = deferred<{ chainId: bigint }>();
+    provider.getNetwork.mockReturnValueOnce(chain.promise);
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
+    const approving = extension.signEvmApprove({ id: 'first' });
+    await vi.waitFor(() => expect(provider.getNetwork).toHaveBeenCalledOnce());
+
+    lock();
+    chain.resolve({ chainId: 137n });
+
+    await expect(approving).rejects.toThrow('reviewed network');
+    expect(await dapp).toEqual({ error: locked });
+    expect(evm.getEvmSignRequest('first')).toBeUndefined();
+    expect(provider.send).not.toHaveBeenCalledWith('eth_sendRawTransaction', expect.anything());
+  });
+
+  it('leaves a Solana sign-and-send whose broadcast is in flight to finish', async () => {
+    const dapp = queueSolana('signAndSendTransaction');
+    const broadcast = deferred<string>();
+    mocks.solanaBroadcast.mockReturnValueOnce(broadcast.promise);
+    const approving = extension.signSolanaApprove({ id: 'first' });
+    await vi.waitFor(() => expect(mocks.solanaBroadcast).toHaveBeenCalledOnce());
+
+    lock();
+    expect(solana.getSolanaSignRequest('first')).toBeDefined();
+
+    broadcast.resolve('landed-signature');
+    expect(await approving).toBe(true);
+    expect(await dapp).toMatchObject({ value: { publicKey: solanaAddress, signature: 'landed-signature' } });
+  });
+
+  it('still cancels requests no approval holds, and a sign-only one under approval, so nothing is signed', async () => {
+    const { dapp: transfer } = await queueEvm('eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
+    lock();
+    expect(await transfer).toEqual({ error: locked });
+
+    const dapp = queueSolana('signTransaction');
+    const check = deferred<boolean>();
+    vi.mocked(checkIfDenied).mockReturnValueOnce(check.promise);
+    const approving = extension.signSolanaApprove({ id: 'first' });
+    lock();
+    check.resolve(false);
+
+    expect(await approving).toBe(false);
+    expect(await dapp).toEqual({ error: locked });
+    expect(state.keyringService.exportMnemonic).not.toHaveBeenCalled();
+  });
+
+  it('leaves a WalletConnect transaction an approval is sending to that approval, and cancels the rest', async () => {
+    const session = (id: number, method: string) =>
+      ({ id, topic: 'public-topic', params: { chainId: 'eip155:1', request: { method, params: [] } } }) as never;
+    const queued = (method: string) => {
+      const dapp = outcome(evm.onWCSign(session(evm.allWcSignRequests.length + 1, method)));
+      const { approvalId } = evm.allWcSignRequests.at(-1)! as unknown as { approvalId: string };
+
+      return { approvalId, dapp };
+    };
+
+    const sent = queued('eth_sendTransaction');
+    const refused = queued('eth_sendTransaction');
+    const unsigned = queued('eth_sendTransaction');
+    const message = queued('personal_sign');
+    const idle = queued('eth_sendTransaction');
+    const approvals = [sent, refused, unsigned, message].map(({ approvalId }) => evm.claimWCSignRequest(approvalId));
+    // The first two approvals signed their transactions and are sending them.
+    approvals.slice(0, 2).forEach((approval) => evm.markWCSubmitting(approval));
+
+    lock();
+    // An approval that has not sent its transaction yet finds its request gone before it signs.
+    expect(await unsigned.dapp).toEqual({ error: locked });
+    expect(await message.dapp).toEqual({ error: locked });
+    expect(await idle.dapp).toEqual({ error: locked });
+    expect(evm.getSignWCRequest(sent.approvalId)).toBe(approvals[0]);
+    expect(evm.getSignWCRequest(refused.approvalId)).toBe(approvals[1]);
+
+    // The first transaction was sent; the node refused the second, so its approval ends without settling it.
+    approvals[0].resolve({ id: 'public-topic', payload: '0xhash' } as never);
+    approvals.forEach((approval) => evm.releaseWCSignRequest(approval));
+    expect(await sent.dapp).toEqual({ value: { id: 'public-topic', payload: '0xhash' } });
+    expect(await refused.dapp).toEqual({ error: locked });
+  });
+});

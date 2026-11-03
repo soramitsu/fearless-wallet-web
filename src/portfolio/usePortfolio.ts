@@ -1,4 +1,5 @@
-import { computed, onScopeDispose, ref, watch } from 'vue';
+import { computed, effectScope, getCurrentScope, onScopeDispose, ref, watch, type EffectScope } from 'vue';
+import { getActivePinia, type Pinia } from 'pinia';
 import type { NetworkJson } from '@extension-base/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
 import {
@@ -18,11 +19,42 @@ import { useAccountsStore } from '@/stores/accounts';
 import { useNetworksStore } from '@/stores/networks';
 import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
 
+type Portfolio = ReturnType<typeof createPortfolio>;
+
+let shared: { pinia: Pinia | undefined; scope: EffectScope; portfolio: Portfolio; users: number } | undefined;
+
 /**
  * Everything the portfolio header and list share: the effective preferences, the wallet scope, the display filter,
  * the one zero rule, and the wallet-wide summary. The header and the list read the same summary, so they agree.
+ *
+ * It is built once for every screen that shows it (the wallet, its list, the token locations) and kept while one of
+ * them is open: each used to rebuild the same summary on every balance, price or network update.
  */
-export function usePortfolio() {
+export function usePortfolio(): Portfolio {
+  const pinia = getActivePinia();
+
+  if (!shared || shared.pinia !== pinia) {
+    shared?.scope.stop();
+    const scope = effectScope(true);
+    shared = { pinia, scope, portfolio: scope.run(createPortfolio)!, users: 0 };
+  }
+
+  const current = shared;
+
+  if (getCurrentScope()) {
+    current.users += 1;
+    onScopeDispose(() => {
+      current.users -= 1;
+      if (current.users > 0) return;
+      current.scope.stop();
+      if (shared === current) shared = undefined;
+    });
+  }
+
+  return current.portfolio;
+}
+
+function createPortfolio() {
   const accountsStore = useAccountsStore();
   const networksStore = useNetworksStore();
   const sendKillSwitchStore = useSendKillSwitchStore();

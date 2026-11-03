@@ -214,7 +214,6 @@ export default defineComponent({
     PortfolioGroupNetworkPicker,
   },
   props: {
-    balances: Array,
     filterValue: String,
     showAssetsManagementForm: Boolean,
     /** Manage mode lists only hidden assets (the "Hidden (N)" filter). */

@@ -34,7 +34,7 @@ export const state = (): State => {
   return {
     selectedWallet: { address: '', ethereumAddress: '', name: '' } as SelectedWallet,
     selectedFiat: 'usd',
-    selectedNetworks: {},
+    selectedNetworks: accountController.getNetworkFilters(),
     balances: [],
     networkScanStates: {},
     nfts: {},

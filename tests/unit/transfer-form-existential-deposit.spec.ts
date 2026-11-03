@@ -242,9 +242,25 @@ describe('Send screen existential deposit check', () => {
     expect(check.call(form({ originNet: { ecosystem } }))).toBe(false);
   });
 
-  it('leaves cross-chain sends, which check the deposit themselves, and other assets alone', () => {
+  it('leaves cross-chain sends, which check the deposit themselves, alone', () => {
     expect(check.call(form({ isTransfer: false }))).toBe(false);
-    expect(check.call(form({}, { isUtility: false }))).toBe(false);
     expect(check.call(form({ currencyBalance: undefined }))).toBe(false);
+  });
+
+  // An ORML token or an Asset Hub asset left below its own minimum is removed like a native balance. It used to go
+  // through unasked.
+  it('asks before a token send leaves less than the token\'s own minimum, without counting the native fee', () => {
+    // Asset Hub USDT: 6 decimals, min balance 0.01 USDT; 1.5 USDT held.
+    const usdt = { existentialDeposit: '10000', isUtility: false, precision: 6, transferable: '1.5' };
+
+    expect(check.call(form({ syncedAmount: '1.495' }, usdt))).toBe(true);
+    // The fee is paid in DOT, so 1.49 USDT leaves exactly the minimum.
+    expect(check.call(form({ syncedAmount: '1.49' }, usdt))).toBe(false);
+    expect(check.call(form({ syncedAmount: '1.490001' }, usdt))).toBe(true);
+    // Sending everything leaves nothing to remove.
+    expect(check.call(form({ syncedAmount: '1.5' }, usdt))).toBe(false);
+    // A token whose minimum is not known, or 0, asks for no check.
+    expect(check.call(form({ syncedAmount: '1.495' }, { ...usdt, existentialDeposit: undefined }))).toBe(false);
+    expect(check.call(form({ syncedAmount: '1.495' }, { ...usdt, existentialDeposit: '0' }))).toBe(false);
   });
 });

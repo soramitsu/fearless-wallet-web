@@ -5,11 +5,19 @@ import { type Asset } from '@/sora/types';
 import { poolMarkerForAmount, poolWithdrawal } from '@/sora/pools';
 
 const asset = (address: string, decimals = 18): Asset => ({ address, decimals, symbol: 'TEST', name: 'Test', isMintable: false });
+// The SORA Mainnet chainId of the registry, which is its genesis hash.
+const SORA_MAINNET = '7e4e32d0feafd4f9c9414b0be86373f9a1efa904809b683453a9af6856d38ad5';
+const SORA_TEST = '3266816be9fa51b32cfea58d3e33ca77246bc9618595a4300e44c8856a8d8a17';
 function fixture() {
   const client = new SoraClient();
   const pair = { address: '5GrwvaEF5zXb26Fz9rcQpDWS64pdDujn2AUVFQZh3aTw6rVqY', isLocked: false } as Runtime;
   client.account = { json: null, pair };
-  client.api = { isConnected: true, tx: { liquidityProxy: { swap: vi.fn(() => ({})) }, poolXYK: { depositLiquidity: vi.fn(() => ({})), withdrawLiquidity: vi.fn(() => ({})) } } };
+  client.chainId = SORA_MAINNET;
+  client.api = {
+    isConnected: true,
+    genesisHash: { toHex: () => `0x${SORA_MAINNET}` },
+    tx: { liquidityProxy: { swap: vi.fn(() => ({})) }, poolXYK: { depositLiquidity: vi.fn(() => ({})), withdrawLiquidity: vi.fn(() => ({})) } },
+  };
   client.dex.ids.set(XOR, 0);
   return { client, pair };
 }
@@ -111,6 +119,24 @@ describe('local signing boundary', () => {
     const tx = { registry: {}, signAndSend: vi.fn() };
     await expect(client.submit(tx)).rejects.toThrow('runtime changed');
     expect(tx.signAndSend).not.toHaveBeenCalled();
+  });
+  // A wrong custom or registry node would have the transaction signed for, and move funds on, another chain.
+  it('refuses to sign through a node whose genesis is not the SORA network\'s', async () => {
+    for (const change of ['other chain', 'unreported genesis', 'unknown network', 'malformed chainId'] as const) {
+      const { client } = fixture();
+      if (change === 'other chain') client.api.genesisHash = { toHex: () => `0x${SORA_TEST}` };
+      if (change === 'unreported genesis') client.api.genesisHash = { toHex: () => { throw new Error('not ready'); } };
+      if (change === 'unknown network') client.chainId = undefined;
+      if (change === 'malformed chainId') client.chainId = 'sora';
+      const tx = { signAndSend: vi.fn() };
+      await expect(client.submit(tx)).rejects.toThrow('substrate_network_genesis_mismatch');
+      expect(tx.signAndSend).not.toHaveBeenCalled();
+    }
+
+    const { client } = fixture();
+    client.api.genesisHash = { toHex: () => `0x${SORA_MAINNET.toUpperCase()}` };
+    const tx = { signAndSend: vi.fn((_pair, _options, cb) => { cb({ status: { isFinalized: true }, events: [] }); return Promise.resolve(vi.fn()); }) };
+    await expect(client.submit(tx)).resolves.toBeUndefined();
   });
   it('waits for finalization and releases the subscription', async () => {
     const { client } = fixture();

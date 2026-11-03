@@ -72,7 +72,7 @@ import {
   resolveSolanaSignAndSendTransaction,
   resolveSolanaSigning,
 } from '@extension-base/services/request-service/handlers/solanaSigning';
-import { siteApprovalsInProgress } from '@extension-base/services/request-service/siteApprovals';
+import { siteApprovalsInProgress, siteTransactionsBeingSent } from '@extension-base/services/request-service/siteApprovals';
 import { createClusterBoundSolanaRpcClient } from '@extension-base/services/solana-rpc-service';
 import { assertSendCapability } from '@extension-base/services/send-kill-switch-service';
 import { IrohaTransactionStatusUnknownError } from '@extension-base/services/iroha-torii-service';
@@ -795,6 +795,7 @@ export default class Extension extends FWExtensionBase {
       if (request.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
         const signed = await signer.signTransaction(populated!);
         assertProviderCurrent();
+        handler.markEvmSubmitting(request);
         try {
           // Only the node's refusal fails the request. The site gets the hash of a transaction the network may
           // have: told it failed, it could send the amount again with a fresh nonce.
@@ -851,6 +852,11 @@ export default class Extension extends FWExtensionBase {
               accounts,
               broadcastTransaction: (transactionBase64, options) => {
                 this.assertNonEvmSigningAuthorization(request);
+                // Locking or resetting the wallet cancels a request before it is sent, and only then.
+                if (this.state.requestService.getSignRequest(id, 'solana') !== request) {
+                  throw new Error('Solana signing request was cancelled');
+                }
+                siteTransactionsBeingSent.add(request);
                 return createClusterBoundSolanaRpcClient({ network: 'mainnet' }).sendRawTransaction(transactionBase64, options);
               },
               exportMnemonic,
@@ -2477,6 +2483,7 @@ export default class Extension extends FWExtensionBase {
       if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
         const signed = await signer.signTransaction(populated!);
         assertProviderCurrent();
+        handler.markWCSubmitting(request);
         try {
           // Only the node's refusal fails the request. The dApp gets the hash of a transaction the network may
           // have: told it failed, it could send the amount again with a fresh nonce.

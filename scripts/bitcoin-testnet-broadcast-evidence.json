@@ -3,7 +3,7 @@
   "scope": "web-bitcoin-testnet-broadcast-readiness",
   "status": "ready",
   "releaseEnabled": true,
-  "lastReviewed": "2026-10-25",
+  "lastReviewed": "2026-11-03",
   "blockers": [],
   "smokeCommand": "yarn test:smoke:bitcoin",
   "readyVerificationCommands": [
@@ -44,15 +44,15 @@
   ],
   "evidence": [
     {
-      "txid": "741a837b51d964634448aa479359787a9e1a90ac754a09cb74291967b53132c9",
+      "txid": "bd857b994256a447300cb984cd59afd0dc3a99d843f1b61a28db2a43d4fee1fd",
       "sourceAddress": "tb1q77es2gt0mkz32yxser2w3t78r2y20f7s3xqptf",
       "recipientAddress": "tb1q9x084ta6myvtcy697px3axazyhm6hpkp2dxze9",
-      "amountSat": "10000",
-      "outpoint": "b84ca02e89e73c3d4bfa41a14c63511e4ac9312be39cb4174950ecaab465422d:1",
+      "amountSat": "1000",
+      "outpoint": "741a837b51d964634448aa479359787a9e1a90ac754a09cb74291967b53132c9:1",
       "indexerUrl": "https://blockstream.info/testnet/api",
-      "timestamp": "2026-10-25T00:31:52Z",
-      "commit": "41bdb41d8d21db0d2c3c7a55b723b91c1c6e809a",
-      "operator": "codex (yarn test:smoke:bitcoin)"
+      "timestamp": "2026-11-03T01:27:58Z",
+      "commit": "1bfc0cc8723867fb2bbe9c92dc6d60b93ebfeab9",
+      "operator": "claude (yarn test:smoke:bitcoin)"
     }
   ]
 }

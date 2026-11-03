@@ -33,7 +33,6 @@
           :activeTabName="activeTabName"
           :filterValue="filterValue"
           :showAssetsManagementForm="showAssetsManagementForm"
-          :tokenGroups="filteredTokenGroups"
           :hideZero="accountsStore.portfolioView.hideZero"
           :showTestnets="accountsStore.portfolioView.showTestnets"
           :lens="accountsStore.portfolioView.lens"
@@ -54,7 +53,6 @@
 
         <router-view
           :route="ownRoute"
-          :balances="filteredTokenGroups"
           :showAssetsManagementForm="showAssetsManagementForm"
           :manageHiddenOnly="manageHiddenOnly"
           :filterValue="filterValue"
@@ -95,13 +93,11 @@ import type { TabWallet } from '@/interfaces';
 import WalletSettings from '@/screens/wallet&asset/wallet/WalletSettings.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
-import { accountController } from '@/controllers/accountController';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
-import { defaultSortingCurrencies, filterBalanceItemsByNetwork } from '@/helpers/currencies';
 import { usePortfolio } from '@/portfolio/usePortfolio';
 import { PORTFOLIO_DASHBOARD_ENABLED } from '@/portfolio/dashboard/dashboardFlag';
 import { effectiveScope } from '@/portfolio/dashboard/preferences';
@@ -109,9 +105,7 @@ import { resolvePortfolioSort, type PortfolioLens, type PortfolioSort } from '@/
 import { formatDecimalString } from '@/helpers/numbers';
 import { CONTENT_FORM_HEIGHT, IS_EXTENSION } from '@/consts/global';
 import { networksIsPending } from '@/helpers/shimmers';
-import BaseApi from '@/util/BaseApi';
 import { fetchEvmBalance } from '@/extension/messaging';
-import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 import { usePortfolioDashboardStore } from '@/stores/portfolioDashboard';
@@ -245,31 +239,6 @@ export default defineComponent({ name: 'Wallet',
         amount: this.portfolioSummary.changeAmount,
       };
     },
-    sortedTokenGroups() {
-      const balances = this.accountsStore.selectedWallet.hasEthereum
-            ? this.accountsStore.balances
-            : this.accountsStore.balances.filter((el) => !BaseApi.isEthereumNetwork(el.mainNetwork));
-
-          const { address } = this.accountsStore.selectedWallet;
-
-          if (address === '') return [];
-
-          if (!this.accountsStore.isCustomSort(address))
-            return defaultSortingCurrencies(
-              this.accountsStore.balances,
-              this.networksStore.assetsPrice,
-              this.accountsStore.selectedNetwork
-            );
-
-          const sequence = accountController.getSequenceAssetsByAddress(address);
-
-          return balances.sort((currency1, currency2) => {
-            const index1 = sequence.indexOf(currency1.groupId);
-            const index2 = sequence.indexOf(currency2.groupId);
-
-            return index1 - index2;
-          });
-    },
     showShimmers() {
       return networksIsPending(
         this.networksStore.networks, this.accountsStore.selectedNetwork, this.accountsStore.selectedWallet.address
@@ -277,35 +246,6 @@ export default defineComponent({ name: 'Wallet',
     },
     showLoadingBalance() {
       return this.showShimmers;
-    },
-    filteredTokenGroups() {
-      const isAllNetworks = isSameString(this.accountsStore.selectedNetwork, ALL_NETWORKS);
-
-          const tokenGroups = this.accountsStore.selectedWallet.isMobile
-            ? this.sortedTokenGroups.filter(({ balances }) => {
-                return balances.some((balance) => {
-                  const account = this.accountsStore.accounts.find(
-                    ({ address }) => address === this.accountsStore.selectedWallet.address
-                  );
-
-                  const network = this.networksStore.getNetwork(balance.name);
-
-                  return account?.chains?.some((el) => network.chainId.includes(el));
-                });
-              })
-            : this.sortedTokenGroups;
-
-          const filteredByNetwork = isAllNetworks
-            ? tokenGroups
-            : tokenGroups.filter(({ balances }) => {
-                return balances.some((balance) => filterBalanceItemsByNetwork(balance, this.accountsStore.selectedNetwork));
-              });
-
-          if (this.showAssetsManagementForm) return filteredByNetwork;
-
-          const filter = this.filterValue.trim().toLowerCase();
-
-          return filteredByNetwork.filter(({ symbol }) => symbol.toLowerCase().includes(filter));
     },
     showCurrencies() {
       return this.activeTabName === 'currencies';

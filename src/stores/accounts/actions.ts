@@ -21,6 +21,7 @@ type Actions = {
   recordPortfolioLayoutFirstRun(this: AccountStore): void;
   dismissPortfolioLayoutNote(this: AccountStore): void;
   setSelectedNetwork(this: AccountStore, network: string): void;
+  seedSelectedNetwork(this: AccountStore, network: string): void;
   hidePolkaswapAlert(this: AccountStore): Promise<boolean>;
   syncSoraDisclaimerStatus(this: AccountStore): Promise<boolean>;
   hideNetworkWarning(this: AccountStore, network: string): void;
@@ -142,6 +143,7 @@ export const actions: Actions = {
     this.accounts = accounts;
   },
 
+  // The filter chosen in the network list is the wallet's until it is changed there, as other view settings are.
   setSelectedNetwork(network) {
     const {
       selectedWallet: { address },
@@ -149,6 +151,22 @@ export const actions: Actions = {
     } = this;
 
     this.selectedNetworks = { ...selectedNetworks, [address]: network };
+
+    try {
+      accountController.setNetworkFilters(this.selectedNetworks);
+    } catch {
+      // A convenience preference: the in-memory value still applies until the popup closes.
+    }
+  },
+
+  // The background's selection (popular networks for a new wallet) applies until a filter is chosen in the network
+  // list. It used to replace the chosen filter on every popup start and wallet update.
+  seedSelectedNetwork(network) {
+    const { address } = this.selectedWallet;
+
+    if (!address || Object.prototype.hasOwnProperty.call(accountController.getNetworkFilters(), address)) return;
+
+    this.selectedNetworks = { ...this.selectedNetworks, [address]: network };
   },
 
   setAutoSelectNode({ network, value }) {

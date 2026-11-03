@@ -1,7 +1,7 @@
 import { captureWalletResetGuard } from '@extension-base/api/walletResetGuard';
 import { Address, beginCell, external, internal, storeMessage, toNano, SendMode } from '@ton/core';
 import { type BalanceItem } from '@extension-base/api/evm/types';
-import { TonProviderError } from '@extension-base/services/ton-provider';
+import { TonProviderError, type TonDataProvider } from '@extension-base/services/ton-provider';
 import type { BasicTxResponse } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import { TonKeyringError } from '@/util/tonKeyring';
@@ -42,6 +42,27 @@ function jettonUnits(amount: string, precision: number): bigint {
   if (significantFraction.length > precision) throw new Error('Jetton amount exceeds token precision');
 
   return BigInt(whole) * 10n ** BigInt(precision) + BigInt(significantFraction.padEnd(precision, '0') || '0');
+}
+
+/**
+ * Whether a TON transfer to `to` bounces, as in other TON wallets. A bounceable address asks for it, so a contract that
+ * refuses the transfer sends the TON back instead of keeping it. Only an account with code can refuse: a transfer to
+ * an address with nothing deployed, which is how a new wallet is funded, does not bounce. When the recipient cannot be
+ * read, the address decides, so a refused transfer still comes back.
+ */
+async function bouncesTo(provider: TonDataProvider, to: string, destination: Address): Promise<boolean> {
+  // A raw address carries no flag and counts as bounceable.
+  if (Address.isFriendly(to) && !Address.parseFriendly(to).isBounceable) return false;
+
+  try {
+    const status = await provider.getAccountStatus(destination);
+
+    return status === 'active' || status === 'frozen';
+  } catch (error) {
+    console.warn('[TON] Could not read the recipient account; the transfer bounces as its address asks', error);
+
+    return true;
+  }
 }
 
 export async function makeTonTransfer(params: TransferParams, state: State): Promise<void> {
@@ -104,7 +125,7 @@ export async function makeTonTransfer(params: TransferParams, state: State): Pro
         to: destinationAddress,
         value: toNano(amount),
         body: 'ton transfer',
-        bounce: false,
+        bounce: await bouncesTo(broadcaster, to, destinationAddress),
       });
 
   const { seqno, deployed } = await broadcaster.getWalletState(walletContract.address);

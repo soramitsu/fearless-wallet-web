@@ -31,16 +31,16 @@ vi.mock('@/bootstrap/startup', () => ({
   }),
 }));
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.resetModules();
   mocks.connect.mockClear();
   mocks.ports.length = 0;
   mocks.connectionsAtStart.length = 0;
-});
+  // Transforming the entry module is setup, not the connection-order assertion.
+  await import('@/extension/entry/popup');
+}, 30_000);
 
 it('connects to the background before loading the wallet, and the wallet sends on that connection', async () => {
-  await import('@/extension/entry/popup');
-
   // The connection that starts a stopped service worker exists before the wallet's code is requested.
   expect(mocks.connectionsAtStart).toEqual([1]);
   expect(mocks.connect).toHaveBeenCalledExactlyOnceWith({ name: PORT_EXTENSION });
@@ -53,7 +53,6 @@ it('connects to the background before loading the wallet, and the wallet sends o
 });
 
 it('connects again when the first connection closed before the wallet loaded', async () => {
-  await import('@/extension/entry/popup');
   mocks.ports[0].disconnect.forEach((listener) => listener());
 
   const { sendMessage } = await import('@/extension/messaging');

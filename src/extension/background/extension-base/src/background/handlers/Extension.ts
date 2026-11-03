@@ -34,7 +34,7 @@ import {
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap, prepareSwapExecution } from '@extension-base/api/substrate/sora';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
-import { getInternalError } from '@walletconnect/utils';
+import { getInternalError, type SdkErrorKey } from '@walletconnect/utils';
 import {
   makeCrossChain,
   estimateCrossChainQuote,
@@ -54,6 +54,7 @@ import {
   type RequestApproveConnectWalletSession,
   type ResultApproveWalletConnectSession,
   type RequestRejectConnectWalletSession,
+  type RequestWalletConnectSession,
   type RequestDisconnectWalletConnectSession,
   type WalletConnectTransactionRequest,
   type RequestApproveWalletConnect,
@@ -2273,26 +2274,12 @@ export default class Extension extends FWExtensionBase {
         if (namespace.chains) {
           const unSupportChains = namespace.chains.filter((chain) => !isSupportWalletConnectChain(chain, chainInfoMap));
 
-          if (unSupportChains.length) {
-            request.reject(new Error('Unsupported chain'));
-
-            return {
-              message: 'walletConnect.notifications.unsupportedProposal.message',
-              title: 'walletConnect.notifications.unsupportedProposal.title',
-              status: false,
-            };
-          }
+          if (unSupportChains.length) return this.refuseWalletConnectProposal(request, 'UNSUPPORTED_CHAINS');
 
           availableNamespaces[key] = namespace;
         }
       } else {
-        request.reject(new Error('Unsupported chain'));
-
-        return {
-          message: 'walletConnect.notifications.unsupportedProposal.message',
-          title: 'walletConnect.notifications.unsupportedProposal.title',
-          status: false,
-        };
+        return this.refuseWalletConnectProposal(request, 'UNSUPPORTED_NAMESPACE_KEY');
       }
     }
 
@@ -2323,7 +2310,10 @@ export default class Extension extends FWExtensionBase {
       }
     }
 
+    // Current dApp SDKs send every namespace as optional, so a proposal can get here without a chain the wallet supports.
     const availableEntries = Object.entries(availableNamespaces);
+
+    if (!availableEntries.length) return this.refuseWalletConnectProposal(request, 'UNSUPPORTED_CHAINS');
 
     for (const [key, namespace] of availableEntries) {
       if (!namespace.chains) continue;
@@ -2366,6 +2356,23 @@ export default class Extension extends FWExtensionBase {
       message: '',
       title: 'walletConnect.notifications.sessionApproved.title',
       status: true,
+    };
+  }
+
+  // Tells the dApp, which would otherwise wait for its proposal to expire. An expired proposal is only dropped: the SDK
+  // no longer answers it.
+  private async refuseWalletConnectProposal(
+    request: RequestWalletConnectSession,
+    reason: SdkErrorKey
+  ): Promise<NotificationResponse> {
+    if (!isProposalExpired(request.request.params))
+      await this.state.walletConnectService.rejectSession(request.request.id, reason).catch(console.error);
+    request.reject(new Error('Unsupported chain'));
+
+    return {
+      message: 'walletConnect.notifications.unsupportedProposal.message',
+      title: 'walletConnect.notifications.unsupportedProposal.title',
+      status: false,
     };
   }
 

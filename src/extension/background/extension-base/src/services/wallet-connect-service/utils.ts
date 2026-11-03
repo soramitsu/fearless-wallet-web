@@ -95,10 +95,12 @@ export const isWalletConnectRequest = (id?: string): boolean => {
   return prefix === WALLET_CONNECT_REQUEST_KEY;
 };
 
+// A proposal's deadline is its expiryTimestamp (seconds), which the wallet's SDK fills in when a dApp sends none.
+// Older SDKs used expiry.
 export const isProposalExpired = (params: ProposalTypes.Struct): boolean => {
-  const timeNum = params.expiry;
+  const timeNum = params.expiryTimestamp ?? params.expiry;
 
-  if (!timeNum) return true;
+  if (!timeNum || !Number.isFinite(timeNum)) return true;
 
   const expireTime = new Date(timeNum > 10 ** 12 ? timeNum : timeNum * SEC1);
   const now = new Date();

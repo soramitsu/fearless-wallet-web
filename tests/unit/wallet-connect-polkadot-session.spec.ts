@@ -52,6 +52,9 @@ beforeEach(async () => {
       topic,
       acknowledged: true,
       expiry: 2000000000,
+      // Fearless approved this session as the wallet, so it is the controller.
+      controller: 'public-wallet',
+      self: { publicKey: 'public-wallet', metadata: { name: 'Public wallet', url, icons: [], description: '' } },
       peer: { publicKey: 'public-peer', metadata: { name: 'Public peer', url, icons: [], description: '' } },
       namespaces: {
         polkadot: {

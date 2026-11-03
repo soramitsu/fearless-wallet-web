@@ -36,7 +36,7 @@ export default class WalletConnectStorage {
   }
 }
 
-// The records a WalletConnect client restores when it starts. Both clients keep them under these keys.
+// The records the WalletConnect client restores when it starts, for both of its roles.
 const SDK_RECORDS = [
   'wc@2:client:0.3//session',
   'wc@2:client:0.3//proposal',

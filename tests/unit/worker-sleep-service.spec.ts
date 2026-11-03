@@ -240,12 +240,29 @@ describe('races with the connections closing', () => {
   });
 
   it('reports a failed restore to the waiting request and tries again for the next one', async () => {
+    const { host, sleep, page } = fixture();
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    host.restore.mockRejectedValueOnce(new Error('storage busy'));
+
+    // The popup stays open, so no idle minute comes to close anything in between.
+    page();
+    await settle();
+    expect(host.restore).toHaveBeenCalledOnce();
+    expect(sleep.isQuiet).toBe(true);
+
+    // The popup's next message tries again, and waits for it.
+    await sleep.wake();
+    expect(host.restore).toHaveBeenCalledTimes(2);
+    expect(sleep.isQuiet).toBe(false);
+    expect(host.quiet).not.toHaveBeenCalled();
+  });
+
+  it('closes what a failed restore opened once nothing needs the wallet', async () => {
     const { host, sleep } = fixture();
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     host.restore.mockRejectedValueOnce(new Error('storage busy'));
 
     await expect(sleep.wake()).rejects.toThrow('storage busy');
-    // The failed attempt counts as awake: the next idle minute closes what it opened, and a later page restores.
     sleep.hold()();
     await vi.advanceTimersByTimeAsync(QUIET_AFTER_MS);
     expect(host.quiet).toHaveBeenCalledOnce();

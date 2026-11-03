@@ -91,8 +91,9 @@ export class WorkerSleepService {
 
     const restore = this.transition.then(async () => {
       if (!this.sleeping) return;
-      this.sleeping = false;
       await this.host.restore();
+      // A failed restore leaves the wallet asleep, so the next page message or site request tries again.
+      this.sleeping = false;
     });
 
     this.transition = restore.catch((error: unknown) => this.logger.error('Could not reconnect the wallet', error));
@@ -127,7 +128,8 @@ export class WorkerSleepService {
   private onIdle(): void {
     this.timer = undefined;
 
-    // Closing runs even when the connections are already closed: work done meanwhile (a sweep) may have opened some.
+    // Closing runs even when the connections are already closed: work done meanwhile (a sweep) or a failed restore may
+    // have opened some.
     this.transition = this.transition
       .then(async () => {
         if (this.present()) return;

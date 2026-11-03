@@ -1,4 +1,4 @@
-import Provider from '@walletconnect/universal-provider';
+import WalletConnect from '@walletconnect/sign-client';
 import { WalletConnectDAppService } from '@extension-base/services/wallet-connect-service/dapp';
 import ExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -302,7 +302,7 @@ describe('selection races through actual mobile pairing', () => {
       session: { get values() { return sessions; } },
       connect: vi.fn(async () => { sessions = [session]; return { uri: 'wc:public-selection-race', approval: () => approval }; }),
     };
-    vi.spyOn(Provider, 'init').mockResolvedValue({ client } as unknown as Provider);
+    vi.spyOn(WalletConnect, 'init').mockResolvedValue(client as unknown as WalletConnect);
     const records: { address: string; meta: Record<string, unknown> }[] = [];
     Object.assign(service, {
       encodeAddress: (address: string) => address,

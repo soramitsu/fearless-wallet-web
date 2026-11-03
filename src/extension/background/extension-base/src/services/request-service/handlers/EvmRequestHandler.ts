@@ -78,6 +78,15 @@ export default class EvmRequestHandler {
     const request = this.wcRequests.get(approvalId);
     if (!request || this.pendingWcApprovals.has(request))
       throw new Error('WalletConnect request unavailable or already pending');
+    // The wallet owns its request queue, so unrelated messages can proceed beside an old pending request. Keep
+    // transaction approvals serial before any nonce/gas lookup; a second approved send remains available to retry.
+    if (
+      request.request.params.request.method === 'eth_sendTransaction' &&
+      [...this.wcRequests.values()].some(
+        other => this.pendingWcApprovals.has(other) && other.request.params.request.method === 'eth_sendTransaction'
+      )
+    )
+      throw new Error('Another WalletConnect transaction approval is pending. Retry when it finishes.');
     this.pendingWcApprovals.add(request);
     return request;
   }

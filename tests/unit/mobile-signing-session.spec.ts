@@ -1,5 +1,5 @@
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
-import Provider from '@walletconnect/universal-provider';
+import WalletConnect from '@walletconnect/sign-client';
 import { captureMobileSigningContext } from '@extension-base/services/wallet-connect-service/mobileSigningContext';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Wallet, Transaction } from 'ethers';
@@ -151,20 +151,18 @@ beforeEach(async () => {
     sessionRevisions: new Map(),
     retiredTopics: new Set(),
     listenerClients: new WeakSet(),
-    app: {
-      client: {
-        session: {
-          get values() {
-            return [session];
-          },
+    client: {
+      session: {
+        get values() {
+          return [session];
         },
-        request: send,
-        disconnect: vi.fn(async () => undefined),
-        on: vi.fn((name: string, handler: (event: { topic: string }) => void) => {
-          listeners[name] = handler;
-        }),
-        pairing: { core: { on: vi.fn() } },
       },
+      request: send,
+      disconnect: vi.fn(async () => undefined),
+      on: vi.fn((name: string, handler: (event: { topic: string }) => void) => {
+        listeners[name] = handler;
+      }),
+      pairing: { core: { on: vi.fn() } },
     },
   });
   (mobile as unknown as { setListeners(): void }).setListeners();
@@ -426,17 +424,17 @@ describe('approved mobile namespace admission', () => {
     (mobile as unknown as { setListeners(): void }).setListeners();
     listeners.session_update({ topic });
     expect(mobile.getSessionRevision(topic)).toBe(1);
-    const client = (mobile as unknown as { app: { client: { on: ReturnType<typeof vi.fn> } } }).app.client;
+    const client = (mobile as unknown as { client: { on: ReturnType<typeof vi.fn> } }).client;
     expect(client.on).toHaveBeenCalledTimes(4);
   });
-  it('shares concurrent provider initialization', async () => {
-    const app = (mobile as unknown as { app: Provider }).app;
-    const init = vi.spyOn(Provider, 'init').mockResolvedValueOnce(app);
+  it('shares concurrent client initialization', async () => {
+    const client = (mobile as unknown as { client: WalletConnect }).client;
+    const init = vi.spyOn(WalletConnect, 'init').mockResolvedValueOnce(client);
     const other = new WalletConnectDAppService(state);
     try {
       await Promise.all([
-        (other as unknown as { initApp(): Promise<void> }).initApp(),
-        (other as unknown as { initApp(): Promise<void> }).initApp(),
+        (other as unknown as { initClient(): Promise<void> }).initClient(),
+        (other as unknown as { initClient(): Promise<void> }).initClient(),
       ]);
       expect(init).toHaveBeenCalledOnce();
     } finally {

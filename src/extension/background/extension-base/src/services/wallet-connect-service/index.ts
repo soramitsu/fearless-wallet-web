@@ -1,15 +1,13 @@
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { formatJsonRpcError } from '@walletconnect/jsonrpc-utils';
-import WalletConnect from '@walletconnect/sign-client';
+import type WalletConnect from '@walletconnect/sign-client';
 import { getInternalError, getSdkError, isValidUrl } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
 import { convertConnectRequest, convertNotSupportRequest } from '@extension-base/services/wallet-connect-service/utils';
 import { type ResultApproveWalletConnectSession } from '@extension-base/services/wallet-connect-service/types';
-import WalletConnectStorage, { hasWalletConnectData } from '@extension-base/services/wallet-connect-service/storage';
+import { hasWalletConnectData } from '@extension-base/services/wallet-connect-service/storage';
+import { isWalletSession, walletConnectClient } from '@extension-base/services/wallet-connect-service/client';
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
-import {
-  DEFAULT_WALLET_CONNECT_OPTIONS,
-} from '@extension-base/services/wallet-connect-service/consts';
 import { isSameAddress } from '@extension-base/utils';
 import { sessionAuthority } from './sessionAuthority';
 import type State from '@extension-base/background/handlers/State';
@@ -69,8 +67,13 @@ export class WalletConnectService {
     this.initClient().catch(console.error);
   }
 
+  // The client also holds Fearless's mobile pairings, where Fearless is the dApp. They are never listed or signed here.
+  private get walletSessions(): SessionTypes.Struct[] {
+    return (this.client?.session.values || []).filter(isWalletSession);
+  }
+
   get sessions() {
-    return (this.client?.session.values || []).filter((session) => !this.retiredTopics.has(session.topic) && this.authority.allows(session.topic));
+    return this.walletSessions.filter((session) => !this.retiredTopics.has(session.topic) && this.authority.allows(session.topic));
   }
 
   private updateSessions() {
@@ -81,7 +84,7 @@ export class WalletConnectService {
     if (this.state.keyringService.isResetting) throw new Error('Wallet reset is in progress');
     const session = this.client?.session.get(key);
 
-    if (!session || this.retiredTopics.has(key) || !this.authority.allows(key)) {
+    if (!session || !isWalletSession(session) || this.retiredTopics.has(key) || !this.authority.allows(key)) {
       throw new Error(getInternalError('MISMATCHED_TOPIC').message);
     } else {
       return session;
@@ -95,12 +98,7 @@ export class WalletConnectService {
     if (this.client) return;
     if (!this.initialization) {
       this.initialization = this.authority.load()
-        .then(() => {
-          return WalletConnect.init({
-            ...DEFAULT_WALLET_CONNECT_OPTIONS,
-            storage: new WalletConnectStorage(),
-          });
-        })
+        .then(() => walletConnectClient(this.state))
         .then(async (client) => {
           await this.authority.load();
           this.client = client;
@@ -176,7 +174,7 @@ export class WalletConnectService {
   }
 
   async resetWallet(): Promise<void> {
-    const topics = (this.client?.session.values ?? []).map((session) => session.topic);
+    const topics = this.walletSessions.map((session) => session.topic);
     const retirement = this.authority.reset(topics);
     for (const topic of topics) {
       this.invalidateSession(topic);
@@ -192,7 +190,7 @@ export class WalletConnectService {
     await this.initClient();
     // Include locally retired SDK records: a prior failed storage write still
     // needs acknowledgement on retry before the account can be removed.
-    const sessions = this.client?.session.values ?? [];
+    const sessions = this.walletSessions;
     await Promise.all(sessions.map(async (session) => {
       const ownsAccount = Object.entries(session.namespaces).some(([key, namespace]) =>
         namespaceAccounts(namespace).some((account) => {

@@ -961,7 +961,7 @@
     "personalSign": "Personal Sign",
     "pairingErrorMessage": "Missing or invalid url, please try again",
     "unknownMethod": "Unknown method",
-    "unsupportedMethod": "Usupported method",
+    "unsupportedMethod": "Unsupported method",
     "insertUrl": "Insert Wallet Connect url",
     "usupportedNetwork": "Unsupported network",
     "txHint": "Be careful: this message may transfer assets",

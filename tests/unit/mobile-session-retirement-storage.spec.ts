@@ -2,7 +2,6 @@ import Extension from '@extension-base/background/handlers/Extension';
 import WalletConnect from '@walletconnect/sign-client';
 import { WalletConnectService } from '@extension-base/services/wallet-connect-service';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import Provider from '@walletconnect/universal-provider';
 import { WalletConnectDAppService } from '@extension-base/services/wallet-connect-service/dapp';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
@@ -43,6 +42,13 @@ vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}
 
 const key = 'fwWalletConnect:retiredTopics';
 const topic = 'public-revoked-mobile-session';
+// Both roles share one SDK client. Fearless controls the sessions it approved as the wallet; a mobile wallet controls
+// the pairings Fearless proposed.
+const walletSession = (topic: string) =>
+  ({ topic, controller: 'public-fearless-key', self: { publicKey: 'public-fearless-key' } }) as unknown as SessionTypes.Struct;
+const mobileSession = (topic: string) =>
+  ({ topic, controller: 'public-phone-key', self: { publicKey: 'public-fearless-key' } }) as unknown as SessionTypes.Struct;
+const roleSession = (role: 'mobile' | 'incoming', topic: string) => (role === 'mobile' ? mobileSession : walletSession)(topic);
 let client: { connect: ReturnType<typeof vi.fn>; on: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn>; session: { values: SessionTypes.Struct[]; get(topic: string): SessionTypes.Struct | undefined } };
 let listeners: Record<string, (event: { topic: string }) => Promise<void>>;
 let pending: Promise<unknown>[];
@@ -54,7 +60,7 @@ const observe = (promise: Promise<unknown>) => {
   return outcome;
 };
 const initialize = (service: WalletConnectDAppService) =>
-  (service as unknown as { initApp(): Promise<void> }).initApp();
+  (service as unknown as { initClient(): Promise<void> }).initClient();
 async function open() {
   const service = new WalletConnectDAppService(state);
   await initialize(service);
@@ -77,16 +83,18 @@ beforeEach(() => {
   // stale persisted SDK record must not restore local signing authority.
   client = {
     connect: vi.fn(),
-    session: { values: [{ topic }] as SessionTypes.Struct[], get: (key) => client.session.values.find((item) => item.topic === key) },
+    session: { values: [mobileSession(topic)], get: (key) => client.session.values.find((item) => item.topic === key) },
     on: vi.fn((event, callback) => { listeners[event] = callback; }),
     disconnect: vi.fn(async () => undefined),
   };
-  vi.spyOn(Provider, 'init').mockResolvedValue({ client } as unknown as Provider);
   vi.spyOn(WalletConnect, 'init').mockResolvedValue(client as unknown as WalletConnect);
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
 describe.each(['mobile', 'incoming'] as const)('whole reset retirement through %s role', (role) => {
+  beforeEach(() => {
+    client.session.values = [roleSession(role, topic)];
+  });
   async function services() {
     const mobile = await open();
     const incoming = await openIncoming();
@@ -98,13 +106,12 @@ describe.each(['mobile', 'incoming'] as const)('whole reset retirement through %
     const init = new Promise<void>(resolve => { finish = resolve; });
     fixture.data['wc@2:client:0.3//session'] = [{ topic }];
     Object.assign(state, { walletConnectService: { invalidateSession: vi.fn() } });
-    vi.mocked(Provider.init).mockImplementation(async () => { await init; return { client } as unknown as Provider; });
     vi.mocked(WalletConnect.init).mockImplementation(async () => { await init; return client as unknown as WalletConnect; });
     const service = role === 'mobile' ? new WalletConnectDAppService(state)
       : new WalletConnectService(state, {} as RequestService);
     const initialized = role === 'mobile' ? initialize(service as WalletConnectDAppService)
       : (service as WalletConnectService).initClient(true);
-    await vi.waitFor(() => expect(role === 'mobile' ? Provider.init : WalletConnect.init).toHaveBeenCalled());
+    await vi.waitFor(() => expect(WalletConnect.init).toHaveBeenCalled());
     let done = false;
     const reset = service.resetWallet().then(() => { done = true; });
     try {
@@ -123,7 +130,7 @@ describe.each(['mobile', 'incoming'] as const)('whole reset retirement through %
     const all = await services();
     await all[role].resetWallet();
     const lateTopic = 'public-sdk-write-without-observed-approval';
-    client.session.values.push({ topic: lateTopic } as SessionTypes.Struct);
+    client.session.values.push(roleSession(role, lateTopic));
     expect(() => all.mobile.getSession(lateTopic)).toThrow();
     expect(() => all.incoming.getSession(lateTopic)).toThrow();
     state = makeState(); // A new worker has no shared in-memory authority object.
@@ -168,7 +175,7 @@ describe('incoming session approval across reset', () => {
     const approvedTopic = 'public-new-approved-session';
     const unknownTopic = 'public-sdk-only-session';
     Object.assign(client, { approve: vi.fn(async () => {
-      client.session.values.push(...[{ topic: approvedTopic }, { topic: unknownTopic }] as SessionTypes.Struct[]);
+      client.session.values.push(walletSession(approvedTopic), walletSession(unknownTopic));
       return { topic: approvedTopic };
     }) });
     fixture.holdWrite = true;
@@ -180,7 +187,8 @@ describe('incoming session approval across reset', () => {
     fixture.writes.shift()!();
     expect(await approved).toBe('resolved');
     expect(incoming.getSession(approvedTopic).topic).toBe(approvedTopic);
-    expect(mobile.getSession(approvedTopic).topic).toBe(approvedTopic);
+    // The mobile role never serves a session Fearless approved as the wallet.
+    expect(() => mobile.getSession(approvedTopic)).toThrow();
     state = makeState();
     const restarted = await openIncoming();
     expect(restarted.getSession(approvedTopic).topic).toBe(approvedTopic);
@@ -192,7 +200,7 @@ describe('incoming session approval across reset', () => {
     await incoming.resetWallet();
     const approvedTopic = 'public-failed-new-approval';
     Object.assign(client, { approve: vi.fn(async () => {
-      client.session.values.push({ topic: approvedTopic } as SessionTypes.Struct);
+      client.session.values.push(walletSession(approvedTopic));
       return { topic: approvedTopic };
     }) });
     fixture.failWrite = true;
@@ -209,7 +217,7 @@ describe('incoming session approval across reset', () => {
     await incoming.resetWallet();
     const approvedTopic = 'public-writing-approval';
     Object.assign(client, { approve: vi.fn(async () => {
-      client.session.values.push({ topic: approvedTopic } as SessionTypes.Struct);
+      client.session.values.push(walletSession(approvedTopic));
       return { topic: approvedTopic };
     }) });
     fixture.holdWrite = true;
@@ -237,7 +245,7 @@ describe('incoming session approval across reset', () => {
     const other = await openIncoming();
     await other.resetWallet();
     const approvedTopic = 'public-old-worker-approval';
-    client.session.values.push({ topic: approvedTopic } as SessionTypes.Struct);
+    client.session.values.push(walletSession(approvedTopic));
     finish({ topic: approvedTopic });
     expect(await approved).toBe('rejected');
     state = makeState();
@@ -255,7 +263,7 @@ describe('incoming session approval across reset', () => {
     ] as never);
     await mobile.resetWallet();
     expect(fixture.data[key]).toMatchObject({ topics: [topic] });
-    client.session.values = [{ topic }] as SessionTypes.Struct[];
+    client.session.values = [mobileSession(topic)];
     const restarted = await open();
     expect(() => restarted.getSession(topic)).toThrow();
   });
@@ -268,7 +276,7 @@ describe('incoming session approval across reset', () => {
     await incoming.resetWallet();
     Object.assign(state.keyringService, { isResetting: false });
     const lateTopic = 'public-late-approved-topic';
-    client.session.values.push({ topic: lateTopic } as SessionTypes.Struct);
+    client.session.values.push(walletSession(lateTopic));
     finish({ topic: lateTopic });
     expect(await approved).toBe('rejected');
     expect(() => incoming.getSession(lateTopic)).toThrow();
@@ -341,7 +349,7 @@ describe('durable mobile session retirement', () => {
     fixture.failRead = true;
     const service = new WalletConnectDAppService(state);
     expect(await observe(initialize(service))).toBe('rejected');
-    expect(Provider.init).not.toHaveBeenCalled();
+    expect(WalletConnect.init).not.toHaveBeenCalled();
     expect(() => service.getSession(topic)).toThrow();
     fixture.failRead = false;
     await initialize(service);
@@ -358,7 +366,7 @@ describe('durable mobile session retirement', () => {
     const original = structuredClone(fixture.data);
     const service = new WalletConnectDAppService(state);
     expect(await observe(initialize(service))).toBe('rejected');
-    expect(Provider.init).not.toHaveBeenCalled();
+    expect(WalletConnect.init).not.toHaveBeenCalled();
     expect(fixture.data).toEqual(original);
   });
 });
@@ -389,7 +397,7 @@ describe('pairing cancellation retirement acknowledgement', () => {
     // A new pairing must not already be present when its prior topics are captured.
     client.session.values = [];
     await service.initPairing('public-cancel-attempt');
-    client.session.values = [{ topic }] as SessionTypes.Struct[];
+    client.session.values = [mobileSession(topic)];
     return { service, approve: async () => {
       approve(client.session.values[0]);
       for (let i = 0; i < 12; i++) await Promise.resolve();
@@ -440,6 +448,9 @@ async function openIncoming() {
   return service;
 }
 describe('durable incoming session retirement', () => {
+  beforeEach(() => {
+    client.session.values = [walletSession(topic)];
+  });
   it('keeps a disconnected SDK session retired after constructing a new worker service', async () => {
     const service = await openIncoming();
     await service.disconnect(topic);
@@ -515,7 +526,8 @@ describe('durable incoming session retirement', () => {
 
 
 describe('session retirement across roles and removal', () => {
-  it.each(['mobile', 'incoming'])('immediately vetoes the other live role when %s disconnects', async (role) => {
+  it.each(['mobile', 'incoming'] as const)('immediately vetoes the session in both roles when %s disconnects', async (role) => {
+    client.session.values = [roleSession(role, topic)];
     const mobile = await open();
     const incoming = await openIncoming();
     Object.assign(state, { walletConnectDappService: mobile, walletConnectService: incoming });
@@ -538,6 +550,7 @@ describe('session retirement across roles and removal', () => {
 
   it('retires later accounts in scoped namespaces and retries failed removal storage', async () => {
     const owned = '0x' + '11'.repeat(20);
+    client.session.values = [walletSession(topic)];
     client.session.values[0].namespaces = { 'eip155:1': {
       accounts: [`eip155:1:0x${'22'.repeat(20)}`, `eip155:1:${owned}`], methods: ['personal_sign'], events: [],
     } };
@@ -583,6 +596,7 @@ describe('session retirement across roles and removal', () => {
 describe('standalone EVM removal retirement', () => {
   const owned = '0x' + '44'.repeat(20);
   async function incomingForStandalone() {
+    client.session.values = [walletSession(topic)];
     client.session.values[0].namespaces = { eip155: {
       accounts: [`eip155:1:${owned}`], methods: ['personal_sign'], events: [],
     } };

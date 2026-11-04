@@ -544,7 +544,7 @@ describe('EVM approval uses the reviewed request context', () => {
     const mobileService = Object.create(WalletConnectDAppService.prototype) as WalletConnectDAppService;
     Object.assign(mobileService, {
       state,
-      app: { client: { request: send } },
+      client: { request: send },
       getSession: (topic: string) => mobileSession(topic),
       getSessionRevision: () => 0,
     });
@@ -682,7 +682,7 @@ describe('mobile EVM request network binding', () => {
     const service = Object.create(WalletConnectDAppService.prototype) as WalletConnectDAppService;
     Object.assign(service, {
       state,
-      app: { client: { request: send } },
+      client: { request: send },
       getSession: (topic: string) => mobileSession(topic, accounts),
       getSessionRevision: () => 0,
     });
@@ -858,6 +858,82 @@ describe('WalletConnect approval claims the actual queued intent', () => {
     await expect(result).resolves.toEqual({ id: 'public-topic', payload });
     await expect(extension.wcRequestApprove({ address, approvalId })).rejects.toThrow('unavailable');
     expect(sign).toHaveBeenCalledTimes(1);
+  });
+  it('serializes different transaction IDs before nonce lookup while allowing independent message approval', async () => {
+    const provider = providerFixture();
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
+    let releaseFees!: (fees: Awaited<ReturnType<typeof provider.getFeeData>>) => void;
+    provider.getFeeData.mockReturnValueOnce(new Promise(resolve => { releaseFees = resolve; }));
+    let finishSend!: (hash: string) => void;
+    provider.send.mockReturnValueOnce(new Promise(resolve => { finishSend = resolve; }));
+    const first = queued(1, 'eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
+    const second = queued(2, 'eth_sendTransaction', [{ from: address, to: address, value: '0x2' }]);
+    const message = queued(3);
+    const approving = extension.wcRequestApprove({ address, approvalId: first.approvalId });
+    await vi.waitFor(() => expect(provider.getFeeData).toHaveBeenCalledOnce());
+
+    await expect(extension.wcRequestApprove({ address, approvalId: second.approvalId })).rejects.toThrow('Retry');
+    expect(provider.getTransactionCount).toHaveBeenCalledOnce();
+    expect(provider.estimateGas).toHaveBeenCalledOnce();
+    expect(provider.send).not.toHaveBeenCalled();
+    expect(handler.getSignWCRequest(second.approvalId)).toBeDefined();
+    await expect(extension.wcRequestApprove({ address, approvalId: message.approvalId })).resolves.toBe(true);
+    expect(verifyMessage('hello', (await message.result).payload)).toBe(address);
+
+    releaseFees({ gasPrice: 1n, maxFeePerGas: null, maxPriorityFeePerGas: null });
+    await vi.waitFor(() => expect(provider.send).toHaveBeenCalledOnce());
+    await expect(extension.wcRequestApprove({ address, approvalId: second.approvalId })).rejects.toThrow('Retry');
+    expect(provider.getTransactionCount).toHaveBeenCalledOnce();
+    const firstHash = Transaction.from(provider.send.mock.calls[0][1][0]).hash!;
+    finishSend(firstHash);
+    await expect(approving).resolves.toBe(true);
+    await expect(first.result).resolves.toEqual({ id: 'public-topic', payload: firstHash });
+
+    provider.getTransactionCount.mockResolvedValue(1);
+    await expect(extension.wcRequestApprove({ address, approvalId: second.approvalId })).resolves.toBe(true);
+    await second.result;
+    expect(provider.getTransactionCount).toHaveBeenCalledTimes(2);
+    expect(provider.send).toHaveBeenCalledTimes(2);
+    expect(provider.send.mock.calls.map(([, [signed]]) => Transaction.from(signed).nonce)).toEqual([0, 1]);
+  });
+  it('releases the transaction claim after preparation fails so another intent can be approved', async () => {
+    const provider = providerFixture();
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
+    provider.getFeeData.mockRejectedValueOnce(new Error('fee lookup unavailable'));
+    const first = queued(1, 'eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
+    const second = queued(2, 'eth_sendTransaction', [{ from: address, to: address, value: '0x2' }]);
+
+    await expect(extension.wcRequestApprove({ address, approvalId: first.approvalId })).rejects.toThrow('fee lookup');
+    expect(provider.send).not.toHaveBeenCalled();
+    await expect(extension.wcRequestApprove({ address, approvalId: second.approvalId })).resolves.toBe(true);
+    await second.result;
+    expect(provider.send).toHaveBeenCalledOnce();
+    const rejected = expect(first.result).rejects.toThrow('USER_REJECTED');
+    extension.wcRequestReject({ approvalId: first.approvalId });
+    await rejected;
+  });
+  it.each(['lock', 'reset'])('preserves a submitting transaction and its guard across %s', async (action) => {
+    const provider = providerFixture();
+    vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
+    let finishSend!: (hash: string) => void;
+    provider.send.mockReturnValueOnce(new Promise(resolve => { finishSend = resolve; }));
+    const first = queued(1, 'eth_sendTransaction', [{ from: address, to: address, value: '0x1' }]);
+    const approving = extension.wcRequestApprove({ address, approvalId: first.approvalId });
+    await vi.waitFor(() => expect(provider.send).toHaveBeenCalledOnce());
+
+    if (action === 'reset') handler.resetWallet();
+    else handler.cancelPending(new Error('Wallet locked'));
+    // A new request after unlock still cannot reuse the nonce of a transaction whose send is in flight.
+    const second = queued(2, 'eth_sendTransaction', [{ from: address, to: address, value: '0x2' }]);
+    await expect(extension.wcRequestApprove({ address, approvalId: second.approvalId })).rejects.toThrow('Retry');
+    expect(provider.getTransactionCount).toHaveBeenCalledOnce();
+    const firstHash = Transaction.from(provider.send.mock.calls[0][1][0]).hash!;
+    finishSend(firstHash);
+    await expect(approving).resolves.toBe(true);
+    await expect(first.result).resolves.toEqual({ id: 'public-topic', payload: firstHash });
+    await expect(extension.wcRequestApprove({ address, approvalId: second.approvalId })).resolves.toBe(true);
+    await second.result;
+    expect(provider.send).toHaveBeenCalledTimes(2);
   });
   it('consumes an ambiguous broadcast failure with its hash without deleting the next same-session request', async () => {
     const send = vi.fn().mockRejectedValue(new Error('response lost'));

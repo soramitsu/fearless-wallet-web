@@ -1,6 +1,5 @@
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { formatJsonRpcError } from '@walletconnect/jsonrpc-utils';
-import type WalletConnect from '@walletconnect/sign-client';
 import { getInternalError, getSdkError, isValidUrl, type SdkErrorKey } from '@walletconnect/utils';
 import { BehaviorSubject } from 'rxjs';
 import { convertConnectRequest, convertNotSupportRequest } from '@extension-base/services/wallet-connect-service/utils';
@@ -10,6 +9,7 @@ import { isWalletSession, walletConnectClient } from '@extension-base/services/w
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import { isSameAddress } from '@extension-base/utils';
 import { sessionAuthority } from './sessionAuthority';
+import type WalletConnect from '@walletconnect/sign-client';
 import type State from '@extension-base/background/handlers/State';
 import type { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
 import type { RequestService } from '@extension-base/services';

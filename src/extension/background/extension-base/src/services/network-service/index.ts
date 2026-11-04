@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { BehaviorSubject } from 'rxjs';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import SelectedNetworkStore from '@extension-base/stores/SelectedNetworkStore';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
@@ -96,6 +97,8 @@ export class NetworkService {
   networksGithub: NetworkJson[] = []; // networks from github
   networkMap: NetworkMap = {}; // mapping to networkMapStore, for uses in background
   selectedNetworks: Record<string, string> = {};
+  /** True while the worker is quiet (WorkerSleepService): every node connection is closed and none opens. */
+  readonly suspendedSubject = new BehaviorSubject<boolean>(false);
   tonApiHandler: TonApiHandler;
   evmApiHandler = new EvmApiHandler(this.networkMap);
   substrateApiHandler: SubstrateApiHandler;
@@ -118,6 +121,24 @@ export class NetworkService {
 
   get networkValues() {
     return Object.values(this.networkMap);
+  }
+
+  get suspended(): boolean {
+    return this.suspendedSubject.value;
+  }
+
+  /** Closes every node connection, and keeps initNetworkApis from opening any until resume(). */
+  async suspend(): Promise<void> {
+    this.suspendedSubject.next(true);
+    await Promise.allSettled([
+      this.substrateApiHandler.destroyAll(),
+      Promise.resolve().then(() => this.evmApiHandler.destroyAll()),
+      Promise.resolve().then(() => this.tonApiHandler.destroyAll()),
+    ]);
+  }
+
+  resume(): void {
+    if (this.suspended) this.suspendedSubject.next(false);
   }
 
   /** Maintained remote + bundled registries, excluding arbitrary custom networks. */
@@ -492,6 +513,8 @@ export class NetworkService {
   }
 
   initNetworkApis() {
+    if (this.suspended) return;
+
     this.activeNetworkByEcosystem.evm.forEach((network) => {
       if (!this.evmApiHandler.api[network.name] || !this.evmApiHandler.api[network.name].api?.ready)
         this.evmApiHandler.initEvmApi(network);
@@ -512,6 +535,30 @@ export class NetworkService {
       });
       else this.substrateApiHandler.initApi(network);
     });
+  }
+
+  /**
+   * Opens the connection of one network that has none, such as an active network closed while the wallet was quiet.
+   * Returns whether it opened one.
+   */
+  connectNetwork(network: NetworkJson): boolean {
+    const key = network.name.toLowerCase();
+
+    if (this.suspended) return false;
+    if (network.ecosystem === 'ethereum' && !this.evmApiHandler.api[key]) {
+      this.evmApiHandler.initEvmApi(network);
+    } else if (network.ecosystem === 'ton' && !this.tonApiHandler.api[key]) {
+      void this.tonApiHandler.initApi(network);
+    } else if (
+      (network.ecosystem === 'substrate' || network.ecosystem === 'ethereumBased') &&
+      !this.substrateApiHandler.api[key]?.api
+    ) {
+      void this.substrateApiHandler.initApi(network);
+    } else {
+      return false;
+    }
+
+    return true;
   }
 
   async upsertNetworkMap(networkJson: NetworkJson, expected?: NodePreferences): Promise<void> {

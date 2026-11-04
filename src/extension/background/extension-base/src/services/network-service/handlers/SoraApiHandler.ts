@@ -31,6 +31,17 @@ export class SoraApiHandler {
     void connection.api.isReadyOrError.catch((error) => console.warn('SORA connection not ready', error));
   }
 
+  /** Closes the SORA connection as the wallet goes quiet. The next initApi opens a new one. */
+  static disconnect() {
+    const previous = this.current;
+
+    this.current = undefined;
+    if (!previous) return;
+    const oldApi = previous.connection.api;
+    previous.listeners.forEach(([event, callback]) => oldApi.off(event, callback));
+    void oldApi.disconnect().catch((error) => console.warn('SORA connection could not close', error));
+  }
+
   static getApiInstance() {
     return this.current?.connection.api;
   }

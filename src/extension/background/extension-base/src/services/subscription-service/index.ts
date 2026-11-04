@@ -56,6 +56,12 @@ export interface GetBalancesProps {
   isFirstRun?: boolean;
 }
 
+const emptyServiceInfo = (): ServiceInfo => ({
+  address: '',
+  ethereumAddress: '',
+  networks: { evm: [], substrate: [], ton: [], solana: [], bitcoin: [], iroha: [] },
+});
+
 export class SubscriptionService {
   private logger: Logger;
   private subscriptionsPorts: Subscriptions = {}; // subscriptions for interaction with client side
@@ -64,12 +70,10 @@ export class SubscriptionService {
   private unsubscriptionMap: Record<string, () => void> = {};
   private subscriptionTokens = new Map<string, symbol>();
   private networkSubscriptionTokens = new Map<string, symbol>();
+  // Counts stop() calls: reads started before the wallet went quiet do not subscribe afterwards.
+  private generation = 0;
 
-  private serviceInfo: ServiceInfo = {
-    address: '',
-    ethereumAddress: '',
-    networks: { evm: [], substrate: [], ton: [], solana: [], bitcoin: [], iroha: [] },
-  };
+  private serviceInfo: ServiceInfo = emptyServiceInfo();
 
   constructor(private state: State) {
     this.logger = createLogger('Subscription');
@@ -151,8 +155,26 @@ export class SubscriptionService {
     unsub?.();
   }
 
+  /**
+   * Ends every balance subscription and forgets the wallet and networks it followed, as the wallet goes quiet. The next
+   * start() reads every balance again.
+   */
+  stop(): void {
+    this.logger.log('Stopping subscription');
+
+    this.generation += 1;
+    this.serviceInfoSubscription?.unsubscribe();
+    this.serviceInfoSubscription = undefined;
+    this.state.timeoutService.clearTimeout('updateServiceInfo');
+    new Set([...this.networkSubscriptionTokens.keys(), ...Object.keys(this.subscriptionNetworksMap)])
+      .forEach((name) => this.cancelNetworkSubscription(name));
+    this.serviceInfo = emptyServiceInfo();
+  }
+
   async start() {
     this.logger.log('Starting subscription');
+
+    const generation = this.generation;
 
     const accountsExceptCurrent = this.state.keyringService
       .getAllMainAccounts()
@@ -181,12 +203,14 @@ export class SubscriptionService {
 
     // The other wallets' Substrate balances are read once the connections are ready. One that is not ready in time is
     // marked as not refreshed for the wallets that hold it, so their cached amounts are not shown as current.
-    if (accountsExceptCurrent.length) void this.readySubstrateNetworks(networks.substrate).then(({ ready, unavailable }) =>
+    if (accountsExceptCurrent.length) void this.readySubstrateNetworks(networks.substrate).then(({ ready, unavailable }) => {
+      // Gone quiet meanwhile: the connections were closed, and the next start reads these balances.
+      if (generation !== this.generation) return;
       accountsExceptCurrent.forEach(({ address, meta }) => {
         if (ready.length) this.fetchSubstrateBalances(address, meta, ready);
         unavailable.forEach((network) => this.markNotRefreshed(address, network));
-      })
-    );
+      });
+    });
 
     if (!this.serviceInfoSubscription)
       this.serviceInfoSubscription = this.state.serviceInfoSubject.subscribe({
@@ -289,8 +313,9 @@ export class SubscriptionService {
   // Before its metadata loads a connection's `api.query` is empty (@polkadot/api), so a read then proves nothing.
   private async readySubstrateNetworks(networks: NetworkJson[]): Promise<{ ready: NetworkName[]; unavailable: string[] }> {
     const deadline = Date.now() + DOTSAMA_API_TIMEOUT;
+    const generation = this.generation;
     const isReady = async (key: string): Promise<boolean> => {
-      while (Date.now() < deadline) {
+      while (Date.now() < deadline && generation === this.generation) {
         // A failed connection is replaced by the next node; SORA installs its API once connected.
         const api = this.state.getSubstrateApiMap[key]?.api;
         try {

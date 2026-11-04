@@ -370,37 +370,46 @@ describe('locking the wallet while an approval submits a transaction', () => {
     expect(state.keyringService.exportMnemonic).not.toHaveBeenCalled();
   });
 
-  it('leaves a WalletConnect transaction an approval is sending to that approval, and cancels the rest', async () => {
-    const session = (id: number, method: string) =>
-      ({ id, topic: 'public-topic', params: { chainId: 'eip155:1', request: { method, params: [] } } }) as never;
-    const queued = (method: string) => {
-      const dapp = outcome(evm.onWCSign(session(evm.allWcSignRequests.length + 1, method)));
-      const { approvalId } = evm.allWcSignRequests.at(-1)! as unknown as { approvalId: string };
+  it.each(['sent', 'submitted but refused', 'claimed before submission'] as const)(
+    'settles a WalletConnect transaction correctly across lock (%s)',
+    async (scenario) => {
+      const session = (id: number, method: string) =>
+        ({ id, topic: 'public-topic', params: { chainId: 'eip155:1', request: { method, params: [] } } }) as never;
+      const queued = (method: string) => {
+        const dapp = outcome(evm.onWCSign(session(evm.allWcSignRequests.length + 1, method)));
+        const { approvalId } = evm.allWcSignRequests.at(-1)! as unknown as { approvalId: string };
 
-      return { approvalId, dapp };
-    };
+        return { approvalId, dapp };
+      };
 
-    const sent = queued('eth_sendTransaction');
-    const refused = queued('eth_sendTransaction');
-    const unsigned = queued('eth_sendTransaction');
-    const message = queued('personal_sign');
-    const idle = queued('eth_sendTransaction');
-    const approvals = [sent, refused, unsigned, message].map(({ approvalId }) => evm.claimWCSignRequest(approvalId));
-    // The first two approvals signed their transactions and are sending them.
-    approvals.slice(0, 2).forEach((approval) => evm.markWCSubmitting(approval));
+      // Transaction approvals are serialized. Exercise each outcome with one active transaction, a message approval
+      // that can proceed independently, and a transaction whose approval has not started.
+      const transaction = queued('eth_sendTransaction');
+      const message = queued('personal_sign');
+      const idle = queued('eth_sendTransaction');
+      const approval = evm.claimWCSignRequest(transaction.approvalId);
+      const messageApproval = evm.claimWCSignRequest(message.approvalId);
+      if (scenario !== 'claimed before submission') evm.markWCSubmitting(approval);
 
-    lock();
-    // An approval that has not sent its transaction yet finds its request gone before it signs.
-    expect(await unsigned.dapp).toEqual({ error: locked });
-    expect(await message.dapp).toEqual({ error: locked });
-    expect(await idle.dapp).toEqual({ error: locked });
-    expect(evm.getSignWCRequest(sent.approvalId)).toBe(approvals[0]);
-    expect(evm.getSignWCRequest(refused.approvalId)).toBe(approvals[1]);
+      lock();
+      expect(await message.dapp).toEqual({ error: locked });
+      expect(await idle.dapp).toEqual({ error: locked });
+      if (scenario === 'claimed before submission') {
+        // Lock cancels even a claimed transaction when it has not reached submission.
+        expect(evm.getSignWCRequest(transaction.approvalId)).toBeUndefined();
+        expect(await transaction.dapp).toEqual({ error: locked });
+      } else {
+        expect(evm.getSignWCRequest(transaction.approvalId)).toBe(approval);
+      }
 
-    // The first transaction was sent; the node refused the second, so its approval ends without settling it.
-    approvals[0].resolve({ id: 'public-topic', payload: '0xhash' } as never);
-    approvals.forEach((approval) => evm.releaseWCSignRequest(approval));
-    expect(await sent.dapp).toEqual({ value: { id: 'public-topic', payload: '0xhash' } });
-    expect(await refused.dapp).toEqual({ error: locked });
-  });
+      // A sent transaction retains its hash. A refused submission falls back to the deferred lock error on release.
+      // A late result after cancellation cannot turn the not-yet-submitted request into a success.
+      if (scenario !== 'submitted but refused') approval.resolve({ id: 'public-topic', payload: '0xhash' } as never);
+      evm.releaseWCSignRequest(approval);
+      evm.releaseWCSignRequest(messageApproval);
+      expect(await transaction.dapp).toEqual(scenario === 'sent'
+        ? { value: { id: 'public-topic', payload: '0xhash' } }
+        : { error: locked });
+    }
+  );
 });

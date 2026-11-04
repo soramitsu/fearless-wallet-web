@@ -143,7 +143,7 @@
     "tldts": "7.4.3",
     "tonweb-mnemonic": "1.0.1",
     "vue": "3.5.44",
-    "vue-i18n": "^11.4.6",
+    "vue-i18n": "^11.4.14",
     "vue-router": "^5.1.0",
     "vuedraggable": "npm:vuedraggable@next"
   },

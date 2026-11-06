@@ -30,7 +30,7 @@ vi.mock('@/screens/main/WalletBalance.vue', () => part('WalletBalance'));
 vi.mock('@/portfolio/usePortfolio', () => ({
   usePortfolio: () => ({
     summary: { total: '0', hiddenAssetCount: 0, hiddenTestnetAssetCount: 0, unavailableCount: 0, changePercent: 0, changeAmount: '0' },
-    filteredTotal: null, loadStatus: { state: 'settled', pendingCount: 0 }, legacyOrderIndex: new Map(), summaryInput: {}, hiddenKeys: [],
+    networkTotals: [], filteredTotal: null, loadStatus: { state: 'settled', pendingCount: 0 }, legacyOrderIndex: new Map(), summaryInput: {}, hiddenKeys: [],
   }),
 }));
 vi.mock('@/extension/messaging', () => ({ fetchEvmBalance: vi.fn(), sendMessage: vi.fn(), getHistory: vi.fn(), toggleFavoriteNetwork: vi.fn() }));

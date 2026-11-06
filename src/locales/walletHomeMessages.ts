@@ -1,0 +1,146 @@
+// The wallet home, a token's page and the Send and Receive pickers. Like sidePanelMessages.ts, these stay outside
+// translation.json until reviewed Akkadian and Egyptian translations exist: those locales read the English text
+// through the fallback. Registered at locale initialization, because the token rows are on every wallet screen.
+const en = {
+  walletHome: {
+    send: 'Send',
+    receive: 'Receive',
+    swap: 'Swap',
+    sendAria: 'Send a token',
+    receiveAria: 'Receive a token',
+    swapAria: 'Swap on Polkaswap',
+    change24h: '24h',
+    networks: '1 network | {count} networks',
+    tabs: {
+      label: 'Wallet views',
+      assets: 'Assets',
+      portfolio: 'Portfolio',
+      nfts: 'NFTs',
+    },
+    toolbar: {
+      searchPlaceholder: 'Search tokens and networks',
+      manage: 'Manage list',
+      manageTitle: 'Manage list',
+      done: 'Done',
+    },
+    networkFilter: {
+      label: 'Show assets on',
+      all: 'All networks',
+      more: 'More networks',
+    },
+    search: {
+      noMatchOn: 'Nothing on {network} matches your search.',
+      searchAll: 'Search all networks',
+      showAll: 'Show all assets',
+    },
+    layoutNote: {
+      title: 'All your assets in one list',
+      description: 'Each token shows once, with its total across networks. To see one network only, pick it above the list.',
+      gotIt: 'Got it',
+    },
+    picker: {
+      sendTitle: 'Send',
+      receiveTitle: 'Receive',
+      sendHint: 'Choose a token to send.',
+      receiveHint: 'Choose a token to receive. You pick its network next.',
+      search: 'Search tokens',
+      emptySend: 'Nothing to send yet',
+      emptySendHint: 'Receive a token first, then send it from here.',
+      noMatch: 'No token matches',
+    },
+    token: {
+      price: '1 {symbol} = {price}',
+      share: '{percent}% of this wallet',
+      networks: 'Networks',
+      networksHint: 'Where your {symbol} is. Each network keeps its own balance.',
+      available: '{amount} available',
+      showZero: 'Show 1 network with no balance | Show {count} networks with no balance',
+      hideZero: 'Hide networks with no balance',
+      notFound: 'This token is not in this wallet any more.',
+      back: 'Back to assets',
+      sendAria: 'Send {symbol}',
+      receiveAria: 'Receive {symbol}',
+    },
+    allocation: {
+      title: 'Allocation',
+      tokens: 'Tokens',
+      networks: 'Networks',
+      empty: 'Nothing with a price to chart yet.',
+      row: '{name}: {percent} percent, {value}',
+      other: 'Other',
+    },
+  },
+};
+
+const ru: typeof en = {
+  walletHome: {
+    send: 'Отправить',
+    receive: 'Получить',
+    swap: 'Обмен',
+    sendAria: 'Отправить токен',
+    receiveAria: 'Получить токен',
+    swapAria: 'Обменять на Polkaswap',
+    change24h: '24 ч',
+    networks: '1 сеть | Сетей: {count}',
+    tabs: {
+      label: 'Разделы кошелька',
+      assets: 'Активы',
+      portfolio: 'Портфель',
+      nfts: 'NFT',
+    },
+    toolbar: {
+      searchPlaceholder: 'Поиск токенов и сетей',
+      manage: 'Настроить список',
+      manageTitle: 'Настройка списка',
+      done: 'Готово',
+    },
+    networkFilter: {
+      label: 'Показать активы в сети',
+      all: 'Все сети',
+      more: 'Другие сети',
+    },
+    search: {
+      noMatchOn: 'В сети {network} ничего не найдено.',
+      searchAll: 'Искать во всех сетях',
+      showAll: 'Показать все активы',
+    },
+    layoutNote: {
+      title: 'Все активы в одном списке',
+      description: 'Каждый токен показан один раз, с суммой по всем сетям. Чтобы увидеть одну сеть, выберите её над списком.',
+      gotIt: 'Понятно',
+    },
+    picker: {
+      sendTitle: 'Отправить',
+      receiveTitle: 'Получить',
+      sendHint: 'Выберите токен для отправки.',
+      receiveHint: 'Выберите токен для получения. Сеть вы выберете дальше.',
+      search: 'Поиск токенов',
+      emptySend: 'Пока нечего отправить',
+      emptySendHint: 'Сначала получите токен, затем отправляйте его отсюда.',
+      noMatch: 'Токены не найдены',
+    },
+    token: {
+      price: '1 {symbol} = {price}',
+      share: '{percent}% кошелька',
+      networks: 'Сети',
+      networksHint: 'Где хранятся ваши {symbol}. У каждой сети свой баланс.',
+      available: 'Доступно {amount}',
+      showZero: 'Показать 1 сеть без баланса | Показать сети без баланса: {count}',
+      hideZero: 'Скрыть сети без баланса',
+      notFound: 'Этого токена больше нет в кошельке.',
+      back: 'К активам',
+      sendAria: 'Отправить {symbol}',
+      receiveAria: 'Получить {symbol}',
+    },
+    allocation: {
+      title: 'Структура',
+      tokens: 'Токены',
+      networks: 'Сети',
+      empty: 'Пока нечего показать: нет активов с ценой.',
+      row: '{name}: {percent} процентов, {value}',
+      other: 'Другое',
+    },
+  },
+};
+
+export const walletHomeMessages = { 'en-EN': en, 'ru-RU': ru } as const;

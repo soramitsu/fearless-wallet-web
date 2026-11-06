@@ -18,6 +18,7 @@ import {
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
+import type { PortfolioTokenRow } from '@/portfolio/tokenLens';
 import { WalletEcosystem } from '@/interfaces';
 import { createAssetKey } from '@/portfolio/assetIdentity';
 import { usePortfolioPreferences } from '@/portfolio/usePortfolioPreferences';
@@ -389,8 +390,6 @@ describe('portfolio preferences derived from 3.0.5', () => {
     accountsStore.setSelectedWallet(wallet(SUBSTRATE_ADDRESS));
     accountsStore.setBalance({ details: fundedSubstrateBalances() });
     accountsStore.setIsBalanceLoading(false);
-    // The By network lens: one row per (network, asset). By token is covered in portfolio-token-lens-upgrade.spec.ts.
-    accountsStore.updatePortfolioView({ lens: 'network' });
 
     const wrapper = mount(Currencies, {
       props: { balances: [], filterValue: '', showAssetsManagementForm: true },
@@ -409,20 +408,23 @@ describe('portfolio preferences derived from 3.0.5', () => {
         },
       },
     });
-    // Funded networks render; Manage marks hidden rows instead of dropping them, so each hide can be undone.
-    const rows = () =>
-      wrapper
-        .findAll('.network-section')
-        .flatMap((section) =>
-          section
-            .findAll('.asset-row')
-            .map(
-              (row) =>
-                `${section.attributes('data-network')}:${row.get('.asset-symbol').text()}` +
-                (row.find('[data-testid="hiddenPreviousVersion"]').exists() ? ':hidden-305' : '') +
-                (row.find('[data-testid="hiddenBadge"]').exists() ? ':hidden' : '')
-            )
+    // Every asset of the token rows on screen, one per network; Manage marks hidden ones instead of dropping them, so
+    // each hide can be undone. A row held on several networks stands for each of them.
+    const rows = () => {
+      const listed = (wrapper.vm as unknown as { tokenRows: PortfolioTokenRow[] }).tokenRows;
+      const byId = new Map(listed.map((row) => [row.id, row]));
+
+      return wrapper.findAll('.token-row').flatMap((element) => {
+        const row = byId.get(element.attributes('data-token') ?? '');
+
+        return [...(row?.children ?? []), ...(row?.zeroChildren ?? [])].map(
+          ({ asset }) =>
+            `${asset.networkName}:${asset.symbol}` +
+            (asset.hidden && asset.preferenceSource === 'legacy305' ? ':hidden-305' : '') +
+            (asset.hidden ? ':hidden' : '')
         );
+      });
+    };
 
     expect(rows()).toEqual(expect.arrayContaining(['Polkadot:DOT', 'Ethereum:ETH']));
     expect(rows()).toEqual(
@@ -435,14 +437,20 @@ describe('portfolio preferences derived from 3.0.5', () => {
     expect(rows().filter((row) => row.includes(':KSM') || /^(Ethereum|Polygon):USDT/.test(row))).toEqual([]);
     await wrapper.setProps({ showAssetsManagementForm: true });
 
-    const switches = wrapper.findAll('.switcher-stub');
-    expect(switches.length).toBeGreaterThanOrEqual(3);
-    for (const toggle of switches.slice(0, 3)) await toggle.trigger('click');
-    expect(Object.keys(accountsStore.assetPreferences)).toHaveLength(3);
+    // A token's switch writes one preference per network of the token, and nothing else.
+    const listed = (wrapper.vm as unknown as { tokenRows: PortfolioTokenRow[] }).tokenRows;
+    const firstThree = wrapper.findAll('.token-row').slice(0, 3);
+    const written = firstThree.reduce((count, element) => {
+      const row = listed.find(({ id }) => id === element.attributes('data-token'))!;
+
+      return count + row.children.length + row.zeroChildren.length;
+    }, 0);
+    expect(firstThree).toHaveLength(3);
+    for (const row of firstThree) await row.get('[data-testid="tokenRowSwitch"]').trigger('click');
+    expect(Object.keys(accountsStore.assetPreferences)).toHaveLength(written);
 
     accountsStore.setSelectedWallet(wallet(SECOND_SUBSTRATE_ADDRESS));
     accountsStore.setIsBalanceLoading(false);
-    accountsStore.updatePortfolioView({ lens: 'network' });
     await nextTick();
 
     expect(rows()).toEqual(expect.arrayContaining(['Kusama:KSM', 'Ethereum:USDT', 'Polkadot:DOT:hidden-305:hidden']));

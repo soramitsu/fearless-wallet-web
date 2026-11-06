@@ -69,9 +69,8 @@ export function usePortfolioDashboard({ summaryInput, hiddenKeys }: DashboardInp
   const canAggregate = computed(() => accountsStore.accounts.length >= 2);
   /** All wallets only exists with two or more wallets; one wallet always reads as itself. */
   const scope = computed<DashboardScope>(() => effectiveScope(store.preferences.scope, accountsStore.accounts.length));
-  const lens = computed<AllWalletsLens>(() =>
-    scope.value === 'all' ? store.preferences.lens : accountsStore.portfolioView.lens === 'network' ? 'network' : 'token'
-  );
+  // The lists show one row per token in every scope (networks are a filter there), so their colours are the tokens'.
+  const lens = computed<AllWalletsLens>(() => 'token');
 
   const groupIndex = computed(() => canonicalGroupIndexFor(networksStore.allNetworks));
   const groupOf = computed<GroupOf>(() => (assetKey) => {
@@ -121,6 +120,9 @@ export function usePortfolioDashboard({ summaryInput, hiddenKeys }: DashboardInp
   const networkSections = computed(() => buildAggregateNetworkSections(refs.value, groupOf.value));
   /** A Tokens-lens row's logo: polkaswap.io's for a SORA asset, otherwise the registry's (tokenIcons.ts). */
   const iconOf = (row: AggregateTokenRow): string => rowIcon(row.children, (name) => networksStore.getNetwork(name));
+  /** A network's logo by its name, for the list's network chips. */
+  const networkIconOf = (networkName: string): string =>
+    networksStore.allNetworks.find(({ name }) => name === networkName)?.icon ?? '';
 
   const slotKey = computed(() => slotMapKey(scope.value, lens.value, selectedAddress.value));
   const allocation = computed(() =>
@@ -209,6 +211,7 @@ export function usePortfolioDashboard({ summaryInput, hiddenKeys }: DashboardInp
     tokenRows,
     networkSections,
     iconOf,
+    networkIconOf,
     allocation,
     syncState,
     groupIndex,

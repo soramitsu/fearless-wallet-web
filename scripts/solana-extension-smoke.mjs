@@ -1900,4 +1900,9 @@ function sleep(ms) {
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
+}).finally(() => {
+  // All assertions and awaited browser/server cleanup have finished. The Vite fixture
+  // loader can retain native handles after server.close(); do not leave a finished CLI
+  // alive for those handles. Preserve failures and give output streams time to drain.
+  setTimeout(() => process.exit(process.exitCode ?? 0), 2_000).unref();
 });

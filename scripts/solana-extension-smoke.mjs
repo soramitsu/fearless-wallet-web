@@ -95,7 +95,7 @@ const accountRemovalStorageOnly = process.argv.includes('--account-removal-stora
 const currentAccountStorageOnly = process.argv.includes('--current-account-storage');
 const sessionRetirementStorageOnly = process.argv.includes('--session-retirement-storage');
 const offlineScreenshots = Boolean(portfolioScreenshotsDir || dashboardScreenshotsDir || sidePanelScreenshotsDir || effectsScreenshotsDir || primitivesScreenshotsDir || tonImportStorageOnly || localImportStorageOnly || jsonImportStorageOnly || mobileAddressStorageOnly || sessionRetirementStorageOnly || currentAccountStorageOnly || accountRemovalStorageOnly || walletResetStorageOnly || masterPasswordStorageOnly);
-const extensionDir = path.resolve(root, `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`);
+const extensionDir = path.resolve(root, process.env.FEARLESS_SMOKE_EXTENSION_DIR || `dist/extension/${productionPopupOnly ? 'chrome' : 'chrome-test'}`);
 const manifestPath = path.join(extensionDir, 'manifest.json');
 const smokeControlPath = path.join(extensionDir, 'smoke-control.html');
 let chromeBinary =
@@ -718,7 +718,16 @@ async function main() {
   } finally {
     await stopExtensionKeepAlive?.();
     if (cdp) {
-      await cdp.send('Browser.close').catch(() => undefined);
+      // Chrome can exit without replying to Browser.close. Always reach process/server cleanup.
+      let closeTimer;
+      try {
+        await Promise.race([
+          cdp.send('Browser.close').catch(() => undefined),
+          new Promise((resolve) => { closeTimer = setTimeout(resolve, 2000); }),
+        ]);
+      } finally {
+        clearTimeout(closeTimer);
+      }
       cdp.close();
     }
 

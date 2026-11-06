@@ -155,6 +155,11 @@ class CdpConnection {
   }
 
   close() {
+    for (const callback of this.#callbacks.values()) {
+      clearTimeout(callback.timeout);
+      callback.reject(new Error('Chrome DevTools connection closed'));
+    }
+    this.#callbacks.clear();
     this.socket.close();
   }
 
@@ -223,6 +228,11 @@ class CdpPipeConnection {
   }
 
   close() {
+    for (const callback of this.#callbacks.values()) {
+      clearTimeout(callback.timeout);
+      callback.reject(new Error('Chrome DevTools connection closed'));
+    }
+    this.#callbacks.clear();
     this.input?.end();
   }
 

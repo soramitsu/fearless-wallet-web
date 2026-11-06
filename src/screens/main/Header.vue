@@ -149,7 +149,12 @@ export default defineComponent({ name: 'Header',
     showBackIcon() {
       const route = this.$route.name;
 
-          return route === Components.AssetNetworks || route === Components.AssetHistory || route === Components.TokenLocations;
+          return (
+            route === Components.AssetNetworks ||
+            route === Components.AssetHistory ||
+            route === Components.TokenLocations ||
+            route === Components.TokenOverview
+          );
     },
     // Behind a build flag (src/portfolio/dashboard): on the portfolio, All wallets is named instead of one wallet.
     showsAllWallets(): boolean {
@@ -158,7 +163,10 @@ export default defineComponent({ name: 'Header',
       const route = this.$route.name;
 
       return (
-        (route === Components.Wallet || route === Components.Currencies || route === Components.Nfts) &&
+        (route === Components.Wallet ||
+          route === Components.Currencies ||
+          route === Components.Nfts ||
+          route === Components.PortfolioAllocation) &&
         effectiveScope(this.dashboardStore.preferences.scope, this.accountsStore.accounts.length) === 'all'
       );
     },
@@ -465,24 +473,36 @@ export default defineComponent({ name: 'Header',
 </style>
 
 <style lang="scss" scoped>
+// The side panel's column keeps one row, as a phone wallet does: the name takes what the controls leave, and the
+// network filter shows its icon (the balance caption names a filtered view in words).
 @media (max-width: 500px) {
   .header {
-    height: auto;
-    min-height: 104px;
-    flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
 
-    .header-part {
-      flex: 0 0 100%;
-      min-width: 0;
-      width: 100%;
-    }
     .header-part-left {
-      .logo-container { flex: 0 0 40px; margin: 0; }
+      gap: 8px;
+
+      .logo-container { flex: 0 0 36px; width: 36px; margin: 0; }
       .wallet-name { min-width: 0; flex: 1; }
-      .name { max-width: 100%; font-size: 1.125rem; }
+      .name { max-width: 100%; font-size: 1.05rem; }
     }
-    .header-part-right { justify-content: flex-end; }
+
+    .header-part-right {
+      gap: 2px;
+    }
+
+    .network-management {
+      width: auto;
+    }
+
+    :deep(.network__title) {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
   }
 }
 </style>

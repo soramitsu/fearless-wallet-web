@@ -27,7 +27,14 @@ const router = vi.hoisted(() => ({ push: vi.fn() }));
 
 vi.mock('vue-router', () => ({ useRouter: () => router }));
 vi.mock('@/router/routes', () => ({
-  Components: { AssetHistory: 'AssetHistory', SendForm: 'SendForm', ReceiveForm: 'ReceiveForm' },
+  Components: {
+    AssetHistory: 'AssetHistory',
+    SendForm: 'SendForm',
+    ReceiveForm: 'ReceiveForm',
+    TokenOverview: 'TokenOverview',
+    Currencies: 'Currencies',
+    Polkaswap: 'Polkaswap',
+  },
 }));
 vi.mock('@/locales/useI18n', () => ({
   useI18n: () => ({
@@ -40,8 +47,12 @@ vi.mock('@/extension/messaging/price', () => ({ getFiats: vi.fn() }));
 vi.mock('@/extension/messaging/asset-discovery', () => ({ forceAssetDiscoverySweep: vi.fn() }));
 vi.mock('@/extension/messaging/nfts', () => ({ fetchNfts: vi.fn() }));
 vi.mock('@/stores/extension', () => ({ useExtensionStore: () => ({ features: { assetDiscoveryMode: 'shadow' } }) }));
+// These wallets carry no security metadata; Receive on a token's page is closed only to recovery-only wallets, which
+// wallet-home-token-overview.spec.ts covers.
+vi.mock('@/util/walletRecoveryPolicy', () => ({ isSelectedWalletRecoveryOnly: () => false }));
 
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
+import TokenOverview from '@/screens/portfolio/TokenOverview.vue';
 
 const createLocalStorageStub = () => {
   const storage = new Map<string, string>();
@@ -147,12 +158,12 @@ const mountCurrencies = (props: Record<string, unknown> = {}) =>
     },
   });
 
-/** The By token rows as `SYMBOL` or `SYMBOL×networks`, in screen order. */
+/** The By token rows as `SYMBOL@network` when held on one network or `SYMBOL×networks` when held on several. */
 const tokenRows = (wrapper: VueWrapper) =>
   wrapper.findAll('.token-row').map((row) => {
     const count = row.find('[data-testid="networkCount"]');
     const symbol = row.get('.token-symbol').text().split(/\s/)[0];
-    return count.exists() ? `${symbol}×${count.text().split(':')[1]}` : `${symbol}@${row.get('[data-testid="tokenNetwork"]').text()}`;
+    return count.exists() ? `${symbol}×${count.text()}` : `${symbol}@${row.get('[data-testid="tokenNetwork"]').text()}`;
   });
 
 /** The fiat the rendered token rows add up to (the fixture prices produce whole cents). */
@@ -229,8 +240,10 @@ describe('By token after an upgrade from 3.0.5', () => {
     expect(rows.filter((row) => row.startsWith('KSM'))).toEqual([]);
     // 3.0.5 hid its "USDT (ethereum)" group, which held both Tether's USDT and Polygon's bridged USDT.
     expect(rows.filter((row) => row.startsWith('USDT'))).toEqual([]);
-    // ETH on Arbitrum One, OP Mainnet and Polygon zkEVM are shown at zero by the one zero rule, so ETH is a group.
-    expect(rows).toEqual(['ETH×4', 'USDC@Ethereum', 'DOT×2']);
+    // ETH on Arbitrum One, OP Mainnet and Polygon zkEVM are shown at zero by the one zero rule, so ETH is a group; it is
+    // held on Ethereum only, and the row says where. Its zero networks wait on its page.
+    expect(rows).toEqual(['ETH@Ethereum', 'USDC@Ethereum', 'DOT×2']);
+    expect(wrapper.findAll('.token-row')[0].find('[data-testid="tokenGroupHeader"]').exists()).toBe(true);
 
     const dot = wrapper.findAll('.token-row').find((row) => row.attributes('data-token') === 'group:dot')!;
     expect(dot.get('[data-testid="tokenAmount"]').text()).toBe('14.5000 DOT');
@@ -264,7 +277,7 @@ describe('By token after an upgrade from 3.0.5', () => {
 
     accountsStore.updatePortfolioView({ sort: 'value' });
     await nextTick();
-    expect(tokenRows(wrapper)[0]).toBe('ETH×4');
+    expect(tokenRows(wrapper)[0]).toBe('ETH@Ethereum');
 
     wrapper.unmount();
     scope.stop();
@@ -352,27 +365,39 @@ describe('Send and Receive from a token group', () => {
     vi.unstubAllGlobals();
   });
 
+  // The DOT row opens DOT's own page: the list hands over the token, the page lists its networks and asks for one.
   async function openDotGroup() {
     const opened = openPortfolio(SUBSTRATE_ADDRESS, WalletEcosystem.Substrate, fundedEvmAndSubstrate());
     opened.accountsStore.dismissPortfolioLayoutNote();
-    const wrapper = mountCurrencies();
+    const list = mountCurrencies();
     await nextTick();
-    const dot = () => wrapper.findAll('.token-row').find((row) => row.attributes('data-token') === 'group:dot')!;
-    await dot().get('[data-testid="tokenGroupHeader"]').trigger('click');
+    const dot = list.findAll('.token-row').find((row) => row.attributes('data-token') === 'group:dot')!;
+    await dot.get('[data-testid="tokenGroupHeader"]').trigger('click');
+    expect(router.push).toHaveBeenCalledExactlyOnceWith({ name: 'TokenOverview', params: { token: 'group:dot' } });
+    expect(dot.find('[data-testid="tokenNetworks"]').exists()).toBe(false);
+    list.unmount();
+    router.push.mockReset();
 
-    return { ...opened, wrapper, dot };
+    const wrapper = mount(TokenOverview, {
+      props: { token: 'group:dot' },
+      global: { stubs: { teleport: true, ExternalLogo: true, Icon: true, Shimmer: true } },
+    });
+    await nextTick();
+
+    return { ...opened, wrapper };
   }
 
-  it('expands into per-network rows with the role of each, remembered for the wallet', async () => {
-    const { accountsStore, wrapper, dot, scope } = await openDotGroup();
+  it('opens DOT on its own page with each network and its role, and opens a network on its asset page', async () => {
+    const { accountsStore, wrapper, scope } = await openDotGroup();
 
-    const networks = dot().findAll('.network-row');
+    const networks = wrapper.findAll('[data-testid="tokenNetworkRow"]');
     expect(networks.map((row) => row.get('.network-name').text())).toEqual(['Polkadot', 'Polkadot AssetHub']);
     expect(networks.map((row) => row.get('[data-testid="memberRole"]').text())).toEqual([
       'portfolioPage.role.native',
       'portfolioPage.role.systemParachain',
     ]);
-    expect(accountsStore.portfolioView.expandedGroups).toEqual(['group:dot']);
+    // Nothing opens in place any more, so nothing is remembered as open.
+    expect(accountsStore.portfolioView.expandedGroups).toEqual([]);
 
     await networks[1].trigger('click');
     expect(router.push).toHaveBeenLastCalledWith({
@@ -385,9 +410,9 @@ describe('Send and Receive from a token group', () => {
   });
 
   it('asks for the network before a Send, with the warning, and opens Send on exactly the network picked', async () => {
-    const { wrapper, dot, scope } = await openDotGroup();
+    const { wrapper, scope } = await openDotGroup();
 
-    await dot().get('[data-testid="groupSend"]').trigger('click');
+    await wrapper.get('[data-testid="tokenSend"]').trigger('click');
     const picker = wrapper.get('[data-testid="groupNetworkPicker"]');
     expect(picker.attributes('role')).toBe('dialog');
     expect(picker.get('[data-testid="groupNetworkWarning"]').text()).toContain('portfolioPage.groupPicker.sendWarning');
@@ -409,9 +434,9 @@ describe('Send and Receive from a token group', () => {
   });
 
   it('offers Receive on every DOT network of the wallet, including those it holds nothing on yet', async () => {
-    const { wrapper, dot, scope } = await openDotGroup();
+    const { wrapper, scope } = await openDotGroup();
 
-    await dot().get('[data-testid="groupReceive"]').trigger('click');
+    await wrapper.get('[data-testid="tokenReceive"]').trigger('click');
     const options = wrapper.findAll('[data-testid="groupNetworkOption"]').map((option) => option.attributes('data-network'));
     expect(options.slice(0, 2)).toEqual(['Polkadot', 'Polkadot AssetHub']);
     expect(options).toEqual(expect.arrayContaining(['Hydration', 'Acala', 'Moonbeam']));

@@ -8,7 +8,7 @@ import { useAccountsStore } from '@/stores/accounts';
 const router = vi.hoisted(() => ({ push: vi.fn() }));
 
 vi.mock('vue-router', () => ({ useRouter: () => router }));
-vi.mock('@/router/routes', () => ({ Components: { AssetHistory: 'AssetHistory' } }));
+vi.mock('@/router/routes', () => ({ Components: { AssetHistory: 'AssetHistory', TokenOverview: 'TokenOverview' } }));
 vi.mock('@/locales/useI18n', () => ({
   useI18n: () => ({
     t: (key: string, values?: Record<string, unknown>) => (values ? `${key} ${JSON.stringify(values)}` : key),
@@ -80,7 +80,7 @@ const dotRow = (): PortfolioTokenRow => ({
 
 const mountRow = (row: PortfolioTokenRow, props: Record<string, unknown> = {}) =>
   mount(PortfolioTokenRowView, {
-    props: { row, canSend: true, ...props },
+    props: { row, ...props },
     global: { stubs: { ExternalLogo: true, Icon: true, Switcher: true } },
   });
 
@@ -106,7 +106,8 @@ describe('a By token row', () => {
     const wrapper = mountRow(dotRow());
     const header = wrapper.get('[data-testid="tokenGroupHeader"]');
 
-    expect(header.attributes('aria-expanded')).toBe('false');
+    // It opens a page, not a list in place.
+    expect(header.attributes('aria-expanded')).toBeUndefined();
     expect(header.attributes('aria-label')).toContain('portfolioPage.tokenGroupLabel:3');
     expect(header.attributes('aria-label')).toContain('"symbol":"DOT"');
     expect(header.attributes('aria-label')).toContain('"amount":"12.0000 DOT"');
@@ -114,13 +115,44 @@ describe('a By token row', () => {
     wrapper.unmount();
   });
 
-  it('remembers that it was opened after the popup closes', async () => {
-    const wrapper = mountRow(dotRow());
+  it('shows the price, its move and where the token is held, Exodus-style, and opens the token on its own page', async () => {
+    const priced = (value: PortfolioAsset) => ({ ...value, unitPrice: '5', priceChangePercent: '-1.25' });
+    const row = { ...dotRow(), children: dotRow().children.map((member) => ({ ...member, asset: priced(member.asset) })) };
+    const wrapper = mountRow(row);
+
+    expect(wrapper.get('[data-testid="tokenFiat"]').text()).toBe('60.00');
+    expect(wrapper.get('[data-testid="tokenAmount"]').text()).toBe('12.0000 DOT');
+    expect(wrapper.get('[data-testid="tokenPrice"]').text()).toBe('5.00');
+    expect(wrapper.get('[data-testid="tokenChange"]').text()).toBe('-1.25%');
+    expect(wrapper.get('[data-testid="tokenChange"]').classes()).toContain('token-change--down');
+    // Held on two networks (the third is at zero and waits on the token's page): the logo counts them.
+    expect(wrapper.get('[data-testid="networkCount"]').text()).toBe('2');
+    expect(wrapper.get('.token-where').text()).toBe('walletHome.networks:2 {"count":2}');
+    expect(wrapper.find('[data-testid="tokenNetworks"]').exists()).toBe(false);
+
     await wrapper.get('[data-testid="tokenGroupHeader"]').trigger('click');
-    expect(wrapper.findAll('.network-row')).toHaveLength(2);
+
+    expect(router.push).toHaveBeenCalledExactlyOnceWith({ name: 'TokenOverview', params: { token: 'group:dot' } });
+    expect(wrapper.find('[data-testid="tokenNetworks"]').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it('names the one network a group is held on, though its other networks are listed at zero', () => {
+    const wrapper = mountRow({ ...dotRow(), children: [dotRow().children[0]], zeroChildren: [...dotRow().children.slice(1), ...dotRow().zeroChildren] });
+
+    expect(wrapper.find('[data-testid="networkCount"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="tokenNetwork"]').text()).toBe('Polkadot');
+    wrapper.unmount();
+  });
+
+  it('remembers that it was opened in Manage after the popup closes', async () => {
+    const wrapper = mountRow(dotRow(), { manage: true });
+    await wrapper.get('[data-testid="tokenGroupHeader"]').trigger('click');
+    expect(wrapper.findAll('.network-row')).toHaveLength(3);
+    expect(router.push).not.toHaveBeenCalled();
     wrapper.unmount();
 
-    const reopened = mountRow(dotRow());
+    const reopened = mountRow(dotRow(), { manage: true });
     expect(reopened.get('[data-testid="tokenGroupHeader"]').attributes('aria-expanded')).toBe('true');
     expect(JSON.parse(localStorage.getItem('account_portfolio-view-v1')!).value.wallet.expandedGroups).toEqual(['group:dot']);
 
@@ -129,37 +161,26 @@ describe('a By token row', () => {
     reopened.unmount();
   });
 
-  it('keeps zero networks behind one line until asked, and labels each network with its role', async () => {
-    const wrapper = mountRow(dotRow(), { forceExpanded: true });
-    // A search or the Hidden filter opens everything.
-    expect(wrapper.findAll('.network-row')).toHaveLength(3);
-    wrapper.unmount();
+  it('lists every network of a group in Manage, zero ones included, each with its role', () => {
+    // The Hidden filter opens every group.
+    const wrapper = mountRow(dotRow(), { manage: true, forceExpanded: true });
 
-    const closed = mountRow(dotRow());
-    await closed.get('[data-testid="tokenGroupHeader"]').trigger('click');
-    expect(closed.get('[data-testid="tokenZeroNetworks"]').text()).toContain('portfolioPage.moreZeroNetworks:1');
-    await closed.get('[data-testid="tokenZeroNetworks"]').trigger('click');
-    expect(closed.findAll('[data-testid="memberRole"]').map((chip) => chip.text())).toEqual([
+    expect(wrapper.findAll('.network-row')).toHaveLength(3);
+    expect(wrapper.find('[data-testid="tokenZeroNetworks"]').exists()).toBe(false);
+    expect(wrapper.findAll('[data-testid="memberRole"]').map((chip) => chip.text())).toEqual([
       'portfolioPage.role.native',
       'portfolioPage.role.systemParachain',
       'portfolioPage.role.xcmReserve',
     ]);
-    closed.unmount();
+    wrapper.unmount();
   });
 
-  it('offers Send and Receive for the group, and lets the parent ask for the network', async () => {
-    const wrapper = mountRow(dotRow(), { forceExpanded: true });
-    await wrapper.get('[data-testid="groupSend"]').trigger('click');
-    await wrapper.get('[data-testid="groupReceive"]').trigger('click');
+  it('keeps Send and Receive for the token page, which asks for the network', () => {
+    const wrapper = mountRow(dotRow());
 
-    expect(wrapper.emitted('send')).toHaveLength(1);
-    expect(wrapper.emitted('receive')).toHaveLength(1);
-    expect(router.push).not.toHaveBeenCalled();
+    expect(wrapper.find('[data-testid="groupSend"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="groupReceive"]').exists()).toBe(false);
     wrapper.unmount();
-
-    const noSend = mountRow(dotRow(), { forceExpanded: true, canSend: false });
-    expect(noSend.get('[data-testid="groupSend"]').attributes('disabled')).toBeDefined();
-    noSend.unmount();
   });
 
   it('opens a single-network row straight on its asset page, with the network named', async () => {
@@ -191,12 +212,19 @@ describe('a By token row', () => {
       ...dotRow(), groupId: grouped ? 'dot' : undefined,
       children: grouped ? [child(hidden), child(other)] : [child(hidden)], zeroChildren: [], networkCount: grouped ? 2 : 1,
     };
-    const wrapper = mountRow(row, { search: 'DOT', forceExpanded: true });
+    const wrapper = mountRow(row, { search: 'DOT' });
     expect(accounts.assetPreferences[hidden.key]).toBe('hidden');
-    await wrapper.get(grouped ? '.network-row' : '[data-testid="tokenRowHeader"]').trigger('click');
-    expect(accounts.assetPreferences[hidden.key] ?? 'auto').toBe('auto');
+    await wrapper.get(grouped ? '[data-testid="tokenGroupHeader"]' : '[data-testid="tokenRowHeader"]').trigger('click');
+
+    if (grouped) {
+      // A group found by a search opens on its page with the same search, where opening a network restores only it.
+      expect(accounts.assetPreferences[hidden.key]).toBe('hidden');
+      expect(router.push).toHaveBeenCalledExactlyOnceWith({ name: 'TokenOverview', params: { token: 'group:dot' }, query: { search: 'DOT' } });
+    } else {
+      expect(accounts.assetPreferences[hidden.key] ?? 'auto').toBe('auto');
+      expect(router.push).toHaveBeenCalledExactlyOnceWith({ name: 'AssetHistory', params: { assetId: 'relay-dot', selectedNetwork: 'Polkadot' } });
+    }
     expect(accounts.assetPreferences[other.key]).toBe('hidden');
-    expect(router.push).toHaveBeenCalledExactlyOnceWith({ name: 'AssetHistory', params: { assetId: 'relay-dot', selectedNetwork: 'Polkadot' } });
     wrapper.unmount();
   });
 
@@ -239,7 +267,7 @@ describe('a By token row', () => {
         balanceUnavailable: false,
         balanceFailed: true,
       },
-      { forceExpanded: true }
+      { manage: true, forceExpanded: true }
     );
 
     expect(group.get('[data-testid="tokenAmount"]').text()).toBe('12.0000 DOT');
@@ -251,11 +279,7 @@ describe('a By token row', () => {
     const headerLabel = group.get('[data-testid="tokenGroupHeader"]').attributes('aria-label');
     expect(headerLabel).toContain('"amount":"12.0000 DOT"');
     expect(headerLabel?.endsWith(' · portfolioPage.balanceStatus.failed')).toBe(true);
-    const failedLabel = group.findAll('.network-row')[2].attributes('aria-label');
-    expect(failedLabel).toContain('portfolioPage.tokenSingleFailedLabel');
-    expect(failedLabel).toContain('"status":"portfolioPage.balanceStatus.failed"');
-    expect(failedLabel).not.toContain('"value"');
-    expect(failedLabel).not.toContain('"amount"');
+    expect(group.findAll('.network-row')[2].text()).not.toContain('0.0000 DOT');
     group.unmount();
   });
 
@@ -277,7 +301,7 @@ describe('a By token row', () => {
         balanceUnavailable: true,
         balanceFailed: true,
       },
-      { forceExpanded: true }
+      { manage: true, forceExpanded: true }
     );
     const header = wrapper.get('[data-testid="tokenGroupHeader"]');
 
@@ -295,21 +319,23 @@ describe('a By token row', () => {
 
   it('keeps the last confirmed amount of a failed update and marks it as out of date', () => {
     const stale = asset('Polkadot', 'relay-dot', '10', { balanceFailed: true });
-    const wrapper = mountRow({ ...dotRow(), children: [child(stale, 'native'), dotRow().children[1]], balanceFailed: true }, { forceExpanded: true });
+    const row = { ...dotRow(), children: [child(stale, 'native'), dotRow().children[1]], balanceFailed: true };
+    const wrapper = mountRow(row);
 
     expect(wrapper.get('[data-testid="tokenAmount"]').text()).toBe('12.0000 DOT');
     expect(wrapper.find('[data-testid="tokenBalanceUnavailable"]').exists()).toBe(false);
-    expect(wrapper.findAll('[data-testid="networkBalanceFailed"]')).toHaveLength(1);
-    expect(wrapper.findAll('.network-row')[0].text()).toContain('10.0000 DOT');
+    expect(wrapper.get('[data-testid="tokenBalanceFailed"]').text()).toBe('portfolioPage.balanceStatus.failed');
     // Assistive technology hears the amounts and that they may be out of date, where the row shows it.
     const headerLabel = wrapper.get('[data-testid="tokenGroupHeader"]').attributes('aria-label');
     expect(headerLabel).toContain('"amount":"12.0000 DOT"');
     expect(headerLabel?.endsWith(' · portfolioPage.balanceStatus.failed')).toBe(true);
-    const [staleLabel, freshLabel] = wrapper.findAll('.network-row').map((row) => row.attributes('aria-label'));
-    expect(staleLabel).toContain('"amount":"10.0000 DOT"');
-    expect(staleLabel?.endsWith(' · portfolioPage.balanceStatus.failed')).toBe(true);
-    expect(freshLabel).not.toContain('portfolioPage.balanceStatus.failed');
     wrapper.unmount();
+
+    // In Manage each network says which amount is the last one confirmed.
+    const managed = mountRow(row, { manage: true, forceExpanded: true });
+    expect(managed.findAll('[data-testid="networkBalanceFailed"]')).toHaveLength(1);
+    expect(managed.findAll('.network-row')[0].text()).toContain('10.0000 DOT');
+    managed.unmount();
   });
 
   it('says when part of a group has no price instead of valuing it at another network’s price', () => {

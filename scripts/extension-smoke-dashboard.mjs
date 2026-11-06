@@ -121,7 +121,7 @@ const OVERFLOW = `(() => {
   const issues = [];
   const viewport = window.innerWidth;
   if (document.documentElement.scrollWidth > viewport) issues.push('page ' + document.documentElement.scrollWidth + ' > ' + viewport);
-  for (const element of document.querySelectorAll('.hero-card, .hero-text, .legend, .actions, .segmented, .row-head, .child, .section-head, .sheet, .scope-row, .all-panel, .where, .head, .holding, .panel, .actions, .action, .polkaswap, .route, .orbit, .check')) {
+  for (const element of document.querySelectorAll('.hero, .round-actions, .toolbar-row, .tabs, .segmented, .row-head, .child, .section-head, .sheet, .scope-row, .all-panel, .allocation .row, .chooser-option, .where, .head, .holding, .panel, .actions, .action, .polkaswap, .route, .orbit, .check')) {
     const box = element.getBoundingClientRect();
     // The legend scrolls sideways by design: its own box must fit, the chips inside it may run past the edge.
     const inLegend = Boolean(element.closest('.legend'));
@@ -281,20 +281,39 @@ export async function captureDashboardScreenshots({
     await check('the total is the sum of every wallet', `document.querySelector('[data-testid="heroTotal"]')?.getAttribute('aria-label').includes(${JSON.stringify(dollars(allTotal))})`, true);
     await check('the sync chip says live', `document.querySelector('[data-testid="heroSync"]')?.innerText.trim().toLowerCase()`, 'live');
     await check('the Wallets lens exists only in All wallets', `[...document.querySelectorAll('[data-testid^="allLens-"]')].map((button) => button.dataset.testid)`, ['allLens-token', 'allLens-network', 'allLens-wallet']);
-    const legendShares = await evalPage(`[...document.querySelectorAll('[data-testid="heroLegend"] .chip-share')].map((node) => parseInt(node.innerText, 10))`);
-    const shareSum = legendShares.reduce((sum, share) => sum + share, 0);
-    if (Math.abs(shareSum - 100) > legendShares.length) throw new Error(`The legend shares add up to ${shareSum}, not 100: ${JSON.stringify(legendShares)}`);
-    checks.push('the legend shares add up to the whole');
-    await capture('01-all-wallets-tokens', 'All wallets by token: the winged sun with the allocation fan, the legend, and the tokens of every wallet.');
+    await check('All wallets has the Assets and Portfolio views, and no NFTs of its own', `[...document.querySelectorAll('[data-testid="optTab"]')].map((tab) => tab.dataset.tab)`, ['Currencies', 'PortfolioAllocation']);
+    await check('All wallets offers Send, Receive and Swap, each asking for a wallet first', `[...document.querySelectorAll('[data-testid="heroActions"] button')].map((button) => button.dataset.testid)`, ['heroSend', 'heroReceive', 'heroSwap']);
+    await capture('01-all-wallets-tokens', 'All wallets by token: the total of every wallet, Send, Receive and Swap, then the tokens of every wallet.');
 
-    // Drill-down: the first pick highlights, the second opens the row.
-    const firstChip = await evalPage(`document.querySelector('[data-testid="heroLegend"] .chip').dataset.testid.replace('legend-', '')`);
-    await click(`[data-testid="legend-${firstChip}"]`);
-    await check('a chip highlights its group', `[document.querySelector('[data-testid="legend-${firstChip}"]').getAttribute('aria-pressed'), document.querySelector('[data-testid="portfolioSky"]').classList.contains('sky--has-selection')]`, ['true', true]);
-    await capture('02-chip-highlighted', 'A legend chip picked: its rays lift and the rest of the fan steps back.');
-    await click(`[data-testid="legend-${firstChip}"]`);
-    await wait(`Boolean(document.querySelector('.row--active'))`, 'the opened row');
-    await capture('03-token-row-opened', 'The same chip picked again opens that token: where it lives, by network and wallet.');
+    await click('[data-testid="heroSend"]');
+    await wait(`Boolean(document.querySelector('[data-testid="walletChooser"]'))`, 'the wallet chooser');
+    await check('Send from All wallets asks which wallet, every wallet listed', `document.querySelectorAll('[data-testid="walletChooserOption"]').length`, keyring.length);
+    await capture('01b-all-wallets-send-chooser', 'Send from All wallets: the wallet is chosen first, then the token.');
+    await click('[data-testid="portfolioSheetClose"]');
+    await wait(`!document.querySelector('[data-testid="walletChooser"]')`, 'the chooser closed');
+
+    // The Portfolio view: the winged sun charts the allocation; its rows give each share and add up to the whole.
+    await click('[data-testid="optTab"][data-tab="PortfolioAllocation"]');
+    await wait(`Boolean(document.querySelector('[data-testid="allocationRows"]'))`, 'the Portfolio view');
+    const shares = await evalPage(`[...document.querySelectorAll('[data-testid="allocationRow"] .share')].map((node) => parseInt(node.innerText, 10))`);
+    const shareSum = shares.reduce((sum, value) => sum + value, 0);
+    if (Math.abs(shareSum - 100) > shares.length) throw new Error(`The allocation shares add up to ${shareSum}, not 100: ${JSON.stringify(shares)}`);
+    checks.push('the allocation shares add up to the whole');
+    await check('All wallets can chart by wallet as well', `[...document.querySelectorAll('[data-testid^="allocationLens-"]')].map((button) => button.dataset.testid)`, ['allocationLens-token', 'allocationLens-network', 'allocationLens-wallet']);
+    await evalPage(`(document.querySelector('[data-testid="portfolioAllocation"]')?.scrollIntoView({ block: 'start' }), true)`);
+    await capture('02-all-wallets-portfolio', 'The Portfolio view of every wallet: the winged sun with one ray per percent, and the share of each token.');
+
+    // Drill-down: the first pick highlights, the second opens the token.
+    const firstKey = await evalPage(`document.querySelector('[data-testid="allocationRow"]').dataset.key`);
+    await click(`[data-testid="allocationRow"][data-key="${firstKey}"]`);
+    await check('a row highlights its group in the chart', `[document.querySelector('[data-testid="allocationRow"][data-key="${firstKey}"]').getAttribute('aria-pressed'), document.querySelector('[data-testid="portfolioSky"]').classList.contains('sky--has-selection')]`, ['true', true]);
+    await capture('02b-allocation-highlighted', 'A row picked: its rays lift and the rest of the fan steps back.');
+    await click(`[data-testid="allocationRow"][data-key="${firstKey}"]`);
+    await wait(`${APP}.router.currentRoute.value.name === 'TokenLocations'`, 'the token opened from the chart');
+    await wait(`Boolean(document.querySelector('[data-testid="locationsHoldings"] [data-testid^="holding-"]'))`, 'its holdings');
+    await capture('03-token-opened', 'The same row picked again opens that token: where it lives, by network and wallet.');
+    await evalPage(`${APP}.router.replace({ name: 'Currencies' }).then(() => true)`);
+    await wait(`Boolean(document.querySelector('[data-testid="allTokens"]'))`, 'the All wallets token list again');
 
     await click('[data-testid="allLens-network"]');
     await wait(`Boolean(document.querySelector('[data-testid="allNetworks"]'))`, 'the Networks lens');
@@ -377,9 +396,6 @@ export async function captureDashboardScreenshots({
     await check('a token on SORA is swap-ready, with the words and an icon', `document.querySelector('[data-testid="${XOR_ROW}"] [data-testid="readiness-ready"]')?.innerText.trim()`, 'Swap-ready');
     await check('LLD on Liberland, whose reviewed route to SORA is turned off in this version, says Moves paused', `document.querySelector('[data-testid^="${LLD_ROW}"] [data-testid="readiness-off"]')?.innerText.trim()`, 'Moves paused');
     await check('KSM, whose routes to SORA are retired, has no chip', `document.querySelectorAll('[data-testid="tokenRow-group:ksm"] [data-testid^="readiness-"], [data-testid^="tokenRow-substrate:b0a8d493"] [data-testid^="readiness-"]').length`, 0);
-    await click('[data-testid="tokenRow-group:usdt"]');
-    await check('USDT, which has no route to SORA, has no chip on any of its holdings', `document.querySelectorAll('[data-testid="tokenChildren-group:usdt"] [data-testid^="readiness-"]').length`, 0);
-    await click('[data-testid="tokenRow-group:usdt"]');
     await evalPage(`(document.querySelector('[data-testid^="${LLD_ROW}"]')?.scrollIntoView({ block: 'center' }), true)`);
     await capture('13-readiness-chips', 'The tokens with how each stands to a swap: Swap-ready on SORA, Moves paused where a reviewed route exists but is off (LLD on Liberland), nothing where there is no route.');
 
@@ -387,7 +403,6 @@ export async function captureDashboardScreenshots({
     const dotRow = await evalPage(`(() => { const row = [...document.querySelectorAll('[data-testid^="tokenRow-group:dot"]')][0]; return row?.dataset.testid ?? null; })()`);
     if (!dotRow) throw new Error('The DOT row is not on screen');
     await click(`[data-testid="${dotRow}"]`);
-    await click(`[data-testid="whereItLives-group:dot"]`);
     await wait(`Boolean(document.querySelector('[data-testid="tokenLocations"]'))`, 'Where it lives');
     await wait(`Boolean(document.querySelector('[data-testid="locationsHoldings"] [data-testid^="holding-"]'))`, 'the holdings');
     await check('Where it lives names the token and its holdings across wallets and networks', `[document.querySelector('.head-symbol')?.innerText, document.querySelectorAll('[data-testid="locationsHoldings"] [data-testid^="holding-"]').length]`, ['DOT', 3]);
@@ -403,6 +418,13 @@ export async function captureDashboardScreenshots({
     await capture('14c-polkaswap-card', 'The Polkaswap card: the checks behind a swap, with words as well as marks, and one way in.');
     await headerBack();
     await wait(`${APP}.router.currentRoute.value.name === 'Currencies' && Boolean(document.querySelector('[data-testid="allTokens"]'))`, 'back on the token list from DOT');
+
+    // USDT has no route to SORA: none of its holdings wears a chip.
+    await click('[data-testid="tokenRow-group:usdt"]');
+    await wait(`Boolean(document.querySelector('[data-testid="locationsHoldings"] [data-testid^="holding-"]'))`, 'the USDT holdings');
+    await check('USDT, which has no route to SORA, has no chip on any of its holdings', `document.querySelectorAll('[data-testid="locationsHoldings"] [data-testid^="readiness-"]').length`, 0);
+    await headerBack();
+    await wait(`${APP}.router.currentRoute.value.name === 'Currencies' && Boolean(document.querySelector('[data-testid="allTokens"]'))`, 'back on the token list from USDT');
 
     // LLD on Liberland keeps a reviewed route to SORA: one move, paused in this version, so Receive on SORA comes first.
     await click(`[data-testid^="${LLD_ROW}"]`);
@@ -471,7 +493,6 @@ export async function captureDashboardScreenshots({
 
     // A holding in another wallet: the screen says it switches first, and does.
     await click(`[data-testid="tokenRow-group:usdt"]`);
-    await click(`[data-testid="whereItLives-group:usdt"]`);
     await wait(`Boolean(document.querySelector('[data-testid="tokenLocations"]'))`, 'Where it lives for USDT');
     const otherWallet = await evalPage(`(() => { const rows = [...document.querySelectorAll('[data-testid="locationsHoldings"] button')]; const other = rows.find((row) => /Savings/.test(row.innerText)); other?.click(); return Boolean(other); })()`);
     if (!otherWallet) throw new Error('USDT has no holding in the second wallet');
@@ -486,15 +507,17 @@ export async function captureDashboardScreenshots({
     await evalPage(`${APP}.router.replace({ name: 'Currencies' }).then(() => true)`);
     await wait(`Boolean(document.querySelector('[data-testid="allTokens"]'))`, 'back on All wallets');
 
-    // One wallet: the second pick of a legend chip opens Where it lives for that wallet alone.
+    // One wallet: the second pick of a token in the Portfolio view opens that token's own page, with its networks.
     await evalPage(`(() => { ${APP}.pinia._s.get('portfolioDashboard').setScope('wallet'); return true; })()`);
-    await wait(`Boolean(document.querySelector('[data-testid="heroSwap"]'))`, 'one wallet');
-    await click('[data-testid="legend-group:dot"]');
-    await click('[data-testid="legend-group:dot"]');
-    await wait(`${APP}.router.currentRoute.value.name === 'TokenLocations'`, 'Where it lives from the legend');
-    await wait(`Boolean(document.querySelector('[data-testid="locationsHoldings"] [data-testid^="holding-"]'))`, 'the holdings of one wallet');
-    await check('in one wallet Where it lives shows only that wallet', `[...new Set([...document.querySelectorAll('[data-testid="locationsHoldings"] .holding-meta > span:first-child')].map((node) => node.innerText))]`, [mainName]);
-    await capture('19-where-it-lives-one-wallet', 'Where it lives from the legend of one wallet: only that wallet holds are listed.');
+    await wait(`!document.querySelector('[data-testid="allWalletsPanel"]')`, 'one wallet');
+    await evalPage(`${APP}.router.replace({ name: 'PortfolioAllocation' }).then(() => true)`);
+    await wait(`Boolean(document.querySelector('[data-testid="allocationRow"][data-key="group:dot"]'))`, 'DOT in the Portfolio view');
+    await click('[data-testid="allocationRow"][data-key="group:dot"]');
+    await click('[data-testid="allocationRow"][data-key="group:dot"]');
+    await wait(`${APP}.router.currentRoute.value.name === 'TokenOverview'`, 'the DOT page from the Portfolio view');
+    await wait(`Boolean(document.querySelector('[data-testid="tokenNetworkRow"]'))`, 'the networks of one wallet');
+    await check('in one wallet the token page lists its networks', `[...document.querySelectorAll('[data-testid="tokenNetworkRow"]')].map((row) => row.dataset.network)`, ['Polkadot', 'Polkadot AssetHub']);
+    await capture('19-token-page-one-wallet', "The DOT page of one wallet from its Portfolio view: the total, the actions and each network's balance.");
     await evalPage(`${APP}.router.replace({ name: 'Currencies' }).then(() => true)`);
     await lens('token');
 
@@ -512,13 +535,14 @@ export async function captureDashboardScreenshots({
       row.querySelector('[data-testid="content"]').click();
       return true;
     })()`);
-    await wait(`Boolean(document.querySelector('[data-testid="heroSwap"]'))`, 'one wallet with the Swap action');
+    // All wallets has its Swap too (it asks for a wallet first): one wallet is the one whose name heads the popup.
+    await wait(`document.querySelector('[data-testid="walletNameHeader"]')?.innerText.trim() === ${JSON.stringify(mainName)} && !document.querySelector('[data-testid="allWalletsPanel"]')`, 'one wallet with the Swap action');
     await check('one wallet reads as itself', `document.querySelector('[data-testid="walletNameHeader"]')?.innerText`, mainName);
     await check('one wallet keeps its own total, the fixture the popup was given', `document.querySelector('[data-testid="heroTotal"]')?.getAttribute('aria-label').includes(${JSON.stringify(dollars(mainTotal))})`, true);
     await check('Swap carries the Polkaswap mark', `document.querySelector('[data-testid="heroSwap"] use')?.getAttribute('xlink:href') ?? document.querySelector('[data-testid="heroSwap"] use')?.getAttribute('href')`, '#icon-polkaswap');
     checks.push('choosing a wallet leaves All wallets');
     await scrollTop();
-    await capture('11-one-wallet', 'One wallet: its own total and portfolio list as before, the sun and legend above, and Swap on Polkaswap.');
+    await capture('11-one-wallet', 'One wallet: its own total, Send, Receive and Swap on Polkaswap, then its Assets, Portfolio and NFTs.');
 
     // The longest locale of the popup: Russian text must fit the same width.
     await evalPage(`(() => { const i18n = ${APP}.app.config.globalProperties.$i18n; i18n.locale = 'ru-RU'; document.documentElement.lang = 'ru-RU'; return i18n.locale === 'ru-RU'; })()`);
@@ -528,7 +552,6 @@ export async function captureDashboardScreenshots({
     await scrollTop();
     await capture('12-all-wallets-russian', `All wallets in Russian at the ${surface.name} width.`);
     await click('[data-testid="tokenRow-group:dot"]');
-    await click('[data-testid="whereItLives-group:dot"]');
     await wait(`Boolean(document.querySelector('[data-testid="tokenLocations"]'))`, 'Where it lives in Russian');
     await wait(`/где хранится/i.test(document.body.innerText)`, 'Russian Where it lives text');
     await capture('20-where-it-lives-russian', `Where it lives in Russian at the ${surface.name} width.`);

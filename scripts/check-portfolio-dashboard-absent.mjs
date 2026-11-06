@@ -17,10 +17,12 @@ export const DASHBOARD_MARKERS = [
   'dashboard-v1',
   'allWalletsPanel',
   'portfolioOrbit',
+  'portfolioAllocation',
+  'walletChooser',
 ];
 /** File names of its screens and of the four layers of the winged sun it draws. */
 export const DASHBOARD_FILE_PATTERNS = [
-  /(Portfolio(Dashboard|Hero|Sky|AllWallets|ScopeRow|CountingSheet|SyncSheet|Sheet|Orbit|ReadinessChip|RouteCard|Breakdown|CheckList|SwapSheet|MoveSheet)|TokenLocations)/,
+  /(Portfolio(Dashboard|Hero|Sky|AllWallets|ScopeRow|CountingSheet|SyncSheet|Sheet|Orbit|ReadinessChip|RouteCard|Breakdown|CheckList|SwapSheet|MoveSheet|Allocation)|TokenLocations|AssetPickerSheet)/,
   /(^|\/)(wings|uraeus-left|uraeus-right|sun-disc)(-[\w-]+)?\.svg$/,
 ];
 

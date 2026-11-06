@@ -99,7 +99,9 @@ export default defineComponent({ name: 'SelectWalletPopup',
 
       const route = this.$route.name;
 
-      if (route !== Components.Wallet && route !== Components.Currencies && route !== Components.Nfts) {
+      const home = [Components.Wallet, Components.Currencies, Components.Nfts, Components.PortfolioAllocation] as string[];
+
+      if (!home.includes(String(route))) {
         void this.$router.replace({ name: Components.Wallet });
       }
 

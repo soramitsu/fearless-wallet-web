@@ -27,7 +27,6 @@
 
     <div v-if="!singleWallet && showAllWalletsList" class="all-panel" data-testid="allWalletsPanel">
       <PortfolioAllWallets
-        :lens="dashboard.lens.value"
         :tokenRows="dashboard.tokenRows.value"
         :networkSections="dashboard.networkSections.value"
         :wallets="dashboard.aggregate.value.wallets"
@@ -37,7 +36,7 @@
         :loading="dashboard.pending.value"
         :readinessOf="readinessOf"
         :iconOf="dashboard.iconOf"
-        @update:lens="setLens"
+        :networkIconOf="dashboard.networkIconOf"
         @openWallet="openWallet"
         @open="openLocations"
       />
@@ -84,7 +83,6 @@
 import { computed, onDeactivated, ref, toRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import type { PortfolioSummary, PortfolioSummaryInput } from '@/portfolio/assetIdentity';
-import type { AllWalletsLens } from '@/portfolio/dashboard/preferences';
 import AssetPickerSheet from '@/screens/portfolio/AssetPickerSheet.vue';
 import PortfolioAllWallets from '@/screens/portfolio/PortfolioAllWallets.vue';
 import PortfolioCountingSheet from '@/screens/portfolio/PortfolioCountingSheet.vue';
@@ -218,9 +216,6 @@ function openLocations(tokenKey: string, holdingId?: string): void {
   void router.push(locationsLocation(tokenKey, holdingId));
 }
 
-function setLens(lens: AllWalletsLens): void {
-  dashboardStore.setLens(lens);
-}
 
 async function openWallet(address: string): Promise<void> {
   const account = accountsStore.accounts.find((candidate) => candidate.address === address);

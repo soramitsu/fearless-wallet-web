@@ -14,6 +14,7 @@ import {
 } from '../fixtures/legacy-305/generate';
 import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
+import type { PortfolioTokenRow } from '@/portfolio/tokenLens';
 import { FPNumber } from '@/sora/number';
 import { WalletEcosystem } from '@/interfaces';
 import { createAssetKey } from '@/portfolio/assetIdentity';
@@ -160,23 +161,28 @@ const mountCurrencies = (props: Record<string, unknown> = {}) =>
     },
   });
 
-const rows = (wrapper: VueWrapper) =>
-  wrapper.findAll('.network-section').flatMap((section) =>
-    section
-      .findAll('.asset-row')
-      .map(
-        (row) =>
-          `${section.attributes('data-network')}:${row.get('.asset-symbol').text()}` +
-          (row.find('[data-testid="hiddenBadge"]').exists() ? ':hidden' : '')
-      )
-  );
+/**
+ * Every asset of the token rows on screen as `network:SYMBOL` (`:hidden` when hidden): a row held on several networks
+ * stands for each of them. A collapsed "no balance" block keeps its rows off screen, so they are not read either.
+ */
+const rows = (wrapper: VueWrapper) => {
+  const byId = new Map((wrapper.vm as unknown as { tokenRows: PortfolioTokenRow[] }).tokenRows.map((row) => [row.id, row]));
 
-/** The fiat the rendered network headers add up to (the fixture prices produce whole cents). */
+  return wrapper.findAll('.token-row').flatMap((element) => {
+    const row = byId.get(element.attributes('data-token') ?? '');
+
+    return [...(row?.children ?? []), ...(row?.zeroChildren ?? [])].map(
+      ({ asset }) => `${asset.networkName}:${asset.symbol}${asset.hidden ? ':hidden' : ''}`
+    );
+  });
+};
+
+/** The fiat the rendered token rows add up to (the fixture prices produce whole cents). */
 const renderedSubtotals = (wrapper: VueWrapper) =>
   wrapper
-    .findAll('.network-value')
-    .map((value) => value.text().replace(/,/g, ''))
-    .filter(Boolean)
+    .findAll('.token-row [data-testid="tokenFiat"]')
+    .map((value) => value.text().replace(/[$,]/g, ''))
+    .filter((value) => /^\d/.test(value))
     .reduce((sum, value) => sum.add(new FPNumber(value)), FPNumber.ZERO);
 
 function openPortfolio(address: string, ecosystem: WalletEcosystem, balances: TokenGroup[]) {
@@ -188,9 +194,9 @@ function openPortfolio(address: string, ecosystem: WalletEcosystem, balances: To
   if (ecosystem === WalletEcosystem.Evm) accountsStore.selectedWallet.ethereumAddress = address;
   accountsStore.setBalance({ details: balances });
   accountsStore.setIsBalanceLoading(false);
-  // Show every network, zero-only ones included, so an absent row really is absent. These cases read the By network
-  // lens row by row; portfolio-token-lens-upgrade.spec.ts replays the same fixtures in the default By token lens.
-  accountsStore.updatePortfolioView({ lens: 'network', zeroNetworksExpanded: true });
+  // Show every network, zero-only ones included, so an absent row really is absent. These cases read every asset of
+  // the one list; portfolio-token-lens-upgrade.spec.ts replays the same fixtures row by row.
+  accountsStore.updatePortfolioView({ zeroNetworksExpanded: true });
 
   const scope = effectScope();
   const portfolio = scope.run(() => usePortfolio())!;
@@ -313,7 +319,10 @@ describe('the hidden-with-funds notice', () => {
       expect.arrayContaining(['Kusama:KSM:hidden', 'Polkadot AssetHub:USDT:hidden', 'Kusama AssetHub:KSM:hidden'])
     );
     expect(rows(reopened).every((row) => row.endsWith(':hidden'))).toBe(true);
-    const kusama = reopened.findAll('.network-section').find((section) => section.attributes('data-network') === 'Kusama')!;
+    // The hidden KSM is one token on two networks: Review opens it, and only its Kusama switch is used.
+    const kusama = reopened
+      .findAll('[data-token="group:ksm"] .network-line')
+      .find((line) => line.get('.network-row').attributes('data-network') === 'Kusama')!;
     await kusama.get('.switcher-stub').trigger('click');
     const ksmKey = createAssetKey({
       ecosystem: 'substrate',
@@ -329,7 +338,7 @@ describe('the hidden-with-funds notice', () => {
   });
 });
 
-describe('zero-balance networks', () => {
+describe('zero-balance tokens', () => {
   beforeEach(() => {
     storage = createLocalStorageStub();
     vi.stubGlobal('localStorage', storage);
@@ -352,7 +361,7 @@ describe('zero-balance networks', () => {
     const header = wrapper.get('[data-testid="portfolioZeroNetworks"] .zero-header');
     expect(header.text()).toBe('portfolioPage.popularNoBalance');
     expect(header.attributes('aria-expanded')).toBe('false');
-    expect(wrapper.findAll('.network-section')).toHaveLength(0);
+    expect(wrapper.findAll('.token-row')).toHaveLength(0);
 
     await header.trigger('click');
     expect(accountsStore.portfolioView.zeroNetworksExpanded).toBe(true);
@@ -365,7 +374,7 @@ describe('zero-balance networks', () => {
     scope.stop();
   });
 
-  it('collapses zero-only networks of a funded wallet behind a count, and opens them for a matching search', async () => {
+  it('collapses zero-only tokens of a funded wallet behind a count, and opens them for a matching search', async () => {
     const groups = ready(getMockAssets(networkMap, WalletEcosystem.Substrate));
     fund(groups, 'Polkadot', 'dot', '1');
     const { accountsStore, scope } = openPortfolio(SUBSTRATE_ADDRESS, WalletEcosystem.Substrate, groups);
@@ -375,7 +384,8 @@ describe('zero-balance networks', () => {
 
     expect(wrapper.find('[data-testid="infoText"]').exists()).toBe(false);
     expect(rows(wrapper)).toEqual(['Polkadot:DOT']);
-    expect(wrapper.get('.zero-header').text()).toBe('portfolioPage.zeroNetworks:14');
+    // The 14 networks at zero hold 11 tokens: ETH is one token on four of them.
+    expect(wrapper.get('.zero-header').text()).toBe('portfolioPage.zeroTokens:11');
 
     await wrapper.setProps({ filterValue: 'kusama' });
     expect(wrapper.get('.zero-header').attributes('aria-expanded')).toBe('true');

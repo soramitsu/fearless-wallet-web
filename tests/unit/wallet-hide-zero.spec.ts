@@ -181,7 +181,8 @@ describe('Hide zero balances and the filtered header caption', () => {
 
     await wrapper.get('[data-testid="filterBtn"]').trigger('click');
     expect(wrapper.find('[data-testid="hideZeroToggle"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="portfolioLens"]').exists()).toBe(true);
+    // The list has one layout: Manage chooses what it shows, never how it is grouped.
+    expect(wrapper.find('[data-testid="portfolioLens"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="filterHidden"]').text()).toBe('Hidden (0)');
 
     await wrapper.get('[data-testid="filterHidden"]').trigger('click');

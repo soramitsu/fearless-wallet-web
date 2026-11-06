@@ -5,12 +5,12 @@ import type { AccountJson, TokenGroup } from '@extension-base/background/types/t
 import { usePortfolio } from '@/portfolio/usePortfolio';
 import { useAccountsStore } from '@/stores/accounts';
 
-const spies = vi.hoisted(() => ({ buildPortfolioSummary: vi.fn() }));
+const spies = vi.hoisted(() => ({ summarizePortfolio: vi.fn() }));
 vi.mock('@/portfolio/assetIdentity', async (original) => {
   const actual = await original<typeof import('@/portfolio/assetIdentity')>();
-  spies.buildPortfolioSummary.mockImplementation(actual.buildPortfolioSummary);
+  spies.summarizePortfolio.mockImplementation(actual.summarizePortfolio);
 
-  return { ...actual, buildPortfolioSummary: spies.buildPortfolioSummary };
+  return { ...actual, summarizePortfolio: spies.summarizePortfolio };
 });
 vi.mock('@extension-base/stores/Storage', () => ({ storage: { get: vi.fn(), set: vi.fn() } }));
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: vi.fn() }) }));
@@ -21,7 +21,7 @@ vi.mock('@/extension/messaging/nfts', () => ({ fetchNfts: vi.fn() }));
 
 beforeEach(() => {
   setActivePinia(createPinia());
-  spies.buildPortfolioSummary.mockClear();
+  spies.summarizePortfolio.mockClear();
   useAccountsStore().setSelectedWallet({ address: 'public-wallet', ethereumAddress: '', name: 'Public' } as AccountJson);
 });
 
@@ -48,11 +48,11 @@ describe('portfolio shared by the screens that show it', () => {
     const portfolios = screens.map((screen) => screen.run(() => usePortfolio())!);
 
     portfolios.forEach(({ summary }) => summary.value);
-    expect(spies.buildPortfolioSummary).toHaveBeenCalledOnce();
+    expect(spies.summarizePortfolio).toHaveBeenCalledOnce();
 
     useAccountsStore().setBalance({ details: [] as TokenGroup[] });
     portfolios.forEach(({ summary }) => summary.value);
-    expect(spies.buildPortfolioSummary).toHaveBeenCalledTimes(2);
+    expect(spies.summarizePortfolio).toHaveBeenCalledTimes(2);
 
     screens.forEach((screen) => screen.stop());
   });

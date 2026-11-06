@@ -4,6 +4,8 @@ const mocks = vi.hoisted(() => ({
   forceAssetDiscoverySweep: vi.fn(),
   fetchNfts: vi.fn(),
   accountsStore: {
+    accounts: [],
+    portfolioLayout: { firstRunAt: 0 },
     assetPreferences: {},
     balances: [],
     isBalanceLoading: false,
@@ -60,6 +62,8 @@ vi.mock('@/portfolio/usePortfolio', () => {
       isFiltered: false,
       zeroRule: () => false,
       summary,
+      networkTotals: [],
+      legacyOrderIndex: { value: new Map() },
       filteredSummary: summary,
       loadStatus: { state: 'settled', pendingCount: 0 },
     }),

@@ -5,6 +5,8 @@ import type { TokenGroup } from '@extension-base/background/types/types';
 import {
   buildPortfolioSummary,
   scopeNetworksToWallet,
+  summarizePortfolio,
+  type PortfolioNetworkTotal,
   type PortfolioSummary,
   type PortfolioSummaryInput,
 } from '@/portfolio/assetIdentity';
@@ -115,8 +117,13 @@ function createPortfolio() {
     preferenceSource,
   }));
 
-  /** Wallet-wide in every lens and under every filter (portfolio contract §3). */
-  const summary = computed<PortfolioSummary>(() => buildPortfolioSummary(summaryInput.value));
+  const walletSummary = computed(() => summarizePortfolio(summaryInput.value));
+
+  /** Wallet-wide under every filter (portfolio contract §3). */
+  const summary = computed<PortfolioSummary>(() => walletSummary.value.summary);
+
+  /** The networks the wallet holds something on, largest first: what the list's network filter offers. */
+  const networkTotals = computed<PortfolioNetworkTotal[]>(() => walletSummary.value.networks);
 
   /** The same summary for the networks the display filter shows (the whole wallet when no filter is active). */
   const filteredSummary = computed<PortfolioSummary>(() =>
@@ -165,6 +172,7 @@ function createPortfolio() {
     isFiltered,
     zeroRule,
     summary,
+    networkTotals,
     filteredSummary,
     filteredTotal,
     loadStatus,

@@ -9,15 +9,16 @@ Firefox releases carry it from 4.2.0. Design spec, renders and the prototype liv
 ## The wallet home (Exodus-style layout)
 
 The wallet screen reads like Exodus: the balance, what to do with it, then one row per token. Tokens come first and
-networks second, so the hierarchy is wallet, then token, then network, then that network's history.
+networks second, so the hierarchy is wallet, then token, then network, then that network's history. There is one list:
+networks narrow it (a search or a chip) instead of regrouping it, in every scope and on the Portfolio view.
 
 | Level | What it shows | Where |
 |---|---|---|
-| Home | The total (24 h change, what is not included, how we count, the sync state), then **Send**, **Receive** and **Swap** as round buttons, then the views **Assets**, **Portfolio** and **NFTs**, with search, Refresh and Manage as icons | `PortfolioHero.vue`, `RoundActions.vue`, `WalletSettings.vue`, `Wallet.vue` |
-| Assets | One row per token: logo (with its network's logo, or the count of networks it is held on), symbol, price and 24 h move, then value and amount. Tokens with no balance stay collapsed at the end | `PortfolioTokenRow.vue`, `Currencies.vue` |
+| Home | The total (24 h change, what is not included, how we count, the sync state), then **Send**, **Receive** and **Swap** as round buttons, then the views **Assets**, **Portfolio** and **NFTs**, with Refresh and Manage as icons | `PortfolioHero.vue`, `RoundActions.vue`, `WalletSettings.vue`, `Wallet.vue` |
+| Assets | A search field that is always there ("Search tokens and networks"), a row of network chips, then one row per token: logo (with its network's logo, or the count of networks it is held on), symbol, price and 24 h move, then value and amount. Tokens with no balance stay collapsed at the end | `AssetSearchField.vue`, `NetworkFilterChips.vue`, `PortfolioTokenRow.vue`, `Currencies.vue` |
 | A token | Its total across networks, its value, share and price, the same round buttons, and **Networks**: each network it is held on with its balance and what can be sent now; networks at zero behind one line | `TokenOverview.vue` (route `portfolio/token/:token`) |
 | A network | The existing asset page: balance, actions and history on that network | `Asset.vue`, `AssetHistory.vue` |
-| Portfolio | The winged sun as the allocation chart (one ray per percent), by token or by network (and by wallet in All wallets), and a row per group with its share and value | `PortfolioAllocation.vue` (route `portfolio/allocation`) |
+| Portfolio | The winged sun as the allocation chart (one ray per percent of each token), then a row per token, per network and (All wallets) per wallet with its share and value, one part under the other with no switch between them. A network row of one wallet opens its list on that network | `PortfolioAllocation.vue` (route `portfolio/allocation`) |
 
 - **A row opens the next level.** A token held on several networks opens its page; a token on one network opens that
   network's asset page. Nothing expands in place outside Manage. A token found by a search opens with the same search, so
@@ -26,10 +27,18 @@ networks second, so the hierarchy is wallet, then token, then network, then that
   then which network for a token on several, with the wrong-network warning (`PortfolioGroupNetworkPicker.vue`); a token
   on one network goes straight to the form, which names the network. On a token's page they ask for the network the same
   way. Swap opens Polkaswap. A recovery-only wallet gets Send only.
-- **All wallets** keeps its own list (Tokens, Networks, Wallets); a token opens Where it lives. Send, Receive and Swap
-  first ask which wallet (only those that may take funds for Receive and Swap), switch to it, then go on there.
-- **Manage** is the list's settings: which assets show (Hidden, Testnets, a switch per token and per network), the
-  grouping (by token or by network) and Hide zero balances.
+- **Finding a token or a network.** The search reads token symbols and names and network names: "AssetHub" lists what
+  the wallet holds on the AssetHub networks, each as a row of its own. The chips are All networks, then every network
+  the wallet holds something on, largest first (`summarizePortfolio` totals them in the summary's own pass). A chip is
+  the same filter the header's network button sets, kept per wallet; picking it again shows every network. Popular or
+  Favorites, chosen in the full list, keep a chip of their own; More networks opens that full list (loaded on first use),
+  which closes once a network is picked. A search that finds nothing on the chosen network offers to search them all.
+- **All wallets** has the same one list with its own search and chips (not saved; they also match wallet names); each
+  wallet's total, share and an Open action follow the tokens. A token opens Where it lives. Send, Receive and Swap first
+  ask which wallet (only those that may take funds for Receive and Swap), switch to it, then go on there.
+- **Manage** is the list's settings: which assets show (Hidden, Testnets, a switch per token and per network) and Hide
+  zero balances. It has no grouping: a wallet that had kept By network sees the one-time note once ("All your assets in
+  one list"), and closing it makes the token list its own.
 - The rows share one computation with the token page and the pickers (`src/portfolio/useWalletTokenRows.ts`), so the
   numbers agree everywhere. Their strings are in `src/locales/walletHomeMessages.ts` (English and Russian, registered
   with the other supplemental bundles; Akkadian and Egyptian read the English).
@@ -74,7 +83,7 @@ Three files outside the dashboard know about it. The route table (`src/router/ro
 |---|---|
 | Hero: total, 24 h change, what is not included, how we count, sync chip, and Send, Receive and Swap (with the Polkaswap mark) | `src/screens/portfolio/PortfolioHero.vue` |
 | Winged sun in four depth layers plus the 100-ray allocation fan (static: no parallax yet), on the Portfolio view. Past the shoulder each wing stretches sideways until its tip runs off its own edge | `PortfolioSky.vue`, `PortfolioAllocation.vue`, `skyGeometry.ts`, `src/assets/brand/portfolio-sun/` |
-| All wallets scope: Tokens, Networks and Wallets lenses, read only, every holding names its wallet | `PortfolioAllWallets.vue` |
+| All wallets scope: one token list with search and network chips, then each wallet; read only, every holding names its wallet | `PortfolioAllWallets.vue` |
 | All wallets row in the wallet picker; the header names it on the portfolio | `PortfolioScopeRow.vue`, `SelectWalletPopup.vue`, `Header.vue` |
 | How we count and balance status sheets | `PortfolioCountingSheet.vue`, `PortfolioSyncSheet.vue`, `PortfolioSheet.vue` |
 | Wiring: the hero replaces the plain total, the views sit under it, and the screen scrolls as one | `src/screens/wallet&asset/wallet/Wallet.vue` |
@@ -92,8 +101,8 @@ All wallets exists only with two or more wallets and is their default scope; the
 | Swap sheet and Move sheet | `PortfolioSwapSheet.vue`, `PortfolioMoveSheet.vue` |
 | Hand-offs, the actions each holding gets, and switching wallet first | `handoff.ts`, `actions.ts`, `useWalletSwitch.ts`, and a block in `SwapForm.vue` |
 
-**Getting there.** All wallets by token: a token opens Where it lives on a tap, with its one holding chosen when it has
-one. By network: a holding opens it with that holding chosen. On the Portfolio view of All wallets the second pick of a
+**Getting there.** All wallets: a token opens Where it lives on a tap, with its one holding chosen when it has one (under
+a network chip, a token on that network has one). On the Portfolio view of All wallets the second pick of a
 row or a ray opens the token there; with one wallet it opens the token's own page. The header's back button and the
 dock's Wallet tab both come back to it.
 
@@ -157,13 +166,15 @@ price, the total counts visible, non-testnet, priced assets, and hidden, unprice
 - **One wallet:** the hero shows the same summary the header always has (`usePortfolio().summary`).
 - **All wallets:** the sum of every wallet's own total, each computed with that wallet's hidden assets, with the
   exclusions summed and named. The change is the summed change over the summed value a day ago, not an average.
-- **The fan and the Portfolio view's rows** group by their own lens: Tokens (approved groups only, never symbols or price
-  ids), Networks or Wallets. Every lens is built from the same counted holdings, so they add up to the same total.
+- **The fan** groups by token (approved groups only, never symbols or price ids). **The Portfolio view's rows** give the
+  same total three ways, one part under the other: by token, by network and (All wallets) by wallet. Every part is built
+  from the same counted holdings, so each adds up to the same total.
 - **Where it lives** is built from those same counted holdings (`buildTokenLocations`): a token is an approved group or a
   single asset, never a shared symbol, so the holdings and networks add up to the token's row and the screen's share of the
   portfolio is the token's value over the scope's total.
-- **Colour follows the entity.** Five chart slots plus Other (`src/styles/_fw-dashboard.scss`), kept per scope and lens
-  in storage so an entity keeps its slot while it stays in the top five. First launch seeds XOR, ETH, BTC, DOT and USDT.
+- **Colour follows the entity.** Five chart slots plus Other (`src/styles/_fw-dashboard.scss`), kept per scope and per
+  part (token, network, wallet) in storage so an entity keeps its slot while it stays in the top five. The All wallets
+  list wears the tokens' colours; its wallet avatars take the palette in wallet order. First launch seeds XOR, ETH, BTC, DOT and USDT.
 
 ## Data and state
 
@@ -175,8 +186,9 @@ price, the total counts visible, non-testnet, priced assets, and hidden, unprice
   and reads the other wallets from the background every 5 s while All wallets is on screen and the page is visible.
 - A failed read keeps the last answer and shows it as saved. Sync state: live, saved (older than 15 minutes, with the
   age), partial (a network that holds counted value failed) or offline. The age is shown only for saved balances.
-- Preferences (scope, All wallets lens, chart slots) are in `localStorage` under `portfolio_dashboard-v1`, read through
-  `src/portfolio/dashboard/preferences.ts`, which falls back to defaults for anything unreadable.
+- Preferences (scope, chart slots, and an All wallets lens that nothing reads any more but is kept so older records
+  still parse) are in `localStorage` under `portfolio_dashboard-v1`, read through `src/portfolio/dashboard/preferences.ts`,
+  which falls back to defaults for anything unreadable.
 - Strings are in `src/portfolio/dashboard/messages.ts` (English and Russian, as data), registered by `locales.ts` when
   the dashboard first mounts. They are not in `translation.json` yet because the Akkadian and Egyptian locales must cover
   every key there. Every locale but Russian shows these strings in English for now.
@@ -198,9 +210,9 @@ node scripts/solana-extension-smoke.mjs --dashboard-screenshots output/dashboard
 node scripts/solana-extension-smoke.mjs --side-panel-screenshots output/side-panel-screenshots
 ```
 
-The portfolio tour walks one wallet: the home, a token's page and one of its networks, Send and Receive from the token
-page and from the home (token first, then network), the Portfolio view by token and by network, Manage, then Russian,
-Akkadian and Egyptian. The side-panel run repeats it at 360 px.
+The portfolio tour walks one wallet: the home, a search for a network and a network chip, a token's page and one of its
+networks, Send and Receive from the token page and from the home (token first, then network), the Portfolio view's token
+and network parts, Manage, then Russian, Akkadian and Egyptian. The side-panel run repeats it at 360 px.
 
 The unit specs cover the readiness evaluator against synthetic chains and the real snapshot, the hand-off locations, the
 actions each state gets, the wallet switch, and the Where it lives screen and its sheets with only the stores, the router
@@ -208,8 +220,8 @@ and the wallet switch stood in for (`portfolio-dashboard-token-locations.spec.ts
 
 The smoke opens the real popup at 561 x 600, offline, with every wallet in the keyring: the main smoke's fresh wallet
 holds the fixture balances, a second wallet, Savings, is created in the real keyring with its holdings injected as the
-background would report them, and the main smoke's old, imported wallet holds nothing, so the Wallets lens also shows
-how an empty wallet reads. It checks what the screens claim and captures the screens listed in the README it writes
+background would report them, and the main smoke's old, imported wallet holds nothing, so the wallets under the tokens
+also show how an empty wallet reads. It checks what the screens claim and captures the screens listed in the README it writes
 (`scripts/extension-smoke-dashboard.mjs`). The P1 flow checks the readiness chips, Where it lives for
 DOT (no route, Send first), Where it lives for LLD on Liberland with its move paused, Receive on SORA, the same screen
 with moves on and the Move sheet handing over to the cross-chain screen with the network and asset chosen, the dock and

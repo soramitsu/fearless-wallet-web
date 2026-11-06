@@ -82,7 +82,8 @@ function funded(...holdings: [network: string, symbol: string, amount: string][]
   return groups;
 }
 
-// Every case runs in both lenses: By token (the default after the upgrade) and By network.
+// Every case runs for a wallet without a stored grouping and for one that kept By network before the list became one
+// list: both get the same token rows.
 const LENSES: PortfolioLens[] = ['token', 'network'];
 let lens: PortfolioLens;
 
@@ -359,7 +360,7 @@ describe.each(LENSES)('portfolio empty states (by %s)', (currentLens) => {
     expect(text(wrapper, 'infoText')).toContain('portfolioPage.scanDescription');
     // The zero block names what it holds, never "Popular networks", in either lens.
     expect(wrapper.get('[data-testid="portfolioZeroNetworks"] .zero-header').text()).toMatch(
-      lens === 'token' ? /^portfolioPage\.zeroTokens:\d+$/u : /^portfolioPage\.zeroNetworks:1$/u
+      /^portfolioPage\.zeroTokens:\d+$/u
     );
     wrapper.unmount();
     scope.stop();

@@ -632,12 +632,39 @@ export type PortfolioSummaryInput = Omit<
   'preferences' | 'mode' | 'hideZero' | 'showHidden' | 'showTestnets' | 'surfaceDiscoveredAssets' | 'isDefaultVisibleAtZero'
 > & { preferences?: Record<string, AssetPreference> };
 
+/** One network's part of the wallet: the network filter offers these first, largest first (`summarizePortfolio`). */
+export interface PortfolioNetworkTotal {
+  name: string;
+  icon: string;
+  /** Fiat of the holdings the total counts on this network. */
+  value: string;
+  /** Verified holdings with a balance here that are not hidden, priced or not. */
+  fundedCount: number;
+  isTestnet: boolean;
+}
+
 /**
  * The wallet-wide value: every verified holding with a balance, independent of the zero rule, Hide zero and the
  * display filters. Hidden assets go to `hiddenValue`, unpriced ones to `unpricedCount`, and testnets are never counted
  * (only how many hold funds, so the list can say they are not shown).
  */
 export function buildPortfolioSummary(input: PortfolioSummaryInput): PortfolioSummary {
+  return summarizePortfolio(input).summary;
+}
+
+const compareNetworkTotals = (left: PortfolioNetworkTotal, right: PortfolioNetworkTotal): number => {
+  const leftValue = new FPNumber(left.value);
+  const rightValue = new FPNumber(right.value);
+  if (!leftValue.eq(rightValue)) return rightValue.gt(leftValue) ? 1 : -1;
+
+  return right.fundedCount - left.fundedCount || left.name.localeCompare(right.name);
+};
+
+/**
+ * The summary and, from the same pass, each network the wallet holds something on with what it is worth: the list's
+ * network filter offers those networks without building the portfolio a second time.
+ */
+export function summarizePortfolio(input: PortfolioSummaryInput): { summary: PortfolioSummary; networks: PortfolioNetworkTotal[] } {
   const networksByChainId = new Map(input.networks.map((network) => [String(network.chainId || network.name), network]));
   const sections = buildPortfolioSections({
     ...input,
@@ -657,11 +684,19 @@ export function buildPortfolioSummary(input: PortfolioSummaryInput): PortfolioSu
   let testnetFundedCount = 0;
   let poolStakesExcluded = false;
 
+  const networks: PortfolioNetworkTotal[] = [];
+
   sections.forEach((section) => {
+    let networkValue = FPNumber.ZERO;
+    let fundedCount = 0;
+
     section.assets.forEach((asset) => {
       if (asset.isTestnet) {
         if (asset.hidden) hiddenTestnetAssetCount += 1;
-        else if (asset.trust === 'verified' && asset.hasBalance) testnetFundedCount += 1;
+        else if (asset.trust === 'verified' && asset.hasBalance) {
+          testnetFundedCount += 1;
+          fundedCount += 1;
+        }
         return;
       }
       if (asset.hidden) hiddenAssetCount += 1;
@@ -673,6 +708,7 @@ export function buildPortfolioSummary(input: PortfolioSummaryInput): PortfolioSu
         if (asset.fiatValue !== null) hiddenValue = hiddenValue.add(new FPNumber(asset.fiatValue));
         return;
       }
+      fundedCount += 1;
       if (asset.isNative || asset.isUtility) {
         poolStakesExcluded ||= Boolean(networksByChainId.get(section.chainId)?.options?.includes('poolStaking'));
       }
@@ -683,10 +719,21 @@ export function buildPortfolioSummary(input: PortfolioSummaryInput): PortfolioSu
 
       const current = new FPNumber(asset.fiatValue);
       total = total.add(current);
+      networkValue = networkValue.add(current);
       const change = new FPNumber(asset.priceChangePercent ?? '0').div(FPNumber.HUNDRED);
       const denominator = FPNumber.ONE.add(change);
       priorTotal = priorTotal.add(denominator.isGreaterThan(FPNumber.ZERO) ? current.div(denominator) : current);
     });
+
+    if (fundedCount > 0) {
+      networks.push({
+        name: section.name,
+        icon: section.icon,
+        value: networkValue.toString(),
+        fundedCount,
+        isTestnet: section.isTestnet,
+      });
+    }
   });
 
   const changeAmount = total.sub(priorTotal);
@@ -695,17 +742,20 @@ export function buildPortfolioSummary(input: PortfolioSummaryInput): PortfolioSu
     : changeAmount.div(priorTotal).mul(FPNumber.HUNDRED);
 
   return {
-    total: total.toString(),
-    changeAmount: changeAmount.toString(),
-    changePercent: changePercent.toString(),
-    hiddenCount: hiddenFundedKeys.length,
-    hiddenValue: hiddenValue.toString(),
-    hiddenFundedKeys: hiddenFundedKeys.sort(),
-    hiddenAssetCount,
-    hiddenTestnetAssetCount,
-    testnetFundedCount,
-    unpricedCount,
-    unavailableCount,
-    poolStakesExcluded,
+    summary: {
+      total: total.toString(),
+      changeAmount: changeAmount.toString(),
+      changePercent: changePercent.toString(),
+      hiddenCount: hiddenFundedKeys.length,
+      hiddenValue: hiddenValue.toString(),
+      hiddenFundedKeys: hiddenFundedKeys.sort(),
+      hiddenAssetCount,
+      hiddenTestnetAssetCount,
+      testnetFundedCount,
+      unpricedCount,
+      unavailableCount,
+      poolStakesExcluded,
+    },
+    networks: networks.sort(compareNetworkTotals),
   };
 }

@@ -280,7 +280,8 @@ export async function captureDashboardScreenshots({
     await check('the header names All wallets', `document.querySelector('[data-testid="walletNameHeader"]')?.innerText`, 'All wallets');
     await check('the total is the sum of every wallet', `document.querySelector('[data-testid="heroTotal"]')?.getAttribute('aria-label').includes(${JSON.stringify(dollars(allTotal))})`, true);
     await check('the sync chip says live', `document.querySelector('[data-testid="heroSync"]')?.innerText.trim().toLowerCase()`, 'live');
-    await check('the Wallets lens exists only in All wallets', `[...document.querySelectorAll('[data-testid^="allLens-"]')].map((button) => button.dataset.testid)`, ['allLens-token', 'allLens-network', 'allLens-wallet']);
+    await check('All wallets is one list: no Tokens, Networks or Wallets switch', `document.querySelectorAll('[data-testid^="allLens-"]').length`, 0);
+    await check('All wallets has its own search and network chips', `[Boolean(document.querySelector('[data-testid="allWalletsSearch"] input')), Boolean(document.querySelector('[data-testid="portfolioAllWallets"] [data-testid="networkFilterAll"]'))]`, [true, true]);
     await check('All wallets has the Assets and Portfolio views, and no NFTs of its own', `[...document.querySelectorAll('[data-testid="optTab"]')].map((tab) => tab.dataset.tab)`, ['Currencies', 'PortfolioAllocation']);
     await check('All wallets offers Send, Receive and Swap, each asking for a wallet first', `[...document.querySelectorAll('[data-testid="heroActions"] button')].map((button) => button.dataset.testid)`, ['heroSend', 'heroReceive', 'heroSwap']);
     await capture('01-all-wallets-tokens', 'All wallets by token: the total of every wallet, Send, Receive and Swap, then the tokens of every wallet.');
@@ -299,7 +300,8 @@ export async function captureDashboardScreenshots({
     const shareSum = shares.reduce((sum, value) => sum + value, 0);
     if (Math.abs(shareSum - 100) > shares.length) throw new Error(`The allocation shares add up to ${shareSum}, not 100: ${JSON.stringify(shares)}`);
     checks.push('the allocation shares add up to the whole');
-    await check('All wallets can chart by wallet as well', `[...document.querySelectorAll('[data-testid^="allocationLens-"]')].map((button) => button.dataset.testid)`, ['allocationLens-token', 'allocationLens-network', 'allocationLens-wallet']);
+    await check('the Portfolio view has no switch: tokens, then networks, then wallets', `[...document.querySelectorAll('[data-testid="portfolioAllocation"] .part')].map((part) => part.dataset.facet)`, ['token', 'network', 'wallet']);
+    await check('no allocation switch is left', `document.querySelectorAll('[data-testid^="allocationLens-"]').length`, 0);
     await evalPage(`(document.querySelector('[data-testid="portfolioAllocation"]')?.scrollIntoView({ block: 'start' }), true)`);
     await capture('02-all-wallets-portfolio', 'The Portfolio view of every wallet: the winged sun with one ray per percent, and the share of each token.');
 
@@ -315,16 +317,23 @@ export async function captureDashboardScreenshots({
     await evalPage(`${APP}.router.replace({ name: 'Currencies' }).then(() => true)`);
     await wait(`Boolean(document.querySelector('[data-testid="allTokens"]'))`, 'the All wallets token list again');
 
-    await click('[data-testid="allLens-network"]');
-    await wait(`Boolean(document.querySelector('[data-testid="allNetworks"]'))`, 'the Networks lens');
+    // A network chip narrows the one list to what every wallet holds on that network.
+    const firstNetwork = await evalPage(`document.querySelector('[data-testid="portfolioAllWallets"] [data-testid="networkFilterChip"]')?.dataset.network ?? ''`);
+    if (!firstNetwork) throw new Error('All wallets offers no network chip');
+    await click(`[data-testid="portfolioAllWallets"] [data-testid="networkFilterChip"][data-network="${firstNetwork}"]`);
+    await wait(`document.querySelector('[data-testid="portfolioAllWallets"] [data-testid="networkFilterChip"][data-network="${firstNetwork}"]')?.getAttribute('aria-pressed') === 'true'`, 'the network chip picked');
+    await check(
+      'under a network chip every row is on that network only, and the Wallets part steps aside',
+      `[[...document.querySelectorAll('[data-testid="allTokens"] .sub')].every((sub) => sub.innerText.startsWith(${JSON.stringify(firstNetwork)})), Boolean(document.querySelector('[data-testid="allWalletRows"]'))]`,
+      [true, false]
+    );
     await scrollTop();
-    await capture('04-all-wallets-networks', 'All wallets by network: each network with its holdings and the wallet that holds them.');
-
-    await click('[data-testid="allLens-wallet"]');
-    await wait(`Boolean(document.querySelector('[data-testid="allWalletRows"]'))`, 'the Wallets lens');
+    await capture('04-all-wallets-networks', `All wallets on one network: the ${firstNetwork} chip narrows the list to what every wallet holds there.`);
+    await click('[data-testid="portfolioAllWallets"] [data-testid="networkFilterAll"]');
+    await wait(`Boolean(document.querySelector('[data-testid="allWalletRows"]'))`, 'every network again, with the Wallets part');
     const walletRows = `[...document.querySelectorAll('[data-testid="allWalletRows"] .row')]`;
     await check(
-      'the Wallets lens lists every wallet, largest first, with its own total and share',
+      'the Wallets part lists every wallet, largest first, with its own total and share',
       `${walletRows}.map((row) => [row.querySelector('.title').innerText, row.querySelector('.fiat').innerText.replace(/^[^0-9]+/, ''), row.querySelector('.amount').innerText])`,
       [
         [mainName, dollars(mainTotal), share(mainTotal)],
@@ -333,10 +342,10 @@ export async function captureDashboardScreenshots({
       ]
     );
     await check('a wallet with nothing in it comes last, with no networks and no balance age', `${walletRows}.slice(-${emptyWallets.length}).map((row) => row.querySelector('.sub').innerText)`, emptyWallets.map(() => '0 networks'));
-    await scrollTop();
-    await capture('05-all-wallets-wallets', 'All wallets by wallet: each wallet with its share, networks and age, and a way to open it alone.');
+    await evalPage(`(document.querySelector('[data-testid="allWalletRows"]')?.scrollIntoView({ block: 'start' }), true)`);
+    await capture('05-all-wallets-wallets', 'Under the tokens, each wallet with its share, networks and age, and a way to open it alone.');
     await evalPage(`(${walletRows}.at(-1).scrollIntoView({ block: 'center' }), true)`);
-    await capture('05b-all-wallets-empty-wallet', 'The end of the Wallets lens: a wallet with nothing in it comes last, at $0.00 and 0% of total, with no networks and no age.');
+    await capture('05b-all-wallets-empty-wallet', 'The end of the Wallets part: a wallet with nothing in it comes last, at $0.00 and 0% of total, with no networks and no age.');
 
     await click('[data-testid="heroHowWeCount"]');
     await wait(`Boolean(document.querySelector('[data-testid="portfolioCountingSheet"]'))`, 'the how-we-count sheet');

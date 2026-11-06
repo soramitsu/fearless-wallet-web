@@ -1,54 +1,46 @@
 <template>
   <section class="allocation" :aria-label="t('walletHome.allocation.title')" data-testid="portfolioAllocation">
-    <div class="segmented" role="group" :aria-label="t('walletHome.allocation.lens')" data-testid="allocationLens">
-      <button
-        v-for="option in lensOptions"
-        :key="option.value"
-        type="button"
-        class="segment"
-        :aria-pressed="lens === option.value"
-        :data-testid="`allocationLens-${option.value}`"
-        @click="setLens(option.value)"
-      >
-        {{ option.label }}
-      </button>
-    </div>
-
     <div v-if="pending" class="state" role="status" aria-live="polite" data-testid="allocationLoading">
       <Shimmer height="180px" width="100%" />
       <span class="sr-only">{{ t('portfolioPage.loadingBalances') }}</span>
     </div>
 
-    <p v-else-if="!groups.length" class="state state--empty" data-testid="allocationEmpty">{{ t('walletHome.allocation.empty') }}</p>
+    <p v-else-if="!tokenGroups.length" class="state state--empty" data-testid="allocationEmpty">{{ t('walletHome.allocation.empty') }}</p>
 
     <template v-else>
-      <!-- The winged sun is the chart: one ray per percent, coloured by what it stands for (design spec 3.1). -->
+      <!-- The winged sun is the chart: one ray per percent, coloured by token (design spec 3.1). -->
       <div class="chart">
-        <PortfolioSky class="chart-sky" :groups="groups" :activeKey="activeKey" @select="select" />
+        <PortfolioSky class="chart-sky" :groups="tokenGroups" :activeKey="activeKey" @select="select" />
       </div>
 
-      <ul class="rows" data-testid="allocationRows">
-        <li v-for="group in groups" :key="group.key">
-          <button
-            type="button"
-            class="row"
-            :class="{ 'row--active': group.key === activeKey }"
-            :aria-pressed="group.key === activeKey"
-            :aria-label="rowLabel(group)"
-            :data-key="group.key"
-            data-testid="allocationRow"
-            @click="select(group.key)"
-          >
-            <span class="dot" :style="{ background: chartColour(group.slot) }" aria-hidden="true"></span>
-            <span class="name">{{ nameOf(group) }}</span>
-            <span class="bar" aria-hidden="true">
-              <span class="bar-fill" :style="{ width: `${Math.max(group.share, 1)}%`, background: chartColour(group.slot) }"></span>
-            </span>
-            <span class="share">{{ formatShare(group.share) }}%</span>
-            <span class="value">{{ formatFiatValue(String(group.value)) }}</span>
-          </button>
-        </li>
-      </ul>
+      <!-- Every split of the total on one page, one after another: by token, by network and, for All wallets, by wallet. -->
+      <div v-for="part in parts" :key="part.facet" class="part" :data-facet="part.facet">
+        <h3 class="part-title">{{ part.title }}</h3>
+
+        <ul class="rows" :data-testid="part.facet === 'token' ? 'allocationRows' : `allocationRows-${part.facet}`">
+          <li v-for="group in part.groups" :key="group.key">
+            <component
+              :is="opens(part.facet, group) ? 'button' : 'div'"
+              :type="opens(part.facet, group) ? 'button' : undefined"
+              class="row"
+              :class="{ 'row--active': part.facet === 'token' && group.key === activeKey }"
+              :aria-pressed="part.facet === 'token' ? group.key === activeKey : undefined"
+              :aria-label="rowLabel(group)"
+              :data-key="group.key"
+              :data-testid="part.facet === 'token' ? 'allocationRow' : `allocationRow-${part.facet}`"
+              @click="pick(part.facet, group)"
+            >
+              <span class="dot" :style="{ background: chartColour(group.slot) }" aria-hidden="true"></span>
+              <span class="name">{{ nameOf(group) }}</span>
+              <span class="bar" aria-hidden="true">
+                <span class="bar-fill" :style="{ width: `${Math.max(group.share, 1)}%`, background: chartColour(group.slot) }"></span>
+              </span>
+              <span class="share">{{ formatShare(group.share) }}%</span>
+              <span class="value">{{ formatFiatValue(String(group.value)) }}</span>
+            </component>
+          </li>
+        </ul>
+      </div>
     </template>
   </section>
 </template>
@@ -82,53 +74,76 @@ const { formatFiatValue } = usePortfolioFormatting();
 const { summaryInput, hiddenKeys } = usePortfolio();
 const dashboard = usePortfolioDashboard({ summaryInput, hiddenKeys });
 
-// The chart's own lens: picking Networks here never regroups the Assets list.
-const lens = ref<AllocationFacet>('token');
 const activeKey = ref<string | null>(null);
 
-const lensOptions = computed(() => [
-  { value: 'token' as const, label: t('walletHome.allocation.tokens') },
-  { value: 'network' as const, label: t('walletHome.allocation.networks') },
-  ...(dashboard.scope.value === 'all' ? [{ value: 'wallet' as const, label: t('portfolioDashboard.lens.wallets') }] : []),
-]);
-
 const pending = computed(() => dashboard.pending.value || accountsStore.isBalanceLoading);
-const slotKey = computed(() => slotMapKey(dashboard.scope.value, lens.value, accountsStore.selectedWallet.address));
-const allocation = computed(() =>
-  buildAllocation(
-    allocationEntities(lens.value, dashboard.refs.value, dashboard.groupOf.value),
-    store.preferences.slots[slotKey.value] ?? seedSlots(lens.value, dashboard.refs.value, dashboard.groupOf.value)
-  )
-);
-const groups = computed<AllocationGroup[]>(() => allocation.value.groups);
+const allWallets = computed(() => dashboard.scope.value === 'all');
+const facets = computed<AllocationFacet[]>(() => (allWallets.value ? ['token', 'network', 'wallet'] : ['token', 'network']));
 
-// A colour follows its entity from one visit to the next, as on the rest of the dashboard.
+// Each split keeps its own colours from one visit to the next, as on the rest of the dashboard.
+const allocations = computed(() =>
+  facets.value.map((facet) => {
+    const key = slotMapKey(dashboard.scope.value, facet, accountsStore.selectedWallet.address);
+    const allocation = buildAllocation(
+      allocationEntities(facet, dashboard.refs.value, dashboard.groupOf.value),
+      store.preferences.slots[key] ?? seedSlots(facet, dashboard.refs.value, dashboard.groupOf.value)
+    );
+
+    return { facet, key, allocation };
+  })
+);
+
 watch(
-  allocation,
-  ({ slots }) => {
-    if (Object.keys(slots).length) store.setSlots(slotKey.value, slots);
-  },
+  allocations,
+  (list) =>
+    list.forEach(({ key, allocation }) => {
+      if (Object.keys(allocation.slots).length) store.setSlots(key, allocation.slots);
+    }),
   { immediate: true }
 );
-// A highlight belongs to one lens of one scope, and to a group that is still there.
-watch([lens, dashboard.scope], () => (activeKey.value = null));
-watch(groups, (current) => {
+
+const tokenGroups = computed<AllocationGroup[]>(() => allocations.value.find(({ facet }) => facet === 'token')?.allocation.groups ?? []);
+
+const titles: Record<AllocationFacet, string> = {
+  token: 'walletHome.allocation.tokens',
+  network: 'walletHome.allocation.networks',
+  wallet: 'portfolioDashboard.lens.wallets',
+};
+
+const parts = computed(() =>
+  allocations.value
+    .filter(({ allocation }) => allocation.groups.length)
+    .map(({ facet, allocation }) => ({ facet, title: t(titles[facet]), groups: allocation.groups }))
+);
+
+// A highlight belongs to one scope, and to a token that is still there.
+watch(dashboard.scope, () => (activeKey.value = null));
+watch(tokenGroups, (current) => {
   if (activeKey.value && !current.some(({ key }) => key === activeKey.value)) activeKey.value = null;
 });
-watch(dashboard.scope, (scope) => {
-  if (scope === 'wallet' && lens.value === 'wallet') lens.value = 'token';
-});
-
-function setLens(value: AllocationFacet): void {
-  lens.value = value;
-}
 
 const nameOf = (group: AllocationGroup): string => (group.key === 'other' ? t('walletHome.allocation.other') : group.name);
 
 const rowLabel = (group: AllocationGroup): string =>
   t('walletHome.allocation.row', { name: nameOf(group), percent: formatShare(group.share), value: formatFiatValue(String(group.value)) });
 
-// The first pick highlights a group in the chart; picking a token again opens it, as its row in the list does.
+/** A token row highlights its rays, then opens; one wallet's network row opens the list on that network. */
+const opens = (facet: AllocationFacet, group: AllocationGroup): boolean =>
+  group.key !== 'other' && (facet === 'token' || (facet === 'network' && !allWallets.value));
+
+function pick(facet: AllocationFacet, group: AllocationGroup): void {
+  if (!opens(facet, group)) return;
+  if (facet === 'token') {
+    select(group.key);
+    return;
+  }
+
+  // Only networks that hold something have a row, so their balances are already read.
+  accountsStore.setSelectedNetwork(group.key);
+  void router.push({ name: Components.Currencies });
+}
+
+// The first pick highlights a token in the chart; picking it again opens it, as its row in the list does.
 function select(key: string): void {
   if (activeKey.value !== key) {
     activeKey.value = key;
@@ -136,9 +151,9 @@ function select(key: string): void {
   }
 
   activeKey.value = null;
-  if (lens.value !== 'token' || key === 'other') return;
+  if (key === 'other') return;
 
-  if (dashboard.scope.value === 'all') void router.push(locationsLocation(key));
+  if (allWallets.value) void router.push(locationsLocation(key));
   else void router.push({ name: Components.TokenOverview, params: { token: key } });
 }
 </script>
@@ -152,37 +167,19 @@ function select(key: string): void {
   padding: 4px 0 20px;
 }
 
-.segmented {
-  align-self: center;
-  display: inline-flex;
-  padding: 2px;
-  border: 1px solid var(--fw-divider);
-  border-radius: 16px;
-  background: var(--fw-raised);
+.part {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.segment {
-  min-height: 30px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 14px;
-  background: transparent;
+.part-title {
+  margin: 4px 10px 0;
+  // The app centres its text; a list's heading sits over its rows.
+  text-align: left;
   color: var(--fw-text-2);
-  font: inherit;
   font-size: 0.75rem;
-  cursor: pointer;
-  white-space: nowrap;
-
-  &[aria-pressed='true'] {
-    background: var(--fw-select-fill);
-    color: var(--fw-text-1);
-    font-weight: 700;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--fw-focus);
-    outline-offset: 1px;
-  }
+  font-weight: 700;
 }
 
 .state {
@@ -238,9 +235,12 @@ function select(key: string): void {
   font: inherit;
   font-variant-numeric: tabular-nums;
   text-align: left;
-  cursor: pointer;
 
-  &:hover {
+  &:is(button) {
+    cursor: pointer;
+  }
+
+  &:is(button):hover {
     background: var(--fw-raised-2);
   }
 

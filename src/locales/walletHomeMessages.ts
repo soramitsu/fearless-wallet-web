@@ -18,15 +18,25 @@ const en = {
       nfts: 'NFTs',
     },
     toolbar: {
-      search: 'Search',
       searchPlaceholder: 'Search tokens and networks',
-      closeSearch: 'Close search',
       manage: 'Manage list',
       manageTitle: 'Manage list',
       done: 'Done',
-      groupBy: 'Group by',
-      byToken: 'Token',
-      byNetwork: 'Network',
+    },
+    networkFilter: {
+      label: 'Show assets on',
+      all: 'All networks',
+      more: 'More networks',
+    },
+    search: {
+      noMatchOn: 'Nothing on {network} matches your search.',
+      searchAll: 'Search all networks',
+      showAll: 'Show all assets',
+    },
+    layoutNote: {
+      title: 'All your assets in one list',
+      description: 'Each token shows once, with its total across networks. To see one network only, pick it above the list.',
+      gotIt: 'Got it',
     },
     picker: {
       sendTitle: 'Send',
@@ -53,7 +63,6 @@ const en = {
     },
     allocation: {
       title: 'Allocation',
-      lens: 'Show allocation by',
       tokens: 'Tokens',
       networks: 'Networks',
       empty: 'Nothing with a price to chart yet.',
@@ -80,15 +89,25 @@ const ru: typeof en = {
       nfts: 'NFT',
     },
     toolbar: {
-      search: 'Поиск',
       searchPlaceholder: 'Поиск токенов и сетей',
-      closeSearch: 'Закрыть поиск',
       manage: 'Настроить список',
       manageTitle: 'Настройка списка',
       done: 'Готово',
-      groupBy: 'Группировать',
-      byToken: 'По токенам',
-      byNetwork: 'По сетям',
+    },
+    networkFilter: {
+      label: 'Показать активы в сети',
+      all: 'Все сети',
+      more: 'Другие сети',
+    },
+    search: {
+      noMatchOn: 'В сети {network} ничего не найдено.',
+      searchAll: 'Искать во всех сетях',
+      showAll: 'Показать все активы',
+    },
+    layoutNote: {
+      title: 'Все активы в одном списке',
+      description: 'Каждый токен показан один раз, с суммой по всем сетям. Чтобы увидеть одну сеть, выберите её над списком.',
+      gotIt: 'Понятно',
     },
     picker: {
       sendTitle: 'Отправить',
@@ -115,9 +134,8 @@ const ru: typeof en = {
     },
     allocation: {
       title: 'Структура',
-      lens: 'Показать структуру',
-      tokens: 'По токенам',
-      networks: 'По сетям',
+      tokens: 'Токены',
+      networks: 'Сети',
       empty: 'Пока нечего показать: нет активов с ценой.',
       row: '{name}: {percent} процентов, {value}',
       other: 'Другое',

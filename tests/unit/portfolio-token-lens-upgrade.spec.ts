@@ -334,17 +334,19 @@ describe('the one-time By token note', () => {
     scope.stop();
   });
 
-  it('switches to By network from the note, for this wallet, and closes it for good', async () => {
+  it('offers no way back to By network: the note points at the chips, and closes for good', async () => {
     const { accountsStore, scope } = openPortfolio(SUBSTRATE_ADDRESS, WalletEcosystem.Substrate, fundedEvmAndSubstrate());
     const wrapper = mountCurrencies();
     await nextTick();
 
-    await wrapper.get('[data-testid="layoutNoteByNetwork"]').trigger('click');
-    expect(accountsStore.portfolioView.lens).toBe('network');
+    expect(wrapper.find('[data-testid="layoutNoteByNetwork"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="networkFilter"]').exists()).toBe(true);
+
+    await wrapper.get('[data-testid="layoutNoteDismiss"]').trigger('click');
+    expect(accountsStore.portfolioView.lens).toBe('token');
     expect(accountsStore.portfolioLayout.noteDismissed).toBe(true);
-    expect(wrapper.find('[data-testid="portfolioNetworkList"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="portfolioTokenList"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="portfolioLayoutNote"]').exists()).toBe(false);
-    expect(JSON.parse(storage.getItem('account_portfolio-view-v1')!).value[SUBSTRATE_ADDRESS].lens).toBe('network');
 
     wrapper.unmount();
     scope.stop();

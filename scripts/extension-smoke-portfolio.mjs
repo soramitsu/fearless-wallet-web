@@ -275,6 +275,20 @@ export async function capturePortfolioScreenshots({
           return true;
         })()`
       );
+    // As typing does: the field's value, then the input event its v-model listens to.
+    const typeInto = (selector, text) =>
+      evaluate(
+        cdp,
+        sessionId,
+        `(() => {
+          const input = document.querySelector(${JSON.stringify(selector)});
+          if (!input) throw new Error('Not on screen: ' + ${JSON.stringify(selector)});
+          input.focus();
+          input.value = ${JSON.stringify(text)};
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          return true;
+        })()`
+      );
     const scrollTo = (selector) =>
       evaluate(cdp, sessionId, `(document.querySelector(${JSON.stringify(selector)})?.scrollIntoView({ block: 'start' }), true)`);
 
@@ -292,6 +306,32 @@ export async function capturePortfolioScreenshots({
     await click('[data-testid="layoutNoteDismiss"]');
     await scrollTo('[data-testid="portfolioTokenList"]');
     await capture('02-home-token-list', 'One row per token: symbol, price and where it is held; value and amount on the right.');
+
+    // One list, found two ways: the search reads network names too, and a chip narrows the list to one network.
+    await typeInto('[data-testid="searchInput"] input', 'AssetHub');
+    await waitForExpression(
+      cdp,
+      sessionId,
+      // DOT is held on three networks: the search for a network keeps its AssetHub part, as a row of its own.
+      `Boolean(document.querySelector('[data-testid="portfolioTokenList"] [data-symbol="DOT"][data-network="Polkadot AssetHub"]')) && !document.querySelector('[data-testid="portfolioTokenList"] [data-symbol="DOT"][data-network="Polkadot"]') && !document.querySelector('[data-token="group:dot"]')`,
+      'the search for a network'
+    );
+    await scrollTo('[data-testid="portfolioListTools"]');
+    await capture('02b-search-network', 'Search finds networks as well as tokens: "AssetHub" lists what the wallet holds on Polkadot AssetHub.');
+    await typeInto('[data-testid="searchInput"] input', '');
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-token="group:dot"]\'))', 'the full list again');
+
+    await click('[data-testid="networkFilterChip"][data-network="Ethereum"]');
+    await waitForExpression(
+      cdp,
+      sessionId,
+      `document.querySelector('[data-testid="networkFilterChip"][data-network="Ethereum"]')?.getAttribute('aria-pressed') === 'true' && [...document.querySelectorAll('[data-testid="portfolioTokenList"] .token-row')].every((row) => row.dataset.network === 'Ethereum')`,
+      'the Ethereum chip'
+    );
+    await scrollTo('[data-testid="portfolioListTools"]');
+    await capture('02c-network-ethereum', 'A network chip narrows the one list to Ethereum; the header names the filter and its part of the total.');
+    await click('[data-testid="networkFilterAll"]');
+    await waitForExpression(cdp, sessionId, 'Boolean(document.querySelector(\'[data-token="group:dot"]\'))', 'every network again');
 
     await click('[data-token="group:dot"] [data-testid="tokenGroupHeader"]');
     await waitFor('tokenOverview', 'the DOT page');
@@ -331,17 +371,13 @@ export async function capturePortfolioScreenshots({
     await waitFor('allocationRows', 'the Portfolio view');
     await scrollTo('[data-testid="portfolioAllocation"]');
     await capture('10-portfolio-allocation', 'The Portfolio view: the winged sun charts the allocation, the rows give each share.');
-    await click('[data-testid="allocationLens-network"]');
-    await capture('11-portfolio-by-network', 'The same allocation by network.');
+    await scrollTo('[data-testid="allocationRows-network"]');
+    await capture('11-portfolio-by-network', 'Under the tokens, the same total by network, on the same page: no switch.');
 
     await home();
     await click('[data-testid="filterBtn"] button');
-    await waitFor('tokenRowSwitch', 'Manage in By token');
-    await capture('12-manage', 'Manage: hidden and test networks, grouping and zero balances, one switch per token.');
-    await click('[data-testid="portfolioLens-network"]');
-    await waitFor('portfolioNetworkList', 'By network list');
-    await capture('13-manage-by-network', 'Grouped by network instead, kept per wallet.');
-    await click('[data-testid="portfolioLens-token"]');
+    await waitFor('tokenRowSwitch', 'Manage');
+    await capture('12-manage', 'Manage: hidden and test networks and zero balances, one switch per token; there is no grouping to choose.');
     await click('[data-testid="filterBtn"] button');
     await waitForExpression(cdp, sessionId, '!document.querySelector(\'[data-testid="tokenRowSwitch"]\')', 'Manage closed');
 

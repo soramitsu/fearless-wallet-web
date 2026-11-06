@@ -14,7 +14,16 @@ vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => ({ fiatSymbol: '$'
 
 const wrappers: VueWrapper[] = [];
 afterEach(() => { wrappers.splice(0).forEach(wrapper => wrapper.unmount()); vi.restoreAllMocks(); });
-const stubs = { Icon: true, Shimmer: true };
+const stubs = {
+  Icon: true,
+  Shimmer: true,
+  ExternalLogo: true,
+  SearchInput: {
+    props: ['value', 'placeholder'],
+    emits: ['change'],
+    template: '<input class="search-stub" :value="value" @input="$emit(\'change\', $event.target.value)" />',
+  },
+};
 const groups: AllocationGroup[] = [
   { key: 'eth', name: 'ETH', value: 75, share: 75, rays: 75, slot: 1 },
   { key: 'other', name: 'Other', value: 25, share: 25, rays: 25, slot: 0, members: ['DOT', 'BTC'] },
@@ -25,7 +34,7 @@ const token = (id: string, children = [child('one')]): AggregateTokenRow => ({ i
   fiat: '40', changePercent: '2', networks: ['Ethereum'], wallets: ['Alice'], children });
 function allWallets(props: Record<string, unknown> = {}) {
   const wrapper = mount(PortfolioAllWallets, { attachTo: document.body, props: {
-    lens: 'token', tokenRows: [], networkSections: [], wallets: [], slotOf: () => 1, activeKey: null, focus: null,
+    tokenRows: [], networkSections: [], wallets: [], slotOf: () => 1, activeKey: null, focus: null,
     loading: false, readinessOf: () => ({ state: 'unknown', hops: [] }), ...props,
   }, global: { stubs } });
   wrappers.push(wrapper);
@@ -41,20 +50,19 @@ function hero(props: Record<string, unknown> = {}) {
 }
 
 describe('rendered all-wallets navigation', () => {
-  it.each(['token', 'network', 'wallet'])('shows loading and then the empty state in the %s lens', async (lens) => {
-    const wrapper = allWallets({ lens, loading: true });
+  it('shows loading and then the empty state', async () => {
+    const wrapper = allWallets({ loading: true });
     expect(wrapper.find('[data-testid="allWalletsLoading"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="allWalletsEmpty"]').exists()).toBe(false);
     await wrapper.setProps({ loading: false });
     expect(wrapper.find('[data-testid="allWalletsEmpty"]').exists()).toBe(true);
   });
 
-  it('opens a single holding directly and emits lens selections', async () => {
+  it('opens a single holding directly, in one list with no lens to switch', async () => {
     const wrapper = allWallets({ tokenRows: [token('eth')] });
     await wrapper.get('[data-testid="tokenRow-eth"]').trigger('click');
     expect(wrapper.emitted('open')).toEqual([['eth', 'one']]);
-    await wrapper.get('[data-testid="allLens-network"]').trigger('click');
-    expect(wrapper.emitted('update:lens')).toEqual([['network']]);
+    expect(wrapper.find('[data-testid="allWalletsLens"]').exists()).toBe(false);
     expect(wrapper.text()).toContain('$40.00');
   });
 
@@ -78,20 +86,52 @@ describe('rendered all-wallets navigation', () => {
     expect(wrapper.find('.change--down').exists()).toBe(changePercent === '-2');
   });
 
-  it('opens the exact token and holding from the network lens', async () => {
-    const wrapper = allWallets({ lens: 'network', networkSections: [{ name: 'Ethereum', fiat: '20', rows: [{
-      ...child('one'), id: 'row-one', tokenKey: 'eth', name: 'Ether',
-    }] }] });
-    expect(wrapper.get('[data-testid="allNetworks"]').text()).toContain('Ethereum');
-    await wrapper.get('[data-testid="networkRow-row-one"]').trigger('click');
-    expect(wrapper.emitted('open')).toEqual([['eth', 'one']]);
+  const heldTwice = () => ({
+    tokenRows: [{ ...token('eth', [child('one'), { ...child('two'), networkName: 'Arbitrum', walletName: 'Bob', fiat: '30', amount: '1.5' }]),
+      fiat: '50', amount: '2.5', networks: ['Ethereum', 'Arbitrum'], wallets: ['Alice', 'Bob'] }],
+    networkSections: [{ name: 'Ethereum', fiat: '20', rows: [] }, { name: 'Arbitrum', fiat: '30', rows: [] }],
+    networkIconOf: (name: string) => `${name.toLowerCase()}-logo`,
+  });
+
+  it('offers a chip per network, largest first, and narrows each row to that network, summing only what is there', async () => {
+    const wrapper = allWallets(heldTwice());
+    expect(wrapper.findAll('[data-testid="networkFilterChip"]').map((chip) => chip.attributes('data-network'))).toEqual(['Arbitrum', 'Ethereum']);
+
+    await wrapper.get('[data-testid="networkFilterChip"][data-network="Arbitrum"]').trigger('click');
+    const row = wrapper.get('[data-testid="tokenRow-eth"]');
+    expect(row.get('.fiat').text()).toBe('$30.00');
+    expect(row.get('.amount').text()).toBe('1.5000 ETH');
+    expect(row.get('.sub').text()).toContain('Arbitrum · Bob');
+    expect(row.find('.orb-count').exists()).toBe(false);
+
+    // One holding left: the row opens it, as a row held once does.
+    await row.trigger('click');
+    expect(wrapper.emitted('open')).toEqual([['eth', 'two']]);
+
+    await wrapper.get('[data-testid="networkFilterAll"]').trigger('click');
+    expect(wrapper.get('[data-testid="tokenRow-eth"] .fiat').text()).toBe('$50.00');
+  });
+
+  it('searches tokens, networks and wallets, and offers everything again when nothing matches', async () => {
+    const wrapper = allWallets(heldTwice());
+
+    await wrapper.get('.search-stub').setValue('bob');
+    expect(wrapper.get('[data-testid="tokenRow-eth"] .sub').text()).toContain('Arbitrum · Bob');
+
+    await wrapper.get('.search-stub').setValue('eth');
+    expect(wrapper.get('[data-testid="tokenRow-eth"] .fiat').text()).toBe('$50.00');
+
+    await wrapper.get('.search-stub').setValue('no such thing');
+    expect(wrapper.find('[data-testid="allTokens"]').exists()).toBe(false);
+    await wrapper.get('[data-testid="allWalletsShowAll"]').trigger('click');
+    expect(wrapper.find('[data-testid="tokenRow-eth"]').exists()).toBe(true);
   });
 
   it('renders wallet names, shares, sync ages and a wallet-specific open action', async () => {
     const wallet = { address: 'alice', name: ' Alice ', total: '20', share: 100, latestTimestamp: Date.now() - 60_000,
       holdings: [{ networkName: 'Ethereum' }, { networkName: 'Ethereum' }],
     } as AggregatedWallet;
-    const wrapper = allWallets({ lens: 'wallet', wallets: [wallet] });
+    const wrapper = allWallets({ wallets: [wallet] });
     expect(wrapper.get('.avatar').text()).toBe('A');
     expect(wrapper.text()).toContain('100');
     expect(wrapper.get('.sub').text()).toContain('1 network');

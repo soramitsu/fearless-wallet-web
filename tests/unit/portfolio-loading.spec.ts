@@ -194,8 +194,6 @@ describe('first open after upgrading from 3.0.5', () => {
     // The background answers the first balance request at once.
     accountsStore.setBalance({ details: groups });
     accountsStore.setIsBalanceLoading(false);
-    // Rows are read per network section; the loading state is the same in both lenses.
-    accountsStore.updatePortfolioView({ lens: 'network' });
 
     const scope = effectScope();
     const portfolio = scope.run(() => usePortfolio())!;
@@ -242,7 +240,7 @@ describe('first open after upgrading from 3.0.5', () => {
     await nextTick();
 
     expect(list.find('[data-testid="portfolioLoading"]').exists()).toBe(false);
-    expect(list.find('.network-section[data-network="Polkadot"]').exists()).toBe(true);
+    expect(list.find('.token-row[data-symbol="DOT"][data-network="Polkadot"]').exists()).toBe(true);
     expect(list.get('[data-testid="portfolioChecking"]').text()).toBe(`portfolioPage.checkingNetworks:${substrateOnlyCount - 2}`);
     // 12.5 DOT at $5, now a real total (the fiat symbol comes from the fiat settings, not loaded here).
     expect(header().get('[data-testid="fiatBalance"]').text()).toMatch(/^\D*62\.50$/u);
@@ -293,7 +291,7 @@ describe('first open after upgrading from 3.0.5', () => {
     await list.setProps({ showAssetsManagementForm: true });
 
     expect(list.find('[data-testid="portfolioLoading"]').exists()).toBe(false);
-    expect(list.find('[data-testid="portfolioNetworkList"]').exists()).toBe(true);
+    expect(list.find('[data-testid="portfolioTokenList"]').exists()).toBe(true);
 
     list.unmount();
     scope.stop();

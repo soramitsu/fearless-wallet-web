@@ -19,19 +19,6 @@
       <p v-else class="manage-title">{{ $t('walletHome.toolbar.manageTitle') }}</p>
 
       <div v-if="listTabActive" class="toolbar-actions">
-        <button
-          v-if="!syncedShowAssetsManagementForm"
-          type="button"
-          class="icon-button"
-          :class="{ 'icon-button--active': searchShown }"
-          :aria-label="$t(searchShown ? 'walletHome.toolbar.closeSearch' : 'walletHome.toolbar.search')"
-          :aria-expanded="searchShown"
-          data-testid="searchToggle"
-          @click="toggleSearch"
-        >
-          <Icon :icon="searchShown ? 'close' : 'search'" width="20px" height="20px" :hover="false" />
-        </button>
-
         <!-- The list (Currencies.vue) teleports its Refresh here, so it sits with the other list tools. -->
         <span v-if="refreshSlotId" :id="refreshSlotId" class="refresh-slot"></span>
 
@@ -49,17 +36,7 @@
       </div>
     </div>
 
-    <div v-if="searchShown && listTabActive && !syncedShowAssetsManagementForm" class="search-row">
-      <SearchInput
-        :value="syncedFilterValue"
-        width="100%"
-        placeholder="walletHome.toolbar.searchPlaceholder"
-        data-testid="searchInput"
-        @change="changeSyncedFilterValue"
-      />
-    </div>
-
-    <!-- Manage: which assets the list shows, and how it groups them. -->
+    <!-- Manage: which assets the list shows. The list itself has one layout: a row per token. -->
     <div v-if="syncedShowAssetsManagementForm && listTabActive" class="manage-panel">
       <div class="manage-filters">
         <button
@@ -80,27 +57,20 @@
         >
           {{ $t('portfolioPage.testnets') }}
         </button>
+
+        <div class="hide-zero" data-testid="hideZeroToggle">
+          <Switcher
+            :value="hideZero"
+            :activeText="$t('wallet.hideZero')"
+            :inactiveText="$t('wallet.hideZero')"
+            @change="$emit('update:hideZero', $event)"
+          />
+        </div>
       </div>
 
-      <div class="view-controls">
-        <span class="control-label">{{ $t('walletHome.toolbar.groupBy') }}</span>
-        <div class="segmented" role="group" :aria-label="$t('portfolioPage.lens.label')" data-testid="portfolioLens">
-          <button
-            v-for="option in lensOptions"
-            :key="option.value"
-            type="button"
-            class="segment"
-            :aria-pressed="lens === option.value"
-            :data-testid="`portfolioLens-${option.value}`"
-            @click="$emit('update:lens', option.value)"
-          >
-            {{ $t(option.label) }}
-          </button>
-        </div>
-
-        <!-- Only for wallets that ordered their assets in 3.0.5: that order is kept until Value is picked. -->
+      <!-- Only for wallets that ordered their assets in 3.0.5: that order is kept until Value is picked. -->
+      <div v-if="showSortControl" class="view-controls">
         <div
-          v-if="lens === 'token' && showSortControl"
           class="segmented"
           role="group"
           :aria-label="$t('portfolioPage.sort.label')"
@@ -117,15 +87,6 @@
           >
             {{ $t(option.label) }}
           </button>
-        </div>
-
-        <div class="hide-zero" data-testid="hideZeroToggle">
-          <Switcher
-            :value="hideZero"
-            :activeText="$t('wallet.hideZero')"
-            :inactiveText="$t('wallet.hideZero')"
-            @change="$emit('update:hideZero', $event)"
-          />
         </div>
       </div>
     </div>
@@ -147,7 +108,6 @@ export default defineComponent({ name: 'ContentSettings' ,
   props: {
     hideZero: Boolean,
     showTestnets: Boolean,
-    lens: { type: String, default: 'token' },
     sort: { type: String, default: 'value' },
     /** The wallet has a 3.0.5 custom order to keep. */
     showSortControl: Boolean,
@@ -156,30 +116,22 @@ export default defineComponent({ name: 'ContentSettings' ,
     /** The id of the place in the view row where the list puts its Refresh. */
     refreshSlotId: { type: String, default: '' },
     activeTabName: { type: String },
-    filterValue: { type: String },
     showAssetsManagementForm: { type: Boolean },
     /** The Portfolio tab (the allocation chart) comes with the dashboard (src/portfolio/dashboard/dashboardFlag.ts). */
     showPortfolioTab: Boolean,
-    /** All wallets lists what every wallet holds: it has no NFTs, search or Manage of its own. */
+    /** All wallets lists what every wallet holds: it has no NFTs or Manage of its own. */
     allWallets: Boolean,
   },
   emits: [
     'update:activeTabName',
-    'update:filterValue',
     'update:showAssetsManagementForm',
     'update:hideZero',
     'update:showTestnets',
     'update:manageHiddenOnly',
-    'update:lens',
     'update:sort',
   ],
   data() {
     return {
-      searchOpen: false,
-      lensOptions: [
-        { value: 'token', label: 'portfolioPage.lens.tokens' },
-        { value: 'network', label: 'portfolioPage.lens.networks' },
-      ],
       sortOptions: [
         { value: 'value', label: 'portfolioPage.sort.value' },
         { value: 'custom', label: 'portfolioPage.sort.custom' },
@@ -197,10 +149,6 @@ export default defineComponent({ name: 'ContentSettings' ,
     target() {
       return `.${this.iconName}`;
     },
-    // A search typed earlier keeps its field open, so it can always be read and cleared.
-    searchShown(): boolean {
-      return this.searchOpen || Boolean(this.filterValue);
-    },
     listTabActive(): boolean {
       return this.syncedActiveTabName === Components.Currencies && !this.allWallets;
     },
@@ -213,14 +161,6 @@ export default defineComponent({ name: 'ContentSettings' ,
       },
       set(value) {
         this.$emit('update:activeTabName', value);
-      },
-    },
-    syncedFilterValue: {
-      get() {
-        return this.filterValue;
-      },
-      set(value) {
-        this.$emit('update:filterValue', value);
       },
     },
     syncedShowAssetsManagementForm: {
@@ -236,22 +176,8 @@ export default defineComponent({ name: 'ContentSettings' ,
     openTab(name: TabWallet) {
       this.syncedActiveTabName = name;
     },
-    changeSyncedFilterValue(value: string) {
-      this.syncedFilterValue = value;
-    },
     toggleAssetsManagementVisible() {
       this.syncedShowAssetsManagementForm = !this.syncedShowAssetsManagementForm;
-    },
-    toggleSearch() {
-      if (this.searchShown) {
-        this.searchOpen = false;
-        this.syncedFilterValue = '';
-        return;
-      }
-
-      this.searchOpen = true;
-      // The field takes the cursor as it opens.
-      void this.$nextTick(() => this.$el.querySelector?.('.search-row input')?.focus());
     },
   },
 });
@@ -341,34 +267,6 @@ export default defineComponent({ name: 'ContentSettings' ,
   flex: none;
 }
 
-.icon-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--fw-text-2);
-  cursor: pointer;
-
-  &:hover {
-    background: var(--fw-raised-2);
-    color: var(--fw-text-1);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--fw-focus);
-    outline-offset: 1px;
-  }
-}
-
-.icon-button--active {
-  color: var(--fw-text-1);
-}
-
 .refresh-slot {
   display: contents;
 }
@@ -376,22 +274,6 @@ export default defineComponent({ name: 'ContentSettings' ,
 .filter-btn :deep(button) {
   width: 36px;
   height: 36px;
-}
-
-.search-row {
-  :deep(.search-input-wrapper) {
-    width: 100%;
-  }
-
-  // The magnifier says what the field is for; its label stays for screen readers only.
-  :deep(.s-placeholder) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
 }
 
 .manage-panel {
@@ -407,6 +289,7 @@ export default defineComponent({ name: 'ContentSettings' ,
 .manage-filters {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
 }
 
@@ -438,11 +321,6 @@ export default defineComponent({ name: 'ContentSettings' ,
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-}
-
-.control-label {
-  color: var(--fw-text-2);
-  font-size: 0.75rem;
 }
 
 .segmented {
@@ -509,7 +387,6 @@ export default defineComponent({ name: 'ContentSettings' ,
     gap: 0;
   }
 
-  .icon-button,
   .filter-btn :deep(button) {
     width: 32px;
     height: 32px;

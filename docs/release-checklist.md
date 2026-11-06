@@ -155,8 +155,8 @@ build/reports/bitcoin-broadcast-evidence-template.json`,
 - TON provider: with the candidate open on a funded TON wallet, the service
   worker console shows either `[TON] TON Mainnet: using https://ti.soramitsu.io
   (verified ton:mainnet)` or the explicit `using the registry node ... instead
-  of TI (...)` line, and the TON row shows the real balance in the By token
-  and By network lenses and on the TON asset page (never 0, never "Balance
+  of TI (...)` line, and the TON row shows the real balance in the wallet's
+  list, under the TON network chip and on the TON asset page (never 0, never "Balance
   update failed" while either provider answers). Keep
   `UNIVERSAL_WALLET_TON_PROVIDER.registryNodeFallback` on until
   `https://ti.soramitsu.io/api/indexer/v1/service-info` reports

@@ -17,11 +17,9 @@
         <WalletSettings
           class="home-toolbar"
           :activeTabName="activeTabName"
-          :filterValue="filterValue"
           :showAssetsManagementForm="showAssetsManagementForm"
           :hideZero="accountsStore.portfolioView.hideZero"
           :showTestnets="accountsStore.portfolioView.showTestnets"
-          :lens="accountsStore.portfolioView.lens"
           :sort="portfolioSort"
           :showSortControl="legacyOrderIndex.size > 0"
           :hiddenAssetCount="hiddenAssetCount"
@@ -29,13 +27,11 @@
           :refreshSlotId="refreshSlotId"
           :showPortfolioTab="true"
           :allWallets="allWallets"
-          @update:filterValue="updateFilterValue"
           @update:activeTabName="updateActiveTabName"
           @update:showAssetsManagementForm="toggleAssetsManagementForm"
           @update:hideZero="setHideZero"
           @update:showTestnets="setShowTestnets"
           @update:manageHiddenOnly="setManageHiddenOnly"
-          @update:lens="setLens"
           @update:sort="setSort"
         />
       </template>
@@ -49,6 +45,7 @@
         :manageHiddenOnly="manageHiddenOnly"
         :filterValue="filterValue"
         :refreshSlotId="refreshSlotId"
+        @update:filterValue="updateFilterValue"
         @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
         @toggleAssetsManagementForm="toggleAssetsManagementForm"
         @update:manageHiddenOnly="setManageHiddenOnly"
@@ -75,23 +72,19 @@
         <div class="content">
           <WalletSettings
             :activeTabName="activeTabName"
-            :filterValue="filterValue"
             :showAssetsManagementForm="showAssetsManagementForm"
             :hideZero="accountsStore.portfolioView.hideZero"
             :showTestnets="accountsStore.portfolioView.showTestnets"
-            :lens="accountsStore.portfolioView.lens"
             :sort="portfolioSort"
             :showSortControl="legacyOrderIndex.size > 0"
             :hiddenAssetCount="hiddenAssetCount"
             :manageHiddenOnly="manageHiddenOnly"
             :refreshSlotId="refreshSlotId"
-            @update:filterValue="updateFilterValue"
             @update:activeTabName="updateActiveTabName"
             @update:showAssetsManagementForm="toggleAssetsManagementForm"
             @update:hideZero="setHideZero"
             @update:showTestnets="setShowTestnets"
             @update:manageHiddenOnly="setManageHiddenOnly"
-            @update:lens="setLens"
             @update:sort="setSort"
           />
 
@@ -101,6 +94,7 @@
             :manageHiddenOnly="manageHiddenOnly"
             :filterValue="filterValue"
             :refreshSlotId="refreshSlotId"
+            @update:filterValue="updateFilterValue"
             @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
             @toggleAssetsManagementForm="toggleAssetsManagementForm"
             @update:manageHiddenOnly="setManageHiddenOnly"
@@ -146,7 +140,7 @@ import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/netw
 import { usePortfolio } from '@/portfolio/usePortfolio';
 import { PORTFOLIO_DASHBOARD_ENABLED } from '@/portfolio/dashboard/dashboardFlag';
 import { effectiveScope } from '@/portfolio/dashboard/preferences';
-import { resolvePortfolioSort, type PortfolioLens, type PortfolioSort } from '@/portfolio/portfolioViewSettings';
+import { resolvePortfolioSort, type PortfolioSort } from '@/portfolio/portfolioViewSettings';
 import { formatDecimalString } from '@/helpers/numbers';
 import { CONTENT_FORM_HEIGHT, IS_EXTENSION } from '@/consts/global';
 import { networksIsPending } from '@/helpers/shimmers';
@@ -352,9 +346,6 @@ export default defineComponent({ name: 'Wallet',
     },
     setShowTestnets(value: boolean) {
       this.accountsStore.updatePortfolioView({ showTestnets: value });
-    },
-    setLens(lens: PortfolioLens) {
-      this.accountsStore.updatePortfolioView({ lens });
     },
     setSort(sort: PortfolioSort) {
       this.accountsStore.updatePortfolioView({ sort });

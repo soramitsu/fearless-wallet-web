@@ -116,10 +116,11 @@ describe('portfolio dashboard orchestration', () => {
     expect(wrapper.findComponent({ name: 'AssetPickerSheet' }).exists()).toBe(false);
     expect(wrapper.get('[data-testid="walletChooser"] [role="alert"]').text()).toContain('portfolioDashboard.where.switchFailed');
   });
-  it('forwards fiat, lens and location actions', async () => {
+  it('forwards fiat and location actions, and gives All wallets no lens to switch', async () => {
     boundary.dashboard.scope.value = 'all'; const wrapper = form();
-    hero(wrapper).vm.$emit('openFiats'); all(wrapper).vm.$emit('update:lens', 'network'); all(wrapper).vm.$emit('open', 'xor', 'holding-id'); await flushPromises();
-    expect(wrapper.emitted('openFiats')).toHaveLength(1); expect(boundary.push).toHaveBeenCalledWith(locationsLocation('xor', 'holding-id')); expect(boundary.setLens).toHaveBeenCalledWith('network');
+    hero(wrapper).vm.$emit('openFiats'); all(wrapper).vm.$emit('open', 'xor', 'holding-id'); await flushPromises();
+    expect(wrapper.emitted('openFiats')).toHaveLength(1); expect(boundary.push).toHaveBeenCalledWith(locationsLocation('xor', 'holding-id'));
+    expect(all(wrapper).props('lens')).toBeUndefined(); expect(boundary.setLens).not.toHaveBeenCalled();
   });
   it('opens and closes counting and sync detail sheets', async () => {
     const wrapper = form(); hero(wrapper).vm.$emit('openCounting'); hero(wrapper).vm.$emit('openSync'); await flushPromises();

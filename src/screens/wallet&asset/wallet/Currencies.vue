@@ -140,7 +140,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineAsyncComponent, defineComponent } from 'vue';
+import { computed, defineComponent } from 'vue';
 import PortfolioNetworkSection from './PortfolioNetworkSection.vue';
 import PortfolioZeroNetworks from './PortfolioZeroNetworks.vue';
 import PortfolioExclusions from './PortfolioExclusions.vue';
@@ -150,6 +150,7 @@ import PortfolioTokenRow from './PortfolioTokenRow.vue';
 import AssetSearchField from './AssetSearchField.vue';
 import NetworkFilterChips, { type NetworkFilterLabels, type NetworkFilterOption } from './NetworkFilterChips.vue';
 import SearchResultStatus from '@/components/SearchResultStatus.vue';
+import NetworkPicker from '@/screens/wallet&asset/NetworkManagement.vue';
 import { splitZeroSections, type PortfolioNetworkSection as PortfolioSection } from '@/portfolio/assetIdentity';
 import { hiddenFundsSignature, type PortfolioViewSettings } from '@/portfolio/portfolioViewSettings';
 import { shouldShowLayoutNote } from '@/portfolio/layoutNotice';
@@ -179,8 +180,7 @@ export default defineComponent({
     PortfolioTokenRow,
     AssetSearchField,
     NetworkFilterChips,
-    // The full network list loads when More networks first opens it.
-    NetworkPicker: defineAsyncComponent(() => import('@/screens/wallet&asset/NetworkManagement.vue')),
+    NetworkPicker,
   },
   props: {
     filterValue: String,

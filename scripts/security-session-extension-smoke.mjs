@@ -34,6 +34,7 @@ const report = {
   checks: [],
 };
 let browser, sw, popup, originalId;
+const profilesStarted = new Set();
 const check = (name, value) => { report.checks.push({ name, passed: !!value }); assert(value, name); };
 const shutdown = async () => {
   popup?.close(); sw?.close();
@@ -50,10 +51,16 @@ const start = async (zip, profile = profileDir) => {
   report.browser = (await (await devtools(port, '/json/version')).json()).Browser;
   // A restart alone can reuse a cached worker (especially with same-version
   // candidates). Explicitly reload so the installed bytes actually run.
-  if (originalId) {
+  // A new profile has no earlier build to replace. Reloading the wallet it has
+  // just installed makes Chrome start another worker a few seconds later while
+  // the DevTools session below keeps the first one running; both then answer
+  // every request, and two password changes race on fw:keyring
+  // ("Password changed during preparation.").
+  if (originalId && profilesStarted.has(profile)) {
     const reloaded = await reloadExtension(port, originalId);
     assert.equal(reloaded.reload, 'ok', 'Candidate extension reload failed');
   }
+  profilesStarted.add(profile);
   const worker = await serviceWorker(port);
   const id = new URL(worker.url).hostname;
   if (originalId) assert.equal(id, originalId, 'Package identity must remain unchanged');
@@ -62,6 +69,23 @@ const start = async (zip, profile = profileDir) => {
   await sw.ready;
   popup = await openPopup(port, id);
   await call('pri(app.isReady)');
+  // A page's port reaches every running wallet worker. A second one (a replaced worker kept running) would answer
+  // every request again, and the checks below would test two sessions at once.
+  const answers = await popup.eval(`new Promise((resolve) => {
+    const id = 'security-smoke.workers';
+    let count = 0;
+    const finish = () => { window.__p.onMessage.removeListener(listener); resolve(count); };
+    const listener = (data) => {
+      if (!data || data.id !== id) return;
+      count += 1;
+      // Another worker answers at about the same time as the first.
+      if (count === 1) setTimeout(finish, 1000);
+    };
+    window.__p.onMessage.addListener(listener);
+    window.__p.postMessage({ id, message: 'pri(app.port.ping)', request: null });
+    setTimeout(finish, 30000);
+  })`);
+  assert.equal(answers, 1, `${answers} wallet workers answered one request`);
 };
 const call = async (message, request) => {
   const result = await popup.call(message, request);
@@ -87,6 +111,14 @@ const captureTimer = () => sw.eval(`(() => {
 const awaitLockedReload = async (address) => {
   await waitFor(async () => await popup.eval('typeof window.__send === "function" && window.__securitySecret === undefined && /^#\\/unlock/.test(location.hash)'),
     30000, 'wallet document discarded on lock');
+  // The bridge is in the new document from its first line, but the wallet in it watches for the next lock only once
+  // its code has loaded (App.vue subscribes, then asks for the page-start lock). Its Unlock screen appears after the
+  // router has asked the background over that same port, so both are handled by then. Unlocking or expiring the
+  // session earlier races the page's start-up: the lock event can come before the page subscribes (it then never
+  // reloads), or the page-start lock can land in the unlock.
+  await waitFor(async () => await popup.eval(
+    '!!document.querySelector(\'[data-testid="forgotPassword"]\') && !document.querySelector(\'[data-testid="walletStartup"]\')'
+  ), 30000, 'reloaded wallet showing its Unlock screen');
   check('locked background reports locked', await call('pri(keyring.keyringIsLocked)') === true);
   // The session password is gone: even the right password exports nothing until the wallet is unlocked again.
   const locked = await popup.call('pri(keyring.export.mnemonic)', { address, password, walletEcosystem: 'substrate' });
@@ -108,7 +140,15 @@ try {
   check('incorrect password rejected', wrong.ok !== true);
   check('incorrect password leaves verifier unchanged', (await storage())['fw:keyring'].passwordHash === before['fw:keyring'].passwordHash);
   await captureTimer();
-  check('legacy password unlocks', await call('pri(keyring.unlock)', { password }) === true);
+  // A wallet page that opens while this unlock stores the stronger verifier sends the non-forced lock that every page
+  // start sends (App.vue). Until 4.2.7 it ended the unlock: "Wallet authentication changed during verifier upgrade."
+  const [unlocked, pageStartLock] = await popup.eval(`Promise.all([
+    window.__send('pri(keyring.unlock)', ${JSON.stringify({ password })}),
+    window.__send('pri(keyring.lock)', false),
+  ]).catch((error) => [String(error && error.message || error)])`);
+  check('legacy password unlocks', unlocked === true);
+  check('a wallet page opening during the unlock keeps its session', pageStartLock === false);
+  check('wallet stays unlocked after that page start', await call('pri(keyring.keyringIsLocked)') === false);
   const migrated = await storage();
   check('unlock durably migrates verifier to cost 12', getRounds(migrated['fw:keyring'].passwordHash) === 12);
   check('verifier migration preserves account ciphertext', JSON.stringify(keys(migrated)) === JSON.stringify(keys(before)));

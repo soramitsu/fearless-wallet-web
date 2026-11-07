@@ -1,24 +1,22 @@
-import WalletConnect from '@walletconnect/sign-client';
 import { DEFAULT_WALLET_CONNECT_OPTIONS } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
-import type { SessionTypes } from '@walletconnect/types';
+import { WalletConnectClient } from '@extension-base/services/wallet-connect-service/protocol/client';
+import type { WcSession } from '@extension-base/services/wallet-connect-service/protocol/types';
+import { APP_VERSION } from '@/consts/global';
 
 // Both WalletConnect roles in a worker, the wallet (dApps pair with Fearless) and the mobile pairing (Fearless pairs
-// with a phone wallet), use one client. The SDK gives every client in a worker the same Core, so a second client
-// adds a second engine on the same relay. Both engines handle every message, and the one that does not know a session
-// answers its requests with an error before the other can. Each also keeps its own copy of the session, proposal and
-// request records under the same storage keys, so whichever writes last drops the other's new sessions.
-const clients = new WeakMap<object, Promise<WalletConnect>>();
+// with a phone wallet), use one client: one relay connection and one stored record, so neither role can answer the
+// other's requests or overwrite its sessions. The client is this repository's own implementation of the protocol
+// (protocol/), not the WalletConnect SDK.
+const clients = new WeakMap<object, Promise<WalletConnectClient>>();
 
-export function walletConnectClient(state: object): Promise<WalletConnect> {
+export function walletConnectClient(state: object): Promise<WalletConnectClient> {
   let client = clients.get(state);
   if (!client) {
-    client = WalletConnect.init({
+    client = WalletConnectClient.init({
       ...DEFAULT_WALLET_CONNECT_OPTIONS,
       storage: new WalletConnectStorage(),
-      // Fearless owns the approval queue and checks each request's topic/id. The SDK's serial queue can restore an
-      // already answered request after a worker ends during response cleanup; it must not block other sessions.
-      signConfig: { disableRequestQueue: true },
+      userAgent: `wc-2/fearless-wallet-${APP_VERSION}/browser-extension`,
     });
     clients.set(state, client);
     // The next caller starts again after a failed start.
@@ -30,5 +28,5 @@ export function walletConnectClient(state: object): Promise<WalletConnect> {
 }
 
 /** A session Fearless approved as the wallet, which makes it the controller. In a mobile pairing the phone wallet is. */
-export const isWalletSession = (session: SessionTypes.Struct): boolean =>
+export const isWalletSession = (session: WcSession): boolean =>
   !!session.controller && session.controller === session.self?.publicKey;

@@ -1,9 +1,9 @@
 import { decodeAddress, isEthereumAddress } from '@polkadot/util-crypto';
 import { u8aToHex } from '@polkadot/util';
-import type { SessionTypes } from '@walletconnect/types';
+import type { WcSession, WcSessionNamespaces } from '@extension-base/services/wallet-connect-service/protocol/types';
 
 type SessionReader = {
-  getSession(topic: string): SessionTypes.Struct;
+  getSession(topic: string): WcSession;
   getSessionRevision(topic: string): number;
 };
 type Intent = { topic: string; method: string; address: string; chainId?: string };
@@ -15,8 +15,8 @@ export type SessionSigningContext = {
   chainId: string;
   identity: string;
   expiry: number;
-  peer: SessionTypes.Struct['peer'];
-  namespaces: SessionTypes.Namespaces;
+  peer: WcSession['peer'];
+  namespaces: WcSessionNamespaces;
 };
 
 function identity(namespace: string, address: string): string {

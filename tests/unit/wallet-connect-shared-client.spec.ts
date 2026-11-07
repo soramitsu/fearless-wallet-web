@@ -1,11 +1,11 @@
-import WalletConnect from '@walletconnect/sign-client';
+import { WalletConnectClient as WalletConnect } from '@extension-base/services/wallet-connect-service/protocol/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WalletConnectService } from '@extension-base/services/wallet-connect-service';
 import { WalletConnectDAppService } from '@extension-base/services/wallet-connect-service/dapp';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import type { RequestService } from '@extension-base/services/request-service';
 import type State from '@extension-base/background/handlers/State';
-import type { SessionTypes } from '@walletconnect/types';
+import type { WcSession } from '@extension-base/services/wallet-connect-service/protocol/types';
 
 const fixture = vi.hoisted(() => ({ data: {} as Record<string, unknown> }));
 vi.mock('@/consts/global', async (original) => ({ ...(await original<Record<string, unknown>>()), IS_EXTENSION: true }));
@@ -38,21 +38,21 @@ const shared = `0x${'11'.repeat(20)}`;
 const dappSession = {
   topic: 'public-dapp-session', controller: self.publicKey, self, peer: { publicKey: 'public-dapp-key', metadata },
   namespaces: { eip155: { accounts: [`eip155:1:0x${'22'.repeat(20)}`], methods: ['personal_sign'], events: [] } },
-} as unknown as SessionTypes.Struct;
+} as unknown as WcSession;
 const mobileSession = {
   topic: 'public-mobile-session', controller: 'public-phone-key', self, peer: { publicKey: 'public-phone-key', metadata },
   namespaces: { eip155: { accounts: [`eip155:1:${shared}`], methods: ['personal_sign'], events: [] } },
-} as unknown as SessionTypes.Struct;
+} as unknown as WcSession;
 // A record without a controller is never served to dApps.
-const unknownSession = { topic: 'public-unknown-session', self, peer: { publicKey: 'public-dapp-key', metadata }, namespaces: {} } as unknown as SessionTypes.Struct;
+const unknownSession = { topic: 'public-unknown-session', self, peer: { publicKey: 'public-dapp-key', metadata }, namespaces: {} } as unknown as WcSession;
 const SESSIONS = 'wc@2:client:0.3//session';
-const topics = (sessions: SessionTypes.Struct[]) => sessions.map(({ topic }) => topic);
+const topics = (sessions: WcSession[]) => sessions.map(({ topic }) => topic);
 
 // What WalletConnect.init returns: a new client that restored its own copy of the stored session records.
 type Client = ReturnType<typeof sdkClient>;
 let clients: Client[];
 function sdkClient() {
-  const values = structuredClone((fixture.data[SESSIONS] ?? []) as SessionTypes.Struct[]);
+  const values = structuredClone((fixture.data[SESSIONS] ?? []) as WcSession[]);
   const client = {
     connect: vi.fn(async () => ({ uri: 'wc:public-pairing', approval: () => new Promise(() => undefined) })),
     disconnect: vi.fn<(args: { topic: string }) => Promise<void>>(async () => undefined),

@@ -1,7 +1,7 @@
-import { formatJsonRpcError, formatJsonRpcResult } from '@walletconnect/jsonrpc-utils';
-import { getSdkError } from '@walletconnect/utils';
+import { formatJsonRpcError, formatJsonRpcResult } from '@extension-base/utils/jsonRpc';
+import { getSdkError } from '@extension-base/services/wallet-connect-service/protocol/errors';
 import { capturePolkadotSigningContext } from '../polkadotSigningContext';
-import type { SignClientTypes } from '@walletconnect/types';
+import type { WcSessionRequestEvent } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type State from '@extension-base/background/handlers/State';
 import type { WalletConnectService } from '@extension-base/services/wallet-connect-service';
 
@@ -20,7 +20,7 @@ export class PolkadotHandler {
       .catch(console.error);
   }
 
-  public handleRequest(requestEvent: SignClientTypes.EventArguments['session_request']) {
+  public handleRequest(requestEvent: WcSessionRequestEvent) {
     const context = capturePolkadotSigningContext(this.state, requestEvent);
     const { topic, id } = context.event;
     const owner = JSON.stringify([topic, id]);

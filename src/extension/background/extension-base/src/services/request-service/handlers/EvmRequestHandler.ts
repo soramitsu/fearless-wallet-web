@@ -13,7 +13,7 @@ import type {
   WalletConnectSigningContext,
 } from '@extension-base/services/wallet-connect-service/types';
 import type { ResponseSigning } from '@extension-base/background/types/types';
-import type { SignClientTypes } from '@walletconnect/types';
+import type { WcSessionRequestEvent } from '@extension-base/services/wallet-connect-service/protocol/types';
 
 export default class EvmRequestHandler {
   private readonly requestService: RequestService;
@@ -203,7 +203,7 @@ export default class EvmRequestHandler {
   }
 
   onWCSign(
-    event: SignClientTypes.EventArguments['session_request'],
+    event: WcSessionRequestEvent,
     context?: WalletConnectSigningContext
   ): Promise<ResponseSigning> {
     return new Promise((resolve, reject): void => {

@@ -34,7 +34,7 @@ import {
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap, prepareSwapExecution } from '@extension-base/api/substrate/sora';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
-import { getInternalError, type SdkErrorKey } from '@walletconnect/utils';
+import { getInternalError, type SdkErrorKey } from '@extension-base/services/wallet-connect-service/protocol/errors';
 import {
   makeCrossChain,
   estimateCrossChainQuote,
@@ -211,7 +211,7 @@ import type {
 import type { RequestUpdateLegacyExposure } from '@extension-base/services/legacy-exposure-service';
 import type { NetworkJson } from '@extension-base/types';
 import type State from '@extension-base/background/handlers/State';
-import type { ProposalTypes, SessionTypes } from '@walletconnect/types';
+import type { WcProposalNamespaces, WcSession, WcSessionNamespaces } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type { HexString } from '@polkadot/util/types';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
 import type { PolkamarktMutationRequest, PolkamarktQuoteRequest } from '@/defi/polkamarkt/types';
@@ -2262,9 +2262,9 @@ export default class Extension extends FWExtensionBase {
     const { id: wcId, params } = request.request;
     const { requiredNamespaces, optionalNamespaces } = params;
 
-    const availableNamespaces: ProposalTypes.RequiredNamespaces = {};
+    const availableNamespaces: WcProposalNamespaces = {};
 
-    const namespaces: SessionTypes.Namespaces = {};
+    const namespaces: WcSessionNamespaces = {};
     const chainInfoMap = this.state.networkService.networkMap;
     const requiredEntries = Object.entries(requiredNamespaces);
     const optionalEntries = Object.entries(optionalNamespaces);
@@ -2393,7 +2393,7 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  private subscribeWalletConnectSessions(id: string, port?: chrome.runtime.Port): SessionTypes.Struct[] {
+  private subscribeWalletConnectSessions(id: string, port?: chrome.runtime.Port): WcSession[] {
     const cb = this.state.subscriptionService.createSubscription<'pri(walletConnect.session.subscribe)'>(id, port);
 
     const subscription = this.state.walletConnectService.sessionSubject.subscribe((rs) => {

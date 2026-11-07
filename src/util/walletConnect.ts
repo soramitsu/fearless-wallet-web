@@ -1,14 +1,14 @@
-import { type ProposalTypes, type SessionTypes } from '@walletconnect/types';
 import {
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
 } from '@extension-base/services/wallet-connect-service/consts';
 import { getChainInfoByHalfGenesisHash } from '@extension-base/services/network-service/helpers';
+import type { WcProposalNamespaces, WcSessionNamespaces } from '@extension-base/services/wallet-connect-service/protocol/types';
 import { type ChainData, type SessionProposalNamespaces } from '@/interfaces/walletconnect';
 import { useNetworksStore } from '@/stores/networks';
 
 export const chainNamesFromRequest = (
-  namespaces: SessionTypes.Namespaces | ProposalTypes.RequiredNamespaces,
+  namespaces: WcSessionNamespaces | WcProposalNamespaces,
   key: string,
   isRequired: boolean
 ): ChainData[] => {

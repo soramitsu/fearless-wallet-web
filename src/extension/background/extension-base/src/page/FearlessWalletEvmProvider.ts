@@ -2,7 +2,7 @@ import { type FWEvmProvider } from '@extension-base/page/types';
 import SafeEventEmitter from '@metamask/safe-event-emitter';
 import { type JsonRpcRequest, type JsonRpcResponse, type JsonRpcSuccess } from 'json-rpc-engine';
 import { sendMessage } from '.';
-import type { RequestArguments } from '@walletconnect/jsonrpc-types';
+import type { RequestArguments } from '@extension-base/utils/jsonRpc';
 
 export interface SendSyncJsonRpcRequest extends JsonRpcRequest<unknown> {
   method: 'net_version';

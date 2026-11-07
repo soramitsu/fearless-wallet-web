@@ -1,5 +1,5 @@
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
-import WalletConnect from '@walletconnect/sign-client';
+import { WalletConnectClient as WalletConnect } from '@extension-base/services/wallet-connect-service/protocol/client';
 import { captureMobileSigningContext } from '@extension-base/services/wallet-connect-service/mobileSigningContext';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Wallet, Transaction } from 'ethers';
@@ -20,7 +20,7 @@ import { sessionStorage } from '../helpers/session-storage';
 import type State from '@extension-base/background/handlers/State';
 import type { RequestService } from '@extension-base/services/request-service';
 import type { AccountJson } from '@extension-base/background/types/types';
-import type { SessionTypes } from '@walletconnect/types';
+import type { WcSession } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 
 vi.mock('@polkadot/phishing', () => ({ checkIfDenied: vi.fn(async () => false) }));
@@ -40,7 +40,7 @@ const genesis = `0x${'11'.repeat(32)}` as const;
 const chainId = `polkadot:${'11'.repeat(16)}`;
 let state: State, extension: Extension, service: RequestService;
 let evm: EvmRequestHandler, substrate: SubstrateRequestHandler, mobile: WalletConnectDAppService;
-let session: SessionTypes.Struct;
+let session: WcSession;
 let alice: ReturnType<Keyring['addFromUri']>;
 let record: { address: string; publicKey: Uint8Array; meta: Record<string, unknown> };
 let send: ReturnType<typeof vi.fn>, listeners: Record<string, (event: { topic: string }) => void>;
@@ -79,7 +79,7 @@ beforeEach(async () => {
         events: [],
       },
     },
-  } as unknown as SessionTypes.Struct;
+  } as unknown as WcSession;
   service = {
     knownMetadata: [],
     popupOpen: vi.fn(),

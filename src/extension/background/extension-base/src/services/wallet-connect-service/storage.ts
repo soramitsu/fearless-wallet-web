@@ -1,5 +1,6 @@
 import { chrome } from '@extension-base/utils/crossenv';
 import BaseWebStore from '@extension-base/stores/BaseWeb';
+import { hasStoredWalletConnectData } from './protocol/store';
 import { IS_EXTENSION } from '@/consts/global';
 
 class WebSdkStore extends BaseWebStore<unknown> {}
@@ -36,19 +37,7 @@ export default class WalletConnectStorage {
   }
 }
 
-// The records a WalletConnect client restores when it starts. Both clients keep them under these keys.
-const SDK_RECORDS = [
-  'wc@2:client:0.3//session',
-  'wc@2:client:0.3//proposal',
-  'wc@2:core:0.3//pairing',
-  'wc@2:core:0.3//subscription',
-  'wc@2:core:0.3//history',
-];
-
-/** Whether a WalletConnect client has anything to restore: a session, proposal, pairing, subscription or history. */
-export async function hasWalletConnectData(): Promise<boolean> {
-  const storage = new WalletConnectStorage();
-  const records = await Promise.all(SDK_RECORDS.map((key) => storage.getItem<unknown[]>(key)));
-
-  return records.some((record) => !!(record ?? []).length);
+/** Whether the WalletConnect client has anything to restore: a session, pairing or proposal, or SDK 2.x records. */
+export function hasWalletConnectData(): Promise<boolean> {
+  return hasStoredWalletConnectData(new WalletConnectStorage());
 }

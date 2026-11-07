@@ -1,11 +1,14 @@
-/* global clearTimeout, console, process, setTimeout, structuredClone */
-// Real-Chrome check that the wallet pairs with a dApp on the WalletConnect SDK this repository installs (2.23, what
-// dApps ship today). That SDK sends a proposal's deadline only as expiryTimestamp, never expiry, and moves
-// requiredNamespaces into optionalNamespaces. The dApp proposes a session, the wallet approves it and signs a
+/* global Buffer, clearTimeout, console, process, setTimeout, structuredClone */
+// Real-Chrome check that the wallet pairs with a dApp. The dApp is the in-repo WalletConnect client, or, with
+// WALLETCONNECT_REFERENCE_SDK, the SDK most dApps ship (installed outside this repository; scripts/walletconnect-peer.mjs).
+// Current dApps send a proposal's deadline only as expiryTimestamp, never expiry, and move requiredNamespaces into
+// optionalNamespaces. The dApp proposes a session, the wallet approves it and signs a
 // personal_sign through it, then the wallet rejects a second proposal, which must reach the dApp as a rejection.
+// The wallet refuses a proposal for a chain it does not support, which the dApp must hear at once. Last, the popup's
+// approval screen must warn before it approves a proposal that also asks for a method the wallet does not support.
 //
-//   CHROME_BIN=<Chrome for Testing 147> node scripts/walletconnect-pairing-smoke.mjs [--extension dist/extension/chrome] \
-//     [--out build/reports/walletconnect-pairing-smoke/<time>] [--worker-console]
+//   CHROME_BIN=<Chrome for Testing 147> [WALLETCONNECT_REFERENCE_SDK=<dir>] node scripts/walletconnect-pairing-smoke.mjs \
+//     [--extension dist/extension/chrome] [--out build/reports/walletconnect-pairing-smoke/<time>] [--worker-console]
 //
 // It needs the network: the wallet reads the registry, and both sides use the public relay (wss://relay.walletconnect.com).
 // The dApp runs here in Node with its records in memory; the wallet is the extension's own WalletConnect client.
@@ -16,6 +19,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { HDNodeWallet, hexlify, toUtf8Bytes, verifyMessage } from 'ethers';
+import { startWalletConnectPeer } from './walletconnect-peer.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -31,6 +35,12 @@ const PORT_EXTENSION = 'fw-fearless-extension';
 const PASSWORD = 'fearless-walletconnect-smoke-password';
 const RELAY_MS = 90_000;
 const NAMESPACES = { eip155: { chains: ['eip155:1'], methods: ['personal_sign', 'eth_sendTransaction'], events: ['accountsChanged', 'chainChanged'] } };
+// No registry network has this chain ID; the check confirms it.
+const UNSUPPORTED_CHAIN_ID = 4_242_424_242;
+const UNSUPPORTED_CHAIN_NAMESPACES = { eip155: { ...NAMESPACES.eip155, chains: [`eip155:${UNSUPPORTED_CHAIN_ID}`] } };
+// The wallet does not support wallet_switchEthereumChain.
+const UNSUPPORTED_METHOD = 'wallet_switchEthereumChain';
+const UNSUPPORTED_METHOD_NAMESPACES = { eip155: { ...NAMESPACES.eip155, methods: [...NAMESPACES.eip155.methods, UNSUPPORTED_METHOD] } };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const started = Date.now();
@@ -174,6 +184,28 @@ const call = (cdp, page, message, request, accept) =>
 const read = (cdp, page, message, request) =>
   evaluate(cdp, page.sessionId, `__smoke.read(${JSON.stringify(message)}, ${JSON.stringify(request ?? null)})`);
 
+// Resolves once fade-ins have ended (the backdrop's animations never end), or after 5 s.
+const settled = (cdp, page) => evaluate(cdp, page.sessionId, `Promise.race([
+  Promise.all(document.getAnimations().filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity).map((animation) => animation.finished.catch(() => undefined))),
+  new Promise((resolve) => setTimeout(resolve, 5_000)),
+]).then(() => true)`);
+
+// Clicks the middle of the element `expression` finds with the mouse, as a person would. A covered element fails.
+async function click(cdp, page, expression, description) {
+  await settled(cdp, page);
+  const point = await evaluate(cdp, page.sessionId, `(() => {
+    const element = ${expression};
+    if (!element) return null;
+    const { x, y, width, height } = element.getBoundingClientRect();
+    const top = document.elementFromPoint(x + width / 2, y + height / 2);
+    return { x: x + width / 2, y: y + height / 2, onTop: !!top && element.contains(top) };
+  })()`);
+  assert(point, `There is no ${description}`);
+  assert(point.onTop, `Something covers the ${description}`);
+  for (const type of ['mousePressed', 'mouseReleased'])
+    await cdp.send('Input.dispatchMouseEvent', { type, x: point.x, y: point.y, button: 'left', clickCount: 1 }, page.sessionId);
+}
+
 async function loadKeyringFields() {
   const { createServer } = await import('vite');
   const server = await createServer({
@@ -219,35 +251,10 @@ async function createWallet(cdp, page, keyringFields) {
   return { address, ethereumAddress };
 }
 
-// The dApp side, on the installed SDK as it ships. It only records the proposals it sends.
+// The dApp side: the in-repo client by default, or the reference SDK (scripts/walletconnect-peer.mjs). It records the
+// proposals it sends.
 async function startWalletConnectDapp() {
-  const walletConnect = await import('@walletconnect/sign-client');
-  const SignClient = walletConnect.SignClient ?? walletConnect.default?.SignClient ?? walletConnect.default;
-  const { getSdkError } = await import('@walletconnect/utils');
-  const version = JSON.parse(await fs.readFile(path.join(root, 'node_modules/@walletconnect/sign-client/package.json'), 'utf8')).version;
-  const values = new Map();
-  const storage = {
-    getKeys: async () => [...values.keys()],
-    getEntries: async () => [...values.entries()],
-    getItem: async (key) => values.get(key),
-    setItem: async (key, value) => void values.set(key, value),
-    removeItem: async (key) => void values.delete(key),
-  };
-  const consts = await fs.readFile(path.join(root, 'src/extension/background/extension-base/src/services/wallet-connect-service/consts.ts'), 'utf8');
-  const projectId = consts.match(/PROJECT_ID_EXTENSION = '([0-9a-f]+)'/)[1];
-  const client = await SignClient.init({
-    projectId,
-    relayUrl: 'wss://relay.walletconnect.com',
-    metadata: { name: 'Fearless WalletConnect smoke', description: 'WalletConnect pairing smoke dApp', url: 'https://fearlesswallet.io/', icons: [] },
-    storage,
-  });
-  const proposals = [];
-  const encode = client.core.crypto.encode.bind(client.core.crypto);
-  client.core.crypto.encode = (topic, payload, options) => {
-    if (payload?.method === 'wc_sessionPropose') proposals.push(structuredClone(payload.params));
-    return encode(topic, payload, options);
-  };
-  return { client, version, proposals, getSdkError, close: async () => client.core.relayer.transportClose() };
+  return startWalletConnectPeer(root, 'Fearless WalletConnect smoke', 'WalletConnect pairing smoke dApp');
 }
 
 const describeProposal = (params) => ({
@@ -337,11 +344,12 @@ async function main() {
     await eventually(() => call(cdp, wallet, 'pri(app.isReady)', null), 'the background to answer');
     const account = await createWallet(cdp, wallet, keyringFields);
     // WalletConnect's eip155:1 is the registry's Ethereum.
-    await call(cdp, wallet, 'pri(networkMap.getSubscription)', null, '(map) => !!map && Object.values(map).some((n) => n.name === "Ethereum" && Number(n.chainId) === 1)');
+    const networkMap = await call(cdp, wallet, 'pri(networkMap.getSubscription)', null, '(map) => !!map && Object.values(map).some((n) => n.name === "Ethereum" && Number(n.chainId) === 1)');
+    assert(!Object.values(networkMap).some((network) => Number(network.chainId) === UNSUPPORTED_CHAIN_ID), `The registry has a network for eip155:${UNSUPPORTED_CHAIN_ID}`);
     step('wallet created', account);
 
     dapp = await startWalletConnectDapp();
-    step('dApp started', { sdk: dapp.version });
+    step('dApp started', { peer: dapp.kind });
 
     // 1. The dApp proposes a session and the wallet approves it.
     const { uri, approval } = await dapp.client.connect({ requiredNamespaces: NAMESPACES });
@@ -349,7 +357,7 @@ async function main() {
     sessionApproved.catch(() => undefined);
     const proposal = await nextProposal(cdp, wallet, uri, []);
     step('proposal received', { sent: describeProposal(dapp.proposals.at(-1)), wallet: describeProposal(proposal.request.params) });
-    assert(!Object.hasOwn(dapp.proposals.at(-1), 'expiry'), 'The dApp sent an expiry: this is not the SDK the check is about');
+    assert(!Object.hasOwn(dapp.proposals.at(-1), 'expiry'), 'The dApp sent an expiry: this is not the client the check is about');
     const approved = await call(cdp, wallet, 'pri(walletConnect.session.approve)', { id: proposal.id, accounts: [account.ethereumAddress] });
     step('wallet answered the approval', { response: approved });
     assert(approved?.status === true, `The wallet did not approve the session: ${JSON.stringify(approved)}`);
@@ -396,13 +404,63 @@ async function main() {
     step('rejected proposal reached the dApp', { walletAnswer: rejected, dappSaw: dappSaw ?? 'no answer' });
     assert(dappSaw?.code === dapp.getSdkError('USER_REJECTED').code, 'The dApp was not told the wallet rejected its proposal');
 
-    // 4. The dApp disconnects, and the wallet drops the session.
+    // 4. A proposal for only a chain the wallet does not support is refused, and the dApp hears why without waiting for
+    //    the proposal to expire.
+    const unsupported = await dapp.client.connect({ requiredNamespaces: UNSUPPORTED_CHAIN_NAMESPACES });
+    const unsupportedAnswer = unsupported.approval().then(() => ({ approved: true }), (error) => ({ code: error?.code ?? null, message: error?.message ?? String(error) }));
+    const unsupportedProposal = await nextProposal(cdp, wallet, unsupported.uri, [proposal.id, secondProposal.id]);
+    const refusedAt = Date.now();
+    const refused = await call(cdp, wallet, 'pri(walletConnect.session.approve)', { id: unsupportedProposal.id, accounts: [account.ethereumAddress] });
+    const refusal = await within(unsupportedAnswer, RELAY_MS);
+    step('unsupported chain refused and the dApp told', {
+      wallet: describeProposal(unsupportedProposal.request.params),
+      walletAnswer: refused,
+      dappSaw: refusal ?? 'no answer',
+      secondsToAnswer: refusal ? (Date.now() - refusedAt) / 1000 : null,
+    });
+    assert(refused?.status === false && refused.title === 'walletConnect.notifications.unsupportedProposal.title', `The wallet did not refuse the proposal as unsupported: ${JSON.stringify(refused)}`);
+    assert(refusal?.code === dapp.getSdkError('UNSUPPORTED_CHAINS').code, 'The dApp was not told the wallet refused its proposal for an unsupported chain');
+
+    // 5. The dApp disconnects, and the wallet drops the session.
     await dapp.client.disconnect({ topic: session.topic, reason: dapp.getSdkError('USER_DISCONNECTED') });
     const remaining = await eventually(async () => {
       const sessions = await read(cdp, wallet, 'pri(walletConnect.session.subscribe)', null);
       return !sessions.some((item) => item.topic === session.topic) && sessions;
     }, 'the wallet to drop the session the dApp disconnected', RELAY_MS, 1_000);
     step('wallet dropped the disconnected session', { sessions: remaining.length });
+
+    // 6. A proposal that also asks for a method the wallet does not support, which the dApp's SDK sends as optional.
+    //    The approval screen warns before approving. The session approved through the warning lists the method, and
+    //    the wallet answers a request for it with an error.
+    const extra = await dapp.client.connect({ requiredNamespaces: UNSUPPORTED_METHOD_NAMESPACES });
+    const extraApproved = extra.approval();
+    extraApproved.catch(() => undefined);
+    await nextProposal(cdp, wallet, extra.uri, [proposal.id, secondProposal.id, unsupportedProposal.id]);
+    const popup = await openWalletPage(cdp, extensionId);
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 561, height: 600, deviceScaleFactor: 1, mobile: false }, popup.sessionId);
+    const approveButton = `[...document.querySelectorAll('.controls button')].find((button) => button.innerText.trim() === 'Approve' && !button.disabled)`;
+    await eventually(() => evaluate(cdp, popup.sessionId, `!!(${approveButton})`), 'the approval screen');
+    await click(cdp, popup, approveButton, 'Approve button');
+    const warning = await eventually(() => evaluate(cdp, popup.sessionId, `(() => {
+      const text = document.querySelector('[data-testid="notificationText"]')?.innerText;
+      return text && { text, subtext: document.querySelector('[data-testid="notificationSubtext"]')?.innerText ?? null };
+    })()`), 'the unsupported-method warning', 20_000);
+    await settled(cdp, popup);
+    const { data: capture } = await cdp.send('Page.captureScreenshot', { format: 'png' }, popup.sessionId);
+    await fs.writeFile(path.join(outDir, 'unsupported-method-warning.png'), Buffer.from(capture, 'base64'));
+    step('approval screen warned about the unsupported method', { sent: describeProposal(dapp.proposals.at(-1)), warning, screenshot: 'unsupported-method-warning.png' });
+    await click(cdp, popup, `document.querySelector('[data-testid="acceptBtn"] button')`, 'warning\'s Approve button');
+    const extraSession = await within(extraApproved, RELAY_MS);
+    assert(extraSession, 'The dApp got no session after the warning was accepted');
+    const extraMethods = extraSession.namespaces.eip155?.methods ?? [];
+    const extraCall = await within(dapp.client.request({
+      topic: extraSession.topic,
+      chainId: 'eip155:1',
+      request: { method: UNSUPPORTED_METHOD, params: [{ chainId: '0x1' }] },
+    }).then((result) => ({ result }), (error) => ({ error: error?.message ?? String(error) })), RELAY_MS);
+    step('session approved through the warning', { methods: extraMethods, unsupportedMethodAnswer: extraCall ?? 'no answer' });
+    assert(extraMethods.includes(UNSUPPORTED_METHOD), `The session does not list ${UNSUPPORTED_METHOD}`);
+    assert(extraCall?.error, `The wallet did not answer ${UNSUPPORTED_METHOD} with an error`);
     report.result = 'passed';
   } catch (error) {
     report.result = 'failed';

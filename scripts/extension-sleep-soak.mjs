@@ -26,6 +26,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { HDNodeWallet, Transaction } from 'ethers';
+import { startWalletConnectPeer } from './walletconnect-peer.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -808,6 +809,7 @@ async function main() {
       const endAfterSession = await worker.waitForEnd(mark);
       windows.push({ name: 'WalletConnect session ended until the worker ended', from: mark, to: Date.now() });
       step('worker after the WalletConnect session ended', { endedInMs: endAfterSession ?? null });
+      assert(endAfterSession !== undefined && endAfterSession <= END_WITHIN_MS, 'The worker did not end after the WalletConnect session ended');
     }
   } finally {
     cpu.stop();
@@ -836,27 +838,9 @@ async function main() {
   }
 }
 
-// The dApp side of a WalletConnect pairing, with its records kept in memory.
+// The dApp side of a WalletConnect pairing, with its records kept in memory (scripts/walletconnect-peer.mjs).
 async function startWalletConnectDapp() {
-  const walletConnect = await import('@walletconnect/sign-client');
-  const SignClient = walletConnect.SignClient ?? walletConnect.default?.SignClient ?? walletConnect.default;
-  const values = new Map();
-  const storage = {
-    getKeys: async () => [...values.keys()],
-    getEntries: async () => [...values.entries()],
-    getItem: async (key) => values.get(key),
-    setItem: async (key, value) => void values.set(key, value),
-    removeItem: async (key) => void values.delete(key),
-  };
-  const consts = await fs.readFile(path.join(root, 'src/extension/background/extension-base/src/services/wallet-connect-service/consts.ts'), 'utf8');
-  const projectId = consts.match(/PROJECT_ID_EXTENSION = '([0-9a-f]+)'/)[1];
-  const client = await SignClient.init({
-    projectId,
-    relayUrl: 'wss://relay.walletconnect.com',
-    metadata: { name: 'Fearless sleep soak', description: 'Background sleep soak dApp', url: 'https://fearlesswallet.io/', icons: [] },
-    storage,
-  });
-  return { client, close: async () => client.core.relayer.transportClose() };
+  return startWalletConnectPeer(root, 'Fearless sleep soak', 'Background sleep soak dApp');
 }
 
 main()

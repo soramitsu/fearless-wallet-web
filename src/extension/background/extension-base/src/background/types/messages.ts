@@ -2,7 +2,7 @@ import type { RecoveryRecordSummary } from '@extension-base/stores/WalletRecover
 import type { NetworkMapEdit } from '@extension-base/services/network-service/preferences';
 import type { EvmRequests, SolanaRequests } from '@extension-base/services/request-service/types';
 import type { AccountLiquidity } from '@/sora/types';
-import type { RequestArguments } from '@walletconnect/jsonrpc-types';
+import type { RequestArguments } from '@extension-base/utils/jsonRpc';
 import type {
   RequestEvmEvents,
   EvmEvent,
@@ -75,7 +75,7 @@ import type {
   RequestBond,
 } from '@extension-base/services/staking-service/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
-import type { SessionTypes } from '@walletconnect/types';
+import type { WcSession } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type {
   BasicTxResponse,
   NotificationResponse,
@@ -391,7 +391,7 @@ export interface RequestSignatures {
   'pri(walletConnect.session.approve)': [RequestApproveConnectWalletSession, NotificationResponse];
   'pri(walletConnect.session.reject)': [RequestRejectConnectWalletSession, boolean];
   'pri(walletConnect.session.reconnect)': [RequestReconnectConnectWalletSession, boolean];
-  'pri(walletConnect.session.subscribe)': [null, SessionTypes.Struct[], SessionTypes.Struct[]];
+  'pri(walletConnect.session.subscribe)': [null, WcSession[], WcSession[]];
   'pri(walletConnect.session.disconnect)': [RequestDisconnectWalletConnectSession, boolean];
   'pri(walletConnect.requests.notSupport.subscribe)': [
     null,

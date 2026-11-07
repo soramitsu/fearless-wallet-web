@@ -91,7 +91,7 @@ import type { ChainData } from '@/interfaces/walletconnect';
 import { useI18n } from '@/locales/useI18n';
 import { approveWalletConnectSession, rejectWalletConnectSession } from '@/extension/messaging';
 import { useNotify } from '@/plugins/soramitsuUI';
-import { transformNamespaces } from '@/util/walletConnect';
+import { chainNamesFromRequest, transformNamespaces } from '@/util/walletConnect';
 import { cut } from '@/helpers';
 import { Components } from '@/router/routes';
 import { IS_POPUP } from '@/consts/globalClient';
@@ -135,8 +135,16 @@ const url = computed(() => request.value?.url);
 const title = computed(() => request.value?.request.params.proposer.metadata.name);
 const showWalletSelect = ref(false);
 
+// Current dApp SDKs send every namespace as optional. The wallet approves an optional namespace that names a chain it
+// supports, so that namespace's methods count too.
 const isSupportAllMethods = computed(() => {
-  for (const namespace of Object.values(request.value?.request.params.requiredNamespaces ?? {})) {
+  const requiredNamespaces = request.value?.request.params.requiredNamespaces ?? {};
+  const optionalNamespaces = request.value?.request.params.optionalNamespaces ?? {};
+  const approvedOptionalNamespaces = Object.keys(optionalNamespaces)
+    .filter((key) => chainNamesFromRequest(optionalNamespaces, key, false).length !== 0)
+    .map((key) => optionalNamespaces[key]);
+
+  for (const namespace of [...Object.values(requiredNamespaces), ...approvedOptionalNamespaces]) {
     for (const method of namespace.methods) {
       if (!WALLET_CONNECT_SUPPORTED_METHODS.some((el) => el === method)) return false;
     }

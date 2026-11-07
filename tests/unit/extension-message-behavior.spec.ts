@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BehaviorSubject } from 'rxjs';
-import { getInternalError } from '@walletconnect/utils';
+import { getInternalError } from '@extension-base/services/wallet-connect-service/protocol/errors';
 import Extension from '@extension-base/background/handlers/Extension';
 import type State from '@extension-base/background/handlers/State';
 import type { MessageTypes, Port } from '@extension-base/background/types/types';
@@ -173,8 +173,12 @@ describe('WalletConnect connection approval', () => {
     expect(await call('pri(walletConnect.session.approve)', { id: 'proposal', accounts: ['alice'] })).toMatchObject({ status: true });
     expect(state.walletConnectService.approveSession).toHaveBeenCalledWith({ id: 17, relayProtocol: 'irn', namespaces: { eip155: { accounts: ['eip155:1:alice'], chains: ['eip155:1'], methods: expect.arrayContaining(['personal_sign']), events: ['accountsChanged'] } } }); expect(request.resolve).toHaveBeenCalledOnce();
   });
-  it.each([{ expiry: 1 }, { requiredNamespaces: { unknown: { chains: ['unknown:1'], methods: [], events: [] } } }, { requiredNamespaces: { eip155: { chains: ['eip155:999'], methods: [], events: [] } } }])('rejects expired or unsupported proposals (%j)', async overrides => {
+  it.each([
+    [{ expiry: 1 }, undefined], [{ requiredNamespaces: { unknown: { chains: ['unknown:1'], methods: [], events: [] } } }, 'UNSUPPORTED_NAMESPACE_KEY'],
+    [{ requiredNamespaces: { eip155: { chains: ['eip155:999'], methods: [], events: [] } } }, 'UNSUPPORTED_CHAINS'],
+  ])('rejects expired or unsupported proposals (%j) and tells the dApp why unless it expired', async (overrides, reason) => {
     const request = proposal(overrides); expect(await call('pri(walletConnect.session.approve)', { id: 'proposal', accounts: ['alice'] })).toMatchObject({ status: false }); expect(request.reject).toHaveBeenCalledOnce(); expect(state.walletConnectService.approveSession).not.toHaveBeenCalled();
+    expect(state.walletConnectService.rejectSession.mock.calls).toEqual(reason ? [[17, reason]] : []);
   });
   it('keeps approval pending when relay approval fails', async () => {
     const request = proposal(); state.walletConnectService.approveSession.mockRejectedValueOnce(new Error('relay offline'));
@@ -191,9 +195,25 @@ describe('WalletConnect connection approval', () => {
     const request = current(); expect(await call('pri(walletConnect.session.approve)', { id: 'proposal', accounts: ['alice'] })).toMatchObject({ status: true });
     expect(state.walletConnectService.approveSession).toHaveBeenCalledWith({ id: 17, relayProtocol: 'irn', namespaces: { eip155: { accounts: ['eip155:1:alice'], chains: ['eip155:1'], methods: expect.arrayContaining(['personal_sign', 'eth_sendTransaction']), events: ['accountsChanged', 'chainChanged'] } } }); expect(request.resolve).toHaveBeenCalledOnce();
   });
-  it.each([['past its expiryTimestamp, even with a later expiry', { expiryTimestamp: Math.floor(Date.now() / 1000) - 1, expiry: Math.floor(Date.now() / 1000) + 3600 }], ['without a deadline', { expiryTimestamp: undefined }]])('refuses a current SDK proposal %s', async (_, overrides) => {
+  it.each([
+    ['past its expiryTimestamp, even with a later expiry', { expiryTimestamp: Math.floor(Date.now() / 1000) - 1, expiry: Math.floor(Date.now() / 1000) + 3600 }], ['without a deadline', { expiryTimestamp: undefined }],
+    ['past its expiryTimestamp that names no supported chain', { expiryTimestamp: Math.floor(Date.now() / 1000) - 1, optionalNamespaces: { eip155: { chains: ['eip155:999'], methods: ['personal_sign'], events: [] } } }],
+  ])('refuses a current SDK proposal %s', async (_, overrides) => {
     const request = current(overrides); expect(await call('pri(walletConnect.session.approve)', { id: 'proposal', accounts: ['alice'] })).toEqual({ status: false, message: 'walletConnect.notifications.sessionExpired.message', title: 'walletConnect.notifications.sessionExpired.title' });
-    expect(request.reject).toHaveBeenCalledOnce(); expect(state.walletConnectService.approveSession).not.toHaveBeenCalled();
+    expect(request.reject).toHaveBeenCalledOnce(); expect(state.walletConnectService.approveSession).not.toHaveBeenCalled(); expect(state.walletConnectService.rejectSession).not.toHaveBeenCalled();
+  });
+  it.each([
+    ['only chains', { eip155: { chains: ['eip155:999'], methods: ['personal_sign'], events: [] } }],
+    ['only namespaces', { solana: { chains: ['solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'], methods: ['solana_signTransaction'], events: [] } }],
+  ])('refuses a current SDK proposal that names %s the wallet does not support, and tells the dApp', async (_, optionalNamespaces) => {
+    const request = current({ optionalNamespaces }); expect(await call('pri(walletConnect.session.approve)', { id: 'proposal', accounts: ['alice'] })).toEqual({ status: false, message: 'walletConnect.notifications.unsupportedProposal.message', title: 'walletConnect.notifications.unsupportedProposal.title' });
+    expect(request.reject).toHaveBeenCalledOnce(); expect(state.walletConnectService.approveSession).not.toHaveBeenCalled(); expect(state.walletConnectService.rejectSession).toHaveBeenCalledExactlyOnceWith(17, 'UNSUPPORTED_CHAINS');
+  });
+  it('drops an unsupported proposal even when the dApp cannot be told', async () => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined); state.walletConnectService.rejectSession.mockRejectedValueOnce(new Error('relay offline'));
+    const request = current({ optionalNamespaces: { eip155: { chains: ['eip155:999'], methods: ['personal_sign'], events: [] } } });
+    expect(await call('pri(walletConnect.session.approve)', { id: 'proposal', accounts: ['alice'] })).toMatchObject({ status: false, title: 'walletConnect.notifications.unsupportedProposal.title' });
+    expect(request.reject).toHaveBeenCalledOnce(); expect(logged).toHaveBeenCalledWith(expect.objectContaining({ message: 'relay offline' })); logged.mockRestore();
   });
   it.each([false, true])('tells a current SDK dApp its proposal was rejected unless it expired, expired=%s', async expired => {
     const request = current(expired ? { expiryTimestamp: Math.floor(Date.now() / 1000) - 1 } : {}); expect(await call('pri(walletConnect.session.reject)', { id: 'proposal' })).toBe(true); expect(request.reject).toHaveBeenCalledOnce();

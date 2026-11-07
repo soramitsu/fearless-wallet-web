@@ -34,7 +34,7 @@ import {
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap, prepareSwapExecution } from '@extension-base/api/substrate/sora';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
-import { getInternalError } from '@walletconnect/utils';
+import { getInternalError, type SdkErrorKey } from '@extension-base/services/wallet-connect-service/protocol/errors';
 import {
   makeCrossChain,
   estimateCrossChainQuote,
@@ -54,6 +54,7 @@ import {
   type RequestApproveConnectWalletSession,
   type ResultApproveWalletConnectSession,
   type RequestRejectConnectWalletSession,
+  type RequestWalletConnectSession,
   type RequestDisconnectWalletConnectSession,
   type WalletConnectTransactionRequest,
   type RequestApproveWalletConnect,
@@ -210,7 +211,7 @@ import type {
 import type { RequestUpdateLegacyExposure } from '@extension-base/services/legacy-exposure-service';
 import type { NetworkJson } from '@extension-base/types';
 import type State from '@extension-base/background/handlers/State';
-import type { ProposalTypes, SessionTypes } from '@walletconnect/types';
+import type { WcProposalNamespaces, WcSession, WcSessionNamespaces } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type { HexString } from '@polkadot/util/types';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
 import type { PolkamarktMutationRequest, PolkamarktQuoteRequest } from '@/defi/polkamarkt/types';
@@ -2278,9 +2279,9 @@ export default class Extension extends FWExtensionBase {
     const { id: wcId, params } = request.request;
     const { requiredNamespaces, optionalNamespaces } = params;
 
-    const availableNamespaces: ProposalTypes.RequiredNamespaces = {};
+    const availableNamespaces: WcProposalNamespaces = {};
 
-    const namespaces: SessionTypes.Namespaces = {};
+    const namespaces: WcSessionNamespaces = {};
     const chainInfoMap = this.state.networkService.networkMap;
     const requiredEntries = Object.entries(requiredNamespaces);
     const optionalEntries = Object.entries(optionalNamespaces);
@@ -2290,26 +2291,12 @@ export default class Extension extends FWExtensionBase {
         if (namespace.chains) {
           const unSupportChains = namespace.chains.filter((chain) => !isSupportWalletConnectChain(chain, chainInfoMap));
 
-          if (unSupportChains.length) {
-            request.reject(new Error('Unsupported chain'));
-
-            return {
-              message: 'walletConnect.notifications.unsupportedProposal.message',
-              title: 'walletConnect.notifications.unsupportedProposal.title',
-              status: false,
-            };
-          }
+          if (unSupportChains.length) return this.refuseWalletConnectProposal(request, 'UNSUPPORTED_CHAINS');
 
           availableNamespaces[key] = namespace;
         }
       } else {
-        request.reject(new Error('Unsupported chain'));
-
-        return {
-          message: 'walletConnect.notifications.unsupportedProposal.message',
-          title: 'walletConnect.notifications.unsupportedProposal.title',
-          status: false,
-        };
+        return this.refuseWalletConnectProposal(request, 'UNSUPPORTED_NAMESPACE_KEY');
       }
     }
 
@@ -2340,7 +2327,10 @@ export default class Extension extends FWExtensionBase {
       }
     }
 
+    // Current dApp SDKs send every namespace as optional, so a proposal can get here without a chain the wallet supports.
     const availableEntries = Object.entries(availableNamespaces);
+
+    if (!availableEntries.length) return this.refuseWalletConnectProposal(request, 'UNSUPPORTED_CHAINS');
 
     for (const [key, namespace] of availableEntries) {
       if (!namespace.chains) continue;
@@ -2386,6 +2376,23 @@ export default class Extension extends FWExtensionBase {
     };
   }
 
+  // Tells the dApp, which would otherwise wait for its proposal to expire. An expired proposal is only dropped: the SDK
+  // no longer answers it.
+  private async refuseWalletConnectProposal(
+    request: RequestWalletConnectSession,
+    reason: SdkErrorKey
+  ): Promise<NotificationResponse> {
+    if (!isProposalExpired(request.request.params))
+      await this.state.walletConnectService.rejectSession(request.request.id, reason).catch(console.error);
+    request.reject(new Error('Unsupported chain'));
+
+    return {
+      message: 'walletConnect.notifications.unsupportedProposal.message',
+      title: 'walletConnect.notifications.unsupportedProposal.title',
+      status: false,
+    };
+  }
+
   private async rejectWalletConnectSession({ id }: RequestRejectConnectWalletSession): Promise<boolean> {
     const request = this.state.requestService.getConnectWCRequest(id);
 
@@ -2403,7 +2410,7 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  private subscribeWalletConnectSessions(id: string, port?: chrome.runtime.Port): SessionTypes.Struct[] {
+  private subscribeWalletConnectSessions(id: string, port?: chrome.runtime.Port): WcSession[] {
     const cb = this.state.subscriptionService.createSubscription<'pri(walletConnect.session.subscribe)'>(id, port);
 
     const subscription = this.state.walletConnectService.sessionSubject.subscribe((rs) => {

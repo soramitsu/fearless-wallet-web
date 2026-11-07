@@ -808,6 +808,7 @@ async function main() {
       const endAfterSession = await worker.waitForEnd(mark);
       windows.push({ name: 'WalletConnect session ended until the worker ended', from: mark, to: Date.now() });
       step('worker after the WalletConnect session ended', { endedInMs: endAfterSession ?? null });
+      assert(endAfterSession !== undefined && endAfterSession <= END_WITHIN_MS, 'The worker did not end after the WalletConnect session ended');
     }
   } finally {
     cpu.stop();

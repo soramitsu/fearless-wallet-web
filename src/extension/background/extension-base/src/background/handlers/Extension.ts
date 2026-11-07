@@ -2654,9 +2654,7 @@ export default class Extension extends FWExtensionBase {
       case 'pri(keyring.lock)':
         return this.lockKeyring(request as boolean);
 
-      case 'pri(keyring.getPassword)':
-        return this.state.keyringService.getPassword();
-
+      // There is no message that returns the master password: it stays in the background.
       case 'pri(keyring.reset)':
         return this.state.keyringService.resetWallet(async () => {
           await this.state.requestService.resetWallet();
@@ -2756,6 +2754,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(accounts.export.json)':
         return this.exportJSON(request as RequestAccountExport);
+
+      case 'pri(accounts.export.backup)':
+        return this.exportBackupJSON(request as string);
 
       case 'pri(migrate.export.json)':
         return this.migrateExportJSON(request as string);

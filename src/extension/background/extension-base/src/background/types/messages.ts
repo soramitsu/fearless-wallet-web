@@ -204,7 +204,6 @@ export interface RequestSignatures {
   'pri(keyring.changePassword)': [RequestChangePassword, boolean];
   'pri(keyring.unlock)': [RequestUnlockExtension, boolean | 'ton-recovery-required' | 'ton-storage-unavailable'];
   'pri(keyring.lock)': [boolean, boolean];
-  'pri(keyring.getPassword)': [null, string];
   'pri(keyring.reset)': [null, boolean];
   'pri(keyring.getAccessStatus)': [null, AccountAccessStatus];
   'pri(keyring.getMigrationAccounts)': [null, LegacyPasswordAccountSummary[]];
@@ -222,6 +221,7 @@ export interface RequestSignatures {
   'pri(addresses.create)': [RequestAddressCreate, boolean];
   'pri(accounts.update.meta)': [RequestUpdateMeta, boolean];
   'pri(accounts.export.json)': [RequestAccountExport, ResponseAccountExport];
+  'pri(accounts.export.backup)': [string, ResponseAccountExport];
   'pri(migrate.export.json)': [string, ResponseAccountExport];
   'pri(keyring.export.mnemonic)': [RequestExportSeed, ResponseExportSeed];
   'pri(keyring.export.rowSeed)': [RequestExportSeed, ResponseExportSeed];

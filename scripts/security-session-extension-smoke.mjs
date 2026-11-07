@@ -84,11 +84,13 @@ const captureTimer = () => sw.eval(`(() => {
     return original(callback, delay, ...args);
   }; return true;
 })()`);
-const awaitLockedReload = async () => {
+const awaitLockedReload = async (address) => {
   await waitFor(async () => await popup.eval('typeof window.__send === "function" && window.__securitySecret === undefined && /^#\\/unlock/.test(location.hash)'),
     30000, 'wallet document discarded on lock');
   check('locked background reports locked', await call('pri(keyring.keyringIsLocked)') === true);
-  check('background password cleared', await call('pri(keyring.getPassword)') === '');
+  // The session password is gone: even the right password exports nothing until the wallet is unlocked again.
+  const locked = await popup.call('pri(keyring.export.mnemonic)', { address, password, walletEcosystem: 'substrate' });
+  check('locked background refuses export with the right password', !!locked.err || locked.ok?.seed === '');
 };
 try {
   await start(legacyZip);
@@ -110,7 +112,10 @@ try {
   const migrated = await storage();
   check('unlock durably migrates verifier to cost 12', getRounds(migrated['fw:keyring'].passwordHash) === 12);
   check('verifier migration preserves account ciphertext', JSON.stringify(keys(migrated)) === JSON.stringify(keys(before)));
-  check('unlocked phrase still exports', (await call('pri(keyring.export.mnemonic)', { address, walletEcosystem: 'substrate' })).seed === phrase);
+  check('unlocked phrase still exports', (await call('pri(keyring.export.mnemonic)', { address, password, walletEcosystem: 'substrate' })).seed === phrase);
+  const untyped = await popup.call('pri(keyring.export.mnemonic)', { address, walletEcosystem: 'substrate' });
+  check('unlocked session refuses export without the password', !!untyped.err);
+  check('no message returns the master password', !!(await popup.call('pri(keyring.getPassword)', null)).err);
   await popup.eval(`window.__securitySecret = ${JSON.stringify(phrase)}; true`);
   const count = await sw.eval(`(() => {
     const callbacks = globalThis.__securityCallbacks.splice(0);
@@ -118,8 +123,8 @@ try {
     callbacks.forEach(callback => callback()); return callbacks.length;
   })()`);
   check('exactly one real 30 minute deadline callback ran', count === 1);
-  await awaitLockedReload();
-  const expiredExport = await popup.call('pri(keyring.export.mnemonic)', { address, walletEcosystem: 'substrate' });
+  await awaitLockedReload(address);
+  const expiredExport = await popup.call('pri(keyring.export.mnemonic)', { address, password, walletEcosystem: 'substrate' });
   check('expired session cannot export recovery phrase', !!expiredExport.err || expiredExport.ok?.seed === '');
 
   check('password still unlocks after expiry', await call('pri(keyring.unlock)', { password }) === true);
@@ -128,13 +133,13 @@ try {
   await sw.eval('globalThis.__securityOriginalNow = Date.now; Date.now = () => globalThis.__securityOriginalNow() + 1800001; true');
   // Dispatch the read without awaiting a response in a document being discarded.
   await popup.eval("window.__send('pri(keyring.keyringIsLocked)', null).catch(() => {}); true");
-  await awaitLockedReload();
+  await awaitLockedReload(address);
   await sw.eval('Date.now = globalThis.__securityOriginalNow; true');
   check('delayed timer expiry leaves stored keys unchanged', JSON.stringify(keys(await storage())) === JSON.stringify(keys(before)));
 
   await start(legacyZip);
   check('previous 4.2.0 package accepts stronger verifier after rollback', await call('pri(keyring.unlock)', { password }) === true);
-  check('rollback exports original recovery phrase', (await call('pri(keyring.export.mnemonic)', { address, walletEcosystem: 'substrate' })).seed === phrase);
+  check('rollback exports original recovery phrase', (await call('pri(keyring.export.mnemonic)', { address, password, walletEcosystem: 'substrate' })).seed === phrase);
   await start(candidateZip, path.join(work, 'fresh-profile'));
   check('new candidate wallet password created', await call('pri(keyring.changePassword)', { oldPassword: '', newPassword: password }) === true);
   check('new wallet verifier uses cost 12', getRounds((await storage())['fw:keyring'].passwordHash) === 12);

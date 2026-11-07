@@ -34,7 +34,7 @@ function bytesBase64(bytes: Uint8Array): string {
 // OpenSSL EVP_BytesToKey with MD5 and one round, as CryptoJS's passphrase mode derives the AES-256 key and IV.
 function evpBytesToKey(passphrase: Uint8Array, salt: Uint8Array): { key: Uint8Array; iv: Uint8Array } {
   const derived = new Uint8Array(48);
-  let block = new Uint8Array(0);
+  let block: Uint8Array = new Uint8Array(0);
 
   for (let offset = 0; offset < derived.length; offset += 16) {
     const input = new Uint8Array(block.length + passphrase.length + salt.length);

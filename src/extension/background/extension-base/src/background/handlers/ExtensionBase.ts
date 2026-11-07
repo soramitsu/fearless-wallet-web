@@ -16,6 +16,7 @@ import type {
   RequestUpdateMeta,
 } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
+import type { KeyringService } from '@extension-base/services/keyring-service';
 import { isNativeEVMNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { WalletEcosystem, type DerivationPath } from '@/interfaces';
@@ -70,7 +71,9 @@ export default class FWExtensionBase {
   // `pri(accounts.export.json)`. The file is encrypted with the password typed for this export, which must be the
   // wallet's: a page that never typed it could otherwise have every key re-encrypted under a password it picked.
   exportJSON({ address, password, network }: RequestAccountExport): ResponseAccountExport {
-    this.state.keyringService.assertExportPassword(password);
+    const keyringService: KeyringService = this.state.keyringService;
+
+    keyringService.assertExportPassword(password);
 
     if (network && isNativeEVMNetwork(network)) {
       const { privateKey } = this.state.keyringService.accountExportPrivateKey({ address, password });

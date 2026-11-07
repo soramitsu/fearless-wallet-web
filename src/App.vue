@@ -34,6 +34,7 @@ import { getNftSubscribe } from '@/extension/messaging/nfts';
 import { getPopupIds } from '@/extension/messaging/popup';
 import { markAccountsReady } from '@/bootstrap/accountsReady';
 import { watchWalletLock } from '@/bootstrap/walletLock';
+import { clearCopiedSecret } from '@/util/clipboardSecret';
 
 export default defineComponent({
   name: 'App',
@@ -65,6 +66,8 @@ export default defineComponent({
     },
   },
   async created() {
+    // A phrase or key copied before the wallet last closed leaves the clipboard now (src/util/clipboardSecret.ts).
+    void clearCopiedSecret();
     if (!IS_EXTENSION && (await getAccessStatus()).storageRecoveryOnly) {
       // The recovery screen reads its own inventory; normal startup requests can
       // mutate selection or settings and are deliberately unavailable here.

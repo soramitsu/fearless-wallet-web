@@ -52,6 +52,10 @@ records in place, so a session made before the upgrade keeps working after it, a
 Proposals and requests in flight are not imported. A session that expired while the worker was stopped is reported on
 the next start, so mobile accounts are retired as before.
 
+After a worker starts, the client waits two seconds before it reconnects to the relay and reports expiries. The
+services attach their listeners after a storage read of their own, and must not miss a request the relay held while the
+worker was stopped.
+
 ## Validation
 
 - `tests/unit/wallet-connect-protocol.spec.ts` runs both roles against an in-memory relay that follows the live relay's

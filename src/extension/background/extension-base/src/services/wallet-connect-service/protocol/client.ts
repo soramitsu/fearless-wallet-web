@@ -92,6 +92,11 @@ export type WalletConnectClientOptions = {
   setTimer?: (callback: () => void, delay: number) => ReturnType<typeof setTimeout>;
   clearTimer?: (timer: ReturnType<typeof setTimeout>) => void;
   requestTimeoutMs?: number;
+  /**
+   * How long after start the client waits before it reports what expired and reconnects to the relay. Callers attach
+   * their listeners after a storage read of their own; this keeps them from missing a held request or an expiry.
+   */
+  startupDelayMs?: number;
 };
 
 type Delivery = { message: string; attestation?: string };
@@ -142,6 +147,7 @@ export class WalletConnectClient {
   private readonly seen = new Map<string, number>();
   private inbound: Promise<void> = Promise.resolve();
   private sweepTimer?: ReturnType<typeof setTimeout>;
+  private startTimer?: ReturnType<typeof setTimeout>;
   /** The relay token's subject, fresh for each worker. */
   private readonly relaySubject = randomKey();
   private closed = false;
@@ -183,17 +189,24 @@ export class WalletConnectClient {
   private async start(): Promise<void> {
     this.record = await this.store.load();
     for (const [hash, at] of this.record.seen) this.seen.set(hash, at);
-    // Anything that expired while the worker was stopped is reported once the caller has attached its listeners.
-    this.scheduleSweep(0);
-    const topics = this.liveTopics();
+    const delay = this.options.startupDelayMs ?? 2_000;
 
-    if (topics.length) void this.relay.subscribe(topics).catch((error) => console.warn('WalletConnect relay is unavailable', error));
+    // What expired while the worker was stopped, and what the relay held for it, arrive once callers listen.
+    this.scheduleSweep(delay);
+    this.startTimer = this.timer(() => {
+      this.startTimer = undefined;
+      const topics = this.liveTopics();
+
+      if (topics.length && !this.closed)
+        void this.relay.subscribe(topics).catch((error) => console.warn('WalletConnect relay is unavailable', error));
+    }, delay);
   }
 
   /** Stops the relay connection and the timers. The client cannot be used afterwards. */
   close(): void {
     this.closed = true;
     if (this.sweepTimer) this.clear(this.sweepTimer);
+    if (this.startTimer) this.clear(this.startTimer);
     this.relay.close();
     for (const [id, waiter] of this.waiting) {
       this.clear(waiter.timer);

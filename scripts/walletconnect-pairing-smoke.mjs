@@ -1,13 +1,14 @@
 /* global Buffer, clearTimeout, console, process, setTimeout, structuredClone */
-// Real-Chrome check that the wallet pairs with a dApp on the WalletConnect SDK this repository installs (2.23, what
-// dApps ship today). That SDK sends a proposal's deadline only as expiryTimestamp, never expiry, and moves
-// requiredNamespaces into optionalNamespaces. The dApp proposes a session, the wallet approves it and signs a
+// Real-Chrome check that the wallet pairs with a dApp. The dApp is the in-repo WalletConnect client, or, with
+// WALLETCONNECT_REFERENCE_SDK, the SDK most dApps ship (installed outside this repository; scripts/walletconnect-peer.mjs).
+// Current dApps send a proposal's deadline only as expiryTimestamp, never expiry, and move requiredNamespaces into
+// optionalNamespaces. The dApp proposes a session, the wallet approves it and signs a
 // personal_sign through it, then the wallet rejects a second proposal, which must reach the dApp as a rejection.
 // The wallet refuses a proposal for a chain it does not support, which the dApp must hear at once. Last, the popup's
 // approval screen must warn before it approves a proposal that also asks for a method the wallet does not support.
 //
-//   CHROME_BIN=<Chrome for Testing 147> node scripts/walletconnect-pairing-smoke.mjs [--extension dist/extension/chrome] \
-//     [--out build/reports/walletconnect-pairing-smoke/<time>] [--worker-console]
+//   CHROME_BIN=<Chrome for Testing 147> [WALLETCONNECT_REFERENCE_SDK=<dir>] node scripts/walletconnect-pairing-smoke.mjs \
+//     [--extension dist/extension/chrome] [--out build/reports/walletconnect-pairing-smoke/<time>] [--worker-console]
 //
 // It needs the network: the wallet reads the registry, and both sides use the public relay (wss://relay.walletconnect.com).
 // The dApp runs here in Node with its records in memory; the wallet is the extension's own WalletConnect client.
@@ -18,6 +19,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { HDNodeWallet, hexlify, toUtf8Bytes, verifyMessage } from 'ethers';
+import { startWalletConnectPeer } from './walletconnect-peer.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -249,35 +251,10 @@ async function createWallet(cdp, page, keyringFields) {
   return { address, ethereumAddress };
 }
 
-// The dApp side, on the installed SDK as it ships. It only records the proposals it sends.
+// The dApp side: the in-repo client by default, or the reference SDK (scripts/walletconnect-peer.mjs). It records the
+// proposals it sends.
 async function startWalletConnectDapp() {
-  const walletConnect = await import('@walletconnect/sign-client');
-  const SignClient = walletConnect.SignClient ?? walletConnect.default?.SignClient ?? walletConnect.default;
-  const { getSdkError } = await import('@walletconnect/utils');
-  const version = JSON.parse(await fs.readFile(path.join(root, 'node_modules/@walletconnect/sign-client/package.json'), 'utf8')).version;
-  const values = new Map();
-  const storage = {
-    getKeys: async () => [...values.keys()],
-    getEntries: async () => [...values.entries()],
-    getItem: async (key) => values.get(key),
-    setItem: async (key, value) => void values.set(key, value),
-    removeItem: async (key) => void values.delete(key),
-  };
-  const consts = await fs.readFile(path.join(root, 'src/extension/background/extension-base/src/services/wallet-connect-service/consts.ts'), 'utf8');
-  const projectId = consts.match(/PROJECT_ID_EXTENSION = '([0-9a-f]+)'/)[1];
-  const client = await SignClient.init({
-    projectId,
-    relayUrl: 'wss://relay.walletconnect.com',
-    metadata: { name: 'Fearless WalletConnect smoke', description: 'WalletConnect pairing smoke dApp', url: 'https://fearlesswallet.io/', icons: [] },
-    storage,
-  });
-  const proposals = [];
-  const encode = client.core.crypto.encode.bind(client.core.crypto);
-  client.core.crypto.encode = (topic, payload, options) => {
-    if (payload?.method === 'wc_sessionPropose') proposals.push(structuredClone(payload.params));
-    return encode(topic, payload, options);
-  };
-  return { client, version, proposals, getSdkError, close: async () => client.core.relayer.transportClose() };
+  return startWalletConnectPeer(root, 'Fearless WalletConnect smoke', 'WalletConnect pairing smoke dApp');
 }
 
 const describeProposal = (params) => ({
@@ -372,7 +349,7 @@ async function main() {
     step('wallet created', account);
 
     dapp = await startWalletConnectDapp();
-    step('dApp started', { sdk: dapp.version });
+    step('dApp started', { peer: dapp.kind });
 
     // 1. The dApp proposes a session and the wallet approves it.
     const { uri, approval } = await dapp.client.connect({ requiredNamespaces: NAMESPACES });
@@ -380,7 +357,7 @@ async function main() {
     sessionApproved.catch(() => undefined);
     const proposal = await nextProposal(cdp, wallet, uri, []);
     step('proposal received', { sent: describeProposal(dapp.proposals.at(-1)), wallet: describeProposal(proposal.request.params) });
-    assert(!Object.hasOwn(dapp.proposals.at(-1), 'expiry'), 'The dApp sent an expiry: this is not the SDK the check is about');
+    assert(!Object.hasOwn(dapp.proposals.at(-1), 'expiry'), 'The dApp sent an expiry: this is not the client the check is about');
     const approved = await call(cdp, wallet, 'pri(walletConnect.session.approve)', { id: proposal.id, accounts: [account.ethereumAddress] });
     step('wallet answered the approval', { response: approved });
     assert(approved?.status === true, `The wallet did not approve the session: ${JSON.stringify(approved)}`);

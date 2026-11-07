@@ -1,4 +1,5 @@
-import packages from '../../package.json';
+// Only the version: the whole package.json would ship to every website in page.js (the injected provider).
+import { version as packageVersion } from '../../package.json';
 
 const APP_WIDTH = 561;
 const APP_HEIGHT = 600;
@@ -12,7 +13,7 @@ const IS_EXTENSION_SMOKE = process.env.VUE_APP_EXTENSION_SMOKE === 'true';
 const RAMP_API_KEY = IS_PRODUCTION ? process.env.RAMP_PROD_API_KEY : process.env.RAMP_TEST_API_KEY;
 const MOONPAY_API_KEY = IS_PRODUCTION ? process.env.MOONPAY_PROD_API_KEY : process.env.MOONPAY_TEST_API_KEY;
 const IS_EXTENSION = process.env.IS_EXTENSION !== undefined ? process.env.IS_EXTENSION === 'true' : true;
-const APP_VERSION = packages.version;
+const APP_VERSION = packageVersion;
 const CONTENT_FORM_HEIGHT = 379;
 const FEARLESS_TITLE = 'FEARLESS';
 

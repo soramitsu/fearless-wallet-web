@@ -269,6 +269,19 @@ function formatSoraAddress(address: string): string {
   return apiSora.formatAddress(address);
 }
 
+/** How long a wallet page's non-forced lock waits for an unlock or password change that is still starting the session. */
+export const SESSION_START_LOCK_WAIT_MS = 30_000;
+
+// Whether `work` settles within `ms`. Never rejects.
+function settlesWithin(work: Promise<unknown>, ms: number): Promise<boolean> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  return Promise.race([
+    work.then(() => true, () => true),
+    new Promise<boolean>((resolve) => { timer = setTimeout(() => resolve(false), ms); }),
+  ]).finally(() => clearTimeout(timer));
+}
+
 export default class Extension extends FWExtensionBase {
   private assertConnectionAllowed(address: string, authType: AccountAuthType, url: string): void {
     if (!IS_EXTENSION) return;
@@ -291,6 +304,10 @@ export default class Extension extends FWExtensionBase {
   }
 
   private readonly pendingSiteApprovals = siteApprovalsInProgress;
+
+  // An unlock or password change that has accepted a password and not yet started its session (armed the deadline) or
+  // failed. Meanwhile the keyring holds the password without a deadline.
+  private sessionStart?: Promise<void>;
 
   private assertSigningRequestCurrent(request: { id: string }): void {
     this.state.keyringLockService?.lockIfExpired();
@@ -2573,12 +2590,16 @@ export default class Extension extends FWExtensionBase {
   }
 
   async changeMasterPassword(request: RequestChangePassword): Promise<boolean> {
-    const success = await this.state.keyringService.changeMasterPassword(request);
-    if (success) this.state.keyringLockService.setExtensionAutoLockTimeout();
-    return success;
+    return this.startingSession(async () => {
+      const success = await this.state.keyringService.changeMasterPassword(request);
+      if (success) this.state.keyringLockService.setExtensionAutoLockTimeout();
+      return success;
+    });
   }
 
-  lockKeyring(skipCheck: boolean): boolean {
+  lockKeyring(skipCheck: boolean): boolean | Promise<boolean> {
+    const starting = skipCheck ? undefined : this.sessionStart;
+    if (starting) return this.lockAfterSessionStart(starting);
     if (!skipCheck && this.state.keyringLockService.lockTimerIsExist()) return false;
 
     this.state.keyringLockService.clearLockTimer();
@@ -2586,11 +2607,41 @@ export default class Extension extends FWExtensionBase {
     return this.state.keyringService.lockKeyring();
   }
 
+  // Every wallet page asks for the non-forced lock when it opens (App.vue), to end a session that has no deadline. An
+  // unlock or password change still starting its session has none yet, and the page must not end it: the lock applies
+  // to what the start leaves, a session with its deadline or a locked wallet. A forced lock (Lock) ends it at once.
+  private async lockAfterSessionStart(starting: Promise<void>): Promise<boolean> {
+    // A start stuck that long is ended, as every start was before the lock waited for it.
+    if (!(await settlesWithin(starting, SESSION_START_LOCK_WAIT_MS)) && this.sessionStart === starting) {
+      this.sessionStart = undefined;
+    }
+
+    return this.lockKeyring(false);
+  }
+
+  // Runs an unlock's or password change's work from the accepted password to the session's deadline (or its failure).
+  private async startingSession<T>(start: () => Promise<T>): Promise<T> {
+    let settle!: () => void;
+    const starting = new Promise<void>((resolve) => { settle = resolve; });
+
+    this.sessionStart = starting;
+    try {
+      return await start();
+    } finally {
+      // Before the locks that wait for it resume: they see the session this start left, not the start.
+      if (this.sessionStart === starting) this.sessionStart = undefined;
+      settle();
+    }
+  }
+
   async unlockKeyring(request: RequestUnlockExtension): Promise<boolean | 'ton-recovery-required' | 'ton-storage-unavailable'> {
     const isSuccess = this.state.keyringService.unlockKeyring(request as RequestUnlockExtension);
     if (isSuccess) {
-      await this.state.keyringService.waitForPasswordVerifierUpgrade();
-      this.state.keyringLockService.setExtensionAutoLockTimeout();
+      // The deadline starts only once the stronger verifier is stored; a failed upgrade locks instead and extends nothing.
+      await this.startingSession(async () => {
+        await this.state.keyringService.waitForPasswordVerifierUpgrade();
+        this.state.keyringLockService.setExtensionAutoLockTimeout();
+      });
     }
 
     return isSuccess && this.state.keyringService.tonKeyring.hasStorageIssues
@@ -2654,9 +2705,7 @@ export default class Extension extends FWExtensionBase {
       case 'pri(keyring.lock)':
         return this.lockKeyring(request as boolean);
 
-      case 'pri(keyring.getPassword)':
-        return this.state.keyringService.getPassword();
-
+      // There is no message that returns the master password: it stays in the background.
       case 'pri(keyring.reset)':
         return this.state.keyringService.resetWallet(async () => {
           await this.state.requestService.resetWallet();
@@ -2756,6 +2805,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(accounts.export.json)':
         return this.exportJSON(request as RequestAccountExport);
+
+      case 'pri(accounts.export.backup)':
+        return this.exportBackupJSON(request as string);
 
       case 'pri(migrate.export.json)':
         return this.migrateExportJSON(request as string);

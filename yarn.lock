@@ -296,24 +296,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@emurgo/cardano-message-signing-browser@npm:^1.1.0":
+"@emurgo/cardano-message-signing-browser@file:./vendor/cardano-message-signing-browser::locator=fearless-wallet%40workspace%3A.":
   version: 1.1.0
-  resolution: "@emurgo/cardano-message-signing-browser@npm:1.1.0"
-  checksum: 10/26aceace7bae0a3ca6e1165d809db238420cb1e91200980dc8003dd7473573d9bd8f52c8ed33917ab519c39da1c31af39aa168871ff94718785c0bbc6e1ad9db
+  resolution: "@emurgo/cardano-message-signing-browser@file:./vendor/cardano-message-signing-browser#./vendor/cardano-message-signing-browser::hash=b9d8ac&locator=fearless-wallet%40workspace%3A."
+  checksum: 10/4cad1aaf12a31263ee01cc8d3ca61bbff73ed1d9ea08847530669df8e1b18996348dcd5fb2da53c39e3c6e64b3b80e39bb53bcb4eb817b7c0f6105fba4b275db
   languageName: node
   linkType: hard
 
-"@emurgo/cardano-serialization-lib-browser@npm:^15.0.3":
+"@emurgo/cardano-serialization-lib-browser@file:./vendor/cardano-serialization-lib-browser::locator=fearless-wallet%40workspace%3A.":
   version: 15.0.3
-  resolution: "@emurgo/cardano-serialization-lib-browser@npm:15.0.3"
-  checksum: 10/e2259d601490e0d663c22f1791b3077d9f0097a58bc55078dc4992792d6b38a2658823a66d82e892d8b28e0d2dc813755fd9f8613960a2f01de69c27b81c22f8
+  resolution: "@emurgo/cardano-serialization-lib-browser@file:./vendor/cardano-serialization-lib-browser#./vendor/cardano-serialization-lib-browser::hash=42162c&locator=fearless-wallet%40workspace%3A."
+  checksum: 10/ef7ed598bb96de1dc4a2de8c865f313426d7c80a5b0f3c08ce4a63fc4e2fb2b4f108fe7357d613a670692d24f853e543c224e214c9b0fdf7c625f121722fe51f
   languageName: node
   linkType: hard
 
-"@emurgo/cardano-serialization-lib-nodejs@npm:^13.2.0":
+"@emurgo/cardano-serialization-lib-nodejs@file:./vendor/cardano-serialization-lib-nodejs::locator=fearless-wallet%40workspace%3A.":
   version: 13.2.1
-  resolution: "@emurgo/cardano-serialization-lib-nodejs@npm:13.2.1"
-  checksum: 10/6572ac1baebe1032a0e1ba701e8be0dc74d00ff332f1b58622851532d9bded9d89b797d862551842fce420ece05b67ced94c9edad33e7f124e48d74c28b0ac4e
+  resolution: "@emurgo/cardano-serialization-lib-nodejs@file:./vendor/cardano-serialization-lib-nodejs#./vendor/cardano-serialization-lib-nodejs::hash=9b1cab&locator=fearless-wallet%40workspace%3A."
+  checksum: 10/9483e955ca09e1164c01a4b572ad5e158d49937d3c4d945608ff1b677670b4a257d869f072fce35277937b8ab445621a0a2a5ce06908ae6e3b67846633718936
   languageName: node
   linkType: hard
 
@@ -2615,7 +2615,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@subwallet/keyring@npm:^0.1.14":
+"@subwallet/keyring@npm:0.1.14":
   version: 0.1.14
   resolution: "@subwallet/keyring@npm:0.1.14"
   dependencies:
@@ -5604,7 +5604,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"crypto-js@npm:^4.2.0":
+"crypto-js@npm:4.2.0":
   version: 4.2.0
   resolution: "crypto-js@npm:4.2.0"
   checksum: 10/c7bcc56a6e01c3c397e95aa4a74e4241321f04677f9a618a8f48a63b5781617248afb9adb0629824792e7ec20ca0d4241a49b6b2938ae6f973ec4efc5c53c924
@@ -6878,6 +6878,7 @@ __metadata:
     "@fontsource/noto-sans-egyptian-hieroglyphs": "npm:^5.3.0"
     "@iroha/iroha-js": "file:vendor/iroha-js/iroha-iroha-js-0.0.3.tgz"
     "@metamask/safe-event-emitter": "npm:^3.1.2"
+    "@noble/ciphers": "npm:1.3.0"
     "@noble/curves": "npm:^1.7.0"
     "@noble/hashes": "npm:^1.4.0"
     "@orbs-network/ton-access": "npm:^2.3.3"
@@ -6928,7 +6929,7 @@ __metadata:
     bip39: "npm:3.1.0"
     bitcoinjs-lib: "npm:6.1.7"
     country-code-emoji: "npm:^2.3.0"
-    crypto-js: "npm:^4.2.0"
+    crypto-js: "npm:4.2.0"
     date-fns: "npm:^4.4.0"
     element-plus: "npm:^2.14.2"
     email-validator: "npm:^2.0.4"

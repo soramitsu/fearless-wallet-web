@@ -15,7 +15,7 @@ vi.mock('@/extension/messaging', () => ({
   exportRowSeed: vi.fn(),
   exportJSON: io.exportJSON,
   validatePassword: io.validatePassword,
-  getExtensionPassword: vi.fn(),
+ 
   rawSeedAvailable: vi.fn(async () => true),
   upsertNetworkMap: vi.fn(),
   sendMessage: vi.fn(),

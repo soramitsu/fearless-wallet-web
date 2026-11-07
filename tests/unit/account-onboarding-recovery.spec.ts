@@ -1,7 +1,7 @@
 import { flushPromises, shallowMount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ generate: vi.fn(), validate: vi.fn(), save: vi.fn(), derive: vi.fn(), push: vi.fn() }));
-vi.mock('@/extension/messaging', () => ({ generateMnemonic: mocks.generate, mnemonicValidate: mocks.validate, addAccount: mocks.save, isDerivationPathValid: async () => true, isJsonValid: async () => ({ value: true }), forgetAccount: vi.fn(), jsonRestore: vi.fn(), windowOpen: vi.fn(), updatePairMeta: vi.fn(), createGoogleFile: vi.fn(), exportJSON: vi.fn(), getExtensionPassword: vi.fn(), updateCurrentAccount: vi.fn() }));
+vi.mock('@/extension/messaging', () => ({ generateMnemonic: mocks.generate, mnemonicValidate: mocks.validate, addAccount: mocks.save, isDerivationPathValid: async () => true, isJsonValid: async () => ({ value: true }), forgetAccount: vi.fn(), jsonRestore: vi.fn(), windowOpen: vi.fn(), updatePairMeta: vi.fn(), createGoogleFile: vi.fn(), exportJSON: vi.fn(), updateCurrentAccount: vi.fn() }));
 vi.mock('@/router/routes', () => ({ Components: { Welcome: 'Welcome', Wallet: 'Wallet' } }));
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => ({ accounts: [], selectedWallet: {} }) }));
 vi.mock('@/util/universalWalletKeyringFields', () => ({ deriveUniversalWalletKeyringFields: mocks.derive }));

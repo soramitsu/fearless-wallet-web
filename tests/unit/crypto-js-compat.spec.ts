@@ -17,7 +17,7 @@ function generator(seed: number) {
   };
 }
 
-const ALPHABET = [...'abcdefghijklmnopqrstuvwxyz ABCXYZ0123456789-_!@#$%^&*()ÄöüßéçñÅ日本語のパスワード中文Пароль🔐🔑€ ﻿‍'];
+const ALPHABET = [...'abcdefghijklmnopqrstuvwxyz ABCXYZ0123456789-_!@#$%^&*()ÄöüßéçñÅ日本語のパスワード中文Пароль🔐🔑€\u00a0\ufeff\u200d'];
 
 function text(random: () => number, maxLength: number): string {
   const length = Math.floor(random() * (maxLength + 1));
@@ -52,7 +52,7 @@ describe('3.0.1-3.0.5 TON phrase text (CryptoJS passphrase AES)', () => {
 
     for (let round = 0; round < 300; round += 1) {
       const passphrase = round === 0 ? '' : text(random, 40);
-      const plaintext = round === 1 ? '' : round === 2 ? `﻿${PHRASE}` : round % 3 ? PHRASE : text(random, 300);
+      const plaintext = round === 1 ? '' : round === 2 ? `\ufeff${PHRASE}` : round % 3 ? PHRASE : text(random, 300);
       const cipherText = CryptoJS.AES.encrypt(plaintext, passphrase).toString();
 
       expect(decryptCryptoJsPassphraseText(cipherText, passphrase), `round ${round}`).toBe(plaintext);

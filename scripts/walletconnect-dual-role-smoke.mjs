@@ -1,14 +1,15 @@
 /* global clearTimeout, console, process, setTimeout, structuredClone */
-// Real-Chrome check of the extension's two WalletConnect roles in one worker, on the SDK this repository installs
-// (2.23, what dApps ship today):
+// Real-Chrome check of the extension's two WalletConnect roles in one worker. The dApps and the mobile wallet are the
+// in-repo WalletConnect client, or, with WALLETCONNECT_REFERENCE_SDK, the SDK most dApps ship (installed outside this
+// repository; scripts/walletconnect-peer.mjs):
 // - the wallet: dApps pair with Fearless, which approves, signs a personal_sign and rejects a proposal;
 // - the dApp side: Fearless pairs with a mobile wallet and forwards a site's personal_sign to it.
 // Both roles run in one worker after a restart, which is how most people start the extension once anything is stored.
 // A dApp that pairs after that restart must still get the wallet's answer, every session must survive in storage, and
 // after another restart the wallet must list only dApp sessions while the mobile account still signs.
 //
-//   CHROME_BIN=<Chrome for Testing 147> node scripts/walletconnect-dual-role-smoke.mjs [--extension dist/extension/chrome] \
-//     [--out build/reports/walletconnect-pairing-smoke/<time>] [--worker-console] [--keep-going]
+//   CHROME_BIN=<Chrome for Testing 147> [WALLETCONNECT_REFERENCE_SDK=<dir>] node scripts/walletconnect-dual-role-smoke.mjs \
+//     [--extension dist/extension/chrome] [--out build/reports/walletconnect-pairing-smoke/<time>] [--worker-console] [--keep-going]
 //
 // It needs the network: the wallet reads the registry, and every side uses the public relay (wss://relay.walletconnect.com).
 // The dApps and the mobile wallet run here in Node with their records in memory.
@@ -23,6 +24,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { encodeAddress } from '@polkadot/util-crypto';
 import { HDNodeWallet, Wallet, getBytes, hexlify, toUtf8Bytes, verifyMessage } from 'ethers';
+import { startWalletConnectPeer } from './walletconnect-peer.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -39,7 +41,7 @@ const PORT_EXTENSION = 'fw-fearless-extension';
 const PASSWORD = 'fearless-walletconnect-smoke-password';
 const RELAY_MS = 90_000;
 const NAMESPACES = { eip155: { chains: ['eip155:1'], methods: ['personal_sign', 'eth_sendTransaction'], events: ['accountsChanged', 'chainChanged'] } };
-const SESSION_STORE = 'wc@2:client:0.3//session';
+const WALLET_CONNECT_RECORD = 'fearless:walletconnect:v1';
 // The peers here are separate apps: without this, the SDK gives every client in this process one shared Core.
 process.env.DISABLE_GLOBAL_CORE = 'true';
 
@@ -256,36 +258,10 @@ async function createWallet(cdp, page, keyringFields) {
   return { address, ethereumAddress };
 }
 
-// A peer on the installed SDK as it ships, with its records in memory: a dApp, or the mobile wallet. A dApp only
-// records the proposals it sends.
+// A peer with its records in memory, a dApp or the mobile wallet: the in-repo client by default, or the reference SDK
+// (scripts/walletconnect-peer.mjs). A dApp records the proposals it sends.
 async function startPeer(name) {
-  const walletConnect = await import('@walletconnect/sign-client');
-  const SignClient = walletConnect.SignClient ?? walletConnect.default?.SignClient ?? walletConnect.default;
-  const { getSdkError } = await import('@walletconnect/utils');
-  const version = JSON.parse(await fs.readFile(path.join(root, 'node_modules/@walletconnect/sign-client/package.json'), 'utf8')).version;
-  const values = new Map();
-  const storage = {
-    getKeys: async () => [...values.keys()],
-    getEntries: async () => [...values.entries()],
-    getItem: async (key) => values.get(key),
-    setItem: async (key, value) => void values.set(key, value),
-    removeItem: async (key) => void values.delete(key),
-  };
-  const consts = await fs.readFile(path.join(root, 'src/extension/background/extension-base/src/services/wallet-connect-service/consts.ts'), 'utf8');
-  const projectId = consts.match(/PROJECT_ID_EXTENSION = '([0-9a-f]+)'/)[1];
-  const client = await SignClient.init({
-    projectId,
-    relayUrl: 'wss://relay.walletconnect.com',
-    metadata: { name, description: 'WalletConnect pairing smoke', url: 'https://fearlesswallet.io/', icons: [] },
-    storage,
-  });
-  const proposals = [];
-  const encode = client.core.crypto.encode.bind(client.core.crypto);
-  client.core.crypto.encode = (topic, payload, options) => {
-    if (payload?.method === 'wc_sessionPropose') proposals.push(structuredClone(payload.params));
-    return encode(topic, payload, options);
-  };
-  return { client, version, proposals, getSdkError, close: async () => client.core.relayer.transportClose() };
+  return startWalletConnectPeer(root, name, 'WalletConnect pairing smoke');
 }
 
 // The mobile wallet approves Fearless's pairing with one Substrate account on every offered chain and one EVM account
@@ -529,15 +505,15 @@ async function signOnWallet(cdp, wallet, dapp, session, account, label) {
 }
 
 async function storedSessions(cdp, wallet) {
-  const stored = await evaluate(cdp, wallet.sessionId, `chrome.storage.local.get(${JSON.stringify(SESSION_STORE)}).then((data) => data[${JSON.stringify(SESSION_STORE)}] ?? [])`);
+  const stored = await evaluate(cdp, wallet.sessionId, `chrome.storage.local.get(${JSON.stringify(WALLET_CONNECT_RECORD)}).then((data) => data[${JSON.stringify(WALLET_CONNECT_RECORD)}]?.sessions ?? [])`);
   return stored.map(({ topic, peer }) => ({ topic, peer: peer?.metadata?.name }));
 }
 
-// A peer's SDK throws from a timer when it gets a second answer to one of its requests ("emitting ... without any
+// The reference SDK throws from a timer when it gets a second answer to one of its requests ("emitting ... without any
 // listeners"). Those are recorded and fail the run; anything else still ends it.
 const peerErrors = [];
 process.on('uncaughtException', (error) => {
-  if (!String(error?.stack).includes('@walletconnect/')) throw error;
+  if (!String(error?.stack).includes('@walletconnect/') && !String(error?.stack).includes('walletconnect-peer')) throw error;
   peerErrors.push({ at: new Date().toISOString(), error: error.message });
   log('a peer\'s WalletConnect SDK threw:', error.message);
 });
@@ -607,7 +583,7 @@ async function main() {
     const dappB = await startPeer('Fearless WalletConnect smoke dApp B');
     const mobile = await startMobileWallet();
     peers.push(dappA, dappB, mobile);
-    report.sdk = dappA.version;
+    report.peer = dappA.kind;
     const known = [];
 
     // 1. A dApp pairs while the wallet's client is the only one running, as on the first connection in a new profile.

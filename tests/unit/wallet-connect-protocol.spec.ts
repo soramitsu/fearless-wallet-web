@@ -437,6 +437,26 @@ describe('WalletConnect sessions between a dApp and Fearless', () => {
     ).resolves.toBe('after restart');
   });
 
+  it('holds a request that arrived while the worker was stopped until callers listen after their own start-up', async () => {
+    const storage = memoryStorage();
+    const wallet = await client('Fearless', storage);
+    const dapp = await client('Public dApp');
+    const { session } = await settled(wallet, dapp);
+
+    wallet.close();
+    // The relay holds this request while no worker listens.
+    void dapp.request({ topic: session.topic, chainId: 'eip155:1', request: { method: 'personal_sign', params: ['0x0a', EVM] } }).catch(() => undefined);
+    await settle();
+    const restarted = await client('Fearless', storage);
+
+    // The services listen only after a storage read of their own.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await expect(once(restarted, 'session_request')).resolves.toMatchObject({
+      topic: session.topic,
+      params: { request: { method: 'personal_sign', params: ['0x0a', EVM] } },
+    });
+  });
+
   it('carries over the sessions WalletConnect SDK 2.x saved, with their keys and relay identity', async () => {
     const original = memoryStorage();
     const wallet = await client('Fearless', original);

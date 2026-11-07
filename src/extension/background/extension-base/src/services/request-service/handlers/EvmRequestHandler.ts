@@ -13,7 +13,7 @@ import type {
   WalletConnectSigningContext,
 } from '@extension-base/services/wallet-connect-service/types';
 import type { ResponseSigning } from '@extension-base/background/types/types';
-import type { SignClientTypes } from '@walletconnect/types';
+import type { WcSessionRequestEvent } from '@extension-base/services/wallet-connect-service/protocol/types';
 
 export default class EvmRequestHandler {
   private readonly requestService: RequestService;
@@ -78,6 +78,15 @@ export default class EvmRequestHandler {
     const request = this.wcRequests.get(approvalId);
     if (!request || this.pendingWcApprovals.has(request))
       throw new Error('WalletConnect request unavailable or already pending');
+    // The wallet owns its request queue, so unrelated messages can proceed beside an old pending request. Keep
+    // transaction approvals serial before any nonce/gas lookup; a second approved send remains available to retry.
+    if (
+      request.request.params.request.method === 'eth_sendTransaction' &&
+      [...this.wcRequests.values()].some(
+        other => this.pendingWcApprovals.has(other) && other.request.params.request.method === 'eth_sendTransaction'
+      )
+    )
+      throw new Error('Another WalletConnect transaction approval is pending. Retry when it finishes.');
     this.pendingWcApprovals.add(request);
     return request;
   }
@@ -194,7 +203,7 @@ export default class EvmRequestHandler {
   }
 
   onWCSign(
-    event: SignClientTypes.EventArguments['session_request'],
+    event: WcSessionRequestEvent,
     context?: WalletConnectSigningContext
   ): Promise<ResponseSigning> {
     return new Promise((resolve, reject): void => {

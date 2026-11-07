@@ -1,4 +1,4 @@
-import type { JsonRpcPayload, JsonRpcResponse } from '@walletconnect/jsonrpc-types';
+import type { JsonRpcPayload, JsonRpcResponse } from '@extension-base/utils/jsonRpc';
 import type {
   MessageTypesWithNoSubscriptions,
   MessageTypesWithNullRequest,

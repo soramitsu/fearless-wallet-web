@@ -7,7 +7,7 @@ import EvmRequestHandler from '@extension-base/services/request-service/handlers
 import { Eip155RequestHandler } from '@extension-base/services/wallet-connect-service/requestHandlers/Eip155Handler';
 import Extension from '@extension-base/background/handlers/Extension';
 import { sessionStorage } from '../helpers/session-storage';
-import type { SessionTypes, SignClientTypes } from '@walletconnect/types';
+import type { WcSession, WcSessionRequestEvent } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type State from '@extension-base/background/handlers/State';
 import type { RequestService } from '@extension-base/services/request-service';
 import { CURRENT_WALLET_SECURITY_GENERATION } from '@/util/walletSecurity';
@@ -24,7 +24,7 @@ vi.mock('@extension-base/utils/crossenv', async () => ({
 const wallet = new Wallet(`0x${'11'.repeat(32)}`);
 const address = wallet.address;
 let state: State, queue: EvmRequestHandler, extension: Extension, incoming: Eip155RequestHandler;
-let session: SessionTypes.Struct;
+let session: WcSession;
 let revision: number;
 let network: {
   name: string;
@@ -42,7 +42,7 @@ const event = (method = 'personal_sign', params: unknown[] = ['0x1234', address]
     topic: 'public-topic',
     params: { chainId: 'eip155:1', request: { method, params } },
     verifyContext: { verified: { origin: 'https://public.example', validation: 'VALID', verifyUrl: '' } },
-  }) as SignClientTypes.EventArguments['session_request'];
+  }) as WcSessionRequestEvent;
 beforeEach(async () => {
   await new WalletConnectRetiredSessions().readTopics();
   sessionStorage.data = {};
@@ -68,7 +68,7 @@ beforeEach(async () => {
       eip155: { chains: ['eip155:1', 'eip155:2'], methods: ['personal_sign', 'eth_sendTransaction'], events: [] },
     },
     optionalNamespaces: {},
-  } as unknown as SessionTypes.Struct;
+  } as unknown as WcSession;
   network = {
     name: 'Ethereum',
     chainId: '1',

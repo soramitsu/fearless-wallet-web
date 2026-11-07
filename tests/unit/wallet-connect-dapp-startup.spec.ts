@@ -1,4 +1,4 @@
-import Provider from '@walletconnect/universal-provider';
+import { WalletConnectClient as WalletConnect } from '@extension-base/services/wallet-connect-service/protocol/client';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { WalletConnectDAppService } from '@extension-base/services/wallet-connect-service/dapp';
 import type State from '@extension-base/background/handlers/State';
@@ -27,23 +27,25 @@ vi.mock('@extension-base/services', () => ({}));
 vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}, handlers: vi.fn() }));
 
 const client = { on: vi.fn(), connect: vi.fn(), disconnect: vi.fn(), session: { values: [] } };
-const state = {
-  networkService: { networkValues: [{ name: 'Public Substrate', ecosystem: 'substrate', chainId: '11'.repeat(32) }] },
-  keyringService: { isResetting: false, walletResetRevision: 0, currentAccountRevision: 0, getAddresses: () => [], getAllAccounts: () => [] },
-} as unknown as State;
+// A worker's state: its WalletConnect client is started once per state.
+let state: State;
 const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 beforeEach(() => {
   fixture.data = {};
+  state = {
+    networkService: { networkValues: [{ name: 'Public Substrate', ecosystem: 'substrate', chainId: '11'.repeat(32) }] },
+    keyringService: { isResetting: false, walletResetRevision: 0, currentAccountRevision: 0, getAddresses: () => [], getAllAccounts: () => [] },
+  } as unknown as State;
   vi.restoreAllMocks();
-  vi.spyOn(Provider, 'init').mockResolvedValue({ client } as unknown as Provider);
+  vi.spyOn(WalletConnect, 'init').mockResolvedValue(client as unknown as WalletConnect);
 });
 
-it('does not start the WalletConnect provider when a worker starts with nothing stored', async () => {
+it('does not start the WalletConnect client when a worker starts with nothing stored', async () => {
   new WalletConnectDAppService(state);
   await settled();
 
-  expect(Provider.init).not.toHaveBeenCalled();
+  expect(WalletConnect.init).not.toHaveBeenCalled();
 });
 
 it.each([['wc@2:client:0.3//session'], ['wc@2:core:0.3//pairing']])(
@@ -53,15 +55,15 @@ it.each([['wc@2:client:0.3//session'], ['wc@2:core:0.3//pairing']])(
 
     new WalletConnectDAppService(state);
 
-    await vi.waitFor(() => expect(Provider.init).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(WalletConnect.init).toHaveBeenCalledOnce());
   }
 );
 
-it('starts the WalletConnect provider for the first mobile pairing', async () => {
+it('starts the WalletConnect client for the first mobile pairing', async () => {
   client.connect.mockResolvedValue({ uri: 'wc:public-first-pairing', approval: () => new Promise(() => undefined) });
   const service = new WalletConnectDAppService(state);
   await settled();
 
   await expect(service.initPairing('public-first-attempt')).resolves.toBe('wc:public-first-pairing');
-  expect(Provider.init).toHaveBeenCalledOnce();
+  expect(WalletConnect.init).toHaveBeenCalledOnce();
 });

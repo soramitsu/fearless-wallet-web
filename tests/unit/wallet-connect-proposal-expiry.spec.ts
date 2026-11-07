@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { isProposalExpired } from '@extension-base/services/wallet-connect-service/utils';
-import type { ProposalTypes } from '@walletconnect/types';
+import type { WcProposal } from '@extension-base/services/wallet-connect-service/protocol/types';
 
 // The wallet's own WalletConnect SDK writes a proposal's deadline: 2.10 and older (Fearless 3.0) as expiry, 2.13 and
 // later (2.23 here) as expiryTimestamp in seconds, the dApp's or its own default, with no expiry.
 const NOW = Date.UTC(2026, 10, 3, 12);
 const seconds = NOW / 1000;
-const proposal = (deadlines: Record<string, unknown>) => deadlines as unknown as ProposalTypes.Struct;
+const proposal = (deadlines: Record<string, unknown>) => deadlines as unknown as WcProposal;
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });

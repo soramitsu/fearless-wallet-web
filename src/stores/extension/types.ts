@@ -1,5 +1,5 @@
-import { type SessionTypes } from '@walletconnect/types';
 import { type EvmRequests, type SolanaRequests } from '@extension-base/services/request-service/types';
+import type { WcSession } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type { MutableAction } from '@extension-base/services/action-capability-service';
 import type { AuthorizeRequest, MetadataRequest, SigningRequest } from '@extension-base/background/types/types';
 import type {
@@ -52,7 +52,7 @@ export type RequestsPayload =
     }
   | {
       type: 'wcSessions';
-      requests: SessionTypes.Struct[];
+      requests: WcSession[];
     }
   | {
       type: 'signEvmRequests';

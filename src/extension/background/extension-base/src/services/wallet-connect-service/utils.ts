@@ -1,5 +1,5 @@
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import * as encoding from '@walletconnect/encoding';
+import { hexToString } from '@polkadot/util';
 import { EIP155_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
 import { getChainInfoByHalfGenesisHash, getChainInfoByChainId } from '@extension-base/services/network-service/helpers';
 import {
@@ -15,8 +15,7 @@ import type {
   WalletConnectSigningMethod,
 } from '@extension-base/services/wallet-connect-service/types';
 import type { NetworkJson } from '@extension-base/types';
-import type { SignClientTypes } from '@walletconnect/types';
-import type { ProposalTypes } from '@walletconnect/types/dist/types/sign-client/proposal';
+import type { WcProposal, WcSessionProposalEvent, WcSessionRequestEvent } from '@extension-base/services/wallet-connect-service/protocol/types';
 import { SEC1 } from '@/consts/time';
 
 export const getWCId = (id: number): string => {
@@ -24,7 +23,7 @@ export const getWCId = (id: number): string => {
 };
 
 export const convertConnectRequest = (
-  request: SignClientTypes.EventArguments['session_proposal']
+  request: WcSessionProposalEvent
 ): WalletConnectSessionRequest => {
   return {
     id: getWCId(request.id),
@@ -35,7 +34,7 @@ export const convertConnectRequest = (
 };
 
 export const convertNotSupportRequest = (
-  request: SignClientTypes.EventArguments['session_request'],
+  request: WcSessionRequestEvent,
   url: string
 ): WalletConnectNotSupportRequest => {
   return {
@@ -97,7 +96,7 @@ export const isWalletConnectRequest = (id?: string): boolean => {
 
 // A proposal's deadline is its expiryTimestamp (seconds), which the wallet's SDK fills in when a dApp sends none.
 // Older SDKs used expiry.
-export const isProposalExpired = (params: ProposalTypes.Struct): boolean => {
+export const isProposalExpired = (params: WcProposal): boolean => {
   const timeNum = params.expiryTimestamp ?? params.expiry;
 
   if (!timeNum || !Number.isFinite(timeNum)) return true;
@@ -123,7 +122,7 @@ export const isSupportWalletConnectChain = (chain: string, chainInfoMap: Record<
 
 export function convertHexToUtf8(hex: string) {
   try {
-    return encoding.hexToUtf8(hex);
+    return hexToString(hex.startsWith('0x') ? hex : `0x${hex}`);
   } catch {
     return hex;
   }

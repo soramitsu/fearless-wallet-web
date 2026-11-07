@@ -19,7 +19,7 @@ import {
 } from '@extension-base/page/types';
 import { EipService } from '../../services/eip-service';
 import { createClusterBoundSolanaRpcClient } from '../../services/solana-rpc-service';
-import type { RequestArguments } from '@walletconnect/jsonrpc-types';
+import type { RequestArguments } from '@extension-base/utils/jsonRpc';
 import type State from '@extension-base/background/handlers/State';
 import type {
   AccountSub,

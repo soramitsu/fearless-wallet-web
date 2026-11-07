@@ -1,7 +1,7 @@
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Keyring } from '@polkadot/keyring';
-import WalletConnect from '@walletconnect/sign-client';
+import { WalletConnectClient as WalletConnect } from '@extension-base/services/wallet-connect-service/protocol/client';
 import { checkIfDenied } from '@polkadot/phishing';
 import { WalletConnectService as LiveWalletConnectService } from '@extension-base/services/wallet-connect-service';
 import { cryptoWaitReady, decodeAddress, encodeAddress, signatureVerify } from '@polkadot/util-crypto';
@@ -13,7 +13,7 @@ import { sessionStorage } from '../helpers/session-storage';
 import type State from '@extension-base/background/handlers/State';
 import type { RequestService } from '@extension-base/services/request-service';
 import type { WalletConnectService } from '@extension-base/services/wallet-connect-service';
-import type { SessionTypes, SignClientTypes } from '@walletconnect/types';
+import type { WcSession, WcSessionRequestEvent } from '@extension-base/services/wallet-connect-service/protocol/types';
 import { CURRENT_WALLET_SECURITY_GENERATION } from '@/util/walletSecurity';
 
 vi.mock('@polkadot/phishing', () => ({ checkIfDenied: vi.fn(async () => false) }));
@@ -32,7 +32,7 @@ const chainId = `polkadot:${'11'.repeat(16)}`;
 let alice: ReturnType<Keyring['addFromUri']>;
 let state: State, service: RequestService, wc: WalletConnectService;
 let extension: Extension, handler: PolkadotHandler, substrate: SubstrateRequestHandler;
-let sessions: Record<string, SessionTypes.Struct>, revisions: Record<string, number>;
+let sessions: Record<string, WcSession>, revisions: Record<string, number>;
 let respond: ReturnType<typeof vi.fn>;
 beforeAll(async () => {
   await cryptoWaitReady();
@@ -67,7 +67,7 @@ beforeEach(async () => {
         polkadot: { chains: [chainId], methods: ['polkadot_signMessage', 'polkadot_signTransaction'], events: [] },
       },
       optionalNamespaces: {},
-    } as unknown as SessionTypes.Struct,
+    } as unknown as WcSession,
   };
   revisions = {};
   respond = vi.fn(async () => undefined);
@@ -138,7 +138,7 @@ function event(options: { topic?: string; id?: number; extrinsic?: boolean; addr
           : { address, message: '0x68656c6c6f' },
       },
     },
-  } as unknown as SignClientTypes.EventArguments['session_request'];
+  } as unknown as WcSessionRequestEvent;
 }
 async function dispatch(request = event()) {
   try {
@@ -430,7 +430,7 @@ describe('incoming Polkadot request boundaries', () => {
     expect(respond.mock.calls[0][0].response.error).toBeDefined();
   });
 });
-type EventVerify = SignClientTypes.EventArguments['session_request']['verifyContext'];
+type EventVerify = WcSessionRequestEvent['verifyContext'];
 
 describe('live incoming WalletConnect lifecycle', () => {
   function liveService() {

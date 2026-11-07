@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BehaviorSubject } from 'rxjs';
-import { getInternalError } from '@walletconnect/utils';
+import { getInternalError } from '@extension-base/services/wallet-connect-service/protocol/errors';
 import Extension from '@extension-base/background/handlers/Extension';
 import type State from '@extension-base/background/handlers/State';
 import type { MessageTypes, Port } from '@extension-base/background/types/types';

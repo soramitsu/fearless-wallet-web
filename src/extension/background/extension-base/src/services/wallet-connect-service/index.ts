@@ -1,6 +1,7 @@
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import { formatJsonRpcError } from '@walletconnect/jsonrpc-utils';
-import { getInternalError, getSdkError, isValidUrl, type SdkErrorKey } from '@walletconnect/utils';
+import { formatJsonRpcError } from '@extension-base/utils/jsonRpc';
+import { getInternalError, getSdkError, type SdkErrorKey } from '@extension-base/services/wallet-connect-service/protocol/errors';
+import { parsePairingUri } from '@extension-base/services/wallet-connect-service/protocol/uri';
 import { BehaviorSubject } from 'rxjs';
 import { convertConnectRequest, convertNotSupportRequest } from '@extension-base/services/wallet-connect-service/utils';
 import { type ResultApproveWalletConnectSession } from '@extension-base/services/wallet-connect-service/types';
@@ -9,19 +10,19 @@ import { isWalletSession, walletConnectClient } from '@extension-base/services/w
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import { isSameAddress } from '@extension-base/utils';
 import { sessionAuthority } from './sessionAuthority';
-import type WalletConnect from '@walletconnect/sign-client';
+import type { WalletConnectClient } from '@extension-base/services/wallet-connect-service/protocol/client';
 import type State from '@extension-base/background/handlers/State';
-import type { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
+import type { WcRespondParams, WcSession, WcSessionNamespace, WcSessionProposalEvent, WcSessionRequestEvent } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type { RequestService } from '@extension-base/services';
 import { PolkadotHandler } from '@/extension/background/extension-base/src/services/wallet-connect-service/requestHandlers/PolkadotHandler';
 import { Eip155RequestHandler } from '@/extension/background/extension-base/src/services/wallet-connect-service/requestHandlers/Eip155Handler';
 import { isSameString } from '@/helpers';
 
-const namespaceAccounts = (namespace: SessionTypes.Namespace | unknown[]): string[] =>
+const namespaceAccounts = (namespace: WcSessionNamespace | unknown[]): string[] =>
   Array.isArray(namespace) ? [] : (namespace.accounts ?? []);
 
 export class WalletConnectService {
-  private client?: WalletConnect;
+  private client?: WalletConnectClient;
   private initialization?: Promise<void>;
   private readonly sessionRevisions = new Map<string, number>();
   private readonly retiredTopics = new Set<string>();
@@ -55,7 +56,7 @@ export class WalletConnectService {
 
   readonly eip155RequestHandler: Eip155RequestHandler;
   readonly polkadotRequestHandler: PolkadotHandler;
-  readonly sessionSubject: BehaviorSubject<SessionTypes.Struct[]> = new BehaviorSubject<SessionTypes.Struct[]>([]);
+  readonly sessionSubject: BehaviorSubject<WcSession[]> = new BehaviorSubject<WcSession[]>([]);
 
   constructor(
     private state: State,
@@ -68,7 +69,7 @@ export class WalletConnectService {
   }
 
   // The client also holds Fearless's mobile pairings, where Fearless is the dApp. They are never listed or signed here.
-  private get walletSessions(): SessionTypes.Struct[] {
+  private get walletSessions(): WcSession[] {
     return (this.client?.session.values || []).filter(isWalletSession);
   }
 
@@ -82,7 +83,7 @@ export class WalletConnectService {
     this.state?.workerSleepService?.refresh();
   }
 
-  getSession(key: string): SessionTypes.Struct {
+  getSession(key: string): WcSession {
     if (this.state.keyringService.isResetting) throw new Error('Wallet reset is in progress');
     const session = this.client?.session.get(key);
 
@@ -114,7 +115,7 @@ export class WalletConnectService {
     await this.initialization;
   }
 
-  public async responseRequest(response: EngineTypes.RespondParams) {
+  public async responseRequest(response: WcRespondParams) {
     this.checkClient();
 
     await this.client?.respond(response);
@@ -123,9 +124,8 @@ export class WalletConnectService {
   async connect(uri: string) {
     const resetRevision = this.state.keyringService.walletResetRevision;
     if (this.state.keyringService.isResetting) throw new Error('Wallet reset is in progress');
-    if (!isValidUrl(uri)) throw Error(getInternalError('MISSING_OR_INVALID').message);
-
-    if (uri.match('@1')) throw Error(getInternalError('UNKNOWN_TYPE').message);
+    // Throws MISSING_OR_INVALID for a malformed link and UNKNOWN_TYPE for a retired version 1 link.
+    parsePairingUri(uri);
 
     await this.initClient(true);
     if (this.state.keyringService.isResetting || this.state.keyringService.walletResetRevision !== resetRevision)
@@ -207,7 +207,7 @@ export class WalletConnectService {
     }));
   }
 
-  private onSessionProposal(proposal: SignClientTypes.EventArguments['session_proposal']) {
+  private onSessionProposal(proposal: WcSessionProposalEvent) {
     this.checkClient();
     if (this.state.keyringService.isResetting) {
       void this.rejectSession(proposal.id).catch(console.error);
@@ -217,7 +217,7 @@ export class WalletConnectService {
     this.requestService.addConnectWCRequest(convertConnectRequest(proposal));
   }
 
-  private onSessionRequest(requestEvent: SignClientTypes.EventArguments['session_request']) {
+  private onSessionRequest(requestEvent: WcSessionRequestEvent) {
     this.checkClient();
 
     const { id, params, topic } = requestEvent;

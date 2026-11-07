@@ -3,11 +3,11 @@ import { u8aEq } from '@polkadot/util';
 import { assertWalletConnectRequestActive } from './requestValidity';
 import { captureSessionSigningContext } from './sessionSigningContext';
 import type { SessionSigningContext } from './sessionSigningContext';
-import type { SignClientTypes } from '@walletconnect/types';
+import type { WcSessionRequestEvent } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type State from '@extension-base/background/handlers/State';
 
-type Event = SignClientTypes.EventArguments['session_request'];
+type Event = WcSessionRequestEvent;
 export type PolkadotSigningContext = { event: Event; session: SessionSigningContext; origin: string };
 
 function origin(value: string): string {

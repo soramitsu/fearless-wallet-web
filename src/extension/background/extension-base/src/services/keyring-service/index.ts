@@ -92,6 +92,21 @@ export type WordCount = 12 | 15 | 18 | 21 | 24;
 
 const WORD_COUNTS: readonly number[] = [12, 15, 18, 21, 24];
 
+/** Compares the typed password with the session's in time that does not depend on where they differ. An empty
+ * session password (locked) never matches. */
+function sameSessionPassword(typed: string, session: string): boolean {
+  if (!session) return false;
+  const left = new TextEncoder().encode(typed);
+  const right = new TextEncoder().encode(session);
+  let difference = left.length ^ right.length;
+
+  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+    difference |= (left[index] ?? 0) ^ (right[index] ?? 0);
+  }
+
+  return difference === 0;
+}
+
 type LegacyMigrationResult = 'migrated' | 'wrong_password' | 'not_found' | 'storage_failed';
 
 // Resolves once every wallet write queued so far has landed, and rejects if one of them failed.
@@ -249,6 +264,24 @@ export class KeyringService {
   getPassword(): string {
     this.sessionExpiryCheck?.();
     return this.password;
+  }
+
+  /**
+   * An export that hands a wallet page a secret, or a copy encrypted under the password it sends, needs the password
+   * typed for that export. An unlocked session alone is not enough: any script running in a wallet page could
+   * otherwise read every phrase and key without a prompt. The web wallet's emergency export decrypts with the typed
+   * password itself, which may be an earlier one, so it only needs one to be typed.
+   */
+  assertExportPassword(password: unknown): asserts password is string {
+    if (!IS_EXTENSION && KeyringStoreWeb.readOnly) {
+      if (typeof password !== 'string' || password === '') throw new TonKeyringError('wrong_password');
+      return;
+    }
+    const session = this.getPassword();
+
+    // A locked wallet says so whatever was typed, as the TON vault always has.
+    if (!session) throw new TonKeyringError('keyring_locked');
+    if (typeof password !== 'string' || !sameSessionPassword(password, session)) throw new TonKeyringError('wrong_password');
   }
 
   get currentAccountRevision(): number {
@@ -911,6 +944,8 @@ export class KeyringService {
   // `pri(keyring.export.mnemonic)`. A TON phrase is returned exactly as stored, only after it derived the
   // account's public key, and never empty: a phrase that does not open throws its recovery code.
   async exportAccountMnemonic(request: RequestExportSeed): Promise<ResponseExportSeed> {
+    this.assertExportPassword(request.password);
+
     if (request.walletEcosystem !== WalletEcosystem.Ton) {
       const exported = this.exportMnemonic(request);
 
@@ -922,11 +957,12 @@ export class KeyringService {
     if (!IS_EXTENSION && KeyringStoreWeb.readOnly) {
       // Emergency export verifies the supplied account password against the stored
       // public key, including a previous password. The vault cannot repair storage here.
-      if (!request.password) throw new TonKeyringError('wrong_password');
-      return { seed: await this.tonKeyring.vault.decryptVerified(request.address, () => request.password!) };
-    }
-    if (request.password !== undefined && request.password !== this.password) throw new TonKeyringError('wrong_password');
+      const typed = request.password;
 
+      return { seed: await this.tonKeyring.vault.decryptVerified(request.address, () => typed) };
+    }
+
+    // assertExportPassword checked the typed password is the session's, which opens the phrase.
     return { seed: await this.tonKeyring.decodeMnemonicVerified(request.address) };
   }
 
@@ -999,7 +1035,10 @@ export class KeyringService {
     };
   }
 
+  // `pri(keyring.export.rowSeed)`.
   public accountExportRawSeed(request: RequestExportSeed): ResponseExportSeed {
+    this.assertExportPassword(request.password);
+
     if (request.isEVM) {
       const { privateKey } = this.accountExportPrivateKey(request);
 

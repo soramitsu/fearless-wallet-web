@@ -46,6 +46,11 @@ export function exportJSON(address: string, password: string, network?: string):
   return sendMessage('pri(accounts.export.json)', { address, password, network });
 }
 
+// The Google Drive copy of the wallet being created, encrypted under the master password in the background.
+export function exportBackupJSON(address: string): Promise<ResponseAccountExport> {
+  return sendMessage('pri(accounts.export.backup)', address);
+}
+
 export function migrateExportJSON(address: string): Promise<ResponseAccountExport> {
   return sendMessage('pri(migrate.export.json)', address);
 }

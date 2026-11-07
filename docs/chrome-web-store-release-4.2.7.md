@@ -37,11 +37,26 @@ including through its libraries.
 - crypto-js, no longer maintained, is gone from the wallet: the 3.0.1-3.0.5 TON phrase
   format and the SORA cosigner envelopes are read with `@noble/hashes` and
   `@noble/ciphers`, checked against crypto-js 4.2.0 itself.
+- WalletConnect runs on Fearless's own open-source client (`docs/walletconnect-protocol.md`). The WalletConnect SDK it
+  replaces is under the WalletConnect Community License, not an open-source license. The SDK and the packages that came
+  with it, 58 locked packages in all, are gone. Sessions made before the update keep working: the first start imports
+  them.
 - `@subwallet/keyring` is pinned to 0.1.14.
 - Dependency install scripts no longer run, and Yarn does not resolve a version less
   than 7 days old (`.yarnrc.yml`).
 - The upload signer asks for the owner's Touch ID or login password before it signs a
   package (`docs/verified-crx-uploads.md`).
+
+### WalletConnect
+
+These follow-ups to 4.2.6 (#1110) are included:
+
+- The wallet role and the mobile pairing share one client, so neither can answer the other's requests or overwrite its
+  sessions.
+- A proposal Fearless cannot serve is refused at once, and the dApp is told. Approval screens warn when a proposal also
+  asks for methods Fearless does not support.
+- Fearless keeps its own approval queue: transaction approvals run one at a time, each before its nonce is read, and
+  message approvals do not wait for them.
 
 ### Smaller
 

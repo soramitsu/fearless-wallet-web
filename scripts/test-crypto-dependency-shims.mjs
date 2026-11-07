@@ -14,6 +14,10 @@ const expectedResolutions = Object.freeze({
   'bitcoinjs-message@npm:^2.2.0': 'file:./vendor/bitcoinjs-message',
   'browserify-sign@npm:^4.2.3': 'file:./vendor/browserify-sign',
   'create-ecdh@npm:^4.0.4': 'file:./vendor/create-ecdh',
+  '@emurgo/cardano-message-signing-browser@npm:^1.1.0': 'file:./vendor/cardano-message-signing-browser',
+  '@emurgo/cardano-serialization-lib-browser@npm:^15.0.3': 'file:./vendor/cardano-serialization-lib-browser',
+  '@emurgo/cardano-serialization-lib-nodejs@npm:^13.2.0': 'file:./vendor/cardano-serialization-lib-nodejs',
+  '@subwallet/keyring': '0.1.14',
 });
 
 assert.deepEqual(
@@ -58,6 +62,31 @@ assert.equal(Object.isFrozen(algorithms), true, 'generic browser signing algorit
 
 const createECDH = require('create-ecdh');
 expectDisabled(() => createECDH('secp256k1'), 'generic browser createECDH');
+
+// Cardano: Fearless has none, and the keyring must still load, so reading an export never throws.
+assert.equal(/@emurgo\/cardano-[a-z-]+@npm:/u.test(yarnLock), false, 'the lockfile must not resolve the Emurgo Cardano WebAssembly');
+for (const [folder, name, version, entry] of [
+  ['cardano-message-signing-browser', '@emurgo/cardano-message-signing-browser', '1.1.0', 'cardano_message_signing.js'],
+  ['cardano-serialization-lib-browser', '@emurgo/cardano-serialization-lib-browser', '15.0.3', 'cardano_serialization_lib.js'],
+  ['cardano-serialization-lib-nodejs', '@emurgo/cardano-serialization-lib-nodejs', '13.2.1', 'cardano_serialization_lib.js'],
+]) {
+  const manifest = JSON.parse(await readFile(path.join(root, 'vendor', folder, 'package.json'), 'utf8'));
+  assert.equal(manifest.name, name, `${name} stub name drifted`);
+  assert.equal(manifest.version, version, `${name} stub version drifted`);
+  assert.equal(manifest.private, true, `${name} stub must never be published`);
+  assert.deepEqual(manifest.dependencies ?? {}, {}, `${name} stub must remain dependency-free`);
+  for (const loaded of [await import(path.join(root, 'vendor', folder, entry)), require(path.join(root, 'vendor', folder, 'index.cjs'))]) {
+    const exported = Object.values(loaded);
+    assert.ok(exported.length >= 9, `${name} stub must export what @subwallet/keyring imports`);
+    for (const value of exported) assert.throws(() => (typeof value === 'function' && !value.from_bytes ? value() : value.from_bytes(new Uint8Array(1))), /Cardano is not supported/u, `${name} must refuse Cardano operations`);
+  }
+}
+{
+  const signing = await import(path.join(root, 'vendor/cardano-message-signing-browser/cardano_message_signing.js'));
+  assert.equal(Object.isFrozen(signing.Label.new_text('address')), true, 'load-time Cardano labels must be inert values');
+  assert.equal(Object.isFrozen(signing.Label.new_int(signing.Int.new_i32(-1))), true, 'load-time Cardano integers must be inert values');
+  assert.equal(signing.Label.then, undefined, 'a Cardano stub must not look like a promise');
+}
 
 const cryptoBrowserify = require('crypto-browserify');
 assert.equal(

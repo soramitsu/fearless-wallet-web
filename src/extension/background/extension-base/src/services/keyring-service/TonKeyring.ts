@@ -1,5 +1,4 @@
 import * as tonWebMnemonic from 'tonweb-mnemonic';
-import CryptoJS from 'crypto-js';
 import { BehaviorSubject } from 'rxjs';
 import { u8aToString } from '@polkadot/util';
 import { jsonDecrypt } from '@polkadot/util-crypto';
@@ -7,6 +6,7 @@ import { tonStore } from './../../stores/TonStore';
 import { validateBip39Mnemonic } from './Bip39';
 import { TonSeedVault, encryptTonSeed, protectTonRecoveryRecord } from './TonSeedVault';
 import { TON_RECOVERY_VERSION, parseStoredSeed, isLegacyTonSeed } from './TonSeedEncoding';
+import { decryptCryptoJsPassphraseText } from '@/util/cryptoJsCompat';
 import { type KeyringService } from '.';
 export { TON_SEED_VERSION, isLegacyTonSeed } from './TonSeedEncoding';
 import type { Address, WalletContractV4 } from '@ton/ton';
@@ -296,8 +296,8 @@ export class TonKeyringService {
       return u8aToString(jsonDecrypt(stored, password));
     }
 
-    const bytes = CryptoJS.AES.decrypt(cipherMnemonic, password);
-    const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
+    // 3.0.1-3.0.5 CryptoJS text: no integrity check, so callers confirm the phrase against the account.
+    const decryptedText = decryptCryptoJsPassphraseText(cipherMnemonic, password);
 
     return decryptedText;
   }

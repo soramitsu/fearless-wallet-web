@@ -28,6 +28,17 @@ including through its libraries.
   Drive backups against offline guessing. A password set by an earlier version keeps
   working.
 
+### Session
+
+- A wallet page that opens while the wallet is unlocking (another wallet window, a
+  site's approval window, the popup reloading after a lock) no longer cancels the
+  unlock. Every page start asks the background to end a session that has no deadline,
+  and since 4.2.1 an unlock has none until the stronger password verifier is stored.
+  Such a page made the unlock fail with "Wallet authentication changed during
+  verifier upgrade." Creating the first password had the same gap. The page's request
+  now waits for the unlock (at most 30 s). Lock still ends the session at once, and the
+  30-minute limit is unchanged.
+
 ### Libraries beside the keys
 
 - The Cardano libraries `@subwallet/keyring` imports (about 3 MB of WebAssembly and

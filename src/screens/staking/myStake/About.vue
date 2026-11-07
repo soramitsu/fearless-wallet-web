@@ -99,12 +99,11 @@ export default defineComponent({ name: 'About' ,
           const asset = this.stakingNetwork.asset.toUpperCase();
           const base = `${this.$t('staking.unbond')} ${unbond.sum} ${asset}:`;
 
-          return unbond.unlocking.reduce((result, { value, remainingDays }) => {
-            return `
-              ${result}
-                <p>- ${value} ${asset} ${remainingDays} ${this.$t('staking.daysLeft')}</p>
-            `;
-          }, base);
+          // Plain text, one line per unlocking chunk: the tooltip shows no markup.
+          return unbond.unlocking.reduce(
+            (result, { value, remainingDays }) => `${result}\n- ${value} ${asset} ${remainingDays} ${this.$t('staking.daysLeft')}`,
+            base
+          );
     },
     stakingNetwork() {
       return this.stakingStore.getStakingNetwork(this.network);

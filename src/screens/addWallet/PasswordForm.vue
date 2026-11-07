@@ -32,7 +32,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-
+import { isAcceptableNewMasterPassword } from '@/util/masterPasswordPolicy';
 
 export default defineComponent({ name: 'PasswordForm' ,
   props: {
@@ -47,8 +47,9 @@ export default defineComponent({ name: 'PasswordForm' ,
     };
   },
   computed: {
+    // 8 characters of two kinds, or 12 of one (src/util/masterPasswordPolicy.ts); "too short" says what to add.
     isShortPassword() {
-      return this.pass1.length !== 0 && this.pass1.length < 6;
+      return this.pass1.length !== 0 && !isAcceptableNewMasterPassword(this.pass1);
     },
     isWrongPassword() {
       return !!this.pass2.length && this.pass1 !== this.pass2;
@@ -79,12 +80,13 @@ export default defineComponent({ name: 'PasswordForm' ,
   },
   methods: {
     changePassword(pass1: string) {
-      if (pass1.length < 6) this.pass2 = '';
+      if (!isAcceptableNewMasterPassword(pass1)) this.pass2 = '';
 
-          this.setPassword(pass1 === this.pass2 ? pass1 : '');
+      this.setPassword(pass1 === this.pass2 && isAcceptableNewMasterPassword(pass1) ? pass1 : '');
     },
+    // A confirmation filled in while the first field is too short (by autofill, say) confirms nothing.
     confirmPassword(pass2: string) {
-      this.setPassword(this.pass1 === pass2 ? pass2 : '');
+      this.setPassword(this.pass1 === pass2 && isAcceptableNewMasterPassword(pass2) ? pass2 : '');
     },
     setPassword(password: string) {
       this.$emit('setPassword', password);

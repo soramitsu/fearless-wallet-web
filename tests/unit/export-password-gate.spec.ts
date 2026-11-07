@@ -178,3 +178,12 @@ describe('Google Drive backup of a wallet being created', () => {
     await expect(send('pri(accounts.export.backup)', address)).rejects.toThrow('Wallet locked');
   });
 });
+
+describe('a new master password', () => {
+  it('is refused by the background when it is too easy to guess, whatever page sent it', async () => {
+    for (const weak of ['', 'short', 'password', '12345678']) {
+      expect(await service.changeMasterPassword({ oldPassword: PASSWORD, newPassword: weak }), weak).toBe(false);
+    }
+    expect(service.getPassword()).toBe(PASSWORD);
+  });
+});

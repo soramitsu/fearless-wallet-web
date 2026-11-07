@@ -84,6 +84,7 @@ import { isSameString } from '@/helpers';
 import { IS_EXTENSION } from '@/consts/global';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import { decodeMnemonicFromJsonBackup } from '@/util/keyringJson';
+import { isAcceptableNewMasterPassword } from '@/util/masterPasswordPolicy';
 import { TonKeyringError, type TonImportChoice } from '@/util/tonKeyring';
 import { buildWebUniversalWalletMigrationSnapshot } from '@/util/universalWalletKeyringMigration';
 import { withUniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMeta';
@@ -897,7 +898,8 @@ export class KeyringService {
         (this.authenticationRevision ?? 0) !== revision) throw new Error('Wallet authentication changed during password change.');
     };
     return this.tonKeyring.vault.exclusive(async () => {
-      if (!newPassword) return false;
+      // The form enforces the same rule; this refuses a weak password however the request was sent.
+      if (!newPassword || !isAcceptableNewMasterPassword(newPassword)) return false;
       try {
         await flushWalletWrites();
         assertCurrent();

@@ -85,7 +85,8 @@ import { defineComponent } from 'vue';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import BaseApi from '@/util/BaseApi';
 import { exportJSON, exportMnemonic, exportRowSeed } from '@/extension/messaging';
-import { isSameString, setClipboard } from '@/helpers';
+import { isSameString } from '@/helpers';
+import { clearCopiedSecret, copySecretToClipboard } from '@/util/clipboardSecret';
 import { downloadJsonAccount } from '@/helpers/files';
 import { getAccountAccessErrorLocaleKey } from '@/helpers/transferErrors';
 import { Components } from '@/router/routes';
@@ -181,6 +182,9 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
       return { address: this.addressByNetwork, walletEcosystem };
     },
   },
+  beforeUnmount() {
+    void clearCopiedSecret();
+  },
   async mounted() {
     this.isLoading = true;
     // A reply that arrives after another wallet was selected is never shown under that wallet.
@@ -221,7 +225,8 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
       this.$router.push({ name: Components.AccountAccessRecovery, query: { address: this.exportedAccount.address } });
     },
     proceed() {
-      if (this.isMnemonic || this.isRowSeed) setClipboard(this.seed);
+      // Cleared again after a minute, when this screen closes, or when the wallet next opens.
+      if (this.isMnemonic || this.isRowSeed) void copySecretToClipboard(this.seed);
           else this.downloadJsonFile();
     },
     async downloadJsonFile() {

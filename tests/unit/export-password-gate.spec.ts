@@ -45,6 +45,8 @@ import { WalletEcosystem } from '@/interfaces';
 const PASSWORD = 'Public export gate fixture password';
 const PHRASE = 'bottom drive obey lake curtain smoke basket hold race lonely fit walk';
 let service: KeyringService;
+// Every case encrypts with real scrypt (and the EVM keystore with ethers' N = 2^17): bounded like the other scrypt suites.
+const SCRYPT_SUITE = { timeout: 120_000 };
 
 beforeEach(async () => {
   await cryptoWaitReady();
@@ -82,13 +84,13 @@ const refusals = (password?: string) => [
   ['left out', undefined], ['empty', ''], ['wrong', 'Public wrong password'], ['the master password with a space', `${PASSWORD} `],
 ].filter(([, value]) => value !== password) as [string, string | undefined][];
 
-describe('no message hands the master password to a wallet page', () => {
+describe('no message hands the master password to a wallet page', SCRYPT_SUITE, () => {
   it('does not know pri(keyring.getPassword)', async () => {
     await expect(send('pri(keyring.getPassword)', null)).rejects.toThrow('Unable to handle message');
   });
 });
 
-describe('recovery phrase export', () => {
+describe('recovery phrase export', SCRYPT_SUITE, () => {
   it.each(refusals())('refuses a password that is %s', async (_label, password) => {
     const address = await substrate();
     await expect(send('pri(keyring.export.mnemonic)', { address, password, walletEcosystem: WalletEcosystem.Substrate }))
@@ -116,7 +118,7 @@ describe('recovery phrase export', () => {
   });
 });
 
-describe('raw seed and private key export', () => {
+describe('raw seed and private key export', SCRYPT_SUITE, () => {
   it.each(refusals())('refuses an EVM private key for a password that is %s', async (_label, password) => {
     const address = await evm();
     await expect(send('pri(keyring.export.rowSeed)', { address, password, isEVM: true })).rejects.toThrow('wrong_password');
@@ -137,7 +139,7 @@ describe('raw seed and private key export', () => {
   });
 });
 
-describe('JSON export', () => {
+describe('JSON export', SCRYPT_SUITE, () => {
   it.each(refusals())('refuses an EVM keystore for a password that is %s', async (_label, password) => {
     const address = await evm();
     await expect(send('pri(accounts.export.json)', { address, password, network: 'Ethereum' })).rejects.toThrow('wrong_password');
@@ -161,7 +163,7 @@ describe('JSON export', () => {
   });
 });
 
-describe('Google Drive backup of a wallet being created', () => {
+describe('Google Drive backup of a wallet being created', SCRYPT_SUITE, () => {
   it('returns the wallet JSON under the master password without the page sending or receiving it', async () => {
     const address = await substrate();
     const { json } = await send('pri(accounts.export.backup)', address) as { json: Parameters<typeof keyring.createFromJson>[0] };
@@ -179,7 +181,7 @@ describe('Google Drive backup of a wallet being created', () => {
   });
 });
 
-describe('a new master password', () => {
+describe('a new master password', SCRYPT_SUITE, () => {
   it('is refused by the background when it is too easy to guess, whatever page sent it', async () => {
     for (const weak of ['', 'short', 'password', '12345678']) {
       expect(await service.changeMasterPassword({ oldPassword: PASSWORD, newPassword: weak }), weak).toBe(false);

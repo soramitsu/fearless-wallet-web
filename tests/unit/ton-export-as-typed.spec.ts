@@ -1,9 +1,11 @@
 import { flushPromises, shallowMount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ exportMnemonic: vi.fn(), setClipboard: vi.fn(), wallet: { address: '', walletEcosystem: '' } }));
+const mocks = vi.hoisted(() => ({ exportMnemonic: vi.fn(), copySecret: vi.fn(), wallet: { address: '', walletEcosystem: '' } }));
 vi.mock('@/extension/messaging', () => ({ exportMnemonic: mocks.exportMnemonic, exportJSON: vi.fn(), exportRowSeed: vi.fn() }));
-vi.mock('@/helpers', () => ({ isSameString: (left: string, right: string) => left === right, setClipboard: mocks.setClipboard }));
+vi.mock('@/helpers', () => ({ isSameString: (left: string, right: string) => left === right }));
+// The phrase goes through the clipboard helper that clears it again (src/util/clipboardSecret.ts).
+vi.mock('@/util/clipboardSecret', () => ({ copySecretToClipboard: mocks.copySecret, clearCopiedSecret: vi.fn() }));
 vi.mock('@/helpers/files', () => ({ downloadJsonAccount: vi.fn() }));
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => ({ selectedWallet: mocks.wallet }) }));
 vi.mock('@/stores/networks', () => ({ useNetworksStore: () => ({ networks: [] }) }));
@@ -47,7 +49,7 @@ describe('Exporting a TON phrase that only works as typed', () => {
 
     expect(wrapper.find('[data-testid="tonPhraseAsTyped"]').text()).toBe('ux.tonPhraseAsTyped');
     await wrapper.find('[data-testid="exportBtn"]').trigger('click');
-    expect(mocks.setClipboard).toHaveBeenCalledWith(asTyped.typedText);
+    expect(mocks.copySecret).toHaveBeenCalledWith(asTyped.typedText);
     wrapper.unmount();
   });
 

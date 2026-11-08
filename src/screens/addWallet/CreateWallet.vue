@@ -36,7 +36,7 @@ import type { MnemonicConfirmation } from '@/interfaces/common';
 import MnemonicConfirmationForm from '@/screens/addWallet/MnemonicConfirmationForm.vue';
 import MnemonicBackupForm from '@/screens/addWallet/MnemonicBackupForm.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
-import { setClipboard } from '@/helpers';
+import { clearCopiedSecret, copySecretToClipboard } from '@/util/clipboardSecret';
 
 export default defineComponent({ name: 'CreateWallet',
   components: {
@@ -50,6 +50,9 @@ export default defineComponent({ name: 'CreateWallet',
     mnemonicLength: Number,
     isSubstrate: Boolean,
     selectedMnemonicElements: { type: Array },
+  },
+  beforeUnmount() {
+    void clearCopiedSecret();
   },
   computed: {
     mnemonicArray() {
@@ -77,8 +80,9 @@ export default defineComponent({ name: 'CreateWallet',
     updateSelectedMnemonicElements(value: MnemonicConfirmation[]) {
       this.syncedSelectedMnemonicElements = value;
     },
+    // Cleared again after a minute, when this screen closes, or when the wallet next opens.
     onCopy() {
-      setClipboard(this.mnemonic);
+      void copySecretToClipboard(this.mnemonic);
     },
     toggleAdvancedFormVisible() {
       this.$emit('toggleAdvancedFormVisible');

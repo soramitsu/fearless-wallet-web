@@ -1,6 +1,6 @@
-import CryptoJS from 'crypto-js';
 import { sr25519Agreement } from '@polkadot/util-crypto';
 import { hexToU8a, u8aToHex } from '@polkadot/util';
+import { decryptAesCbcBlocks, encryptAesCbcText } from '@/util/cryptoJsCompat';
 
 export type FinalEncryptedStructure = {
   encryptedData: string;
@@ -16,26 +16,25 @@ function keyMaterial(secret: Uint8Array, publicKey: Uint8Array): Uint8Array {
   if (secret.length !== 64 || publicKey.length !== 32) throw new Error('Invalid cosigner key size');
   return sr25519Agreement(secret, publicKey);
 }
-function wordArray(bytes: Uint8Array) { return CryptoJS.enc.Hex.parse(u8aToHex(bytes).slice(2)); }
+// AES-256-CBC as the envelopes' CryptoJS writers produced it (src/util/cryptoJsCompat.ts, checked against crypto-js).
 function encrypt(plaintext: string, key: Uint8Array): { encrypted: string; iv: string } {
   const iv = crypto.getRandomValues(new Uint8Array(16));
-  const encoded = CryptoJS.AES.encrypt(plaintext, wordArray(key), { iv: wordArray(iv), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 });
-  return { encrypted: encoded.ciphertext.toString(CryptoJS.enc.Base64), iv: u8aToHex(iv).slice(2) };
+  return { encrypted: encryptAesCbcText(plaintext, key, iv), iv: u8aToHex(iv).slice(2) };
 }
 function decrypt(ciphertext: string, iv: string, key: Uint8Array): string {
   if (!/^[a-f\d]{32}$/i.test(iv) || !/^[A-Za-z\d+/]+={0,2}$/.test(ciphertext) || ciphertext.length > 1_500_000) throw new Error('Invalid encrypted cosigner data');
-  const bytes = CryptoJS.enc.Base64.parse(ciphertext);
-  if (!bytes.sigBytes || bytes.sigBytes % 16) throw new Error('Invalid encrypted cosigner data');
-  // Validate PKCS#7 ourselves: CryptoJS's unpad silently accepts malformed data.
-  const plain = CryptoJS.AES.decrypt(CryptoJS.lib.CipherParams.create({ ciphertext: bytes }), wordArray(key), {
-    iv: CryptoJS.enc.Hex.parse(iv), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.NoPadding,
-  });
-  const buffer = hexToU8a(plain.toString(CryptoJS.enc.Hex));
+  let buffer: Uint8Array;
+  try {
+    buffer = decryptAesCbcBlocks(ciphertext, key, hexToU8a(`0x${iv}`));
+  } catch {
+    throw new Error('Invalid encrypted cosigner data');
+  }
+  // Validate PKCS#7 ourselves: the format has no authentication tag.
   try {
     const padding = buffer[buffer.length - 1];
     if (!padding || padding > 16 || !buffer.subarray(-padding).every((byte) => byte === padding)) throw new Error('Invalid encrypted cosigner data');
     return new TextDecoder('utf-8', { fatal: true }).decode(buffer.subarray(0, -padding));
-  } finally { buffer.fill(0); plain.words.fill(0); }
+  } finally { buffer.fill(0); }
 }
 export function encryptForCosigners(data: string, recipients: Record<string, Uint8Array>, secret: Uint8Array): FinalEncryptedStructure {
   const entries = Object.entries(recipients);

@@ -1,5 +1,5 @@
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
-import WalletConnect from '@walletconnect/sign-client';
+import { WalletConnectClient as WalletConnect } from '@extension-base/services/wallet-connect-service/protocol/client';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Keyring } from '@polkadot/keyring';
 import { cryptoWaitReady, encodeAddress } from '@polkadot/util-crypto';
@@ -8,7 +8,7 @@ import { WalletConnectDAppService } from '@extension-base/services/wallet-connec
 import { sessionStorage } from '../helpers/session-storage';
 import type State from '@extension-base/background/handlers/State';
 import type { Port } from '@extension-base/background/types/types';
-import type { SessionTypes } from '@walletconnect/types';
+import type { WcSession } from '@extension-base/services/wallet-connect-service/protocol/types';
 
 vi.mock('@extension-base/utils/crossenv', async () => ({
   chrome: (await import('../helpers/session-storage')).sessionStorage.chrome,
@@ -23,12 +23,12 @@ const otherEvm = new Wallet(`0x${'22'.repeat(32)}`).address;
 const genesis = '11'.repeat(32),
   caip = `polkadot:${genesis.slice(0, 32)}`;
 let alice: string, bob: string;
-let service: WalletConnectDAppService, session: SessionTypes.Struct;
+let service: WalletConnectDAppService, session: WcSession;
 let state: State, client: { connect: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn> };
-let approval: ReturnType<typeof vi.fn>, approve: (s: SessionTypes.Struct) => void;
+let approval: ReturnType<typeof vi.fn>, approve: (s: WcSession) => void;
 let callbacks: Record<string, ReturnType<typeof vi.fn>>, unsubscribe: Record<string, () => void>;
 let existing: { address: string; meta: Record<string, unknown> }[];
-let sessions: SessionTypes.Struct[];
+let sessions: WcSession[];
 let records: { address: string; meta: Record<string, unknown> }[];
 let port: Port, disconnectPort: () => void;
 let init: (id: string, port?: Port) => Promise<string>;
@@ -66,9 +66,9 @@ beforeEach(async () => {
       },
       eip155: { methods: ['personal_sign', 'eth_sendTransaction'], accounts: [`eip155:10:${evm}`], events: [] },
     },
-  } as unknown as SessionTypes.Struct;
+  } as unknown as WcSession;
   sessions = [];
-  const promise = new Promise<SessionTypes.Struct>((resolve) => {
+  const promise = new Promise<WcSession>((resolve) => {
     approve = resolve;
   });
   approval = vi.fn(() => promise);

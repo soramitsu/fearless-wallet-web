@@ -1,4 +1,4 @@
-import WalletConnect from '@walletconnect/sign-client';
+import { WalletConnectClient as WalletConnect } from '@extension-base/services/wallet-connect-service/protocol/client';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { WalletConnectDAppService } from '@extension-base/services/wallet-connect-service/dapp';
 import type State from '@extension-base/background/handlers/State';

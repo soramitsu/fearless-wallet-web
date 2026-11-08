@@ -1,5 +1,5 @@
 import Extension from '@extension-base/background/handlers/Extension';
-import WalletConnect from '@walletconnect/sign-client';
+import { WalletConnectClient as WalletConnect } from '@extension-base/services/wallet-connect-service/protocol/client';
 import { WalletConnectService } from '@extension-base/services/wallet-connect-service';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WalletConnectDAppService } from '@extension-base/services/wallet-connect-service/dapp';
@@ -7,7 +7,7 @@ import BaseExtensionStore from '@extension-base/stores/BaseExtension';
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import type { RequestService } from '@extension-base/services/request-service';
 import type State from '@extension-base/background/handlers/State';
-import type { SessionTypes } from '@walletconnect/types';
+import type { WcSession } from '@extension-base/services/wallet-connect-service/protocol/types';
 
 const fixture = vi.hoisted(() => ({
   data: {} as Record<string, unknown>, failRead: false, failWrite: false, holdWrite: false,
@@ -45,11 +45,11 @@ const topic = 'public-revoked-mobile-session';
 // Both roles share one SDK client. Fearless controls the sessions it approved as the wallet; a mobile wallet controls
 // the pairings Fearless proposed.
 const walletSession = (topic: string) =>
-  ({ topic, controller: 'public-fearless-key', self: { publicKey: 'public-fearless-key' } }) as unknown as SessionTypes.Struct;
+  ({ topic, controller: 'public-fearless-key', self: { publicKey: 'public-fearless-key' } }) as unknown as WcSession;
 const mobileSession = (topic: string) =>
-  ({ topic, controller: 'public-phone-key', self: { publicKey: 'public-fearless-key' } }) as unknown as SessionTypes.Struct;
+  ({ topic, controller: 'public-phone-key', self: { publicKey: 'public-fearless-key' } }) as unknown as WcSession;
 const roleSession = (role: 'mobile' | 'incoming', topic: string) => (role === 'mobile' ? mobileSession : walletSession)(topic);
-let client: { connect: ReturnType<typeof vi.fn>; on: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn>; session: { values: SessionTypes.Struct[]; get(topic: string): SessionTypes.Struct | undefined } };
+let client: { connect: ReturnType<typeof vi.fn>; on: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn>; session: { values: WcSession[]; get(topic: string): WcSession | undefined } };
 let listeners: Record<string, (event: { topic: string }) => Promise<void>>;
 let pending: Promise<unknown>[];
 const makeState = () => ({ networkService: { networkValues: [{ name: 'Public Substrate', ecosystem: 'substrate', chainId: '11'.repeat(32) }] }, keyringService: { getAddresses: () => [], getAllAccounts: () => [] } } as unknown as State);
@@ -390,8 +390,8 @@ describe('Reset wallet over a saved session record that cannot be read', () => {
 
 describe('pairing cancellation retirement acknowledgement', () => {
   async function pairing() {
-    let approve!: (session: SessionTypes.Struct) => void;
-    const approval = new Promise<SessionTypes.Struct>((resolve) => { approve = resolve; });
+    let approve!: (session: WcSession) => void;
+    const approval = new Promise<WcSession>((resolve) => { approve = resolve; });
     client.connect.mockResolvedValue({ uri: 'wc:public-cancel-fixture', approval: () => approval });
     const service = await open();
     // A new pairing must not already be present when its prior topics are captured.

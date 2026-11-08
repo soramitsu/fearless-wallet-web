@@ -4,7 +4,7 @@ import { CRON_GET_API_MAP_STATUS } from '@extension-base/const/intervals';
 import { captureEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
 import { createSigningRequestId } from '@extension-base/services/request-service/signingRequestId';
 import { subscriptionIdentity } from '@extension-base/utils/subscriptionIdentity';
-import type { RequestArguments } from '@walletconnect/jsonrpc-types';
+import type { RequestArguments } from '@extension-base/utils/jsonRpc';
 import type State from '@extension-base/background/handlers/State';
 import type { EvmAppState, EvmProvider } from '@extension-base/background/types/types';
 import { stripUrl } from '@/extension/background/extension-base/src/background/helpers';

@@ -1,7 +1,7 @@
 import { wrapBytes } from '@polkadot/extension-dapp/wrapBytes';
 import { u8aToHex } from '@polkadot/util';
 import { evmSigningAddress } from '@extension-base/services/request-service/handlers/evmSigningContext';
-import { getInternalError, getSdkError } from '@walletconnect/utils';
+import { getInternalError, getSdkError } from '@extension-base/services/wallet-connect-service/protocol/errors';
 import { hasWalletConnectData } from '@extension-base/services/wallet-connect-service/storage';
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import { walletAddressIdentity } from '@extension-base/services/keyring-service/DeletedWallets';
@@ -17,8 +17,8 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { HexString } from '@polkadot/util/types';
 import type { MobileSigningContext } from './mobileSigningContext';
 import type State from '@extension-base/background/handlers/State';
-import type WalletConnect from '@walletconnect/sign-client';
-import type { EngineTypes, SessionTypes } from '@walletconnect/types';
+import type { WalletConnectClient } from '@extension-base/services/wallet-connect-service/protocol/client';
+import type { WcRequestParams, WcSession } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type { Port, ResponseSigning } from '@extension-base/background/types/types';
 
 type PairingAttempt = {
@@ -30,7 +30,7 @@ type PairingAttempt = {
   retirement?: Promise<void>;
   selection?: Promise<boolean>;
   uri?: string;
-  session?: SessionTypes.Struct;
+  session?: WcSession;
   priorTopics: Set<string>;
   currentAddress?: string;
   currentAccountRevision: number;
@@ -40,7 +40,7 @@ type PairingAttempt = {
 };
 
 export class WalletConnectDAppService {
-  private client?: WalletConnect;
+  private client?: WalletConnectClient;
   private initialization?: Promise<void>;
   private readonly sessionRevisions = new Map<string, number>();
   private readonly retiredTopics = new Set<string>();
@@ -91,7 +91,7 @@ export class WalletConnectDAppService {
   }
 
   // The client also holds the sessions dApps opened with Fearless as their wallet. They are never used here.
-  public get sessions(): SessionTypes.Struct[] {
+  public get sessions(): WcSession[] {
     return (this.client?.session.values || []).filter((session) => !isWalletSession(session) &&
       !this.retiredTopics.has(session.topic) && this.authority.allows(session.topic));
   }
@@ -112,7 +112,7 @@ export class WalletConnectDAppService {
     }
   }
 
-  public getSession(topic: string): SessionTypes.Struct {
+  public getSession(topic: string): WcSession {
     if (this.state.keyringService.isResetting) throw new Error('Wallet reset is in progress');
     const session = this.sessions.find((el) => el.topic === topic);
 
@@ -241,7 +241,7 @@ export class WalletConnectDAppService {
       // envelope without making it available to general signing callers.
       const reader = {
         getSessionRevision: (topic: string) => this.getSessionRevision(topic),
-        getSession: (topic: string): SessionTypes.Struct => {
+        getSession: (topic: string): WcSession => {
           const live = this.client?.session.values.find(value => value.topic === topic);
           if (!live || topic !== session.topic || !attempt.active || this.retiredTopics.has(topic) ||
             this.state.keyringService.isResetting || this.authority.revision !== attempt.authorityRevision)
@@ -452,7 +452,7 @@ export class WalletConnectDAppService {
       validateMobileSigningContext(this, context, intent);
     };
     validate();
-    const requestEvent: EngineTypes.RequestParams = {
+    const requestEvent: WcRequestParams = {
       chainId: context.chainId,
       topic: context.topic,
       request: { method, params: snapshot },

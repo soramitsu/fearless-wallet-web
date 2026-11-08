@@ -1,4 +1,4 @@
-import WalletConnect from '@walletconnect/sign-client';
+import { WalletConnectClient as WalletConnect } from '@extension-base/services/wallet-connect-service/protocol/client';
 import { WalletConnectDAppService } from '@extension-base/services/wallet-connect-service/dapp';
 import ExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,7 +7,7 @@ import { KeyringService } from '@extension-base/services/keyring-service';
 import State from '@extension-base/background/handlers/State';
 import CurrentAccountStore from '@extension-base/stores/CurrentAccountStore';
 import BaseExtensionStore from '@extension-base/stores/BaseExtension';
-import type { SessionTypes } from '@walletconnect/types';
+import type { WcSession } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import { api as apiSora } from '@/sora';
 import { WalletEcosystem } from '@/interfaces';
@@ -294,10 +294,10 @@ describe('selection races through actual mobile pairing', () => {
       topic, acknowledged: true, expiry: Math.floor(Date.now() / 1000) + 600,
       peer: { publicKey: 'public-peer', metadata: { name: 'Public mobile', url: 'https://public.example', icons: [], description: '' } },
       namespaces: { polkadot: { methods: ['polkadot_signMessage', 'polkadot_signTransaction'], accounts: [`polkadot:${'11'.repeat(16)}:${address}`], events: [] } },
-    } as unknown as SessionTypes.Struct;
-    let approve!: (session: SessionTypes.Struct) => void;
-    let sessions: SessionTypes.Struct[] = [];
-    const approval = new Promise<SessionTypes.Struct>((resolve) => { approve = resolve; });
+    } as unknown as WcSession;
+    let approve!: (session: WcSession) => void;
+    let sessions: WcSession[] = [];
+    const approval = new Promise<WcSession>((resolve) => { approve = resolve; });
     const client = { on: vi.fn(), disconnect: vi.fn(async () => undefined),
       session: { get values() { return sessions; } },
       connect: vi.fn(async () => { sessions = [session]; return { uri: 'wc:public-selection-race', approval: () => approval }; }),

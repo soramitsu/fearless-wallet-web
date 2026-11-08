@@ -105,15 +105,11 @@
       ]
     },
     {
-      "reason": "WalletConnect SDK relay, verification, telemetry and RPC endpoints.",
+      "reason": "WalletConnect relay and Verify service, used by the in-repo WalletConnect client (docs/walletconnect-protocol.md).",
       "hosts": [
         "relay.walletconnect.com",
-        "relay.walletconnect.org",
         "verify.walletconnect.com",
-        "verify.walletconnect.org",
-        "pulse.walletconnect.org",
-        "rpc.walletconnect.org",
-        "echo.walletconnect.com"
+        "verify.walletconnect.org"
       ]
     },
     {

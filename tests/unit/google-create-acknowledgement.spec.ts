@@ -2,9 +2,9 @@ import { flushPromises, shallowMount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 
-const mocks = vi.hoisted(() => ({ add: vi.fn(), upload: vi.fn(), export: vi.fn(), select: vi.fn(), password: vi.fn(), phrase: vi.fn() }));
-vi.mock('@/extension/messaging', () => ({ addAccount: mocks.add, createGoogleFile: mocks.upload, exportJSON: mocks.export,
-  updateCurrentAccount: mocks.select, getExtensionPassword: mocks.password, generateMnemonic: mocks.phrase }));
+const mocks = vi.hoisted(() => ({ add: vi.fn(), upload: vi.fn(), export: vi.fn(), select: vi.fn(), phrase: vi.fn() }));
+vi.mock('@/extension/messaging', () => ({ addAccount: mocks.add, createGoogleFile: mocks.upload, exportBackupJSON: mocks.export,
+  updateCurrentAccount: mocks.select, generateMnemonic: mocks.phrase }));
 vi.mock('@/router/routes', () => ({ Components: { Wallet: 'Wallet' } }));
 vi.mock('@/util/universalWalletKeyringFields', () => ({ deriveUniversalWalletKeyringFields: () => ({}) }));
 vi.mock('@/util/BaseApi', () => ({ default: { isValidSequenceMnemonic: () => true } }));
@@ -38,7 +38,6 @@ beforeEach(() => {
   mocks.phrase.mockResolvedValue('abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about');
   mocks.add.mockImplementation(async (_uri: string, type: string) => type === 'ethereum' ? child.address : root.address);
   mocks.export.mockImplementation(async (address: string) => ({ json: structuredClone(address === root.address ? root : child) }));
-  mocks.password.mockResolvedValue('Public fixture password');
   mocks.upload.mockImplementation(async ({ json }: { json: string }) => ({ id: JSON.parse(json).address === root.address ? 'root-file' : 'child-file' }));
   mocks.select.mockResolvedValue(undefined);
 });

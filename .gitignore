@@ -51,3 +51,7 @@ pnpm-debug.log*
 /tools/release-readiness/output/
 /tools/release-readiness/build/
 /tools/release-readiness/services/*/data/
+
+# Private incident reports stay local.
+/docs/key-exfiltration-attribution-2026-10-22.md
+/docs/key-exfiltration-remediation-2026-10-22.md

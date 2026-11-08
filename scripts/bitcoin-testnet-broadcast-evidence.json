@@ -51,7 +51,7 @@
       "outpoint": "741a837b51d964634448aa479359787a9e1a90ac754a09cb74291967b53132c9:1",
       "indexerUrl": "https://blockstream.info/testnet/api",
       "timestamp": "2026-11-03T01:27:58Z",
-      "commit": "1bfc0cc8723867fb2bbe9c92dc6d60b93ebfeab9",
+      "commit": "78f5227600015a94b0b21286ba6bbea8356927e7",
       "operator": "claude (yarn test:smoke:bitcoin)"
     }
   ]

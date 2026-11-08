@@ -541,7 +541,7 @@ export function filterSectionsBySearch(sections: PortfolioNetworkSection[], quer
 const sectionHasBalance = (section: PortfolioNetworkSection): boolean =>
   [...section.assets, ...section.detectedAssets].some(({ hasBalance, balanceUnavailable }) => hasBalance || balanceUnavailable);
 
-/** Funded networks first; networks that only hold zero rows go into the collapsed "N networks · no balance" block. */
+/** Networks that hold something (or whose balance could not be loaded) apart from networks that only hold zero rows. */
 export function splitZeroSections(sections: PortfolioNetworkSection[]): {
   funded: PortfolioNetworkSection[];
   zeroOnly: PortfolioNetworkSection[];

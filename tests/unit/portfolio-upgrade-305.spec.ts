@@ -34,6 +34,9 @@ vi.mock('@/extension/messaging/nfts', () => ({ fetchNfts: vi.fn() }));
 vi.mock('@/stores/extension', () => ({ useExtensionStore: () => ({ features: { assetDiscoveryMode: 'visible' } }) }));
 
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
+import ManageAssets from '@/screens/portfolio/ManageAssets.vue';
+
+const routerPush = vi.fn(() => Promise.resolve());
 
 const createLocalStorageStub = () => {
   const storage = new Map<string, string>();
@@ -142,11 +145,36 @@ function fundedTon(): TokenGroup[] {
   ];
 }
 
+const globalOptions = {
+  mocks: {
+    $t: (key: string, count?: number) => (typeof count === 'number' ? `${key}:${count}` : key),
+    $router: { push: routerPush },
+  },
+  stubs: {
+    ExternalLogo: true,
+    Icon: true,
+    Loader: true,
+    SearchInput: true,
+    Scroll: { template: '<main><slot /></main>' },
+    Switcher: {
+      props: ['value'],
+      emits: ['change'],
+      template: '<button type="button" class="switcher-stub" @click="$emit(\'change\', !value)" />',
+    },
+  },
+};
+
+/** One Manage assets section as `network:SYMBOL` (`:hidden` when hidden). */
+const manageRows = (page: VueWrapper, testId: string) =>
+  page
+    .findAll(`[data-testid="${testId}"] [data-testid="manageAssetRow"]`)
+    .map((row) => `${row.attributes('data-network')}:${row.attributes('data-symbol')}`);
+
 const mountCurrencies = (props: Record<string, unknown> = {}) =>
   mount(Currencies, {
-    props: { balances: [], filterValue: '', showAssetsManagementForm: false, manageHiddenOnly: false, ...props },
+    props: { filterValue: '', ...props },
     global: {
-      mocks: { $t: (key: string, count?: number) => (typeof count === 'number' ? `${key}:${count}` : key) },
+      mocks: globalOptions.mocks,
       stubs: {
         ExternalLogo: true,
         Icon: true,
@@ -194,9 +222,6 @@ function openPortfolio(address: string, ecosystem: WalletEcosystem, balances: To
   if (ecosystem === WalletEcosystem.Evm) accountsStore.selectedWallet.ethereumAddress = address;
   accountsStore.setBalance({ details: balances });
   accountsStore.setIsBalanceLoading(false);
-  // Show every network, zero-only ones included, so an absent row really is absent. These cases read every asset of
-  // the one list; portfolio-token-lens-upgrade.spec.ts replays the same fixtures row by row.
-  accountsStore.updatePortfolioView({ zeroNetworksExpanded: true });
 
   const scope = effectScope();
   const portfolio = scope.run(() => usePortfolio())!;
@@ -308,30 +333,32 @@ describe('the hidden-with-funds notice', () => {
     expect(reopened.get('[data-testid="hiddenFundsNotice"]').text()).toContain('portfolioPage.hiddenFundsNotice:2');
 
     await reopened.get('[data-testid="reviewHiddenFunds"]').trigger('click');
-    expect(reopened.emitted('toggleAssetsManagementForm')).toEqual([[true]]);
-    expect(reopened.emitted('update:manageHiddenOnly')).toEqual([[true]]);
+    expect(routerPush).toHaveBeenLastCalledWith({ name: 'ManageAssets', query: { focus: 'hidden' } });
 
-    // Review: Manage lists only hidden assets, zero-balance ones too even with the zero block closed;
+    // Review: Manage assets lists the hidden assets, the ones with no balance too, each on its own network;
     // showing one writes one explicit preference and nothing else.
-    accountsStore.updatePortfolioView({ zeroNetworksExpanded: false });
-    await reopened.setProps({ showAssetsManagementForm: true, manageHiddenOnly: true });
-    expect(rows(reopened)).toEqual(
-      expect.arrayContaining(['Kusama:KSM:hidden', 'Polkadot AssetHub:USDT:hidden', 'Kusama AssetHub:KSM:hidden'])
+    const page = mount(ManageAssets, { props: { focus: 'hidden' }, global: globalOptions });
+    await nextTick();
+    expect(manageRows(page, 'manageHidden')).toEqual(
+      expect.arrayContaining(['Kusama:KSM', 'Polkadot AssetHub:USDT', 'Kusama AssetHub:KSM'])
     );
-    expect(rows(reopened).every((row) => row.endsWith(':hidden'))).toBe(true);
-    // The hidden KSM is one token on two networks: Review opens it, and only its Kusama switch is used.
-    const kusama = reopened
-      .findAll('[data-token="group:ksm"] .network-line')
-      .find((line) => line.get('.network-row').attributes('data-network') === 'Kusama')!;
+    expect(manageRows(page, 'manageShown')).not.toContain('Kusama:KSM');
+    const kusama = page
+      .findAll('[data-testid="manageHidden"] [data-testid="manageAssetRow"]')
+      .find((row) => row.attributes('data-network') === 'Kusama' && row.attributes('data-symbol') === 'KSM')!;
     await kusama.get('.switcher-stub').trigger('click');
     const ksmKey = createAssetKey({
       ecosystem: 'substrate',
       chainId: productionNetworks.find(({ name }) => name === 'Kusama')!.chainId,
       assetId: productionNetworks.find(({ name }) => name === 'Kusama')!.assets[0].id,
     });
-    expect(accountsStore.assetPreferences).toEqual({ [ksmKey]: 'shown' });
-    expect(rows(reopened)).not.toContain('Kusama:KSM:hidden');
+    // It holds funds, so it goes back to automatic: shown while it holds anything, over the 3.0.5 hide.
+    expect(accountsStore.assetPreferences).toEqual({ [ksmKey]: 'auto' });
+    expect(rows(reopened)).toContain('Kusama:KSM');
+    // Kusama AssetHub's KSM stays hidden: one network at a time.
+    expect(rows(reopened)).not.toContain('Kusama AssetHub:KSM');
 
+    page.unmount();
     reopened.unmount();
     scope.stop();
     expectLegacyKeysUntouched(entries);
@@ -351,48 +378,44 @@ describe('zero-balance tokens', () => {
     vi.unstubAllGlobals();
   });
 
-  it('shows an empty wallet the empty state and its popular networks collapsed, expansion remembered', async () => {
+  it('shows an empty wallet the empty state, and suggests the shared zero list in Manage assets instead of listing it', async () => {
     const { accountsStore, scope } = openPortfolio(SUBSTRATE_ADDRESS, WalletEcosystem.Substrate, ready(getMockAssets(networkMap, WalletEcosystem.Substrate)));
-    accountsStore.updatePortfolioView({ zeroNetworksExpanded: false });
     const wrapper = mountCurrencies();
     await nextTick();
 
     expect(wrapper.find('[data-testid="infoText"]').exists()).toBe(true);
-    const header = wrapper.get('[data-testid="portfolioZeroNetworks"] .zero-header');
-    expect(header.text()).toBe('portfolioPage.popularNoBalance');
-    expect(header.attributes('aria-expanded')).toBe('false');
+    expect(wrapper.find('[data-testid="portfolioZeroNetworks"]').exists()).toBe(false);
     expect(wrapper.findAll('.token-row')).toHaveLength(0);
+    expect(wrapper.find('[data-testid="emptyAddTokens"]').exists()).toBe(true);
+    wrapper.unmount();
 
-    await header.trigger('click');
-    expect(accountsStore.portfolioView.zeroNetworksExpanded).toBe(true);
-    // Only the listed utility assets of ranked mainnets (shared zero list), one per network.
-    expect(rows(wrapper).sort()).toEqual(
+    const page = mount(ManageAssets, { global: globalOptions });
+    await nextTick();
+    // Only the listed utility assets of ranked mainnets (shared zero list), one per network, switched off.
+    expect(manageRows(page, 'manageAdd').sort()).toEqual(
       ['Analog Timechain:ANLOG', 'Arbitrum One:ETH', 'Avalanche C-Chain:AVAX', 'BNB Smart Chain:BNB', 'Ethereum:ETH', 'Kusama:KSM', 'Moonbeam:GLMR', 'Moonriver:MOVR', 'OP Mainnet:ETH', 'Pendulum:PEN', 'Polkadot:DOT', 'Polygon:POL', 'Polygon zkEVM:ETH', 'SORA Mainnet:XOR', 'X Layer Mainnet:OKB'].sort()
     );
-
-    wrapper.unmount();
+    expect(manageRows(page, 'manageShown')).toEqual([]);
+    expect(accountsStore.assetPreferences).toEqual({});
+    page.unmount();
     scope.stop();
   });
 
-  it('collapses zero-only tokens of a funded wallet behind a count, and opens them for a matching search', async () => {
+  it('lists only what a funded wallet holds, and finds any supported token at zero by search', async () => {
     const groups = ready(getMockAssets(networkMap, WalletEcosystem.Substrate));
     fund(groups, 'Polkadot', 'dot', '1');
-    const { accountsStore, scope } = openPortfolio(SUBSTRATE_ADDRESS, WalletEcosystem.Substrate, groups);
-    accountsStore.updatePortfolioView({ zeroNetworksExpanded: false });
+    const { scope } = openPortfolio(SUBSTRATE_ADDRESS, WalletEcosystem.Substrate, groups);
     const wrapper = mountCurrencies();
     await nextTick();
 
     expect(wrapper.find('[data-testid="infoText"]').exists()).toBe(false);
     expect(rows(wrapper)).toEqual(['Polkadot:DOT']);
-    // The 14 networks at zero hold 11 tokens: ETH is one token on four of them.
-    expect(wrapper.get('.zero-header').text()).toBe('portfolioPage.zeroTokens:11');
+    // No "N tokens · no balance" block: a token with no balance is listed once someone adds it.
+    expect(wrapper.find('.zero-header').exists()).toBe(false);
 
     await wrapper.setProps({ filterValue: 'kusama' });
-    expect(wrapper.get('.zero-header').attributes('aria-expanded')).toBe('true');
-    // The search holds the block open, so its header cannot be clicked into changing the remembered choice.
-    expect(wrapper.get('.zero-header').attributes('disabled')).toBeDefined();
     // Search exposes every verified catalog match, including KSM on other mainnets and assets on a named
-    // Kusama network. It is not restricted to the utility tokens that the normal zero-balance rule shows.
+    // Kusama network. It is not restricted to the utility tokens of the shared zero list.
     expect(rows(wrapper).sort()).toEqual([
       'SORA Mainnet:KSM', 'Kusama:KSM', 'Moonriver:XCKSM', 'Amplitude:KSM', 'Basilisk:KSM', 'Bifrost:KSM',
       'Calamari:KSM', 'Encointer on Kusama:KSM', 'Karura:KSM', 'Kintsugi:KSM', 'Kusama AssetHub:KSM',
@@ -400,14 +423,11 @@ describe('zero-balance tokens', () => {
       'Parallel Heiko:KSM', 'Robonomics:KSM', 'Shiden:KSM', 'Turing Network:KSM', 'Bajun Kusama:BAJU',
       'SORA Kusama parachain:XOR',
     ].sort());
-    expect(accountsStore.portfolioView.zeroNetworksExpanded).toBe(false);
 
     await wrapper.setProps({ filterValue: 'no-such-asset' });
     expect(wrapper.get('[data-testid="infoText"]').text()).toContain('portfolioPage.noMatchingAssets');
 
     await wrapper.setProps({ filterValue: '' });
-    expect(wrapper.get('.zero-header').attributes('aria-expanded')).toBe('false');
-    expect(wrapper.get('.zero-header').attributes('disabled')).toBeUndefined();
     expect(rows(wrapper)).toEqual(['Polkadot:DOT']);
 
     wrapper.unmount();

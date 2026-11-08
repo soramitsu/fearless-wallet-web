@@ -1,19 +1,16 @@
 <template>
   <section
     class="token-row"
-    :class="{ 'token-row--hidden': row.hidden, 'token-row--manage': manage }"
+    :class="{ 'token-row--hidden': row.hidden }"
     :data-token="row.id"
     :data-symbol="row.symbol"
     :data-network="isGroup ? undefined : single.asset.networkName"
   >
     <div class="token-line">
-      <!-- In Manage a single row is not a button: its switch is the one control (as in a network section). -->
-      <component
-        :is="headerIsButton ? 'button' : 'div'"
+      <button
         class="token-header"
-        :type="headerIsButton ? 'button' : undefined"
-        :aria-expanded="isGroup && manage ? expanded : undefined"
-        :aria-label="headerIsButton ? accessibleLabel : undefined"
+        type="button"
+        :aria-label="accessibleLabel"
         :data-testid="isGroup ? 'tokenGroupHeader' : 'tokenRowHeader'"
         @click="onHeaderClick"
       >
@@ -72,73 +69,8 @@
           </span>
         </span>
 
-        <!-- In Manage a single row has only its switch; a group still opens to its networks. -->
-        <Icon
-          v-if="!manage || isGroup"
-          :icon="isGroup && manage && expanded ? 'down' : 'chevron-right'"
-          className="chevron"
-          width="16px"
-          height="16px"
-          :hover="false"
-        />
-      </component>
-
-      <Switcher
-        v-if="manage"
-        class="row-switch"
-        data-testid="tokenRowSwitch"
-        :value="!row.hidden"
-        :ariaLabel="rowSwitchLabel"
-        @change="setRowPreference($event ? 'shown' : 'hidden')"
-      />
-    </div>
-
-    <!-- Manage opens a token to its networks, each with its own switch; outside Manage the token's own page does. -->
-    <div v-if="isGroup && manage && expanded" class="token-networks" data-testid="tokenNetworks">
-      <div v-for="child in visibleChildren" :key="child.asset.key" class="network-line">
-        <div
-          class="network-row"
-          :class="{ 'network-row--hidden': child.asset.hidden }"
-          :data-asset-key="child.asset.key"
-          :data-network="child.asset.networkName"
-          :data-symbol="child.asset.symbol"
-        >
-          <ExternalLogo :name="child.asset.networkIcon" :width="28" class="network-logo" />
-
-          <span class="network-identity">
-            <span class="network-name">{{ child.asset.networkName }}</span>
-            <span class="network-meta">
-              <span v-if="roleLabel(child.role)" class="role-chip" data-testid="memberRole">{{ roleLabel(child.role) }}</span>
-              <span v-if="child.asset.hidden" class="row-badge" data-testid="hiddenBadge">{{ t('portfolioPage.hiddenBadge') }}</span>
-              <span
-                v-if="child.asset.hidden && child.asset.preferenceSource === 'legacy305'"
-                class="row-badge legacy"
-                data-testid="hiddenPreviousVersion"
-              >
-                {{ t('portfolioPage.hiddenPreviousVersion') }}
-              </span>
-            </span>
-          </span>
-
-          <span v-if="child.asset.balanceUnavailable" class="network-balance" data-testid="networkBalanceUnavailable">
-            <span class="token-failed">{{ t('portfolioPage.balanceStatus.failed') }}</span>
-          </span>
-          <span v-else class="network-balance">
-            <span>{{ formatAmount(child.asset.balanceText) }} {{ child.asset.symbol }}</span>
-            <span class="token-amount">{{ formatFiat(child.asset.fiatValue) }}</span>
-            <span v-if="child.asset.balanceFailed" class="token-note token-failed" data-testid="networkBalanceFailed">
-              {{ t('portfolioPage.balanceStatus.failed') }}
-            </span>
-          </span>
-        </div>
-
-        <Switcher
-          class="row-switch"
-          :value="!child.asset.hidden"
-          :ariaLabel="t('portfolioPage.showAssetOnNetwork', { symbol: child.asset.symbol, network: child.asset.networkName })"
-          @change="setPreference(child.asset.key, $event ? 'shown' : 'hidden')"
-        />
-      </div>
+        <Icon icon="chevron-right" className="chevron" width="16px" height="16px" :hover="false" />
+      </button>
     </div>
   </section>
 </template>
@@ -147,9 +79,8 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import type { AssetPreference } from '@/portfolio/assetIdentity';
+import type { PortfolioTokenChild, PortfolioTokenRow } from '@/portfolio/tokenLens';
 import { formatChange } from '@/portfolio/dashboard/format';
-import { toggleListEntry } from '@/portfolio/portfolioViewSettings';
-import { tokenRowKeys, type PortfolioTokenChild, type PortfolioTokenRow } from '@/portfolio/tokenLens';
 import { usePortfolioFormatting } from '@/portfolio/usePortfolioFormatting';
 import { Components } from '@/router/routes';
 import { useAccountsStore } from '@/stores/accounts';
@@ -157,28 +88,18 @@ import { useI18n } from '@/locales/useI18n';
 
 const props = defineProps<{
   row: PortfolioTokenRow;
-  manage?: boolean;
   search?: string;
-  /** Keeps a group open in Manage while the Hidden filter shows its hidden networks. */
-  forceExpanded?: boolean;
 }>();
 
 const router = useRouter();
 const { t, tc } = useI18n();
 const accountsStore = useAccountsStore();
-const { formatAmount, formatFiat, formatPrice, roleLabel } = usePortfolioFormatting();
+const { formatAmount, formatFiat, formatPrice } = usePortfolioFormatting();
 
 const isGroup = computed(() => props.row.children.length + props.row.zeroChildren.length > 1);
 const single = computed<PortfolioTokenChild>(() => props.row.children[0] ?? props.row.zeroChildren[0]);
 // Where the token is held: its funded networks (a group's zero networks wait on its page), or all of them at zero.
 const held = computed<PortfolioTokenChild[]>(() => (props.row.children.length ? props.row.children : props.row.zeroChildren));
-
-// Expansion is remembered per wallet; only By token rows use `expandedGroups`, so it is per lens as well.
-const expanded = computed(() => props.forceExpanded || accountsStore.portfolioView.expandedGroups.includes(props.row.id));
-const visibleChildren = computed(() => [...props.row.children, ...props.row.zeroChildren]);
-
-// Outside Manage every row opens something; in Manage only a group does (its networks).
-const headerIsButton = computed(() => !props.manage || isGroup.value);
 
 // A group's members are one asset with one trusted price: the first member that has one speaks for the row.
 const pricedChild = computed(() => [...props.row.children, ...props.row.zeroChildren].find(({ asset }) => asset.unitPrice !== null));
@@ -225,7 +146,7 @@ const accessibleLabel = computed(() => {
   return withFailure(label, row.balanceFailed);
 });
 
-// Outside Manage a token opens: a group on its own page, which lists its networks; a single network on its asset page.
+// A token opens: a group on its own page, which lists its networks; a single network on its asset page.
 function onHeaderClick(): void {
   if (!isGroup.value) {
     openChild(single.value);
@@ -233,20 +154,12 @@ function onHeaderClick(): void {
   }
 
   // A token found by a search keeps it there, so its page lists the networks the search found, hidden ones included.
-  if (!props.manage) {
-    const search = props.search?.trim();
+  const search = props.search?.trim();
 
-    router.push({ name: Components.TokenOverview, params: { token: props.row.id }, ...(search ? { query: { search } } : {}) });
-    return;
-  }
-
-  accountsStore.updatePortfolioView({
-    expandedGroups: toggleListEntry(accountsStore.portfolioView.expandedGroups, props.row.id, !expanded.value),
-  });
+  router.push({ name: Components.TokenOverview, params: { token: props.row.id }, ...(search ? { query: { search } } : {}) });
 }
 
 function openChild({ asset }: PortfolioTokenChild): void {
-  if (props.manage) return;
   if (props.search?.trim() && asset.preference === 'hidden') setPreference(asset.key, 'auto');
 
   router.push({
@@ -258,18 +171,6 @@ function openChild({ asset }: PortfolioTokenChild): void {
 function setPreference(key: string, preference: AssetPreference): void {
   accountsStore.setAssetPreference({ key, preference });
 }
-
-/** The switch of a row in Manage: one write for every network of the token, so a group is shown or hidden at once. */
-function setRowPreference(preference: AssetPreference): void {
-  accountsStore.setAssetPreferences({ entries: tokenRowKeys(props.row).map((key) => ({ key, preference })) });
-}
-
-// That switch is named for what it writes: every network of the token, or the one network of a single row.
-const rowSwitchLabel = computed(() =>
-  isGroup.value
-    ? tc('portfolioPage.showTokenOnNetworks', props.row.networkCount, { symbol: props.row.symbol, count: props.row.networkCount })
-    : t('portfolioPage.showAssetOnNetwork', { symbol: props.row.symbol, network: single.value.asset.networkName })
-);
 </script>
 
 <style lang="scss" scoped>
@@ -280,12 +181,7 @@ const rowSwitchLabel = computed(() =>
   text-align: left;
 }
 
-.token-row--manage {
-  border-bottom: $default-border;
-}
-
-.token-line,
-.network-line {
+.token-line {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -309,7 +205,7 @@ const rowSwitchLabel = computed(() =>
   cursor: pointer;
   transition: background var(--fw-dur-fast) var(--fw-ease);
 
-  &:is(button):hover {
+  &:hover {
     background: var(--fw-raised-2);
   }
 
@@ -317,10 +213,6 @@ const rowSwitchLabel = computed(() =>
     outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
     outline-offset: -2px;
   }
-}
-
-div.token-header {
-  cursor: default;
 }
 
 .token-icon {
@@ -362,9 +254,7 @@ div.token-header {
 }
 
 .token-identity,
-.network-identity,
-.token-balance,
-.network-balance {
+.token-balance {
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -379,8 +269,7 @@ div.token-header {
   min-width: 0;
 }
 
-.token-symbol,
-.network-name {
+.token-symbol {
   color: var(--fw-text-1);
   font-size: 0.95rem;
   font-weight: 700;
@@ -417,8 +306,7 @@ div.token-header {
   color: var(--fw-down);
 }
 
-.token-balance,
-.network-balance {
+.token-balance {
   align-items: flex-end;
   text-align: right;
   overflow-wrap: anywhere;
@@ -447,13 +335,6 @@ div.token-header {
   color: $simple-orange-color;
 }
 
-.network-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.role-chip,
 .row-badge {
   display: inline-block;
   padding: 1px 6px;
@@ -465,12 +346,6 @@ div.token-header {
   line-height: 1.5;
 }
 
-.role-chip {
-  // A tag in the HUD style: cyan text on a cyan trace.
-  border-color: $fw-hud-trace;
-  color: $pink-lavender-color;
-}
-
 .row-badge {
   text-transform: uppercase;
 
@@ -480,34 +355,7 @@ div.token-header {
   }
 }
 
-.token-networks {
-  margin: 0 0 10px 30px;
-  padding-left: 12px;
-  // The circuit trace that joins a token's networks (design-system 5.5).
-  border-left: 2px solid $fw-hud-selection-line;
-}
-
-.network-row {
-  flex: 1;
-  min-width: 0;
-  min-height: 52px;
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 0;
-  border-top: $default-border;
-}
-
-.network-logo {
-  border-radius: 50%;
-}
-
-.network-row--hidden,
 .token-row--hidden > .token-line {
-  .network-logo,
-  .network-name,
-  .network-balance,
   .token-icon,
   .token-symbol,
   .token-subtitle,
@@ -518,10 +366,6 @@ div.token-header {
 
 .chevron {
   color: var(--fw-text-3);
-}
-
-.row-switch {
-  flex: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

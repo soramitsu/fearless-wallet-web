@@ -2,7 +2,11 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { mount } from '@vue/test-utils';
 import type { PortfolioAsset, PortfolioNetworkSection as NetworkSection } from '@/portfolio/assetIdentity';
-import english from '@/locales/en/translation.json';
+import type { ManageAssetEntry } from '@/portfolio/manageAssets';
+import translation from '@/locales/en/translation.json';
+import { walletHomeMessages } from '@/locales/walletHomeMessages';
+
+const english = { ...translation, ...walletHomeMessages['en-EN'] };
 
 const mocks = vi.hoisted(() => ({ push: vi.fn(), setAssetPreference: vi.fn() }));
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: mocks.push }) }));
@@ -28,8 +32,8 @@ const translate = (key: string, values: Record<string, string> = {}) => {
 vi.mock('@/locales/useI18n', () => ({ useI18n: () => ({ t: translate, tc: translate }) }));
 
 import Switcher from '@/components/Switcher.vue';
+import ManageAssetRow from '@/screens/portfolio/ManageAssetRow.vue';
 import PortfolioNetworkSection from '@/screens/wallet&asset/wallet/PortfolioNetworkSection.vue';
-import WalletSettings from '@/screens/wallet&asset/wallet/WalletSettings.vue';
 
 const hiddenKsm: PortfolioAsset = {
   key: 'substrate:kusama:ksm',
@@ -75,9 +79,11 @@ const kusama: NetworkSection = {
   detectedAssets: [],
 };
 
-const renderSection = (manage: boolean) =>
+const hiddenEntry: ManageAssetEntry = { asset: hiddenKsm, section: 'hidden', listed: false, added: false, popular: true, networkRank: 9 };
+
+const renderSection = () =>
   mount(PortfolioNetworkSection, {
-    props: { section: kusama, manage },
+    props: { section: kusama },
     attachTo: document.body,
     global: { components: { Switcher }, stubs: { ExternalLogo: true, Icon: true } },
   });
@@ -88,52 +94,45 @@ describe('showing a hidden asset again without a mouse', () => {
     mocks.setAssetPreference.mockClear();
   });
 
-  it('gives each Manage row a named, focusable switch that is not wrapped in a button', async () => {
-    const wrapper = renderSection(true);
-    const row = wrapper.get('.asset-row');
+  it('gives each Manage assets row a named, focusable switch that is not wrapped in a button', async () => {
+    const wrapper = mount(ManageAssetRow, {
+      props: { entry: hiddenEntry, section: 'hidden' },
+      attachTo: document.body,
+      global: { components: { Switcher }, stubs: { ExternalLogo: true } },
+    });
+    const row = wrapper.get('[data-testid="manageAssetRow"]');
     const toggle = row.get('input[role="switch"]');
 
     expect(row.element.tagName).toBe('DIV');
     expect(row.element.closest('button')).toBeNull();
+    expect(row.findAll('button')).toHaveLength(0);
     expect(toggle.attributes('type')).toBe('checkbox');
-    expect(toggle.attributes('aria-label')).toBe('Show KSM on Kusama');
+    expect(toggle.attributes('aria-label')).toBe('Show KSM on Kusama in your wallet');
     expect((toggle.element as HTMLInputElement).checked).toBe(false);
+    // Hidden in 3.0.5 and still holding funds: the row says both.
+    expect(row.get('[data-testid="hiddenPreviousVersion"]').text()).toBe(english.portfolioPage.hiddenPreviousVersion);
+    expect(row.get('[data-testid="manageAssetBalance"]').text()).toContain('KSM');
 
     (toggle.element as HTMLInputElement).focus();
     expect(document.activeElement).toBe(toggle.element);
     // Space on a focused checkbox is the browser's click activation.
     (toggle.element as HTMLInputElement).click();
 
-    expect(mocks.setAssetPreference).toHaveBeenCalledExactlyOnceWith({ key: hiddenKsm.key, preference: 'shown' });
+    expect(wrapper.emitted('toggle')).toEqual([[true]]);
+    // The page decides what the switch writes; the row never writes or navigates by itself.
+    expect(mocks.setAssetPreference).not.toHaveBeenCalled();
     expect(mocks.push).not.toHaveBeenCalled();
     wrapper.unmount();
   });
 
-  it('keeps the rows outside Manage as buttons that open the asset', async () => {
-    const wrapper = renderSection(false);
+  it('keeps the rows of a network section as buttons that open the asset', async () => {
+    const wrapper = renderSection();
     const row = wrapper.get('.asset-row');
 
     expect(row.element.tagName).toBe('BUTTON');
     expect(row.find('input').exists()).toBe(false);
     await row.trigger('click');
     expect(mocks.push).toHaveBeenCalledOnce();
-    wrapper.unmount();
-  });
-
-  it('names the Hide zero balances switch by its visible label', () => {
-    const wrapper = mount(WalletSettings, {
-      // Hide zero balances is one of the list's settings, in Manage.
-      props: { activeTabName: 'Currencies', filterValue: '', showAssetsManagementForm: true, hideZero: false },
-      global: {
-        components: { Switcher },
-        mocks: { $t: translate },
-        stubs: { TabButton: true, SearchInput: true, CircleButton: true },
-      },
-    });
-    const toggle = wrapper.get('[data-testid="hideZeroToggle"] input[role="switch"]');
-
-    expect(toggle.element.closest('label')?.textContent?.trim()).toBe(english.wallet.hideZero);
-    expect(toggle.element.closest('button')).toBeNull();
     wrapper.unmount();
   });
 

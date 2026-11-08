@@ -30,6 +30,7 @@ vi.mock('@/extension/messaging/nfts', () => ({ fetchNfts: vi.fn() }));
 vi.mock('@/stores/extension', () => ({ useExtensionStore: () => ({ features: { assetDiscoveryMode: 'shadow' } }) }));
 
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
+import ManageAssets from '@/screens/portfolio/ManageAssets.vue';
 
 const PRICES = { polkadot: 5, kusama: 20, ethereum: 2000, tether: 1, 'usd-coin': 1 };
 const BEFORE_UPGRADE = 1_700_000_000_000;
@@ -108,7 +109,7 @@ function openWallet({ whenCreated }: { whenCreated?: number } = {}) {
 
 const mountList = (props: Record<string, unknown> = {}) => {
   const wrapper = mount(Currencies, {
-    props: { filterValue: '', showAssetsManagementForm: false, manageHiddenOnly: false, ...props },
+    props: { filterValue: '', ...props },
     global: {
       mocks: {
         $t: (key: string, values?: unknown) => (values && typeof values === 'object' ? `${key} ${JSON.stringify(values)}` : key),
@@ -291,13 +292,33 @@ describe('the wallet as one list', () => {
     expect(wrapper.find('[data-testid="portfolioLayoutNote"]').exists()).toBe(false);
   });
 
-  it('leaves the search out of Manage but keeps the chips, so the filter Manage works under is named', async () => {
-    openWallet();
-    const wrapper = mountList({ showAssetsManagementForm: true });
+  it('keeps the search and the chips on the list, while Manage assets has its own search and covers every network', async () => {
+    const { accountsStore } = openWallet();
+    accountsStore.setSelectedNetwork('Kusama');
+    const wrapper = mountList({ filterValue: 'ksm' });
     await nextTick();
 
-    expect(wrapper.find('.search-stub').exists()).toBe(false);
+    expect(wrapper.find('.search-stub').exists()).toBe(true);
     expect(wrapper.find('[data-testid="networkFilter"]').exists()).toBe(true);
+
+    const page = mount(ManageAssets, {
+      global: {
+        stubs: {
+          ExternalLogo: true,
+          SearchInput: { props: ['value'], template: '<input class="manage-search-stub" :value="value" />' },
+          Switcher: { props: ['value'], template: '<button type="button" />' },
+        },
+      },
+    });
+    wrappers.push(page);
+    await nextTick();
+
+    // Opened from a list narrowed to Kusama and searched for KSM, it starts with an empty search and every network.
+    expect((page.get('.manage-search-stub').element as HTMLInputElement).value).toBe('');
+    const shown = page
+      .findAll('[data-testid="manageShown"] [data-testid="manageAssetRow"]')
+      .map((row) => `${row.attributes('data-network')}:${row.attributes('data-symbol')}`);
+    expect(shown).toEqual(expect.arrayContaining(['Polkadot:DOT', 'Ethereum:ETH', 'Kusama:KSM']));
   });
 
   it('shows the one-time note to a wallet older than this layout', async () => {

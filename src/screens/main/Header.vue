@@ -153,7 +153,8 @@ export default defineComponent({ name: 'Header',
             route === Components.AssetNetworks ||
             route === Components.AssetHistory ||
             route === Components.TokenLocations ||
-            route === Components.TokenOverview
+            route === Components.TokenOverview ||
+            route === Components.ManageAssets
           );
     },
     // Behind a build flag (src/portfolio/dashboard): on the portfolio, All wallets is named instead of one wallet.

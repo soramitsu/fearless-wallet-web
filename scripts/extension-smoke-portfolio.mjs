@@ -375,11 +375,29 @@ export async function capturePortfolioScreenshots({
     await capture('11-portfolio-by-network', 'Under the tokens, the same total by network, on the same page: no switch.');
 
     await home();
+    await scrollTo('[data-testid="addTokens"]');
+    await capture('11b-home-add-tokens', 'Under the list, which holds only what the wallet has: Add tokens opens Manage assets.');
+    // Manage assets is a page of its own: what the wallet shows (found by itself), popular tokens to add, hidden ones.
     await click('[data-testid="filterBtn"] button');
-    await waitFor('tokenRowSwitch', 'Manage');
-    await capture('12-manage', 'Manage: hidden and test networks and zero balances, one switch per token; there is no grouping to choose.');
-    await click('[data-testid="filterBtn"] button');
-    await waitForExpression(cdp, sessionId, '!document.querySelector(\'[data-testid="tokenRowSwitch"]\')', 'Manage closed');
+    await waitFor('manageAssets', 'Manage assets');
+    await waitForExpression(
+      cdp,
+      sessionId,
+      `[...document.querySelectorAll('[data-testid="manageShown"] [data-testid="manageAssetRow"]')].some((row) => row.dataset.symbol === 'DOT') && Boolean(document.querySelector('[data-testid="manageAdd"] [data-testid="manageAssetSwitch"]'))`,
+      'the held tokens and the popular ones to add'
+    );
+    await capture('12-manage', 'Manage assets: the tokens the wallet holds are shown on their own; popular tokens with no balance can be added.');
+    await scrollTo('[data-testid="manageAdd"]');
+    await capture('12b-manage-popular', 'Popular tokens to add at zero, each on its network, then the options.');
+    await typeInto('[data-testid="manageSearch"] input', 'usdc');
+    await waitForExpression(
+      cdp,
+      sessionId,
+      `[...document.querySelectorAll('[data-testid="manageAdd"] [data-testid="manageAssetRow"]')].some((row) => row.dataset.symbol.startsWith('USDC'))`,
+      'USDC to add'
+    );
+    await capture('13-manage-search', 'Searching Manage assets finds any supported token, on each of its networks, to add at zero.');
+    await home();
 
     // The longest locale of the popup: Russian text must fit the same width.
     const switched = await evaluate(

@@ -37,6 +37,7 @@ vi.mock('@/stores/extension', () => ({
 }));
 
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
+import ManageAssets from '@/screens/portfolio/ManageAssets.vue';
 
 const createLocalStorageStub = () => {
   const storage = new Map<string, string>();
@@ -391,72 +392,63 @@ describe('portfolio preferences derived from 3.0.5', () => {
     accountsStore.setBalance({ details: fundedSubstrateBalances() });
     accountsStore.setIsBalanceLoading(false);
 
-    const wrapper = mount(Currencies, {
-      props: { balances: [], filterValue: '', showAssetsManagementForm: true },
-      global: {
-        mocks: { $t: (key: string) => key },
-        stubs: {
-          ExternalLogo: true,
-          Icon: true,
-          Loader: true,
-          Scroll: { template: '<main><slot /></main>' },
-          Switcher: {
-            props: ['value'],
-            emits: ['change'],
-            template: '<button type="button" class="switcher-stub" @click="$emit(\'change\', !value)" />',
-          },
+    const global = {
+      mocks: { $t: (key: string) => key, $router: { push: vi.fn(() => Promise.resolve()) } },
+      stubs: {
+        ExternalLogo: true,
+        Icon: true,
+        Loader: true,
+        SearchInput: true,
+        Scroll: { template: '<main><slot /></main>' },
+        Switcher: {
+          props: ['value'],
+          emits: ['change'],
+          template: '<button type="button" class="switcher-stub" @click="$emit(\'change\', !value)" />',
         },
       },
-    });
-    // Every asset of the token rows on screen, one per network; Manage marks hidden ones instead of dropping them, so
-    // each hide can be undone. A row held on several networks stands for each of them.
-    const rows = () => {
-      const listed = (wrapper.vm as unknown as { tokenRows: PortfolioTokenRow[] }).tokenRows;
-      const byId = new Map(listed.map((row) => [row.id, row]));
-
-      return wrapper.findAll('.token-row').flatMap((element) => {
-        const row = byId.get(element.attributes('data-token') ?? '');
-
-        return [...(row?.children ?? []), ...(row?.zeroChildren ?? [])].map(
-          ({ asset }) =>
-            `${asset.networkName}:${asset.symbol}` +
-            (asset.hidden && asset.preferenceSource === 'legacy305' ? ':hidden-305' : '') +
-            (asset.hidden ? ':hidden' : '')
-        );
-      });
     };
+    const page = mount(ManageAssets, { global });
+    await nextTick();
+    // One Manage assets section, one asset per network; a 3.0.5 hide is labelled, so each hide can be undone.
+    const manageRows = (testId: string) =>
+      page
+        .findAll(`[data-testid="${testId}"] [data-testid="manageAssetRow"]`)
+        .map(
+          (row) =>
+            `${row.attributes('data-network')}:${row.attributes('data-symbol')}` +
+            (row.find('[data-testid="hiddenPreviousVersion"]').exists() ? ':hidden-305' : '')
+        );
 
-    expect(rows()).toEqual(expect.arrayContaining(['Polkadot:DOT', 'Ethereum:ETH']));
-    expect(rows()).toEqual(
-      expect.arrayContaining(['Kusama:KSM:hidden-305:hidden', 'Ethereum:USDT:hidden-305:hidden', 'Polygon:USDT:hidden-305:hidden'])
+    expect(manageRows('manageShown')).toEqual(expect.arrayContaining(['Polkadot:DOT', 'Ethereum:ETH']));
+    expect(manageRows('manageHidden')).toEqual(
+      expect.arrayContaining(['Kusama:KSM:hidden-305', 'Ethereum:USDT:hidden-305', 'Polygon:USDT:hidden-305'])
     );
-    expect(rows().filter((row) => (row.includes(':KSM') || /^(Ethereum|Polygon):USDT/.test(row)) && !row.endsWith(':hidden')))
-      .toEqual([]);
+    expect(manageRows('manageShown').filter((row) => row.includes(':KSM') || /^(Ethereum|Polygon):USDT/.test(row))).toEqual([]);
 
-    await wrapper.setProps({ showAssetsManagementForm: false });
-    expect(rows().filter((row) => row.includes(':KSM') || /^(Ethereum|Polygon):USDT/.test(row))).toEqual([]);
-    await wrapper.setProps({ showAssetsManagementForm: true });
+    // The wallet's list leaves the hidden ones out.
+    const list = mount(Currencies, { props: { filterValue: '' }, global });
+    await nextTick();
+    const listed = (list.vm as unknown as { tokenRows: PortfolioTokenRow[] }).tokenRows
+      .flatMap((row) => [...row.children, ...row.zeroChildren])
+      .map(({ asset }) => `${asset.networkName}:${asset.symbol}`);
+    expect(listed.filter((row) => row.includes(':KSM') || /^(Ethereum|Polygon):USDT/.test(row))).toEqual([]);
+    list.unmount();
 
-    // A token's switch writes one preference per network of the token, and nothing else.
-    const listed = (wrapper.vm as unknown as { tokenRows: PortfolioTokenRow[] }).tokenRows;
-    const firstThree = wrapper.findAll('.token-row').slice(0, 3);
-    const written = firstThree.reduce((count, element) => {
-      const row = listed.find(({ id }) => id === element.attributes('data-token'))!;
-
-      return count + row.children.length + row.zeroChildren.length;
-    }, 0);
-    expect(firstThree).toHaveLength(3);
-    for (const row of firstThree) await row.get('[data-testid="tokenRowSwitch"]').trigger('click');
-    expect(Object.keys(accountsStore.assetPreferences)).toHaveLength(written);
+    // A switch writes one preference, for its own network, and nothing else.
+    const shown = page.findAll('[data-testid="manageShown"] [data-testid="manageAssetRow"]');
+    expect(shown.length).toBeGreaterThanOrEqual(2);
+    for (const row of shown) await row.get('.switcher-stub').trigger('click');
+    expect(Object.keys(accountsStore.assetPreferences)).toHaveLength(shown.length);
 
     accountsStore.setSelectedWallet(wallet(SECOND_SUBSTRATE_ADDRESS));
     accountsStore.setIsBalanceLoading(false);
     await nextTick();
 
-    expect(rows()).toEqual(expect.arrayContaining(['Kusama:KSM', 'Ethereum:USDT', 'Polkadot:DOT:hidden-305:hidden']));
-    expect(rows()).not.toContain('Polkadot:DOT');
+    expect(manageRows('manageShown')).toEqual(expect.arrayContaining(['Kusama:KSM', 'Ethereum:USDT']));
+    expect(manageRows('manageHidden')).toContain('Polkadot:DOT:hidden-305');
+    expect(manageRows('manageShown')).not.toContain('Polkadot:DOT');
 
-    wrapper.unmount();
+    page.unmount();
     expectLegacyKeysUntouched(entries);
     expect(storage.getItem('account_asset-preferences-v1')).not.toBeNull();
   });

@@ -1,12 +1,8 @@
 import { computed, type Ref } from 'vue';
 import type { NetworkJson } from '@extension-base/types';
 import type { TokenGroup } from '@extension-base/background/types/types';
-import {
-  buildPortfolioSections,
-  filterSectionAssets,
-  filterSectionsBySearch,
-  type PortfolioNetworkSection,
-} from '@/portfolio/assetIdentity';
+import type { Features } from '@/stores/extension/types';
+import { buildPortfolioSections, filterSectionsBySearch, type PortfolioNetworkSection } from '@/portfolio/assetIdentity';
 import { resolvePortfolioSort, type PortfolioSort } from '@/portfolio/portfolioViewSettings';
 import { canonicalGroupIndexFor, type CanonicalGroupIndex } from '@/portfolio/tokenGroups';
 import {
@@ -26,29 +22,30 @@ import { useNetworksStore } from '@/stores/networks';
 import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
 
 export interface WalletTokenRowsOptions {
-  /** Text typed in the list's search; Manage never searches. */
+  /** Text typed in the list's search. */
   search?: Readonly<Ref<string>>;
-  /** Manage lists every asset, zero and hidden ones included, with its switch. */
-  manage?: Readonly<Ref<boolean>>;
-  /** Manage's "Hidden (N)" filter: only hidden assets, wallet-wide. */
-  hiddenOnly?: Readonly<Ref<boolean>>;
+  /**
+   * List tokens with no balance that nobody added: the shared zero list (portfolio contract §4). The Send and Receive
+   * pickers and a token's page do, so a first deposit has somewhere to go. The wallet's own list does not: it shows
+   * what the wallet holds, found on its own, and the tokens the owner added in Manage assets.
+   */
+  zeroDefaults?: boolean;
   /** The caller's own `usePortfolio()`, so a screen that reads the summary too builds it once. */
   portfolio?: ReturnType<typeof usePortfolio>;
 }
 
 const NOTHING = computed(() => '');
-const OFF = computed(() => false);
+
+/** Held tokens that are not on the verified list are listed only when the remote capability says so. */
+export function surfacesDiscoveredAssets(features: Pick<Features, 'assetDiscoveryMode' | 'portfolio'> | null | undefined): boolean {
+  return (features?.assetDiscoveryMode ?? features?.portfolio?.assetDiscoveryMode ?? 'shadow') === 'visible';
+}
 
 /**
  * The selected wallet's assets as the wallet screen lists them: by network (`visibleSections`) and by token
  * (`tokenRows`), under the same filters, so the list, a token's own page and the Send and Receive pickers agree.
  */
-export function useWalletTokenRows({
-  search = NOTHING,
-  manage = OFF,
-  hiddenOnly = OFF,
-  portfolio = usePortfolio(),
-}: WalletTokenRowsOptions = {}) {
+export function useWalletTokenRows({ search = NOTHING, zeroDefaults = true, portfolio = usePortfolio() }: WalletTokenRowsOptions = {}) {
   const accountsStore = useAccountsStore();
   const networksStore = useNetworksStore();
   const extensionStore = useExtensionStore();
@@ -56,7 +53,7 @@ export function useWalletTokenRows({
     portfolio;
 
   const viewSettings = computed(() => accountsStore.portfolioView);
-  const searchQuery = computed(() => (manage.value ? '' : search.value.trim()));
+  const searchQuery = computed(() => search.value.trim());
   const searching = computed(() => Boolean(searchQuery.value));
 
   /** A test network chosen as the only network is shown even with the Testnets switch off. */
@@ -65,7 +62,7 @@ export function useWalletTokenRows({
 
     return Boolean(selected && isTestnetNetwork(selected));
   });
-  const showsTestnets = computed(() => viewSettings.value.showTestnets || (!hiddenOnly.value && selectedTestnet.value));
+  const showsTestnets = computed(() => viewSettings.value.showTestnets || selectedTestnet.value);
 
   const portfolioSections = computed<PortfolioNetworkSection[]>(() =>
     buildPortfolioSections({
@@ -76,30 +73,25 @@ export function useWalletTokenRows({
       preferences: effectivePreferences.value,
       preferenceSource,
       scanStates: accountsStore.networkScanStates,
-      surfaceDiscoveredAssets:
-        (extensionStore.features?.assetDiscoveryMode ?? extensionStore.features?.portfolio?.assetDiscoveryMode ?? 'shadow') ===
-        'visible',
+      surfaceDiscoveredAssets: surfacesDiscoveredAssets(extensionStore.features),
       addressForNetwork,
       search: searchQuery.value,
       isSelectedNetwork: (network: NetworkJson) => isSameString(network.name, accountsStore.selectedNetwork),
-      mode: manage.value ? 'manage' : 'view',
-      hideZero: viewSettings.value.hideZero,
+      mode: 'view',
+      // "Hide zero balances" is gone with Manage's old panel: a token with no balance is listed only when someone asked
+      // for it. A value an earlier version stored is ignored, so it can never hide a token added at zero.
+      hideZero: false,
       showHidden: viewSettings.value.showHidden,
       showTestnets: showsTestnets.value,
-      isDefaultVisibleAtZero: (network, asset) => zeroRule.value(network, asset.key),
+      isDefaultVisibleAtZero: zeroDefaults ? (network, asset) => zeroRule.value(network, asset.key) : () => false,
       walletScope: walletScope.value,
-      // The Hidden list is wallet-wide, like the notice, the footer and the "Hidden (N)" count that open it.
-      networkFilter: hiddenOnly.value ? undefined : networkFilter.value,
+      networkFilter: networkFilter.value,
     })
   );
 
-  const visibleSections = computed<PortfolioNetworkSection[]>(() => {
-    const sections = hiddenOnly.value
-      ? filterSectionAssets(portfolioSections.value, (asset) => asset.hidden)
-      : portfolioSections.value;
-
-    return searching.value ? filterSectionsBySearch(sections, searchQuery.value) : sections;
-  });
+  const visibleSections = computed<PortfolioNetworkSection[]>(() =>
+    searching.value ? filterSectionsBySearch(portfolioSections.value, searchQuery.value) : portfolioSections.value
+  );
 
   const groupIndex = computed<CanonicalGroupIndex>(() => canonicalGroupIndexFor(networksStore.allNetworks));
 

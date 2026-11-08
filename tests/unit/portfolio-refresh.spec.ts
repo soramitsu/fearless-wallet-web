@@ -97,7 +97,6 @@ const mountPortfolio = (refreshSlotId = '') =>
         PortfolioNetworkSection: { template: '<section />' },
         PortfolioExclusions: true,
         PortfolioHiddenFundsNotice: true,
-        PortfolioZeroNetworks: true,
         Scroll: { template: '<main><slot /></main>' },
       },
     },

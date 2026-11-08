@@ -52,6 +52,7 @@ vi.mock('@/stores/extension', () => ({ useExtensionStore: () => ({ features: { a
 vi.mock('@/util/walletRecoveryPolicy', () => ({ isSelectedWalletRecoveryOnly: () => false }));
 
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
+import ManageAssets from '@/screens/portfolio/ManageAssets.vue';
 import TokenOverview from '@/screens/portfolio/TokenOverview.vue';
 
 const createLocalStorageStub = () => {
@@ -136,7 +137,7 @@ function fundedTon(): TokenGroup[] {
 
 const mountCurrencies = (props: Record<string, unknown> = {}) =>
   mount(Currencies, {
-    props: { balances: [], filterValue: '', showAssetsManagementForm: false, manageHiddenOnly: false, ...props },
+    props: { filterValue: '', ...props },
     global: {
       mocks: {
         $t: (key: string, count?: number) => (typeof count === 'number' ? `${key}:${count}` : key),
@@ -240,10 +241,10 @@ describe('By token after an upgrade from 3.0.5', () => {
     expect(rows.filter((row) => row.startsWith('KSM'))).toEqual([]);
     // 3.0.5 hid its "USDT (ethereum)" group, which held both Tether's USDT and Polygon's bridged USDT.
     expect(rows.filter((row) => row.startsWith('USDT'))).toEqual([]);
-    // ETH on Arbitrum One, OP Mainnet and Polygon zkEVM are shown at zero by the one zero rule, so ETH is a group; it is
-    // held on Ethereum only, and the row says where. Its zero networks wait on its page.
+    // ETH is held on Ethereum only. The list shows what the wallet holds and nothing at zero that nobody added, so ETH
+    // is a row of one network that opens its asset page; its zero networks wait in Manage assets and on its page.
     expect(rows).toEqual(['ETH@Ethereum', 'USDC@Ethereum', 'DOT×2']);
-    expect(wrapper.findAll('.token-row')[0].find('[data-testid="tokenGroupHeader"]').exists()).toBe(true);
+    expect(wrapper.findAll('.token-row')[0].find('[data-testid="tokenRowHeader"]').exists()).toBe(true);
 
     const dot = wrapper.findAll('.token-row').find((row) => row.attributes('data-token') === 'group:dot')!;
     expect(dot.get('[data-testid="tokenAmount"]').text()).toBe('14.5000 DOT');
@@ -452,22 +453,41 @@ describe('Send and Receive from a token group', () => {
     scope.stop();
   });
 
-  it('shows or hides every network of a token with one switch in Manage, in one write', async () => {
+  it('lists each network a token is held on in Manage assets, and hides one without touching the others', async () => {
     const { accountsStore, scope } = openPortfolio(SUBSTRATE_ADDRESS, WalletEcosystem.Substrate, fundedEvmAndSubstrate());
-    const wrapper = mountCurrencies({ showAssetsManagementForm: true });
+    const page = mount(ManageAssets, {
+      global: {
+        stubs: {
+          ExternalLogo: true,
+          SearchInput: true,
+          Switcher: {
+            props: ['value'],
+            emits: ['change'],
+            template: '<button type="button" class="switcher-stub" :data-on="value" @click="$emit(\'change\', !value)" />',
+          },
+        },
+      },
+    });
     await nextTick();
     const setPreferences = vi.spyOn(accountsStore, 'setAssetPreferences');
 
-    const dot = wrapper.findAll('.token-row').find((row) => row.attributes('data-token') === 'group:dot')!;
-    await dot.get('[data-testid="tokenRowSwitch"]').trigger('click');
+    const shown = page.findAll('[data-testid="manageShown"] [data-testid="manageAssetRow"]');
+    const dot = shown.filter((row) => row.attributes('data-symbol') === 'DOT').map((row) => row.attributes('data-network'));
+    expect(dot).toEqual(['Polkadot', 'Polkadot AssetHub']);
 
-    expect(setPreferences).toHaveBeenCalledTimes(1);
-    const written = setPreferences.mock.calls[0][0].entries;
-    expect(written.every(({ preference }) => preference === 'hidden')).toBe(true);
-    // Every DOT network of the wallet, the ones it holds nothing on included.
-    expect(written.length).toBeGreaterThanOrEqual(10);
-    expect(Object.values(accountsStore.assetPreferences).every((preference) => preference === 'hidden')).toBe(true);
+    const hub = shown.find((row) => row.attributes('data-symbol') === 'DOT' && row.attributes('data-network') === 'Polkadot AssetHub')!;
+    await hub.get('.switcher-stub').trigger('click');
 
+    // One write, for that network only.
+    expect(setPreferences).toHaveBeenCalledExactlyOnceWith({
+      entries: [{ key: hub.attributes('data-asset-key'), preference: 'hidden' }],
+    });
+    expect(Object.keys(accountsStore.assetPreferences)).toEqual([hub.attributes('data-asset-key')]);
+    page.unmount();
+
+    const wrapper = mountCurrencies();
+    await nextTick();
+    expect(tokenRows(wrapper)).toContain('DOT@Polkadot');
     wrapper.unmount();
     scope.stop();
   });

@@ -382,15 +382,10 @@ export async function capturePrimitivesScreenshots({
     );
 
     await click('[data-testid="filterBtn"] button');
-    await waitFor('[data-testid="tokenRowSwitch"]', 'Manage in By token');
-    await capture('02-manage-switches', 'Manage: the filter chips, the grouping segments, the Hide zero switch and one switch per token.');
-    await click('[data-testid="filterBtn"] button');
-    await waitForExpression(
-      cdp,
-      sessionId,
-      '!document.querySelector(\'[data-testid="tokenRowSwitch"]\')',
-      'Manage closed'
-    );
+    await waitFor('[data-testid="manageAssetSwitch"]', 'Manage assets');
+    await capture('02-manage-switches', 'Manage assets: the search, one switch per token and network, and the options.');
+    await route('Currencies');
+    await waitFor('[data-testid="portfolioTokenList"]', 'the list again');
 
     await openGroupAction('usdt', 'tokenSend');
     await click('[data-testid="groupNetworkOption"][data-network="Ethereum"]');

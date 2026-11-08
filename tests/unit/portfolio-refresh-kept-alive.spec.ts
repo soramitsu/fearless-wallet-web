@@ -91,7 +91,7 @@ const build = async () => {
       mocks: { $t: (key: string) => ({ 'portfolioPage.refresh': 'Refresh', 'portfolioPage.syncing': 'Syncing' })[key] ?? key },
       stubs: {
         Icon: { template: '<span />' }, Loader: { template: '<span />' }, PortfolioExclusions: true,
-        PortfolioHiddenFundsNotice: true, PortfolioZeroNetworks: true, Scroll: { template: '<main><slot /></main>' },
+        PortfolioHiddenFundsNotice: true, Scroll: { template: '<main><slot /></main>' },
       },
     },
   });

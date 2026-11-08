@@ -17,22 +17,11 @@
         <WalletSettings
           class="home-toolbar"
           :activeTabName="activeTabName"
-          :showAssetsManagementForm="showAssetsManagementForm"
-          :hideZero="accountsStore.portfolioView.hideZero"
-          :showTestnets="accountsStore.portfolioView.showTestnets"
-          :sort="portfolioSort"
-          :showSortControl="legacyOrderIndex.size > 0"
-          :hiddenAssetCount="hiddenAssetCount"
-          :manageHiddenOnly="manageHiddenOnly"
           :refreshSlotId="refreshSlotId"
           :showPortfolioTab="true"
           :allWallets="allWallets"
           @update:activeTabName="updateActiveTabName"
-          @update:showAssetsManagementForm="toggleAssetsManagementForm"
-          @update:hideZero="setHideZero"
-          @update:showTestnets="setShowTestnets"
-          @update:manageHiddenOnly="setManageHiddenOnly"
-          @update:sort="setSort"
+          @manage="openManageAssets"
         />
       </template>
     </PortfolioDashboard>
@@ -42,13 +31,11 @@
       <router-view
         :route="ownRoute"
         :showAssetsManagementForm="showAssetsManagementForm"
-        :manageHiddenOnly="manageHiddenOnly"
         :filterValue="filterValue"
         :refreshSlotId="refreshSlotId"
         @update:filterValue="updateFilterValue"
         @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
         @toggleAssetsManagementForm="toggleAssetsManagementForm"
-        @update:manageHiddenOnly="setManageHiddenOnly"
       />
     </div>
 
@@ -72,32 +59,19 @@
         <div class="content">
           <WalletSettings
             :activeTabName="activeTabName"
-            :showAssetsManagementForm="showAssetsManagementForm"
-            :hideZero="accountsStore.portfolioView.hideZero"
-            :showTestnets="accountsStore.portfolioView.showTestnets"
-            :sort="portfolioSort"
-            :showSortControl="legacyOrderIndex.size > 0"
-            :hiddenAssetCount="hiddenAssetCount"
-            :manageHiddenOnly="manageHiddenOnly"
             :refreshSlotId="refreshSlotId"
             @update:activeTabName="updateActiveTabName"
-            @update:showAssetsManagementForm="toggleAssetsManagementForm"
-            @update:hideZero="setHideZero"
-            @update:showTestnets="setShowTestnets"
-            @update:manageHiddenOnly="setManageHiddenOnly"
-            @update:sort="setSort"
+            @manage="openManageAssets"
           />
 
           <router-view
             :route="ownRoute"
             :showAssetsManagementForm="showAssetsManagementForm"
-            :manageHiddenOnly="manageHiddenOnly"
             :filterValue="filterValue"
             :refreshSlotId="refreshSlotId"
             @update:filterValue="updateFilterValue"
             @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
             @toggleAssetsManagementForm="toggleAssetsManagementForm"
-            @update:manageHiddenOnly="setManageHiddenOnly"
           />
         </div>
       </ContentForm>
@@ -140,7 +114,6 @@ import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/netw
 import { usePortfolio } from '@/portfolio/usePortfolio';
 import { PORTFOLIO_DASHBOARD_ENABLED } from '@/portfolio/dashboard/dashboardFlag';
 import { effectiveScope } from '@/portfolio/dashboard/preferences';
-import { resolvePortfolioSort, type PortfolioSort } from '@/portfolio/portfolioViewSettings';
 import { formatDecimalString } from '@/helpers/numbers';
 import { CONTENT_FORM_HEIGHT, IS_EXTENSION } from '@/consts/global';
 import { networksIsPending } from '@/helpers/shimmers';
@@ -156,6 +129,7 @@ let walletViews = 0;
 // The Assets view's route name (Components.Currencies). The routes table imports this screen, so this screen does not
 // import the table back: loaded first, as a test loads it, the cycle would build the router before its routes.
 const ASSETS_TAB: TabWallet = 'Currencies' as TabWallet;
+const MANAGE_ASSETS = 'ManageAssets';
 
 export default defineComponent({ name: 'Wallet',
   components: {
@@ -172,16 +146,16 @@ export default defineComponent({ name: 'Wallet',
       : {}),
   },
   setup() {
-    const { summary: portfolioSummary, filteredTotal, loadStatus, legacyOrderIndex, summaryInput, hiddenKeys } = usePortfolio();
+    const { summary: portfolioSummary, filteredTotal, loadStatus, summaryInput, hiddenKeys } = usePortfolio();
 
-    return { portfolioSummary, filteredTotal, loadStatus, legacyOrderIndex, summaryInput, hiddenKeys };
+    return { portfolioSummary, filteredTotal, loadStatus, summaryInput, hiddenKeys };
   },
   data() {
     return {
       networksStore: useNetworksStore(),
       showNetworkManagement: false,
+      // The NFT list's own settings; the token list's Manage assets is a page of its own (openManageAssets).
       showAssetsManagementForm: false,
-      manageHiddenOnly: false,
       networkUnavailable: '',
       filterValue: '',
       selectedCurrency: {} as {
@@ -236,15 +210,6 @@ export default defineComponent({ name: 'Wallet',
     },
     networksWithWarning() {
       return this.disconnectedNetworks.filter(({ name }) => !this.accountsStore.getShowWarningNetwork(name));
-    },
-    // The "Hidden (N)" filter lists hidden testnet assets only while testnets are shown.
-    hiddenAssetCount() {
-      const { hiddenAssetCount, hiddenTestnetAssetCount } = this.portfolioSummary;
-
-      return hiddenAssetCount + (this.accountsStore.portfolioView.showTestnets ? hiddenTestnetAssetCount : 0);
-    },
-    portfolioSort(): PortfolioSort {
-      return resolvePortfolioSort(this.accountsStore.portfolioView, this.legacyOrderIndex.size > 0);
     },
     // Wallet-wide under every filter: hidden, unpriced and testnet assets are excluded and labelled in the list.
     summaryTotalBalance() {
@@ -304,7 +269,6 @@ export default defineComponent({ name: 'Wallet',
     "selectedWallet": 'updateEvmBalance',
     'accountsStore.selectedWallet.address'() {
       this.showAssetsManagementForm = false;
-      this.manageHiddenOnly = false;
     },
   },
   activated() {
@@ -312,7 +276,6 @@ export default defineComponent({ name: 'Wallet',
   },
   deactivated() {
     this.showAssetsManagementForm = false;
-        this.manageHiddenOnly = false;
         this.showNetworkManagement = false;
         this.filterValue = '';
 
@@ -338,20 +301,9 @@ export default defineComponent({ name: 'Wallet',
     },
     toggleAssetsManagementForm(value = true) {
       this.showAssetsManagementForm = value;
-      if (!value) this.manageHiddenOnly = false;
     },
-    // "Hide zero balances" is a view filter: it never writes an asset preference, so a later deposit shows up.
-    setHideZero(value: boolean) {
-      this.accountsStore.updatePortfolioView({ hideZero: value });
-    },
-    setShowTestnets(value: boolean) {
-      this.accountsStore.updatePortfolioView({ showTestnets: value });
-    },
-    setSort(sort: PortfolioSort) {
-      this.accountsStore.updatePortfolioView({ sort });
-    },
-    setManageHiddenOnly(value: boolean) {
-      this.manageHiddenOnly = value;
+    openManageAssets() {
+      this.$router.push({ name: MANAGE_ASSETS }).catch(() => undefined);
     },
     updateFilterValue(value: string) {
       this.filterValue = value;

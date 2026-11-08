@@ -52,6 +52,7 @@ const ReceiveForm = () => import('@/screens/wallet&asset/ReceiveForm.vue');
 const CrossChainForm = () => import('@/screens/wallet&asset/CrossChainForm.vue');
 
 const TokenOverview = () => import('@/screens/portfolio/TokenOverview.vue');
+const ManageAssets = () => import('@/screens/portfolio/ManageAssets.vue');
 
 const AssetNetworks = () =>
   import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetNetworks.vue');
@@ -124,6 +125,7 @@ export enum Components {
   Polkaswap = 'Polkaswap',
   TokenLocations = 'TokenLocations',
   TokenOverview = 'TokenOverview',
+  ManageAssets = 'ManageAssets',
   PortfolioAllocation = 'PortfolioAllocation',
   Polkamarkt = 'Polkamarkt',
   PolkaswapDisclaimer = 'PolkaswapDisclaimer',
@@ -531,6 +533,14 @@ const routes: Array<RouteRecordRaw> = [
         name: Components.TokenOverview,
         component: TokenOverview,
         props: (route) => ({ token: String(route.params.token), search: firstQueryValue(route.query.search) }),
+        meta: { title: 'wallet', primaryNavigation: 'portfolio' },
+      },
+      // Which assets the wallet's list shows: what it holds is found on its own, and any other token can be added.
+      {
+        path: 'portfolio/manage',
+        name: Components.ManageAssets,
+        component: ManageAssets,
+        props: (route) => ({ focus: firstQueryValue(route.query.focus), search: firstQueryValue(route.query.search) }),
         meta: { title: 'wallet', primaryNavigation: 'portfolio' },
       },
       {

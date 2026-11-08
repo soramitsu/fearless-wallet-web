@@ -15,13 +15,14 @@ networks narrow it (a search or a chip) instead of regrouping it, in every scope
 | Level | What it shows | Where |
 |---|---|---|
 | Home | The total (24 h change, what is not included, how we count, the sync state), then **Send**, **Receive** and **Swap** as round buttons, then the views **Assets**, **Portfolio** and **NFTs**, with Refresh and Manage as icons | `PortfolioHero.vue`, `RoundActions.vue`, `WalletSettings.vue`, `Wallet.vue` |
-| Assets | A search field that is always there ("Search tokens and networks"), a row of network chips, then one row per token: logo (with its network's logo, or the count of networks it is held on), symbol, price and 24 h move, then value and amount. Tokens with no balance stay collapsed at the end | `AssetSearchField.vue`, `NetworkFilterChips.vue`, `PortfolioTokenRow.vue`, `Currencies.vue` |
+| Assets | A search field that is always there ("Search tokens and networks"), a row of network chips, then one row per token: logo (with its network's logo, or the count of networks it is held on), symbol, price and 24 h move, then value and amount. It lists what the wallet holds, found on its own, and the tokens the owner added at zero; then **Add tokens** | `AssetSearchField.vue`, `NetworkFilterChips.vue`, `PortfolioTokenRow.vue`, `Currencies.vue` |
+| Manage assets | A page of its own (route `portfolio/manage`): a search, then **Shown in your wallet**, **Found, not verified**, **Popular tokens** (or the search's results to add), **Hidden** and **Options**, one switch per token and network | `ManageAssets.vue`, `ManageAssetRow.vue`, `src/portfolio/manageAssets.ts` |
 | A token | Its total across networks, its value, share and price, the same round buttons, and **Networks**: each network it is held on with its balance and what can be sent now; networks at zero behind one line | `TokenOverview.vue` (route `portfolio/token/:token`) |
 | A network | The existing asset page: balance, actions and history on that network | `Asset.vue`, `AssetHistory.vue` |
 | Portfolio | The winged sun as the allocation chart (one ray per percent of each token), then a row per token, per network and (All wallets) per wallet with its share and value, one part under the other with no switch between them. A network row of one wallet opens its list on that network | `PortfolioAllocation.vue` (route `portfolio/allocation`) |
 
 - **A row opens the next level.** A token held on several networks opens its page; a token on one network opens that
-  network's asset page. Nothing expands in place outside Manage. A token found by a search opens with the same search, so
+  network's asset page. Nothing expands in place. A token found by a search opens with the same search, so
   its page lists the networks the search found, hidden ones included, and opening one of those shows it again.
 - **Send and Receive** on the home ask which token first (`AssetPickerSheet.vue`; a search reaches every verified token),
   then which network for a token on several, with the wrong-network warning (`PortfolioGroupNetworkPicker.vue`); a token
@@ -36,9 +37,20 @@ networks narrow it (a search or a chip) instead of regrouping it, in every scope
 - **All wallets** has the same one list with its own search and chips (not saved; they also match wallet names); each
   wallet's total, share and an Open action follow the tokens. A token opens Where it lives. Send, Receive and Swap first
   ask which wallet (only those that may take funds for Receive and Swap), switch to it, then go on there.
-- **Manage** is the list's settings: which assets show (Hidden, Testnets, a switch per token and per network) and Hide
-  zero balances. It has no grouping: a wallet that had kept By network sees the one-time note once ("All your assets in
-  one list"), and closing it makes the token list its own.
+- **What the list shows.** Every asset the wallet holds, with nothing to switch on: a funded verified token is always
+  listed (a held token that is not on the verified list too, when discovery is visible). A token with no balance is
+  listed only once the owner adds it; there is no block of empty tokens under the list, and "Hide zero balances" is gone
+  (a stored value is ignored). The Send and Receive pickers and a token's page still offer the shared zero list
+  (portfolio contract §4), so a first deposit has somewhere to go.
+- **Manage assets** (the toolbar's Manage icon, Add tokens under the list, the empty state, Review and the "hidden not
+  included" footer) is where that changes. Each switch says whether the list shows that token on that network, and
+  writes the lightest choice that does it (`preferenceForSwitch`): adding a token with no balance stores Shown; showing a
+  held token that was hidden goes back to Auto; taking out a held token hides it; taking out a token that was only added
+  goes back to Auto, so a later deposit still shows it. Before anything is typed it suggests the shared zero list and the
+  main token of a starred network; a search finds any supported token by symbol, name or network ("usdc arb"). A row
+  that was switched stays where it was until the search changes or the page opens again. Review opens it on the hidden
+  assets. It has no grouping: a wallet that had kept By network sees the one-time note once ("All your assets in one
+  list"), and closing it makes the token list its own.
 - The rows share one computation with the token page and the pickers (`src/portfolio/useWalletTokenRows.ts`), so the
   numbers agree everywhere. Their strings are in `src/locales/walletHomeMessages.ts` (English and Russian, registered
   with the other supplemental bundles; Akkadian and Egyptian read the English).
@@ -212,7 +224,7 @@ node scripts/solana-extension-smoke.mjs --side-panel-screenshots output/side-pan
 
 The portfolio tour walks one wallet: the home, a search for a network and a network chip, a token's page and one of its
 networks, Send and Receive from the token page and from the home (token first, then network), the Portfolio view's token
-and network parts, Manage, then Russian, Akkadian and Egyptian. The side-panel run repeats it at 360 px.
+and network parts, Manage assets and its search, then Russian, Akkadian and Egyptian. The side-panel run repeats it at 360 px.
 
 The unit specs cover the readiness evaluator against synthetic chains and the real snapshot, the hand-off locations, the
 actions each state gets, the wallet switch, and the Where it lives screen and its sheets with only the stores, the router

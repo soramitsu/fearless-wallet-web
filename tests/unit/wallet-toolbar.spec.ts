@@ -42,10 +42,7 @@ const createLocalStorageStub = () => {
 };
 
 const translations: Record<string, string> = {
-  'wallet.hideZero': 'Hide zero balances',
   'portfolioPage.showingFiltered': 'Showing {network} · {value}',
-  'portfolioPage.filterHidden': 'Hidden ({count})',
-  'portfolioPage.testnets': 'Testnets',
 };
 const translate = (key: string, values: Record<string, unknown> = {}) =>
   (translations[key] ?? key).replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? ''));
@@ -66,10 +63,10 @@ function balances(): TokenGroup[] {
   return groups;
 }
 
-const mountWallet = () =>
+const mountWallet = ({ push = vi.fn(() => Promise.resolve()) } = {}) =>
   mount(Wallet, {
     global: {
-      mocks: { $t: translate, $route: { name: 'currencies', params: {} }, $router: { push: vi.fn(), replace: vi.fn() } },
+      mocks: { $t: translate, $route: { name: 'currencies', params: {} }, $router: { push, replace: vi.fn() } },
       stubs: {
         ContentForm: { template: '<div><slot /></div>' },
         'router-view': true,
@@ -78,16 +75,11 @@ const mountWallet = () =>
         TabButton: true,
         SearchInput: true,
         CircleButton: true,
-        Switcher: {
-          props: ['value', 'activeText'],
-          emits: ['change'],
-          template: '<button type="button" class="switcher-stub" :aria-pressed="value" @click="$emit(\'change\', !value)">{{ activeText }}</button>',
-        },
       },
     },
   });
 
-describe('Hide zero balances and the filtered header caption', () => {
+describe('the wallet toolbar and the filtered header caption', () => {
   let storage: ReturnType<typeof createLocalStorageStub>;
 
   beforeEach(() => {
@@ -115,29 +107,24 @@ describe('Hide zero balances and the filtered header caption', () => {
     vi.unstubAllGlobals();
   });
 
-  it('flips only the per-wallet view setting and never writes an asset preference', async () => {
+  it('opens Manage assets as a page of its own, with no switches or filters left in the toolbar', async () => {
     const accountsStore = useAccountsStore();
     const setAssetPreference = vi.spyOn(accountsStore, 'setAssetPreference');
     const setAssetPreferences = vi.spyOn(accountsStore, 'setAssetPreferences');
-    const wrapper = mountWallet();
+    const push = vi.fn(() => Promise.resolve());
+    const wrapper = mountWallet({ push });
 
-    // The list's settings are in Manage, with the grouping: the list itself has no switches.
-    expect(wrapper.find('[data-testid="hideZeroToggle"]').exists()).toBe(false);
     await wrapper.get('[data-testid="filterBtn"]').trigger('click');
-    const toggle = wrapper.get('[data-testid="hideZeroToggle"] .switcher-stub');
-    expect(toggle.text()).toBe('Hide zero balances');
-    await toggle.trigger('click');
 
+    expect(push).toHaveBeenCalledWith({ name: 'ManageAssets' });
+    // "Hide zero balances", the Hidden chip and the Testnets chip are gone from the wallet screen: what the list shows
+    // is chosen on the Manage assets page.
+    ['hideZeroToggle', 'filterHidden', 'filterTestnets', 'portfolioSort', 'portfolioLens'].forEach((testId) =>
+      expect(wrapper.find(`[data-testid="${testId}"]`).exists()).toBe(false)
+    );
     expect(setAssetPreference).not.toHaveBeenCalled();
     expect(setAssetPreferences).not.toHaveBeenCalled();
-    expect(accountsStore.portfolioView.hideZero).toBe(true);
-    expect(JSON.parse(storage.getItem('account_portfolio-view-v1')!)).toEqual({
-      value: { [SUBSTRATE_ADDRESS]: expect.objectContaining({ hideZero: true }) },
-    });
     expect(storage.getItem('account_asset-preferences-v1')).toBeNull();
-
-    await toggle.trigger('click');
-    expect(accountsStore.portfolioView.hideZero).toBe(false);
     wrapper.unmount();
   });
 
@@ -172,29 +159,6 @@ describe('Hide zero balances and the filtered header caption', () => {
     accountsStore.setSelectedNetwork('Polkadot');
     await nextTick();
     expect(wrapper.get('[data-testid="balanceCaption"]').text()).toBe('Showing Polkadot · 10.00 · portfolioPage.balanceStatus.failed');
-    wrapper.unmount();
-  });
-
-  it('offers the Hidden filter and the Testnets switch in Manage, persisting Testnets per wallet', async () => {
-    const accountsStore = useAccountsStore();
-    const wrapper = mountWallet();
-
-    await wrapper.get('[data-testid="filterBtn"]').trigger('click');
-    expect(wrapper.find('[data-testid="hideZeroToggle"]').exists()).toBe(true);
-    // The list has one layout: Manage chooses what it shows, never how it is grouped.
-    expect(wrapper.find('[data-testid="portfolioLens"]').exists()).toBe(false);
-    expect(wrapper.get('[data-testid="filterHidden"]').text()).toBe('Hidden (0)');
-
-    await wrapper.get('[data-testid="filterHidden"]').trigger('click');
-    expect(wrapper.get('[data-testid="filterHidden"]').attributes('aria-pressed')).toBe('true');
-    await wrapper.get('[data-testid="filterTestnets"]').trigger('click');
-    expect(accountsStore.portfolioView.showTestnets).toBe(true);
-
-    // Leaving Manage drops the Hidden filter; the Testnets choice stays.
-    await wrapper.get('[data-testid="filterBtn"]').trigger('click');
-    await wrapper.get('[data-testid="filterBtn"]').trigger('click');
-    expect(wrapper.get('[data-testid="filterHidden"]').attributes('aria-pressed')).toBe('false');
-    expect(wrapper.get('[data-testid="filterTestnets"]').attributes('aria-pressed')).toBe('true');
     wrapper.unmount();
   });
 });

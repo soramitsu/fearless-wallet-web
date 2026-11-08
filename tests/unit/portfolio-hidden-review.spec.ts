@@ -32,6 +32,9 @@ vi.mock('@/extension/messaging/nfts', () => ({ fetchNfts: vi.fn() }));
 vi.mock('@/stores/extension', () => ({ useExtensionStore: () => ({ features: { assetDiscoveryMode: 'shadow' } }) }));
 
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
+import ManageAssets from '@/screens/portfolio/ManageAssets.vue';
+
+const routerPush = vi.fn(() => Promise.resolve());
 
 const createLocalStorageStub = () => {
   const storage = new Map<string, string>();
@@ -110,30 +113,33 @@ function open(groups: TokenGroup[], selectedNetwork?: string) {
   return { accountsStore, portfolio, scope };
 }
 
-const mountCurrencies = (props: Record<string, unknown> = {}) =>
-  mount(Currencies, {
-    props: { balances: [], filterValue: '', showAssetsManagementForm: false, manageHiddenOnly: false, ...props },
-    global: {
-      mocks: { $t: (key: string, count?: number) => (typeof count === 'number' ? `${key}:${count}` : key) },
-      stubs: {
-        ExternalLogo: true,
-        Icon: true,
-        Loader: true,
-        Scroll: { template: '<main><slot /></main>' },
-        Switcher: {
-          props: ['value'],
-          emits: ['change'],
-          template: '<button type="button" class="switcher-stub" @click="$emit(\'change\', !value)" />',
-        },
-      },
+const globalOptions = {
+  mocks: {
+    $t: (key: string, count?: number) => (typeof count === 'number' ? `${key}:${count}` : key),
+    $router: { push: routerPush },
+  },
+  stubs: {
+    ExternalLogo: true,
+    Icon: true,
+    Loader: true,
+    SearchInput: true,
+    Scroll: { template: '<main><slot /></main>' },
+    Switcher: {
+      props: ['value'],
+      emits: ['change'],
+      template: '<button type="button" class="switcher-stub" @click="$emit(\'change\', !value)" />',
     },
-  });
+  },
+};
+
+const mountCurrencies = (props: Record<string, unknown> = {}) =>
+  mount(Currencies, { props: { filterValue: '', ...props }, global: globalOptions });
 
 const testnetMark = (...elements: { find: VueWrapper['find'] }[]) =>
   elements.some((element) => element.find('[data-testid="testnetBadge"]').exists()) ? ':testnet' : '';
 
-// What the list shows, one "Network:SYMBOL" per asset, in either lens: the rows of each network section (By network),
-// or each token row's networks (By token; a group lists its networks while it is open).
+// What the list shows, one "Network:SYMBOL" per asset: the rows of each detected network section, and each token row
+// (a token on several networks as "group:SYMBOL").
 const rows = (wrapper: VueWrapper) => [
   ...wrapper
     .findAll('.network-section')
@@ -142,30 +148,34 @@ const rows = (wrapper: VueWrapper) => [
         .findAll('.asset-row')
         .map((row) => `${section.attributes('data-network')}:${row.get('.asset-symbol').text()}${testnetMark(row, section)}`)
     ),
-  ...wrapper.findAll('.token-row').flatMap((row) => {
-    const networks = row.findAll('.network-row');
-    if (networks.length) {
-      return networks.map((network) => `${network.attributes('data-network')}:${network.attributes('data-symbol')}${testnetMark(network)}`);
-    }
-
-    return row.attributes('data-network')
-      ? [`${row.attributes('data-network')}:${row.attributes('data-symbol')}${testnetMark(row)}`]
-      : [`group:${row.attributes('data-symbol')}`];
-  }),
+  ...wrapper.findAll('.token-row').map((row) =>
+    row.attributes('data-network')
+      ? `${row.attributes('data-network')}:${row.attributes('data-symbol')}${testnetMark(row)}`
+      : `group:${row.attributes('data-symbol')}`
+  ),
 ];
+
+// The hidden assets Manage assets lists, one "Network:SYMBOL" per asset.
+const hiddenRows = (page: VueWrapper) =>
+  page
+    .findAll('[data-testid="manageHidden"] [data-testid="manageAssetRow"]')
+    .map((row) => `${row.attributes('data-network')}:${row.attributes('data-symbol')}`);
 
 const text = (wrapper: VueWrapper, testId: string) => {
   const element = wrapper.find(`[data-testid="${testId}"]`);
   return element.exists() ? element.text() : null;
 };
 
-// Review (the notice), "N hidden not included · Manage" (the footer) and "Hidden (N)" (the chip) all open Manage on
-// the Hidden filter. Wallet.vue does that by setting these two props.
-async function review(wrapper: VueWrapper) {
-  await wrapper.get('[data-testid="reviewHiddenFunds"]').trigger('click');
-  expect(wrapper.emitted('toggleAssetsManagementForm')?.at(-1)).toEqual([true]);
-  expect(wrapper.emitted('update:manageHiddenOnly')?.at(-1)).toEqual([true]);
-  await wrapper.setProps({ showAssetsManagementForm: true, manageHiddenOnly: true });
+// Review (the notice) and "N hidden not included · Manage" (the footer) open Manage assets on its hidden assets, with
+// a search of its own: what was typed in the list does not narrow it.
+async function review(wrapper: VueWrapper, trigger = 'reviewHiddenFunds'): Promise<VueWrapper> {
+  routerPush.mockClear();
+  await wrapper.get(`[data-testid="${trigger}"]`).trigger('click');
+  expect(routerPush).toHaveBeenCalledExactlyOnceWith({ name: 'ManageAssets', query: { focus: 'hidden' } });
+
+  const page = mount(ManageAssets, { props: { focus: 'hidden' }, global: globalOptions });
+  await nextTick();
+  return page;
 }
 
 describe.each(LENSES)('reviewing hidden funds after a 3.0.5 upgrade (by %s)', (currentLens) => {
@@ -182,7 +192,7 @@ describe.each(LENSES)('reviewing hidden funds after a 3.0.5 upgrade (by %s)', (c
     vi.unstubAllGlobals();
   });
 
-  it('announces matching visible assets in either lens and clears the status in Manage', async () => {
+  it('announces matching visible assets in either lens', async () => {
     vi.useFakeTimers();
     const { scope } = open(funded(['Polkadot', 'dot', '12.5']), 'Polkadot');
     const wrapper = mountCurrencies({ filterValue: 'DOT' });
@@ -193,8 +203,6 @@ describe.each(LENSES)('reviewing hidden funds after a 3.0.5 upgrade (by %s)', (c
       await wrapper.setProps({ filterValue: 'no-such-fixture-asset' });
       await vi.advanceTimersByTimeAsync(200);
       expect(text(wrapper, 'searchResultStatus')).toBe('common.searchAmongAssets: 0');
-      await wrapper.setProps({ showAssetsManagementForm: true });
-      expect(text(wrapper, 'searchResultStatus')).toBe('');
     } finally {
       wrapper.unmount();
       scope.stop();
@@ -215,11 +223,12 @@ describe.each(LENSES)('reviewing hidden funds after a 3.0.5 upgrade (by %s)', (c
     expect(portfolio.summary.value).toMatchObject({ hiddenCount: 1, hiddenValue: '250' });
     expect(text(wrapper, 'hiddenFundsNotice')).toContain('portfolioPage.hiddenFundsNotice:1');
 
-    await review(wrapper);
+    const page = await review(wrapper);
 
-    expect(rows(wrapper)).toContain('Polkadot AssetHub:USDT');
-    // The "Hidden (N)" chip counts exactly the rows this list shows.
-    expect(rows(wrapper)).toHaveLength(portfolio.summary.value.hiddenAssetCount);
+    expect(hiddenRows(page)).toContain('Polkadot AssetHub:USDT');
+    // Every hidden asset of the wallet, whatever network the list is narrowed to.
+    expect(hiddenRows(page)).toHaveLength(portfolio.summary.value.hiddenAssetCount);
+    page.unmount();
     wrapper.unmount();
     scope.stop();
   });
@@ -231,40 +240,41 @@ describe.each(LENSES)('reviewing hidden funds after a 3.0.5 upgrade (by %s)', (c
     await nextTick();
 
     expect(text(wrapper, 'hiddenNotIncluded')).toBe('portfolioPage.hiddenNotIncluded:1');
-    await review(wrapper);
+    const page = await review(wrapper, 'hiddenNotIncluded');
 
-    expect(rows(wrapper)).toContain('Kusama:KSM');
-    expect(text(wrapper, 'infoText')).toBeNull();
+    expect(hiddenRows(page)).toContain('Kusama:KSM');
+    expect(text(page, 'manageNoMatches')).toBeNull();
+    page.unmount();
     wrapper.unmount();
     scope.stop();
   });
 
-  it('counts in the chip exactly what the Hidden list shows under a network filter', async () => {
+  it('lists every hidden asset the summary counts, under a network filter too', async () => {
     seed('switches');
     const { portfolio, scope } = open(funded(['Polkadot', 'dot', '1']), POPULAR_NETWORKS);
-    const wrapper = mountCurrencies({ showAssetsManagementForm: true, manageHiddenOnly: true });
+    const page = mount(ManageAssets, { props: { focus: 'hidden' }, global: globalOptions });
     await nextTick();
 
     expect(portfolio.summary.value.hiddenAssetCount).toBeGreaterThan(0);
-    expect(rows(wrapper)).toHaveLength(portfolio.summary.value.hiddenAssetCount);
-    wrapper.unmount();
+    expect(hiddenRows(page)).toHaveLength(portfolio.summary.value.hiddenAssetCount);
+    page.unmount();
     scope.stop();
   });
 
-  it('ignores a search typed before Review, because Manage has no search field to clear it', async () => {
+  it('ignores a search typed in the list before Review: Manage assets has a search of its own', async () => {
     seed('hide-zero');
     const { scope } = open(funded(['Polkadot', 'dot', '12.5'], ['Kusama', 'ksm', '3']));
     const wrapper = mountCurrencies({ filterValue: 'dot' });
     await nextTick();
     expect(rows(wrapper)).not.toContain('Kusama:KSM');
 
-    await review(wrapper);
+    const page = await review(wrapper);
 
-    expect(rows(wrapper)).toContain('Kusama:KSM');
-    expect(rows(wrapper).some((row) => !/dot/i.test(row))).toBe(true);
+    expect(hiddenRows(page)).toContain('Kusama:KSM');
+    expect(hiddenRows(page).some((row) => !/dot/i.test(row))).toBe(true);
+    page.unmount();
 
-    // Back in the list, the search applies again.
-    await wrapper.setProps({ showAssetsManagementForm: false, manageHiddenOnly: false });
+    // Back in the list, its search still applies.
     expect(rows(wrapper).every((row) => /dot/i.test(row))).toBe(true);
     wrapper.unmount();
     scope.stop();
@@ -358,10 +368,11 @@ describe.each(LENSES)('portfolio empty states (by %s)', (currentLens) => {
 
     expect(text(wrapper, 'infoText')).toContain('portfolioPage.noBalanceInView');
     expect(text(wrapper, 'infoText')).toContain('portfolioPage.scanDescription');
-    // The zero block names what it holds, never "Popular networks", in either lens.
-    expect(wrapper.get('[data-testid="portfolioZeroNetworks"] .zero-header').text()).toMatch(
-      /^portfolioPage\.zeroTokens:\d+$/u
-    );
+    // No block of empty tokens: Add tokens opens Manage assets on that network instead.
+    expect(wrapper.find('[data-testid="portfolioZeroNetworks"]').exists()).toBe(false);
+    expect(rows(wrapper)).toEqual([]);
+    await wrapper.get('[data-testid="emptyAddTokens"]').trigger('click');
+    expect(routerPush).toHaveBeenLastCalledWith({ name: 'ManageAssets', query: { focus: 'search', search: 'Polkadot' } });
     wrapper.unmount();
     scope.stop();
   });
@@ -374,9 +385,9 @@ describe.each(LENSES)('portfolio empty states (by %s)', (currentLens) => {
     expect(text(wrapper, 'infoText')).toContain('portfolioPage.emptyWalletTitle');
     expect(text(wrapper, 'infoText')).toContain('portfolioPage.emptyWalletDescription');
     expect(text(wrapper, 'infoText')).not.toContain('portfolioPage.scanDescription');
-    expect(wrapper.get('[data-testid="portfolioZeroNetworks"] .zero-header').text()).toBe(
-      'portfolioPage.popularNoBalance'
-    );
+    // Popular tokens are suggested in Manage assets, one tap away, instead of a block of empty rows here.
+    expect(wrapper.find('[data-testid="portfolioZeroNetworks"]').exists()).toBe(false);
+    expect(text(wrapper, 'emptyAddTokens')).toBe('walletHome.list.addTokens');
     wrapper.unmount();
     scope.stop();
   });

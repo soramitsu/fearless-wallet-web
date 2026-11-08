@@ -84,10 +84,10 @@ const mountRow = (row: PortfolioTokenRow, props: Record<string, unknown> = {}) =
     global: { stubs: { ExternalLogo: true, Icon: true, Switcher: true } },
   });
 
-// Manage with the real switch, as a keyboard or screen-reader user meets it.
-const mountManaged = (row: PortfolioTokenRow) =>
+// With the real switch component registered, so a switch would show up if a row had one.
+const mountWithSwitcher = (row: PortfolioTokenRow) =>
   mount(PortfolioTokenRowView, {
-    props: { row, manage: true, forceExpanded: true },
+    props: { row },
     attachTo: document.body,
     global: { components: { Switcher }, stubs: { ExternalLogo: true, Icon: true } },
   });
@@ -142,36 +142,6 @@ describe('a By token row', () => {
 
     expect(wrapper.find('[data-testid="networkCount"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="tokenNetwork"]').text()).toBe('Polkadot');
-    wrapper.unmount();
-  });
-
-  it('remembers that it was opened in Manage after the popup closes', async () => {
-    const wrapper = mountRow(dotRow(), { manage: true });
-    await wrapper.get('[data-testid="tokenGroupHeader"]').trigger('click');
-    expect(wrapper.findAll('.network-row')).toHaveLength(3);
-    expect(router.push).not.toHaveBeenCalled();
-    wrapper.unmount();
-
-    const reopened = mountRow(dotRow(), { manage: true });
-    expect(reopened.get('[data-testid="tokenGroupHeader"]').attributes('aria-expanded')).toBe('true');
-    expect(JSON.parse(localStorage.getItem('account_portfolio-view-v1')!).value.wallet.expandedGroups).toEqual(['group:dot']);
-
-    await reopened.get('[data-testid="tokenGroupHeader"]').trigger('click');
-    expect(reopened.find('[data-testid="tokenNetworks"]').exists()).toBe(false);
-    reopened.unmount();
-  });
-
-  it('lists every network of a group in Manage, zero ones included, each with its role', () => {
-    // The Hidden filter opens every group.
-    const wrapper = mountRow(dotRow(), { manage: true, forceExpanded: true });
-
-    expect(wrapper.findAll('.network-row')).toHaveLength(3);
-    expect(wrapper.find('[data-testid="tokenZeroNetworks"]').exists()).toBe(false);
-    expect(wrapper.findAll('[data-testid="memberRole"]').map((chip) => chip.text())).toEqual([
-      'portfolioPage.role.native',
-      'portfolioPage.role.systemParachain',
-      'portfolioPage.role.xcmReserve',
-    ]);
     wrapper.unmount();
   });
 
@@ -257,29 +227,22 @@ describe('a By token row', () => {
     );
     wrapper.unmount();
 
-    // In a group, the failed network says so and the others keep their amounts; the row says part of it failed.
-    const group = mountRow(
-      {
-        ...dotRow(),
-        children: [...dotRow().children, child({ ...unavailable, networkName: 'Hydration', symbol: 'DOT' }, 'xcm-reserve')],
-        zeroChildren: [],
-        unavailableNetworkCount: 1,
-        balanceUnavailable: false,
-        balanceFailed: true,
-      },
-      { manage: true, forceExpanded: true }
-    );
+    // In a group, the others keep their amounts and the row says part of it failed (its page names the network).
+    const group = mountRow({
+      ...dotRow(),
+      children: [...dotRow().children, child({ ...unavailable, networkName: 'Hydration', symbol: 'DOT' }, 'xcm-reserve')],
+      zeroChildren: [],
+      unavailableNetworkCount: 1,
+      balanceUnavailable: false,
+      balanceFailed: true,
+    });
 
     expect(group.get('[data-testid="tokenAmount"]').text()).toBe('12.0000 DOT');
     expect(group.get('[data-testid="tokenBalanceFailed"]').text()).toBe('portfolioPage.balanceStatus.failed');
-    expect(group.findAll('[data-testid="networkBalanceUnavailable"]').map((cell) => cell.text())).toEqual([
-      'portfolioPage.balanceStatus.failed',
-    ]);
-    // The header label keeps the known amount and says part of it failed; the failed network has no amount or value.
+    // The header label keeps the known amount and says part of it failed.
     const headerLabel = group.get('[data-testid="tokenGroupHeader"]').attributes('aria-label');
     expect(headerLabel).toContain('"amount":"12.0000 DOT"');
     expect(headerLabel?.endsWith(' · portfolioPage.balanceStatus.failed')).toBe(true);
-    expect(group.findAll('.network-row')[2].text()).not.toContain('0.0000 DOT');
     group.unmount();
   });
 
@@ -287,22 +250,19 @@ describe('a By token row', () => {
     // As buildTokenRows makes it (token-lens.spec.ts): Polkadot not loaded, Asset Hub shown at a known 0.
     const relay = asset('Polkadot', 'relay-dot', '0', { balanceUnavailable: true, balanceFailed: true });
     const hub = asset('Polkadot AssetHub', 'hub-dot', '0');
-    const wrapper = mountRow(
-      {
-        ...dotRow(),
-        children: [child(relay, 'native'), child(hub, 'system-parachain')],
-        zeroChildren: [],
-        networkCount: 2,
-        balanceText: '0',
-        transferableText: '0',
-        hasBalance: false,
-        fiatValue: null,
-        unavailableNetworkCount: 1,
-        balanceUnavailable: true,
-        balanceFailed: true,
-      },
-      { manage: true, forceExpanded: true }
-    );
+    const wrapper = mountRow({
+      ...dotRow(),
+      children: [child(relay, 'native'), child(hub, 'system-parachain')],
+      zeroChildren: [],
+      networkCount: 2,
+      balanceText: '0',
+      transferableText: '0',
+      hasBalance: false,
+      fiatValue: null,
+      unavailableNetworkCount: 1,
+      balanceUnavailable: true,
+      balanceFailed: true,
+    });
     const header = wrapper.get('[data-testid="tokenGroupHeader"]');
 
     expect(wrapper.get('[data-testid="tokenBalanceUnavailable"]').text()).toBe('portfolioPage.balanceStatus.failed');
@@ -311,9 +271,6 @@ describe('a By token row', () => {
     expect(header.attributes('aria-label')).toBe(
       'portfolioPage.tokenGroupFailedLabel:2 {"symbol":"DOT","status":"portfolioPage.balanceStatus.failed","count":2}'
     );
-    // The network lines still say which one failed and which one holds a known 0.
-    expect(wrapper.findAll('[data-testid="networkBalanceUnavailable"]')).toHaveLength(1);
-    expect(wrapper.findAll('.network-row')[1].text()).toContain('0.0000 DOT');
     wrapper.unmount();
   });
 
@@ -330,12 +287,6 @@ describe('a By token row', () => {
     expect(headerLabel).toContain('"amount":"12.0000 DOT"');
     expect(headerLabel?.endsWith(' · portfolioPage.balanceStatus.failed')).toBe(true);
     wrapper.unmount();
-
-    // In Manage each network says which amount is the last one confirmed.
-    const managed = mountRow(row, { manage: true, forceExpanded: true });
-    expect(managed.findAll('[data-testid="networkBalanceFailed"]')).toHaveLength(1);
-    expect(managed.findAll('.network-row')[0].text()).toContain('10.0000 DOT');
-    managed.unmount();
   });
 
   it('says when part of a group has no price instead of valuing it at another network’s price', () => {
@@ -344,54 +295,30 @@ describe('a By token row', () => {
     wrapper.unmount();
   });
 
-  it('names every Manage switch, and the group switch says it covers every network of the token', () => {
-    const wrapper = mountManaged(dotRow());
-    const names = wrapper.findAll('input[role="switch"]').map((toggle) => toggle.attributes('aria-label'));
-
-    expect(names).toEqual([
-      'portfolioPage.showTokenOnNetworks:3 {"symbol":"DOT","count":3}',
-      'portfolioPage.showAssetOnNetwork {"symbol":"DOT","network":"Polkadot"}',
-      'portfolioPage.showAssetOnNetwork {"symbol":"DOT","network":"Polkadot AssetHub"}',
-      'portfolioPage.showAssetOnNetwork {"symbol":"DOT","network":"Hydration"}',
-    ]);
-    // In Manage the network lines are not buttons that do nothing: each switch is the one control.
-    wrapper.findAll('.network-row').forEach((line) => {
-      expect(line.element.tagName).toBe('DIV');
-      expect(line.element.closest('button')).toBeNull();
-    });
-    // The group header still opens and closes its networks.
-    expect(wrapper.get('[data-testid="tokenGroupHeader"]').element.tagName).toBe('BUTTON');
-    wrapper.unmount();
-  });
-
-  it('shows a single-network row in Manage as a line with one named switch, not an inert button', async () => {
+  it('has no switch of its own: every row opens, and what the list shows is chosen in Manage assets', async () => {
     const single: PortfolioTokenRow = {
       ...dotRow(),
       id: 'substrate:polygon:usdt',
       groupId: undefined,
       symbol: 'USDT',
-      children: [child(asset('Polygon', '0xc2132', '2', { symbol: 'USDT', hidden: true }))],
+      children: [child(asset('Polygon', '0xc2132', '2', { symbol: 'USDT' }))],
       zeroChildren: [],
       networkCount: 1,
-      hidden: true,
     };
-    const wrapper = mountManaged(single);
-    const header = wrapper.get('[data-testid="tokenRowHeader"]');
-    const toggle = wrapper.get('input[role="switch"]');
-
-    expect(header.element.tagName).toBe('DIV');
-    expect(header.attributes('aria-label')).toBeUndefined();
-    expect(toggle.attributes('aria-label')).toBe('portfolioPage.showAssetOnNetwork {"symbol":"USDT","network":"Polygon"}');
-    expect((toggle.element as HTMLInputElement).checked).toBe(false);
-
     const setPreferences = vi.spyOn(useAccountsStore(), 'setAssetPreferences');
-    (toggle.element as HTMLInputElement).focus();
-    expect(document.activeElement).toBe(toggle.element);
-    (toggle.element as HTMLInputElement).click();
 
-    expect(setPreferences).toHaveBeenCalledExactlyOnceWith({ entries: [{ key: 'substrate:polygon:0xc2132', preference: 'shown' }] });
-    expect(router.push).not.toHaveBeenCalled();
-    wrapper.unmount();
+    for (const row of [dotRow(), single]) {
+      const wrapper = mountWithSwitcher(row);
+
+      expect(wrapper.find('input[role="switch"]').exists()).toBe(false);
+      const header = wrapper.get(row === single ? '[data-testid="tokenRowHeader"]' : '[data-testid="tokenGroupHeader"]');
+      expect(header.element.tagName).toBe('BUTTON');
+      await header.trigger('click');
+      wrapper.unmount();
+    }
+
+    expect(router.push).toHaveBeenCalledTimes(2);
+    expect(setPreferences).not.toHaveBeenCalled();
   });
 });
 

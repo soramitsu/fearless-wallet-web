@@ -32,6 +32,7 @@ vi.mock('@/extension/messaging/nfts', () => ({ fetchNfts: vi.fn() }));
 vi.mock('@/stores/extension', () => ({ useExtensionStore: () => ({ features: {} }) }));
 
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
+import ManageAssets from '@/screens/portfolio/ManageAssets.vue';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 
 const PRICES = { polkadot: 5, kusama: 20, ethereum: 2000 };
@@ -197,10 +198,7 @@ describe('first open after upgrading from 3.0.5', () => {
 
     const scope = effectScope();
     const portfolio = scope.run(() => usePortfolio())!;
-    const list = mount(Currencies, {
-      props: { balances: [], filterValue: '', showAssetsManagementForm: false, manageHiddenOnly: false },
-      global: { mocks, stubs },
-    });
+    const list = mount(Currencies, { props: { filterValue: '' }, global: { mocks, stubs } });
     const header = () =>
       mount(WalletBalance, {
         props: { balance: portfolio.summary.value.total, loading: portfolio.loadStatus.value.state === 'loading' },
@@ -284,15 +282,20 @@ describe('first open after upgrading from 3.0.5', () => {
     scope.stop();
   });
 
-  it('never shows the loading screen in Manage, which lists every asset whatever it holds', async () => {
+  it('never shows a loading screen on Manage assets: it lists every token and says which networks are still checked', async () => {
     const groups = await backgroundAfterUpgradeFrom305();
-    const { list, scope } = await openPopup(groups);
+    const { list, portfolio, scope } = await openPopup(groups);
+    expect(portfolio.loadStatus.value.state).toBe('loading');
 
-    await list.setProps({ showAssetsManagementForm: true });
+    const page = mount(ManageAssets, { global: { mocks, stubs: { ...stubs, SearchInput: true, Switcher: true } } });
+    await nextTick();
 
-    expect(list.find('[data-testid="portfolioLoading"]').exists()).toBe(false);
-    expect(list.find('[data-testid="portfolioTokenList"]').exists()).toBe(true);
+    expect(page.find('[data-testid="portfolioLoading"]').exists()).toBe(false);
+    expect(page.get('[data-testid="manageChecking"]').text()).toMatch(/^portfolioPage\.checkingNetworks/u);
+    // Nothing has arrived yet, so nothing is shown as held; every supported token can still be added.
+    expect(page.findAll('[data-testid="manageAdd"] [data-testid="manageAssetRow"]').length).toBeGreaterThan(0);
 
+    page.unmount();
     list.unmount();
     scope.stop();
   });

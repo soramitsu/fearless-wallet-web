@@ -1,7 +1,7 @@
 <template>
-  <div class="content-settings" :class="{ 'content-settings--manage': syncedShowAssetsManagementForm }">
+  <div class="content-settings">
     <div class="toolbar-row">
-      <div v-if="!syncedShowAssetsManagementForm" class="tabs" role="group" :aria-label="$t('walletHome.tabs.label')">
+      <div class="tabs" role="group" :aria-label="$t('walletHome.tabs.label')">
         <button
           v-for="{ label, tabName } in tabsOptions"
           :key="tabName"
@@ -16,78 +16,23 @@
           {{ $t(label) }}
         </button>
       </div>
-      <p v-else class="manage-title">{{ $t('walletHome.toolbar.manageTitle') }}</p>
 
       <div v-if="listTabActive" class="toolbar-actions">
         <!-- The list (Currencies.vue) teleports its Refresh here, so it sits with the other list tools. -->
         <span v-if="refreshSlotId" :id="refreshSlotId" class="refresh-slot"></span>
 
+        <!-- Manage assets is a page of its own: what the list shows, tokens to add, and hidden ones. -->
         <CircleButton
           backgroundColor="none"
-          tooltipText="wallet.assetManagement"
+          tooltipText="walletHome.toolbar.manage"
           placement="left"
-          :ariaLabel="$t(syncedShowAssetsManagementForm ? 'walletHome.toolbar.done' : 'walletHome.toolbar.manage')"
-          :target="target"
-          :iconName="iconName"
+          :ariaLabel="$t('walletHome.toolbar.manage')"
+          target=".filter"
+          iconName="filter"
           data-testid="filterBtn"
           class="filter-btn"
-          @click="toggleAssetsManagementVisible"
+          @click="$emit('manage')"
         />
-      </div>
-    </div>
-
-    <!-- Manage: which assets the list shows. The list itself has one layout: a row per token. -->
-    <div v-if="syncedShowAssetsManagementForm && listTabActive" class="manage-panel">
-      <div class="manage-filters">
-        <button
-          type="button"
-          class="filter-chip"
-          data-testid="filterHidden"
-          :aria-pressed="manageHiddenOnly"
-          @click="$emit('update:manageHiddenOnly', !manageHiddenOnly)"
-        >
-          {{ $t('portfolioPage.filterHidden', { count: hiddenAssetCount }) }}
-        </button>
-        <button
-          type="button"
-          class="filter-chip"
-          data-testid="filterTestnets"
-          :aria-pressed="showTestnets"
-          @click="$emit('update:showTestnets', !showTestnets)"
-        >
-          {{ $t('portfolioPage.testnets') }}
-        </button>
-
-        <div class="hide-zero" data-testid="hideZeroToggle">
-          <Switcher
-            :value="hideZero"
-            :activeText="$t('wallet.hideZero')"
-            :inactiveText="$t('wallet.hideZero')"
-            @change="$emit('update:hideZero', $event)"
-          />
-        </div>
-      </div>
-
-      <!-- Only for wallets that ordered their assets in 3.0.5: that order is kept until Value is picked. -->
-      <div v-if="showSortControl" class="view-controls">
-        <div
-          class="segmented"
-          role="group"
-          :aria-label="$t('portfolioPage.sort.label')"
-          data-testid="portfolioSort"
-        >
-          <button
-            v-for="option in sortOptions"
-            :key="option.value"
-            type="button"
-            class="segment"
-            :aria-pressed="sort === option.value"
-            :data-testid="`portfolioSort-${option.value}`"
-            @click="$emit('update:sort', option.value)"
-          >
-            {{ $t(option.label) }}
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -106,38 +51,15 @@ interface TabsOptions {
 
 export default defineComponent({ name: 'ContentSettings' ,
   props: {
-    hideZero: Boolean,
-    showTestnets: Boolean,
-    sort: { type: String, default: 'value' },
-    /** The wallet has a 3.0.5 custom order to keep. */
-    showSortControl: Boolean,
-    hiddenAssetCount: { type: Number, default: 0 },
-    manageHiddenOnly: Boolean,
     /** The id of the place in the view row where the list puts its Refresh. */
     refreshSlotId: { type: String, default: '' },
     activeTabName: { type: String },
-    showAssetsManagementForm: { type: Boolean },
     /** The Portfolio tab (the allocation chart) comes with the dashboard (src/portfolio/dashboard/dashboardFlag.ts). */
     showPortfolioTab: Boolean,
     /** All wallets lists what every wallet holds: it has no NFTs or Manage of its own. */
     allWallets: Boolean,
   },
-  emits: [
-    'update:activeTabName',
-    'update:showAssetsManagementForm',
-    'update:hideZero',
-    'update:showTestnets',
-    'update:manageHiddenOnly',
-    'update:sort',
-  ],
-  data() {
-    return {
-      sortOptions: [
-        { value: 'value', label: 'portfolioPage.sort.value' },
-        { value: 'custom', label: 'portfolioPage.sort.custom' },
-      ],
-    };
-  },
+  emits: ['update:activeTabName', 'manage'],
   computed: {
     tabsOptions(): TabsOptions[] {
       return [
@@ -146,14 +68,8 @@ export default defineComponent({ name: 'ContentSettings' ,
         ...(this.allWallets ? [] : [{ label: 'walletHome.tabs.nfts', tabName: Components.Nfts }]),
       ] as TabsOptions[];
     },
-    target() {
-      return `.${this.iconName}`;
-    },
     listTabActive(): boolean {
       return this.syncedActiveTabName === Components.Currencies && !this.allWallets;
-    },
-    iconName() {
-      return this.syncedShowAssetsManagementForm ? 'close' : 'filter';
     },
     syncedActiveTabName: {
       get() {
@@ -163,28 +79,17 @@ export default defineComponent({ name: 'ContentSettings' ,
         this.$emit('update:activeTabName', value);
       },
     },
-    syncedShowAssetsManagementForm: {
-      get() {
-        return this.showAssetsManagementForm;
-      },
-      set(value) {
-        this.$emit('update:showAssetsManagementForm', value);
-      },
-    },
   },
   methods: {
     openTab(name: TabWallet) {
       this.syncedActiveTabName = name;
-    },
-    toggleAssetsManagementVisible() {
-      this.syncedShowAssetsManagementForm = !this.syncedShowAssetsManagementForm;
     },
   },
 });
 </script>
 
 <style lang="scss" scoped>
-// One row: the views on the left, the list's tools on the right (Exodus' wallet list). Everything else is in Manage.
+// One row: the views on the left, the list's tools on the right (Exodus' wallet list). Manage assets is its own page.
 .content-settings {
   display: flex;
   flex-direction: column;
@@ -253,13 +158,6 @@ export default defineComponent({ name: 'ContentSettings' ,
   }
 }
 
-.manage-title {
-  margin: 0;
-  color: var(--fw-text-1);
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
 .toolbar-actions {
   display: flex;
   align-items: center;
@@ -274,93 +172,6 @@ export default defineComponent({ name: 'ContentSettings' ,
 .filter-btn :deep(button) {
   width: 36px;
   height: 36px;
-}
-
-.manage-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--fw-divider);
-  border-radius: 12px;
-  background: var(--fw-raised);
-}
-
-.manage-filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.filter-chip {
-  min-height: 32px;
-  padding: 0 12px;
-  border: $default-border;
-  border-radius: 16px;
-  background: $secondary-background-color;
-  color: $grayish-white;
-  font: inherit;
-  font-size: 0.75rem;
-  cursor: pointer;
-
-  &[aria-pressed='true'] {
-    border-color: palette($pink-lavender-color, var(--fw-select-edge));
-    background: $pink-purple-color;
-    color: $plain-white;
-  }
-
-  &:focus-visible {
-    outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
-    outline-offset: 2px;
-  }
-}
-
-.view-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.segmented {
-  display: inline-flex;
-  padding: 2px;
-  border: $default-border;
-  border-radius: 16px;
-  background: $secondary-background-color;
-}
-
-.segment {
-  min-height: 28px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 14px;
-  background: transparent;
-  color: $grayish-white;
-  font: inherit;
-  font-size: 0.72rem;
-  cursor: pointer;
-  white-space: nowrap;
-
-  &[aria-pressed='true'] {
-    background: $pink-purple-color;
-    color: $plain-white;
-    font-weight: 700;
-  }
-
-  &:focus-visible {
-    outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
-    outline-offset: 1px;
-  }
-}
-
-.hide-zero {
-  display: flex;
-  align-items: center;
-  margin-left: auto;
-  color: $grayish-white;
-  font-size: 0.75rem;
 }
 
 // The side panel's column: the views and the three tools still share one row, in every language.

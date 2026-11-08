@@ -180,13 +180,13 @@ export class WalletConnectDAppService {
     if (!attempt || attempt.subscriber) {
       const result = { status: false, message: 'unavailable' };
       callback(result);
-      this.state.subscriptionService.cancelSubscription(id);
+      this.state.subscriptionService.cancelSubscription(id, port);
       return result;
     }
     attempt.subscriber = { id, callback };
     this.state.subscriptionService.setUnsubscriptionHandle(id, () => {
       void this.abortPairingAttempt(attempt.id, port).catch(console.error);
-    });
+    }, port);
     void this.completePairing(attempt).catch(console.error);
     return { uri };
   }
@@ -224,7 +224,7 @@ export class WalletConnectDAppService {
       attempt.port?.onDisconnect.removeListener(attempt.disconnectListener);
       if (attempt.subscriber) {
         if (result) attempt.subscriber.callback(result);
-        this.state.subscriptionService.cancelSubscription(attempt.subscriber.id);
+        this.state.subscriptionService.cancelSubscription(attempt.subscriber.id, attempt.port);
       }
     }
     return attempt.retirement;

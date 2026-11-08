@@ -268,9 +268,9 @@ export class NftService {
       next: (rs) => cb(rs),
     });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => nftSubscription.unsubscribe());
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => nftSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id, port));
 
     const account = this.state.currentAccount;
 

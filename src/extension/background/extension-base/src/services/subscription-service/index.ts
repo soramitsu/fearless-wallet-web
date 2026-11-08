@@ -1,5 +1,6 @@
 import { logger as createLogger } from '@polkadot/util';
 import { DOTSAMA_API_TIMEOUT } from '@extension-base/const/intervals';
+import { subscriptionIdentity } from '@extension-base/utils/subscriptionIdentity';
 import type { Subscription } from 'rxjs';
 import type State from '@extension-base/background/handlers/State';
 import type { Logger } from '@polkadot/util/types';
@@ -7,7 +8,6 @@ import type {
   MessageTypesWithSubscriptions,
   Port,
   SubscriptionMessageTypes,
-  Subscriptions,
 } from '@extension-base/background/types/types';
 import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
 import type { NetworkName } from '@/interfaces';
@@ -64,10 +64,10 @@ const emptyServiceInfo = (): ServiceInfo => ({
 
 export class SubscriptionService {
   private logger: Logger;
-  private subscriptionsPorts: Subscriptions = {}; // subscriptions for interaction with client side
+  private subscriptionsPorts = new Map<string, Port | 'sw-messages'>();
   private serviceInfoSubscription: Subscription | undefined;
   subscriptionNetworksMap: SubscriptionMap = {}; // subscriptions for networks balances
-  private unsubscriptionMap: Record<string, () => void> = {};
+  private unsubscriptionMap = new Map<string, () => void>();
   private subscriptionTokens = new Map<string, symbol>();
   private networkSubscriptionTokens = new Map<string, symbol>();
   // Counts stop() calls: reads started before the wallet went quiet do not subscribe afterwards.
@@ -87,7 +87,7 @@ export class SubscriptionService {
 
   // Clear a previous subscriber
   private unsubscribe(id: string): void {
-    delete this.subscriptionsPorts[id];
+    this.subscriptionsPorts.delete(id);
     this.subscriptionTokens.delete(id);
   }
 
@@ -95,14 +95,15 @@ export class SubscriptionService {
     id: string,
     port?: Port
   ): (data: SubscriptionMessageTypes[TMessageType] | null) => void {
-    if (this.subscriptionsPorts[id]) this.cancelSubscription(id);
+    const key = subscriptionIdentity(id, port);
+    if (this.subscriptionsPorts.has(key)) this.cancelSubscription(id, port);
     const token = Symbol(id);
-    this.subscriptionTokens.set(id, token);
-    this.subscriptionsPorts[id] = port ?? 'sw-messages';
+    this.subscriptionTokens.set(key, token);
+    this.subscriptionsPorts.set(key, port ?? 'sw-messages');
 
     // 'subscription' is a callback
     return (subscription: unknown): void => {
-      if (this.subscriptionTokens.get(id) === token) {
+      if (this.subscriptionTokens.get(key) === token) {
         try {
           if (port) port.postMessage({ id, subscription });
           else {
@@ -113,27 +114,29 @@ export class SubscriptionService {
         } catch (error) {
           console.info('Error occurred while trying to post message', error);
 
-          this.cancelSubscription(id);
+          this.cancelSubscription(id, port);
         }
       }
     };
   }
 
-  setUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
+  setUnsubscriptionHandle(id: string, unsubscribe: () => void, port?: Port): void {
+    const key = subscriptionIdentity(id, port);
     // BehaviorSubject may deliver (and close the port) before subscribe() returns its handle.
-    if (!this.subscriptionsPorts[id]) {
+    if (!this.subscriptionsPorts.has(key)) {
       unsubscribe();
       return;
     }
-    this.unsubscriptionMap[id] = unsubscribe;
+    this.unsubscriptionMap.set(key, unsubscribe);
   }
 
-  cancelSubscription(id: string): boolean {
+  cancelSubscription(id: string, port?: Port): boolean {
+    const key = subscriptionIdentity(id, port);
     // Clear subscribe port
-    this.unsubscribe(id);
+    this.unsubscribe(key);
 
-    const cleanup = this.unsubscriptionMap[id];
-    delete this.unsubscriptionMap[id];
+    const cleanup = this.unsubscriptionMap.get(key);
+    this.unsubscriptionMap.delete(key);
     cleanup?.();
 
     return true;

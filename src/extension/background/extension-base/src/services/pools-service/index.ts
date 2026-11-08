@@ -245,9 +245,9 @@ export class PoolsService {
       cb(accountLiquidity)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => accountLiquiditySubscription.unsubscribe());
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => accountLiquiditySubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id, port));
 
     return true;
   }

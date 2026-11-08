@@ -336,8 +336,8 @@ export default class Extension extends FWExtensionBase {
     super(state);
   }
 
-  private cancelSubscription(id: string): boolean {
-    return this.state.subscriptionService.cancelSubscription(id);
+  private cancelSubscription(id: string, port?: Port): boolean {
+    return this.state.subscriptionService.cancelSubscription(id, port);
   }
 
   async accountsForget({ address, type }: RequestAccountForget): Promise<boolean> {
@@ -560,9 +560,9 @@ export default class Extension extends FWExtensionBase {
       substrateAccountsSubscription.unsubscribe();
       tonSubscription.unsubscribe();
       currentAccountSubscription.unsubscribe();
-    });
+    }, port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return [...substrateTransformedAddresses, ...substrateTransformedAccounts, ...tonTransformedAccounts];
   }
@@ -631,9 +631,9 @@ export default class Extension extends FWExtensionBase {
 
     const authSubscription = this.state.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => authSubscription.unsubscribe());
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => authSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.authSubject.value;
   }
@@ -671,9 +671,9 @@ export default class Extension extends FWExtensionBase {
       cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => metaSubscription.unsubscribe());
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => metaSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.requestService.metaSubject.value;
   }
@@ -1015,9 +1015,9 @@ export default class Extension extends FWExtensionBase {
       cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => signSubscription.unsubscribe());
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => signSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.requestService.signSubject.value;
   }
@@ -1029,9 +1029,9 @@ export default class Extension extends FWExtensionBase {
       cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => signEvmSubscription.unsubscribe());
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => signEvmSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.requestService.signEvmSubject.value;
   }
@@ -1043,9 +1043,9 @@ export default class Extension extends FWExtensionBase {
       (requests: SolanaRequests): void => cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => signSolanaSubscription.unsubscribe());
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => signSolanaSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.requestService.signSolanaSubject.value;
   }
@@ -1101,9 +1101,9 @@ export default class Extension extends FWExtensionBase {
 
     const balanceSubscription = this.state.balanceService.balanceSubject.subscribe({ next: (rs) => cb(rs) });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => balanceSubscription.unsubscribe());
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => balanceSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.balanceService.getBalance();
   }
@@ -1128,9 +1128,9 @@ export default class Extension extends FWExtensionBase {
       },
     });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => priceSubscription.unsubscribe());
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => priceSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.getPrice();
   }
@@ -1142,9 +1142,9 @@ export default class Extension extends FWExtensionBase {
       next: (rs) => cb(rs),
     });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => soraFeesSubscription.unsubscribe());
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => soraFeesSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
   }
 
   private async checkSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
@@ -1732,11 +1732,11 @@ export default class Extension extends FWExtensionBase {
       };
       callback(response);
 
-      setTimeout(() => this.cancelSubscription(id), 500);
+      setTimeout(() => this.cancelSubscription(id, port), 500);
       return response;
     }
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return { status: true };
   }
@@ -1905,7 +1905,7 @@ export default class Extension extends FWExtensionBase {
     const closeSubscription = () => {
       if (!subscribed) return;
       subscribed = false;
-      this.cancelSubscription(id);
+      this.cancelSubscription(id, port);
     };
     // Closing the popup stops the updates, not the send: the outcome is still tracked and recorded.
     port?.onDisconnect.addListener(closeSubscription);
@@ -1999,9 +1999,9 @@ export default class Extension extends FWExtensionBase {
       .getSubject()
       .subscribe({ next: (rs) => cb(rs) });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => networkMapSubscription.unsubscribe());
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => networkMapSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.networkService.networkMap;
   }
@@ -2017,9 +2017,9 @@ export default class Extension extends FWExtensionBase {
       },
     });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => selectedNetworksSubscription.unsubscribe());
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => selectedNetworksSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
   }
 
   async checkController(params: CheckControllerRequest): Promise<boolean> {
@@ -2235,9 +2235,9 @@ export default class Extension extends FWExtensionBase {
       (requests: WalletConnectSessionRequest[]): void => cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe());
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.requestService.allConnectWCRequests;
   }
@@ -2400,9 +2400,9 @@ export default class Extension extends FWExtensionBase {
       cb(rs);
     });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe());
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.walletConnectService.sessions ?? [];
   }
@@ -2423,9 +2423,9 @@ export default class Extension extends FWExtensionBase {
       (requests: WalletConnectTransactionRequest[]): void => cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => requestSubscription.unsubscribe());
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => requestSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.requestService.signWcSubject.value;
   }
@@ -2540,9 +2540,9 @@ export default class Extension extends FWExtensionBase {
       (requests: WalletConnectNotSupportRequest[]): void => cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe());
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.requestService.allNotSupportWCRequests;
   }
@@ -2647,8 +2647,8 @@ export default class Extension extends FWExtensionBase {
       case 'pri(keyring.subscribeLock)': {
         const notify = this.state.subscriptionService.createSubscription<'pri(keyring.subscribeLock)'>(id, port);
         const subscription = this.state.keyringService.lockSubject.subscribe(() => notify(true));
-        this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe());
-        port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+        this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe(), port);
+        port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
         return this.state.keyringService.keyringIsLocked;
       }
 

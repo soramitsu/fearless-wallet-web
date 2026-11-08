@@ -157,9 +157,10 @@ describe('tab account discovery and subscription lifecycle', () => {
     expect(await call('pub(accounts.subscribe)', null, 'account-events')).toBe('account-events'); await flush();
     expect(callbacks.get('account-events')).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ address: 'public-substrate' })]));
     expect(mocks.storage).toHaveBeenCalledWith({ transformAccounts: expect.arrayContaining([expect.objectContaining({ address: 'mobile' })]) });
-    expect(tabs.accountsUnsubscribe('https://other.example', { id: 'account-events' })).toBe(false);
+    expect(tabs.accountsUnsubscribe('https://other.example', { id: 'account-events' }, port)).toBe(false);
+    expect(tabs.accountsUnsubscribe(url, { id: 'account-events' }, {} as Port)).toBe(false);
     expect(await call('pub(accounts.unsubscribe)', { id: 'account-events' })).toBe(true);
-    expect(tabs.accountsUnsubscribe(url, { id: 'account-events' })).toBe(false);
+    expect(tabs.accountsUnsubscribe(url, { id: 'account-events' }, port)).toBe(false);
     expect(accounts.observed).toBe(false);
   });
   it('updates Substrate subscribers when a mobile account or site grant changes', async () => {
@@ -291,14 +292,14 @@ describe('tab signing and provider boundaries', () => {
     expect(callbacks.get('rpc-events')).toHaveBeenCalledWith({ number: 12 });
     disconnect.forEach((listener) => listener()); await flush();
     expect(state.rpcUnsubscribe).toHaveBeenCalledWith({ ...request, subscriptionId: 42 }, port);
-    expect(state.subscriptionService.cancelSubscription).toHaveBeenCalledWith('rpc-events');
+    expect(state.subscriptionService.cancelSubscription).toHaveBeenCalledWith('rpc-events', port);
   });
   it('forwards provider connection status and cancels it on disconnect', async () => {
     await call('pub(rpc.subscribeConnected)', null, 'connected');
     vi.mocked(state.rpcSubscribeConnected).mock.calls[0][1](null, true);
     expect(callbacks.get('connected')).toHaveBeenCalledWith(true);
     disconnect.forEach((listener) => listener());
-    expect(state.subscriptionService.cancelSubscription).toHaveBeenCalledWith('connected');
+    expect(state.subscriptionService.cancelSubscription).toHaveBeenCalledWith('connected', port);
   });
   it('checks phishing before authorization and propagates denial', async () => {
     mocks.denied.mockResolvedValue(true);

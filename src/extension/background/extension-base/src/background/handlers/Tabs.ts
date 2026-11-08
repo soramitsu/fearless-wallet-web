@@ -17,6 +17,7 @@ import {
   type SolanaSignMessageRequest,
   type SolanaSignTransactionRequest,
 } from '@extension-base/page/types';
+import { subscriptionIdentity } from '@extension-base/utils/subscriptionIdentity';
 import { EipService } from '../../services/eip-service';
 import { createClusterBoundSolanaRpcClient } from '../../services/solana-rpc-service';
 import type { RequestArguments } from '@walletconnect/jsonrpc-types';
@@ -73,7 +74,7 @@ const PAGE_REQUEST_MESSAGES = new Set<MessageTypes>([
 ]);
 
 export default class Tabs {
-  accountSubs: Record<string, AccountSub> = {};
+  accountSubs: Record<string, AccountSub> = Object.create(null);
   eipService: EipService;
   // One signal per page port, aborted when the port closes. Another tab of the same site has its own port.
   private readonly portSignals = new WeakMap<Port, AbortSignal>();
@@ -202,9 +203,9 @@ export default class Tabs {
       accountSubscription.unsubscribe();
       addressSubscription.unsubscribe();
       authSubscription.unsubscribe();
-    });
+    }, port);
 
-    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
+    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id, port));
     await emitIfChanged();
 
     return true;
@@ -283,9 +284,9 @@ export default class Tabs {
       accountSubscription.unsubscribe();
       addressSubscription.unsubscribe();
       authSubscription.unsubscribe();
-    });
+    }, port);
 
-    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
+    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id, port));
     await emitIfChanged();
 
     return true;
@@ -356,9 +357,10 @@ export default class Tabs {
 
   async accountsSubscribeAuthorized(url: string, id: string, port: Port): Promise<string> {
     const cb = this.state.subscriptionService.createSubscription<'pub(accounts.subscribe)'>(id, port);
+    const key = subscriptionIdentity(id, port);
 
     const subscription = new Subscription();
-    this.accountSubs[id] = { subscription, url };
+    this.accountSubs[key] = { subscription, url };
     let previousPayload = '';
     let publishRevision = 0;
     const publish = async (): Promise<void> => {
@@ -381,24 +383,25 @@ export default class Tabs {
     subscription.add(this.state.requestService.subscribeAuthorizeUrlSubject.subscribe(update));
     this.state.subscriptionService.setUnsubscriptionHandle(id, () => {
       subscription.unsubscribe();
-      if (this.accountSubs[id]?.subscription === subscription) delete this.accountSubs[id];
-    });
+      if (this.accountSubs[key]?.subscription === subscription) delete this.accountSubs[key];
+    }, port);
 
     port.onDisconnect.addListener((): void => {
-      this.accountsUnsubscribe(url, { id });
+      this.accountsUnsubscribe(url, { id }, port);
     });
 
     return id;
   }
 
-  accountsUnsubscribe(url: string, { id }: RequestAccountUnsubscribe): boolean {
-    const sub = this.accountSubs[id];
+  accountsUnsubscribe(url: string, { id }: RequestAccountUnsubscribe, port: Port): boolean {
+    const key = subscriptionIdentity(id, port);
+    const sub = this.accountSubs[key];
 
     if (!sub || sub.url !== url) return false;
 
-    delete this.accountSubs[id];
+    delete this.accountSubs[key];
 
-    this.state.subscriptionService.cancelSubscription(id);
+    this.state.subscriptionService.cancelSubscription(id, port);
 
     sub.subscription.unsubscribe();
 
@@ -462,7 +465,7 @@ export default class Tabs {
     const subscriptionId = await this.state.rpcSubscribe(request, cb, port);
 
     port.onDisconnect.addListener((): void => {
-      this.state.subscriptionService.cancelSubscription(id);
+      this.state.subscriptionService.cancelSubscription(id, port);
 
       withErrorLog(() => this.rpcUnsubscribe({ ...request, subscriptionId }, port));
     });
@@ -478,7 +481,7 @@ export default class Tabs {
 
     this.state.rpcSubscribeConnected(request, cb, port);
 
-    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
+    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id, port));
 
     return Promise.resolve(true);
   }
@@ -556,7 +559,7 @@ export default class Tabs {
         return this.accountsSubscribeAuthorized(url, id, port);
 
       case 'pub(accounts.unsubscribe)':
-        return this.accountsUnsubscribe(url, request as RequestAccountUnsubscribe);
+        return this.accountsUnsubscribe(url, request as RequestAccountUnsubscribe, port);
 
       case 'pub(bytes.sign)':
         return this.pageSignature(id, this.bytesSign(url, request as SignerPayloadRaw, signal));

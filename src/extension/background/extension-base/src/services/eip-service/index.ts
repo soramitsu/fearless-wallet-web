@@ -3,6 +3,7 @@ import { type RequestEvmProviderSend, type EvmEventType } from '@extension-base/
 import { CRON_GET_API_MAP_STATUS } from '@extension-base/const/intervals';
 import { captureEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
 import { createSigningRequestId } from '@extension-base/services/request-service/signingRequestId';
+import { subscriptionIdentity } from '@extension-base/utils/subscriptionIdentity';
 import type { RequestArguments } from '@walletconnect/jsonrpc-types';
 import type State from '@extension-base/background/handlers/State';
 import type { EvmAppState, EvmProvider } from '@extension-base/background/types/types';
@@ -160,6 +161,7 @@ export class EipService {
   async evmSubscribeEvents(url: string, id: string, port: chrome.runtime.Port) {
     // This method will be called after DApp request connect to extension
     const cb = this.state.subscriptionService.createSubscription<'evm(events.subscribe)'>(id, port);
+    const key = subscriptionIdentity(id, port);
 
     const emitEvent = (eventName: EvmEventType, payload: unknown) => {
       cb({ type: eventName, payload });
@@ -244,10 +246,10 @@ export class EipService {
       this.evmEventEmitterMap[url] = {};
     }
 
-    this.evmEventEmitterMap[url][id] = emitEvent;
+    this.evmEventEmitterMap[url][key] = emitEvent;
 
     this.state.subscriptionService.setUnsubscriptionHandle(id, () => {
-      if (this.evmEventEmitterMap[url][id]) delete this.evmEventEmitterMap[url][id];
+      if (this.evmEventEmitterMap[url][key] === emitEvent) delete this.evmEventEmitterMap[url][key];
 
       Object.entries(eventMap).forEach(([event, callback]) => {
         provider?.removeListener(event, callback);
@@ -258,9 +260,9 @@ export class EipService {
 
       clearInterval(networkCheckEntry.interval);
       this.networkChecks.delete(networkCheckEntry);
-    });
+    }, port);
 
-    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
+    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id, port));
 
     return true;
   }
@@ -274,10 +276,10 @@ export class EipService {
     provider.send(request.jsonrpc, []).then((result) => {
       cb({ error: null, result });
 
-      this.state.subscriptionService.cancelSubscription(id);
+      this.state.subscriptionService.cancelSubscription(id, port);
     });
 
-    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
+    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id, port));
 
     return true;
   }

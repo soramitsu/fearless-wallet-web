@@ -49,18 +49,20 @@ afterEach(() => {
 describe('balance subscription lifecycle', () => {
   it('disposes a late cleanup handle if synchronous delivery already closed the client', () => {
     const { service } = fixture();
-    const send = service.createSubscription('early-close', { postMessage: () => { throw new Error('closed'); } } as never);
+    const port = { postMessage: () => { throw new Error('closed'); } };
+    const send = service.createSubscription('early-close', port as never);
     send(null);
     const cleanup = vi.fn();
-    service.setUnsubscriptionHandle('early-close', cleanup);
+    service.setUnsubscriptionHandle('early-close', cleanup, port as never);
     expect(cleanup).toHaveBeenCalledOnce();
   });
 
   it('releases client resources after a delivery failure', () => {
     const { service } = fixture();
-    const send = service.createSubscription('failed', { postMessage: () => { throw new Error('closed'); } } as never);
+    const port = { postMessage: () => { throw new Error('closed'); } };
+    const send = service.createSubscription('failed', port as never);
     const cleanup = vi.fn();
-    service.setUnsubscriptionHandle('failed', cleanup);
+    service.setUnsubscriptionHandle('failed', cleanup, port as never);
     send(null);
     send(null);
     expect(cleanup).toHaveBeenCalledOnce();
@@ -68,16 +70,53 @@ describe('balance subscription lifecycle', () => {
 
   it('does not revive an old sender when its subscription ID is reused', () => {
     const { service } = fixture();
-    const oldPort = { postMessage: vi.fn() }, newPort = { postMessage: vi.fn() };
-    const oldSend = service.createSubscription('reused', oldPort as never);
+    const port = { postMessage: vi.fn() };
+    const oldSend = service.createSubscription('reused', port as never);
     const cleanup = vi.fn();
-    service.setUnsubscriptionHandle('reused', cleanup);
-    const newSend = service.createSubscription('reused', newPort as never);
+    service.setUnsubscriptionHandle('reused', cleanup, port as never);
+    const newSend = service.createSubscription('reused', port as never);
     oldSend(null);
     newSend(null);
-    expect(oldPort.postMessage).not.toHaveBeenCalled();
-    expect(newPort.postMessage).toHaveBeenCalledOnce();
+    expect(port.postMessage).toHaveBeenCalledOnce();
     expect(cleanup).toHaveBeenCalledOnce();
+  });
+
+  it.each(['wallet-signing', '__proto__', 'constructor'])('isolates caller-selected ID %s by port', (id) => {
+    const { service } = fixture();
+    const wallet = { postMessage: vi.fn() }, site = { postMessage: vi.fn() };
+    const walletCleanup = vi.fn(), siteCleanup = vi.fn();
+    const walletSend = service.createSubscription(id, wallet as never);
+    service.setUnsubscriptionHandle(id, walletCleanup, wallet as never);
+    const siteSend = service.createSubscription(id, site as never);
+    service.setUnsubscriptionHandle(id, siteCleanup, site as never);
+
+    walletSend(null);
+    siteSend(null);
+    expect(wallet.postMessage).toHaveBeenCalledWith({ id, subscription: null });
+    expect(site.postMessage).toHaveBeenCalledWith({ id, subscription: null });
+    expect(walletCleanup).not.toHaveBeenCalled();
+    service.cancelSubscription(id, site as never);
+    service.cancelSubscription(id); // A web-channel request is a different owner too.
+    walletSend(null);
+    siteSend(null);
+    expect(wallet.postMessage).toHaveBeenCalledTimes(2);
+    expect(site.postMessage).toHaveBeenCalledOnce();
+    expect(walletCleanup).not.toHaveBeenCalled();
+    expect(siteCleanup).toHaveBeenCalledOnce();
+  });
+
+  it('does not let a stale disconnected port cancel a new client with the same ID', () => {
+    const { service } = fixture();
+    const oldPort = { postMessage: vi.fn() }, newPort = { postMessage: vi.fn() };
+    service.createSubscription('reused', oldPort as never);
+    service.cancelSubscription('reused', oldPort as never);
+    const send = service.createSubscription('reused', newPort as never);
+    const cleanup = vi.fn();
+    service.setUnsubscriptionHandle('reused', cleanup, newPort as never);
+    service.cancelSubscription('reused', oldPort as never);
+    send(null);
+    expect(newPort.postMessage).toHaveBeenCalledOnce();
+    expect(cleanup).not.toHaveBeenCalled();
   });
 
   it('closes a broadcast sender even when postMessage throws', () => {
@@ -234,9 +273,9 @@ describe('balance subscription lifecycle', () => {
     const port = { postMessage: vi.fn() };
     const cleanup = vi.fn();
     const send = service.createSubscription('client', port as never);
-    service.setUnsubscriptionHandle('client', cleanup);
+    service.setUnsubscriptionHandle('client', cleanup, port as never);
     send(null);
-    expect(service.cancelSubscription('client')).toBe(true);
+    expect(service.cancelSubscription('client', port as never)).toBe(true);
     send(null);
     expect(port.postMessage).toHaveBeenCalledOnce();
     expect(cleanup).toHaveBeenCalledOnce();

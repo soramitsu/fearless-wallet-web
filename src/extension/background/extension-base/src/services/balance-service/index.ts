@@ -199,8 +199,10 @@ export default class BalanceService {
   ): (keyof BalanceStorage)[] {
     const accountScanStates = { ...(stored.networkScanStates[address] ?? {}) };
     const previous = accountScanStates[chain];
-    const failed = scan.failed || Boolean(previous?.failedAssetKeys?.length) ||
-      (!scan.coversNetwork && Boolean(scan.unknownFailure));
+    // A refresh of the whole network that failed nowhere read every asset the network lists. A failure still on record
+    // belongs to an asset it has dropped, which nothing would ever read again to clear it.
+    const failed = scan.failed ||
+      (!scan.coversNetwork && (Boolean(previous?.failedAssetKeys?.length) || Boolean(scan.unknownFailure)));
     const now = Date.now();
     accountScanStates[chain] = {
       lastAttempt: now,

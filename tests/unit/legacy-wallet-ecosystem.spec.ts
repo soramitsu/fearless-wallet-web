@@ -104,6 +104,29 @@ describe('wallets written by 1.x-2.7.x, which have no walletEcosystem', () => {
     expect(subscribeSubstrateBalances).toHaveBeenCalledOnce();
   });
 
+  it.each([
+    ['a standalone Ethereum wallet', { walletEcosystem: WalletEcosystem.Evm, address: `0x${'ab'.repeat(20)}`, ethereumAddress: `0x${'ab'.repeat(20)}` }, 1],
+    ['a standalone Ethereum wallet of 2.x', { address: `0x${'ab'.repeat(20)}`, ethereumAddress: `0x${'ab'.repeat(20)}` }, 1],
+    ['a TON wallet', { walletEcosystem: WalletEcosystem.Ton, address: 'UQDton', ethereumAddress: '' }, 0],
+  ])('subscribe %s to the Substrate-based networks it can hold an account on', async (_name, current, subscriptions) => {
+    const subscribeSubstrateBalances = vi.fn().mockReturnValue([]);
+    const publishBalance = vi.fn();
+    const lazyNext = vi.fn((_key: string, callback: () => void) => callback());
+    const state = {
+      requestService: { mutateAuthorizations: vi.fn().mockResolvedValue(undefined) },
+      currentAccount: current,
+      timeoutService: { lazyNext },
+      balanceService: { fetchBalance: vi.fn(), publishBalance, substrateBalanceService: { subscribeSubstrateBalances } },
+    };
+    const service = new SubscriptionService(state as never);
+
+    await service.fetchNetworkBalances({ ...current, substrateNetworks: ['moonbeam'] });
+
+    expect(subscribeSubstrateBalances).toHaveBeenCalledTimes(subscriptions);
+    // An Ethereum key read moments ago is not read again; the page that switched to it still gets an answer.
+    expect(publishBalance).toHaveBeenCalledTimes(subscriptions);
+  });
+
   it('bind the selected wallet\'s key to the SORA client', async () => {
     const current = S1.storage['fwcurrent_account:CurrentAccountInfo'] as unknown as { address: string };
     const pair = { address: current.address };

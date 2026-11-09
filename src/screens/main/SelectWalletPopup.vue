@@ -34,7 +34,6 @@
 
 <script lang="ts">
 import { defineAsyncComponent, defineComponent } from 'vue';
-import { isEthereumAddress } from '@polkadot/util-crypto';
 
 import WalletInfo from './WalletInfo.vue';
 import type { CustomEvent, WalletEcosystem } from '@/interfaces';
@@ -71,11 +70,7 @@ export default defineComponent({ name: 'SelectWalletPopup',
       );
     },
     sortedWallets() {
-      // Account subscriptions include standalone EVM records for security
-      // classification; selection must match State.updateCurrentAccount's guard.
-      return this.accountsStore.accounts
-        .filter(({ address }) => !isEthereumAddress(address))
-        .sort((a, b) => a.name.localeCompare(b.name));
+      return [...this.accountsStore.accounts].sort((a, b) => a.name.localeCompare(b.name));
     },
   },
   methods: {

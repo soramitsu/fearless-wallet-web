@@ -393,8 +393,16 @@ export class SubscriptionService {
       substrateNetworks: [], // Удаялем сабстрейт сети потому что подписываемся на балансы через WS
     });
 
-    // The selected-wallet record written by 1.x-2.7.x has no walletEcosystem.
-    if (walletEcosystemOf(address, walletEcosystem) === WalletEcosystem.Substrate) this.subscribeSubstrateBalances(props);
+    // The selected-wallet record written by 1.x-2.7.x has no walletEcosystem. A standalone Ethereum key has accounts
+    // on the Substrate-based networks that use Ethereum addresses; the subscription leaves out every other one.
+    const selectedEcosystem = walletEcosystemOf(address, walletEcosystem);
+
+    if (selectedEcosystem === WalletEcosystem.Substrate || selectedEcosystem === WalletEcosystem.Evm)
+      this.subscribeSubstrateBalances(props);
+
+    // Its balances may have been read moments ago, so nothing would answer a page that just switched to it.
+    if (selectedEcosystem === WalletEcosystem.Evm)
+      this.state.timeoutService.lazyNext('setBalanceItem', () => this.state.balanceService.publishBalance(), 500);
   }
 
   async subscribeSubstrateBalances(props: GetBalancesProps) {

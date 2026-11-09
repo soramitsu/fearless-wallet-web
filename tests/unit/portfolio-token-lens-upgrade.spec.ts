@@ -115,8 +115,8 @@ function ready(groups: TokenGroup[]): TokenGroup[] {
   return groups;
 }
 
-function fundedEvmAndSubstrate(ecosystem = WalletEcosystem.Substrate): TokenGroup[] {
-  const groups = ready(getMockAssets(networkMap, ecosystem));
+function fundedEvmAndSubstrate(): TokenGroup[] {
+  const groups = ready(getMockAssets(networkMap, WalletEcosystem.Substrate));
   fund(groups, 'Kusama', 'ksm', '3');
   fund(groups, 'Kusama AssetHub', 'ksm', '1');
   fund(groups, 'Polkadot', 'dot', '12.5');
@@ -212,7 +212,7 @@ describe('By token after an upgrade from 3.0.5', () => {
     ['switches', SUBSTRATE_ADDRESS, WalletEcosystem.Substrate, fundedEvmAndSubstrate, 4],
     ['hide-zero', SUBSTRATE_ADDRESS, WalletEcosystem.Substrate, fundedEvmAndSubstrate, 4],
     ['ton', TON_ADDRESS, WalletEcosystem.Ton, fundedTon, 0],
-    ['evm-standalone', EVM_ADDRESS, WalletEcosystem.Evm, () => fundedEvmAndSubstrate(WalletEcosystem.Evm), 2],
+    ['evm-standalone', EVM_ADDRESS, WalletEcosystem.Evm, fundedEvmAndSubstrate, 2],
   ] as const)('fixture %s opens in By token, and its rows add up to the header', async (name, address, ecosystem, balances, hiddenFunded) => {
     const entries = seed(name);
     const { accountsStore, portfolio, scope } = openPortfolio(address, ecosystem, balances());

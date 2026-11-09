@@ -96,8 +96,8 @@ function ready(groups: TokenGroup[]): TokenGroup[] {
   return groups;
 }
 
-function fundedEvmAndSubstrate(ecosystem = WalletEcosystem.Substrate): TokenGroup[] {
-  const groups = ready(getMockAssets(networkMap, ecosystem));
+function fundedEvmAndSubstrate(): TokenGroup[] {
+  const groups = ready(getMockAssets(networkMap, WalletEcosystem.Substrate));
   fund(groups, 'Kusama', 'ksm', '3');
   fund(groups, 'Kusama AssetHub', 'ksm', '1');
   fund(groups, 'Polkadot', 'dot', '12.5');
@@ -246,7 +246,7 @@ describe('portfolio after an upgrade from 3.0.5', () => {
     ['switches', SUBSTRATE_ADDRESS, WalletEcosystem.Substrate, fundedEvmAndSubstrate, 4],
     ['hide-zero', SUBSTRATE_ADDRESS, WalletEcosystem.Substrate, fundedEvmAndSubstrate, 4],
     ['ton', TON_ADDRESS, WalletEcosystem.Ton, fundedTon, 0],
-    ['evm-standalone', EVM_ADDRESS, WalletEcosystem.Evm, () => fundedEvmAndSubstrate(WalletEcosystem.Evm), 2],
+    ['evm-standalone', EVM_ADDRESS, WalletEcosystem.Evm, fundedEvmAndSubstrate, 2],
   ] as const)('fixture %s: the header equals the visible subtotals and the footer counts what is hidden', async (name, address, ecosystem, balances, hiddenFunded) => {
     const entries = seed(name);
     const { portfolio, scope } = openPortfolio(address, ecosystem, balances());

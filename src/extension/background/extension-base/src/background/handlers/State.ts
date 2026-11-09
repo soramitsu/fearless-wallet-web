@@ -712,7 +712,16 @@ export default class State {
     isNew = true,
     selectionContext?: { assertCurrent: () => void; onCommitted?: () => void }
   ): Promise<boolean> {
-    if (isEthereumAddress(address)) return false;
+    if (isEthereumAddress(address)) {
+      // A linked Ethereum key is selected through its parent wallet. An independently imported one is a wallet of its
+      // own, whichever ecosystem the caller assumed (a restored file names none).
+      const wallet = this.keyringService.getAllMainAccounts().find((account) => isSameString(account.address, address));
+
+      if (!wallet) return false;
+
+      address = wallet.address;
+      walletEcosystem = WalletEcosystem.Evm;
+    }
 
     this.balanceService.generateDefaultBalance(address, walletEcosystem);
 
@@ -784,7 +793,8 @@ export default class State {
       isMobile: !!(isMobile as boolean),
       wcTopic: typeof wcTopic === 'string' ? wcTopic : undefined,
       name: name as string,
-      ethereumAddress: (ethereumAddress as string) ?? '',
+      // The stored record of an independently imported key links no other address: its own is the Ethereum one.
+      ethereumAddress: isEthereumAddress(address) ? address : (ethereumAddress as string) ?? '',
       bitcoinAddress: bitcoinAddress as string | undefined,
       bitcoinTestnetAddress: bitcoinTestnetAddress as string | undefined,
       solanaAddress: solanaAddress as string | undefined,

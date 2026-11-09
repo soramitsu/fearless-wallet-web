@@ -93,7 +93,7 @@ import {
   assertSubstrateExternalSignature,
 } from '@extension-base/services/request-service/handlers/externalSignature';
 import { filterNetworksByEcosystem } from '@extension-base/background/helpers/balance';
-import { pickDefaultCurrentAccount, toCurrentAccountInfo } from '@extension-base/background/helpers/currentAccount';
+import { pickDefaultCurrentAccount } from '@extension-base/background/helpers/currentAccount';
 import { PolkamarktService } from '@extension-base/services/polkamarkt-service';
 import { createPolkamarktFinalAuthorizationGuard } from '@extension-base/services/polkamarkt-service/finalAuthorization';
 import {
@@ -418,13 +418,11 @@ export default class Extension extends FWExtensionBase {
     const isWasCurrentAccount = clearedSelection && !this.state.currentAccount &&
       this.state.keyringService.currentAccountRevision === clearedRevision;
 
-    // Never leave the removed account selected: updateCurrentAccount refuses EVM addresses,
-    // so a remaining standalone EVM account is stored directly, and no account means none.
+    // Never leave the removed account selected; no account means none.
     if (isWasCurrentAccount) {
       const nextAccount = pickDefaultCurrentAccount(this.state.keyringService.getAllMainAccounts());
 
-      if (nextAccount && isEthereumAddress(nextAccount.address)) await this.state.setCurrentAccount(toCurrentAccountInfo(nextAccount));
-      else if (nextAccount)
+      if (nextAccount)
         await this.state.updateCurrentAccount({
           address: nextAccount.address,
           walletEcosystem: nextAccount.meta.walletEcosystem,

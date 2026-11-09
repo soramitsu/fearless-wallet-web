@@ -1,5 +1,6 @@
 import { APIItemState, NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { getAssetOptions } from '@extension-base/api/substrate';
+import { isEthereumAddress } from '@polkadot/util-crypto';
 import EquilibriumBalanceService from './EquilibriumBalanceService';
 import type { ApiPromise } from '@polkadot/api';
 import type { Subscription } from 'rxjs';
@@ -28,6 +29,13 @@ type StorageEntry<T> = {
   (...args: unknown[]): T;
   key(...args: unknown[]): string;
 };
+
+/** The account a network's balances belong to. An independently imported Ethereum key has none on a Substrate network. */
+function networkAccount(network: string, address?: string, ethereumAddress?: string): string | undefined {
+  if (isEthereumNetwork(network)) return ethereumAddress;
+
+  return address && isEthereumAddress(address) ? undefined : address;
+}
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -68,6 +76,10 @@ export default class SubstrateBalanceService {
     networks = [],
   }: FetchBalancePayload): Promise<ResponseBalanceRequest[]> {
     const promises = networks.map(async (networkKey) => {
+      const addressByNetwork = networkAccount(networkKey, address, ethereumAddress);
+
+      if (!addressByNetwork) return [];
+
       const api = this.state.getSubstrateApiMap[networkKey.toLowerCase()]?.api;
 
       const network = Object.values(this.state.networkService.networkMap)
@@ -81,8 +93,6 @@ export default class SubstrateBalanceService {
 
       const assetsPromises = assets.map(async ({ precision, symbol, id, type }) => {
         const options = getAssetOptions(id, this.state.networkService.assetsMap);
-
-        const addressByNetwork = isEthereumNetwork(networkKey) ? ethereumAddress! : address!;
 
         const query = api?.query;
 
@@ -246,7 +256,7 @@ export default class SubstrateBalanceService {
     );
 
     return networks.map(([networkName, apiProps]) => new Promise<{ networkName: string; unsub: () => void }>((resolve) => {
-      const account = isEthereumNetwork(networkName) ? ethereumAddress : address;
+      const account = networkAccount(networkName, address, ethereumAddress);
       if (!account) { resolve({ networkName, unsub: mockUnsubFn }); return; }
       let settled = false;
       let retry: ReturnType<typeof setTimeout> | undefined;

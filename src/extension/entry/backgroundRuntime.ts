@@ -1,6 +1,7 @@
 import { chrome } from '@extension-base/utils/crossenv';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
-import { handlers, state } from '@extension-base/background/handlers';
+import { handlers, isWalletPagePort, state } from '@extension-base/background/handlers';
+import { PORT_EXTENSION } from '@extension-base/defaults';
 import { initStorage } from '@extension-base/stores/Storage';
 import KeyringStore from '@extension-base/stores/KeyringStore';
 import { tonStore } from '@extension-base/stores/TonStore';
@@ -21,6 +22,9 @@ const STORAGE_READ = { attempts: 3, retryDelaysMs: [250, 1000] };
 // A request is answered within this time even when a read never answers. It is shorter
 // than the popup's own 20 s start-up limit, so the popup can show the storage message.
 const STORAGE_WAIT_MS = 15000;
+// How long a site's request waits for a quiet wallet to open its connections again (WorkerSleepService).
+// After that it runs as requests run while the worker starts, with what is connected by then.
+const RESTORE_WAIT_MS = 15000;
 
 axios.defaults.adapter = 'fetch';
 
@@ -120,22 +124,6 @@ const loadWalletStorage = retryableInitialization(async () => {
 
 const walletStorageReady = () => withDeadline(loadWalletStorage(), STORAGE_WAIT_MS, WALLET_STORAGE_UNAVAILABLE);
 
-function getActiveTabs() {
-  // quering the current active tab in the current window should only ever return 1 tab
-  // although an array is specified here
-
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const request: TransportRequestMessage<'pri(tabs.update.activeTabsUrl)'> = {
-      id: 'background',
-      message: 'pri(tabs.update.activeTabsUrl)',
-      origin: 'background',
-      request: { tabs },
-    };
-
-    handlers(request);
-  });
-}
-
 async function onInstalled(details: chrome.runtime.InstalledDetails) {
   // onInstall chooses a default account only when none is stored, so it must see the stored
   // one. Nobody waits on this event, so it waits for the read itself rather than a deadline.
@@ -157,26 +145,45 @@ async function onInstalled(details: chrome.runtime.InstalledDetails) {
   state.onboardingService.init();
 
   initStorage().then(() => state.onInstall());
-
-  getActiveTabs();
 }
 
+// Every request keeps the wallet's connections open while it is handled, and opens them when the
+// wallet is quiet. A site's request waits for them: it asks about a network. A wallet page shows
+// what is cached meanwhile, as it does while the worker starts.
 async function handleMessage(data: TransportRequestMessage<MessageTypes>, port: Port): Promise<void> {
-  await walletStorageReady();
+  const release = state.workerSleepService.hold();
 
-  return handlers(data, port);
+  try {
+    await walletStorageReady();
+
+    const restored = state.workerSleepService.wake();
+
+    if (port.name === PORT_EXTENSION) void restored.catch(() => undefined);
+    else await withDeadline(restored, RESTORE_WAIT_MS, 'Wallet connections are still opening')
+      .catch((error: unknown) => console.warn('Site request handled before the wallet reconnected', error));
+
+    return await handlers(data, port);
+  } finally {
+    release();
+  }
+}
+
+// A wallet page (popup, side panel or tab) keeps the connections open until it closes. A
+// site's port does not: only its requests do.
+function onConnect(port: Port, closed: Promise<void>): void {
+  if (port.name === PORT_EXTENSION && isWalletPagePort(port)) state.workerSleepService.pageOpened(closed);
 }
 
 export const backgroundRuntime = {
   handleMessage,
+  onConnect,
   onInstalled,
-  getActiveTabs,
   async onAlarm(alarm: chrome.alarms.Alarm) {
     if (alarm.name === REGISTRY_RETRY_ALARM && state.isReady()) {
       if (await state.networkService.retryRegistryIfNeeded()) state.updateServiceInfo();
     }
     if (alarm.name === ASSET_DISCOVERY_ALARM && state.isReady()) {
-      await state.assetDiscoverySweepService.runIfDue();
+      await state.runAssetDiscovery();
     }
   },
 };

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-10",
+  "applicationSourceCommit": "e588320e23edee7fc2fefd475279ddd6a986fd2f",
+  "baselineBuildSourceCommit": "25a36e81cfd0dff981c5e7a48107b37e99ef7952",
+  "referenceSourceCommit": "ba1fb428d17ab4c4a2485208a6a053e2ef994d58",
+  "toolchain": {
+    "node": "24.19.0",
+    "webExt": "10.6.0"
+  },
+  "summary": "Review and refresh both exact Firefox warning baselines after the current wallet changes. 36 warnings remain: 35 DANGEROUS_EVAL and one UNSAFE_VAR_ASSIGNMENT; zero errors or notices.",
+  "configurations": {
+    "keyless": {
+      "baseline": "config/firefox-webext-warning-baseline-ci.json",
+      "previousBaselineSha256": "ff779d2d2d02191d2bffe29e1777dc427d332fce0cfd78a8ee10249b61c9e2ca",
+      "baselineSha256": "d335f164a1158a8c0f0d1632810ffcf023647d4d1c4d41addd91c2450d93fe78",
+      "rawReportSha256": "e7fdd4600d2c6bada581f71c81b24e44b86c08b105415cbd7478491cd5543ccf",
+      "summary": {
+        "errors": 0,
+        "notices": 0,
+        "warnings": 36
+      },
+      "warningSetSha256": "fd12069265b12df3015720bb5796ad53a2f07e606dcdd1014ab47074abc13d62"
+    },
+    "store": {
+      "baseline": "config/firefox-webext-warning-baseline.json",
+      "previousBaselineSha256": "58a84f1c1cf133255841c0315a606b282d31bf4f7553888011ac30b030f9315f",
+      "baselineSha256": "17ca12b18510f50bf5e4bb7ea37256d56222d8f37cc121074791fd08b2a86fc0",
+      "rawReportSha256": "87eb084ca57fbb39263bee7e9cd87a21285e7ed1518cb45e725a40fd0ffdf2cc",
+      "summary": {
+        "errors": 0,
+        "notices": 0,
+        "warnings": 36
+      },
+      "warningSetSha256": "9b917b5132bd074364be09f1394f8e0e423e61d445b95035bc6f6e0278a87eb4"
+    }
+  },
+  "review": [
+    "Inspected every emitted warning site in both configurations. Function binding shims, get-intrinsic eval references, generator capability probes, core-js and lodash global fallbacks, the subwallet/Zod capability probe, and Vue static template insertion retain their reviewed behavior.",
+    "The previous 38-warning baseline included two Cardano WASM glue sites absent from the current vendored/shimmed build (third-party trimming commit df53384c). Fifteen existing sites moved from mountApp.js to SendForm.js as chunk composition changed. No new warning category or runtime site was introduced by the wallet fixes.",
+    "The keyless warning fingerprint matches the independently built unchanged ba1fb428 source: fd12069265b12df3015720bb5796ad53a2f07e606dcdd1014ab47074abc13d62. Final artifact hashes are separately pinned; matching warning sites do not imply identical bundles.",
+    "The store variant was built separately using the existing public provider configuration; its differing minified file locations and complete warning-bearing file hashes were reviewed independently.",
+    "The cache-failure follow-up changes only balance-service behavior and its unit tests. Its rebuilt production Firefox artifact is checked against the replacement store baseline.",
+    "The strict warning verifier and build warning policy are unchanged. New warnings, errors, notices, fingerprint drift, and warning-bearing artifact drift remain blocking. The ci-named file is the local keyless-build fixture; no hosted CI was required or modified."
+  ],
+  "evidenceDirectory": "../output/wallet-screen-ux-20261110"
+}

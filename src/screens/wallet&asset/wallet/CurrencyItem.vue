@@ -80,7 +80,7 @@
           tooltipText="assets.sendButtonText"
           target=".send"
           data-testid="sendBtn"
-          @click="onRoute('send')"
+          @click.stop="onRoute('send')"
         />
 
         <CircleButton
@@ -90,7 +90,7 @@
           tooltipText="assets.receiveButtonText"
           target=".receive"
           data-testid="receiveBtn"
-          @click="onRoute('receive')"
+          @click.stop="onRoute('receive')"
         />
 
         <CircleButton
@@ -147,7 +147,7 @@ export default defineComponent({ name: 'CurrencyItem' ,
     showSendButton() {
       const network = this.networksStore.getNetwork(this.mainNetwork);
 
-      return isNetworkTransferEnabled(network, this.sendKillSwitchStore.vetoes);
+      return Boolean(network?.active && isNetworkTransferEnabled(network, this.sendKillSwitchStore.vetoes));
     },
     showPriceRow() {
       return this.priceJson.isExist;
@@ -182,7 +182,7 @@ export default defineComponent({ name: 'CurrencyItem' ,
       return this.filteredBalances.length - (this.countDisplayedNetworks - 1);
     },
     tokenName() {
-      return this.assetData.tokenName.toUpperCase() ?? '';
+      return (this.assetData.tokenName || this.assetData.symbol || '').toUpperCase();
     },
     mainNetwork() {
       if (this.isCurrentNetwork) {
@@ -191,24 +191,24 @@ export default defineComponent({ name: 'CurrencyItem' ,
             return network?.name;
           }
 
-          const activeNetworks = this.assetData.balances.filter(({ name }) => this.networksStore.getNetwork(name).active);
+          const activeNetworks = this.assetData.balances.filter(({ name }) => this.networksStore.getNetwork(name)?.active);
 
           if (this.assetData.relayChain === 'ethereum') {
-            const network = this.networksStore.getNetwork(activeNetworks[0].name);
+            const network = this.networksStore.getNetwork(activeNetworks[0]?.name ?? this.assetData.mainNetwork);
 
-            return network.name;
+            return network?.name ?? '';
           }
 
           if (BaseApi.isEthereumNetwork(this.assetData.mainNetwork) && !this.accountsStore.selectedWallet.hasEthereum) {
             const networkWithTokens = activeNetworks.find(({ transferable }) => transferable && transferable !== '0')?.name;
-            const network = this.networksStore.getNetwork(networkWithTokens ?? this.assetData.balances[0].name);
+            const network = this.networksStore.getNetwork(networkWithTokens ?? this.assetData.balances[0]?.name);
 
-            return network.name;
+            return network?.name ?? '';
           }
 
           const network = this.networksStore.getNetwork(this.assetData.mainNetwork);
 
-          return network.name;
+          return network?.name ?? '';
     },
     groupId() {
       return this.assetData.groupId;
@@ -231,7 +231,7 @@ export default defineComponent({ name: 'CurrencyItem' ,
               const network = this.networksStore.getNetwork(balance.name);
 
               if (account && account.chains) {
-                if (!account.chains.some((el) => network.chainId.includes(el))) return false;
+                if (!account.chains.some((el) => network?.chainId?.includes(el))) return false;
               }
 
               return filterBalanceItemsByNetwork(balance, this.selectedNetwork);
@@ -310,15 +310,17 @@ export default defineComponent({ name: 'CurrencyItem' ,
     redirectNetwork() {
       if (this.isCurrentNetwork) return this.selectedNetwork;
 
-          const netName = this.activeNetworks[0].name;
+          const netName = this.activeNetworks[0]?.name ?? this.mainNetwork;
           const network = this.networksStore.getNetwork(netName);
 
-          return network.name;
+          return network?.name ?? '';
     },
     activeNetworks() {
       return this.assetData.balances
             .filter(({ name }) => {
-              const { rank, favorite, active } = this.networksStore.getNetwork(name);
+              const network = this.networksStore.getNetwork(name);
+              if (!network) return false;
+              const { rank, favorite, active } = network;
 
               if (this.selectedNetwork === POPULAR_NETWORKS) return rank !== undefined;
 
@@ -341,9 +343,9 @@ export default defineComponent({ name: 'CurrencyItem' ,
 
           if (
             this.showAssetsManagementForm ||
-            classList.contains('button') ||
-            classList.contains('send-white') ||
-            classList.contains('receive-white')
+            classList?.contains('button') ||
+            classList?.contains('send-white') ||
+            classList?.contains('receive-white')
           )
             return;
 
@@ -364,6 +366,7 @@ export default defineComponent({ name: 'CurrencyItem' ,
             });
     },
     onRoute(form: 'send' | 'receive') {
+      if (!this.mainNetwork || (form === 'send' && !this.showSendButton)) return;
       this.$router.push({
             name: form === 'send' ? Components.SendForm : Components.ReceiveForm,
             params: {

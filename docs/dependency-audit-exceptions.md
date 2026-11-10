@@ -35,6 +35,22 @@ wallets with 4.6.6, the TON specs pass, and the extension builds and runs in
 Chrome. Reassess when `@ton/ton` and `@subwallet/keyring` publish releases that
 depend on `zod` 4, and remove the resolution then.
 
+## Development tooling on patched majors (1 November 2026)
+
+New advisories failed both audits for every branch: `follow-redirects` 1.16.1
+under `axios` ([GHSA-mrwp-f3q8-3g9p](https://github.com/advisories/GHSA-mrwp-f3q8-3g9p)),
+`glob` 13 under `js-beautify` ([GHSA-3g3m-2fjr-6pw4](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4))
+and every `minimatch` before 11.0.1 ([GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249)).
+The release resolves `follow-redirects` to 1.16.2, `glob` to 14.0.3, `multimatch`
+(under `web-ext`) to 7.0.0, which imports `minimatch` by name, and `minimatch` to
+`vendor/minimatch`: the published 11.0.3 with the `makeRe` export that 11 removed
+kept as a stub that throws, so `eslint-plugin-import-x` 4.17.1 still loads. The
+project does not enable that plugin's `no-internal-modules` rule, the only user of
+`makeRe`. `scripts/test-development-dependency-guards.mjs` checks the installed
+wrapper against `vendor/minimatch`, its upstream version, matching through both
+entries, the refusing `makeRe`, `multimatch` and the plugin. Remove the wrapper
+when `eslint-plugin-import-x` supports minimatch 11.
+
 ## Unpatched development dependencies
 
 Two development dependencies have no published fix at the time of this release.

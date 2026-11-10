@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthRequestHandler } from '@extension-base/services/request-service/handlers/AuthRequestHandler';
+import { EipService } from '@extension-base/services/eip-service';
 import type { AuthUrls } from '@extension-base/background/types/types';
 import type { RequestService } from '@extension-base/services/request-service';
 import type State from '@extension-base/background/handlers/State';
@@ -44,6 +45,7 @@ vi.mock('@extension-base/stores/Authorize', () => ({
     }
   },
 }));
+vi.mock('@polkadot/phishing', () => ({ checkIfDenied: vi.fn(async () => false) }));
 vi.mock('@/sora/cosigner', () => ({ decryptForCosigner: vi.fn(), encryptForCosigners: vi.fn() }));
 vi.mock('@extension-base/services', () => ({}));
 vi.mock('@extension-base/background/handlers', () => ({ state: {}, extension: {}, handlers: vi.fn() }));
@@ -110,6 +112,37 @@ const expectBlocked = (protocol: 'evm' | 'substrate' | 'solana') => {
     ).toThrow();
 };
 describe('durable site authorization', () => {
+  it.each(['success', 'failure'] as const)(
+    'hides EVM accounts while revocation is pending and after persistence %s',
+    async (persistence) => {
+      await auth.setAuthorize({ [first]: grant() });
+      const service = new EipService({
+        getAuthInfo: async (url: string) => (await auth.getAuthList())[url],
+      } as unknown as State);
+      const accounts = () => service.handleEvmRequest('accounts', first, { method: 'eth_accounts' });
+      const permissions = () => service.handleEvmRequest('permissions', first, { method: 'wallet_getPermissions' });
+      await expect(accounts()).resolves.toEqual([evm]);
+
+      storage.delayWrites = true;
+      storage.writeError = persistence === 'failure';
+      const revocation = outcome(auth.mutateAuthorizations((entries) => {
+        entries[first].isAllowed = false;
+      }));
+      await tick();
+      // The durable grant still contains the address until this write finishes.
+      expect(storage.data[first].isAllowed).toBe(true);
+      expect((await auth.getAuthList())[first].evmAuthorizedAccount).toBe(evm);
+      const pendingAccounts = await accounts();
+      const pendingPermissions = await permissions();
+      storage.writes.at(-1)!();
+      expect((await revocation).status).toBe(persistence === 'failure' ? 'rejected' : 'resolved');
+      expect(pendingAccounts).toEqual([]);
+      expect(pendingPermissions).toEqual([]);
+      await expect(accounts()).resolves.toEqual([]);
+      await expect(permissions()).resolves.toEqual([]);
+    }
+  );
+
   it('durably authorizes a standalone Ethereum primary key without linked metadata', async () => {
     const keyring = (auth as unknown as { keyringService: { getAccount: (address: string) => unknown } }).keyringService;
     keyring.getAccount = (address) => address === evm ? { address: evm, meta: { name: 'Legacy Ethereum' } } : undefined;

@@ -1,5 +1,4 @@
 <template>
-  <Fragment>
     <AboveForm v-if="!showWalletSelect" :fullScreen="true" @closeHandler="onReject">
       <div class="auth-content">
         <div class="scroll__container" :class="heightClass">
@@ -55,9 +54,10 @@
             :type="isAbleToConnect ? 'secondary' : 'primary'"
             :border="false"
             width="100%"
+            :disabled="settling"
             @click="onReject"
           />
-          <FButton v-if="isAbleToConnect" text="common.approve" width="100%" @click="onApprove" />
+          <FButton v-if="isAbleToConnect" text="common.approve" width="100%" :disabled="settling" @click="onApprove" />
         </div>
       </div>
     </AboveForm>
@@ -79,13 +79,11 @@
       @onSelect="onSelectWallet"
       @onClose="toggleWalletSelectForm"
     />
-  </Fragment>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { Fragment } from 'vue';
 import { WALLET_CONNECT_SUPPORTED_METHODS } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import WalletChooseForm from './WalletChooseForm.vue';
@@ -93,7 +91,7 @@ import type { ChainData } from '@/interfaces/walletconnect';
 import { useI18n } from '@/locales/useI18n';
 import { approveWalletConnectSession, rejectWalletConnectSession } from '@/extension/messaging';
 import { useNotify } from '@/plugins/soramitsuUI';
-import { transformNamespaces } from '@/util/walletConnect';
+import { chainNamesFromRequest, transformNamespaces } from '@/util/walletConnect';
 import { cut } from '@/helpers';
 import { Components } from '@/router/routes';
 import { IS_POPUP } from '@/consts/globalClient';
@@ -118,7 +116,7 @@ const permissionList = [
   t('walletConnect.permissions.transferAssets'),
 ];
 
-const wallets = ref(accountsStore.accounts.filter((el) => el.ethereumAddress && !el.isMobile));
+const wallets = computed(() => accountsStore.accounts.filter((el) => el.ethereumAddress && !el.isMobile));
 
 const selectedAddress = ref<string>(wallets.value[0]?.ethereumAddress ?? '');
 const cutAddress = computed(() => cut(selectedAddress.value));
@@ -126,13 +124,27 @@ const selectedWalletName = computed(
   () => wallets.value.find(({ ethereumAddress }) => ethereumAddress === selectedAddress.value)?.name ?? ''
 );
 const request = computed(() => extensionStore.wcConnectRequests[0]);
-const id = computed(() => request.value.id);
+const id = computed(() => request.value?.id);
+const settling = ref(false);
+watch(wallets, (available) => {
+  if (!available.some(({ ethereumAddress }) => ethereumAddress === selectedAddress.value))
+    selectedAddress.value = available[0]?.ethereumAddress ?? '';
+});
+watch(id, () => { showNotificationPopup.value = false; showWalletSelect.value = false; });
 const url = computed(() => request.value?.url);
 const title = computed(() => request.value?.request.params.proposer.metadata.name);
 const showWalletSelect = ref(false);
 
+// Current dApp SDKs send every namespace as optional. The wallet approves an optional namespace that names a chain it
+// supports, so that namespace's methods count too.
 const isSupportAllMethods = computed(() => {
-  for (const namespace of Object.values(request.value?.request.params.requiredNamespaces)) {
+  const requiredNamespaces = request.value?.request.params.requiredNamespaces ?? {};
+  const optionalNamespaces = request.value?.request.params.optionalNamespaces ?? {};
+  const approvedOptionalNamespaces = Object.keys(optionalNamespaces)
+    .filter((key) => chainNamesFromRequest(optionalNamespaces, key, false).length !== 0)
+    .map((key) => optionalNamespaces[key]);
+
+  for (const namespace of [...Object.values(requiredNamespaces), ...approvedOptionalNamespaces]) {
     for (const method of namespace.methods) {
       if (!WALLET_CONNECT_SUPPORTED_METHODS.some((el) => el === method)) return false;
     }
@@ -169,7 +181,7 @@ const namespaces = computed<ChainData[]>(() => {
 });
 const isSuitableWalletsExist = computed(() => wallets.value.length !== 0);
 const isSupportNetwork = computed(() => namespaces.value.length !== 0);
-const isAbleToConnect = computed(() => isSupportNetwork.value && isSuitableWalletsExist.value);
+const isAbleToConnect = computed(() => Boolean(request.value && isSupportNetwork.value && isSuitableWalletsExist.value && wallets.value.some(({ ethereumAddress }) => ethereumAddress === selectedAddress.value)));
 const alertContent = computed(() => {
   return {
     header: 'walletConnect.walletConnectErrorAlertTitle',
@@ -178,32 +190,40 @@ const alertContent = computed(() => {
 });
 
 const onApprove = async () => {
+  if (settling.value || !isAbleToConnect.value || !id.value) return;
   if (!isSupportAllMethods.value && !showNotificationPopup.value) {
     showNotificationPopup.value = true;
 
     return;
   }
 
-  const { message, title, status } = await approveWalletConnectSession({
-    accounts: [selectedAddress.value],
-    id: id.value,
-  });
-
-  notify({
-    message: t(message).toString(),
-    title: t(title).toString(),
-    type: status ? 'success' : 'warning',
-  });
-
-  router.push(Components.Wallet);
+  const proposalId = id.value;
+  settling.value = true;
+  try {
+    const { message, title, status } = await approveWalletConnectSession({ accounts: [selectedAddress.value], id: proposalId });
+    notify({ message: t(message).toString(), title: t(title).toString(), type: status ? 'success' : 'warning' });
+    if (id.value === proposalId || !id.value) void router.push(Components.Wallet);
+  } catch (error) {
+    notify({ message: error instanceof Error ? error.message : String(error), title: t('walletConnect.walletConnectErrorAlertTitle').toString(), type: 'warning' });
+  } finally {
+    settling.value = false;
+  }
 };
 
 const heightClass = computed(() => (IS_POPUP ? '' : 'scroll__container--popup'));
 
-const onReject = () => {
-  rejectWalletConnectSession({ id: id.value });
-
-  router.back();
+const onReject = async () => {
+  if (settling.value) return;
+  const proposalId = id.value;
+  settling.value = true;
+  try {
+    if (proposalId) await rejectWalletConnectSession({ id: proposalId });
+    if (id.value === proposalId || !id.value) router.back();
+  } catch (error) {
+    notify({ message: error instanceof Error ? error.message : String(error), title: t('walletConnect.walletConnectErrorAlertTitle').toString(), type: 'warning' });
+  } finally {
+    settling.value = false;
+  }
 };
 </script>
 

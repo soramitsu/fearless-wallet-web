@@ -14,8 +14,9 @@ const dashboardCss = read('_fw-dashboard.scss');
 const tokensCss = read('fw-tokens.scss');
 
 // The values the design spec validated (SPEC 3.3). A slot changes there first, with a new validator run.
+// Slot 1 is the brand colour: the Yatagarasu pink since 2026-11-10; the contrast and separation checks below hold.
 const SPEC = {
-  'fw-chart-1': '#FF009A',
+  'fw-chart-1': '#E6006F',
   'fw-chart-2': '#4693F1',
   'fw-chart-3': '#A97416',
   'fw-chart-4': '#8B5CFF',

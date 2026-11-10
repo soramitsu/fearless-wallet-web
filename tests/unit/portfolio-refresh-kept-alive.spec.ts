@@ -31,7 +31,7 @@ vi.mock('@/portfolio/usePortfolio', () => {
   return {
     usePortfolio: () => ({
       effectivePreferences: {}, preferenceSource: () => 'auto', addressForNetwork: () => '', walletScope: () => true,
-      networkFilter: () => true, isFiltered: false, zeroRule: () => false, summary, filteredSummary: summary,
+      networkFilter: () => true, isFiltered: false, zeroRule: () => false, summary, networkTotals: [], legacyOrderIndex: { value: new Map() }, filteredSummary: summary,
       loadStatus: { state: 'settled', pendingCount: 0 },
     }),
   };
@@ -42,6 +42,7 @@ vi.mock('@/router/routes', () => ({ Components: { SendForm: 'SendForm', ReceiveF
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 
 mocks.accountsStore = reactive({
+  accounts: [], portfolioLayout: { firstRunAt: 0 },
   assetPreferences: {}, balances: [], isBalanceLoading: false, networkScanStates: {},
   portfolioView: { hideZero: false, showHidden: false, showTestnets: false, zeroNetworksExpanded: false },
   updatePortfolioView: vi.fn(), selectedNetwork: 'All networks',
@@ -90,7 +91,7 @@ const build = async () => {
       mocks: { $t: (key: string) => ({ 'portfolioPage.refresh': 'Refresh', 'portfolioPage.syncing': 'Syncing' })[key] ?? key },
       stubs: {
         Icon: { template: '<span />' }, Loader: { template: '<span />' }, PortfolioExclusions: true,
-        PortfolioHiddenFundsNotice: true, PortfolioZeroNetworks: true, Scroll: { template: '<main><slot /></main>' },
+        PortfolioHiddenFundsNotice: true, Scroll: { template: '<main><slot /></main>' },
       },
     },
   });

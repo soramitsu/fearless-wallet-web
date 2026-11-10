@@ -45,7 +45,8 @@ const P0 = 'Public previous password fixture';
 const record = { name: 'Public TON import', address, publicKeyHex };
 const observe = (promise: Promise<void>) => promise.then(() => 'resolved', () => 'rejected');
 
-describe.each([true, false])('TON import through real store adapter (extension: %s)', (extension) => {
+// Real scrypt and TON phrase verification need room for coverage instrumentation and worker contention.
+describe.each([true, false])('TON import through real store adapter (extension: %s)', { timeout: 30_000 }, (extension) => {
   let owner: TonSeedOwner;
   let vault: TonSeedVault;
   let flush: () => Promise<void>;

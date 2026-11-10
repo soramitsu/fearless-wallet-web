@@ -97,7 +97,7 @@ describe('IrohaConnect release gate', () => {
     expect(irohaConnectService.stateSubject.subscribe).toHaveBeenCalledOnce();
 
     disconnect();
-    expect(subscriptionService.cancelSubscription).toHaveBeenCalledWith('fixture-id');
+    expect(subscriptionService.cancelSubscription).toHaveBeenCalledWith('fixture-id', port);
   });
 
   it('routes every background IrohaConnect action through the release gate', () => {

@@ -33,7 +33,6 @@ import { accountUpdateName } from '@/extension/messaging';
 import { getChainAccounts, getIrohaChainAccounts } from '@/helpers/accounts';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-import { type SelectedWallet } from '@/stores';
 import { isSameString } from '@/helpers';
 
 export default defineComponent({ name: 'AccountSetting' ,
@@ -88,14 +87,15 @@ export default defineComponent({ name: 'AccountSetting' ,
     },
   },
   watch: {
-    "selectedWallet": 'selectedWalletWatcher',
+    // Details opened for another wallet on this screen show that wallet's name, so a blur cannot rename it with the last one.
+    'accountsStore.selectedWallet.address': 'selectedWalletWatcher',
   },
   mounted() {
     this.newName = this.accountsStore.selectedWallet.name;
   },
   methods: {
-    selectedWalletWatcher({ name }: SelectedWallet) {
-      this.newName = name;
+    selectedWalletWatcher() {
+      this.newName = this.accountsStore.selectedWallet.name;
     },
     back() {
       this.$router.push({ name: Components.Wallet });
@@ -111,6 +111,8 @@ export default defineComponent({ name: 'AccountSetting' ,
 
             return;
           }
+
+          if (this.newName === name) return;
 
           accountUpdateName(address, this.newName, this.accountsStore.selectedWallet.walletEcosystem!);
     },

@@ -183,7 +183,7 @@ describe('captured Substrate metadata and network', () => {
       if (change === 'disabled network') state.networkService.networkMap.public.disabled = true;
       if (change === 'ambiguous network')
         state.networkService.networkMap.other = { ...state.networkService.networkMap.public };
-      if (change === 'ambiguous metadata') replaceMetadata([metadata(), metadata()]);
+      if (change === 'ambiguous metadata') replaceMetadata([metadata(), { ...metadata(), specVersion: 2 }]);
       if (change === 'version five') value.version = 5;
       await expect(
         handler.sign(url, new RequestExtrinsicSign(value), { address: pair.address } as AccountJson)
@@ -245,6 +245,24 @@ describe('captured Substrate metadata and network', () => {
     await expect(
       handler.sign(url, new RequestExtrinsicSign(payload()), { address: pair.address } as AccountJson)
     ).rejects.toThrow();
+    expect(handler.numSubstrateRequests).toBe(0);
+  });
+});
+
+describe('a Substrate request whose page closes', () => {
+  it('is dropped as Reject would, and a page already closed queues nothing', async () => {
+    const page = new AbortController();
+    const account = { address: pair.address, name: 'Public fixture' } as AccountJson;
+    const result = handler.sign(url, new RequestExtrinsicSign(payload()), account, 'public', undefined, page.signal);
+    await vi.waitFor(() => expect(handler.getSignRequest('public')).toBeDefined());
+
+    page.abort();
+
+    await expect(result).rejects.toThrow('Cancelled');
+    expect(handler.numSubstrateRequests).toBe(0);
+    await expect(
+      handler.sign(url, new RequestExtrinsicSign(payload()), account, 'late', undefined, page.signal)
+    ).rejects.toThrow('Cancelled');
     expect(handler.numSubstrateRequests).toBe(0);
   });
 });

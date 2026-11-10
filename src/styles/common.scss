@@ -49,6 +49,18 @@ $fw-row-selection: palette(rgba(187, 119, 255, 0.08), var(--fw-row-selected));
 $fw-control-edge: palette(rgba(187, 119, 255, 0.45), var(--fw-stroke-control));
 $fw-asset-detail-edge: palette(rgba(255, 255, 255, 0.28), var(--fw-stroke-strong));
 
+// Yatagarasu brand roles from the shared brand kit; both palettes use the same values. The welcome hero's ink sky and
+// its controls, the tagline's gold rules, and the glow of a loading primary button in the brand pink.
+$fw-brand-ink: #120a2e;
+$fw-brand-ink-clear: rgb(18 10 46 / 0);
+$fw-brand-ink-veil: rgb(18 10 46 / 0.82);
+$fw-brand-ink-glass: rgb(18 10 46 / 0.72);
+$fw-brand-on-ink: #faf6ff;
+$fw-brand-on-ink-muted: #b9aed0;
+$fw-brand-hairline: rgb(255 255 255 / 0.18);
+$fw-brand-gold: #ffc24a;
+$fw-primary-glow: rgb(230 0 111 / 0.4);
+
 $extension-width: 561px;
 $extension-height: 600px;
 $default-height-page: 100%;

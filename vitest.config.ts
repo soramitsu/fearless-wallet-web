@@ -10,6 +10,18 @@ export default defineConfig(({ mode }) => {
   if (workerOverride !== undefined) {
     console.info(`Using ${workerOverride} test worker(s) from FEARLESS_TEST_WORKERS`);
   }
+  // On a host busy with other work, the default limits (5 s per test, 10 s per hook) can fail correct tests. These raise
+  // the defaults only; limits a test sets itself stay. A release run that sets them records them.
+  const limit = (name: string): number | undefined => {
+    const value = process.env[name];
+    if (value === undefined) return undefined;
+    if (!/^[0-9]+$/.test(value) || Number(value) < 5_000 || Number(value) > 600_000)
+      throw new Error(`${name} must be milliseconds from 5000 to 600000`);
+    console.info(`Using a default limit of ${value} ms from ${name}`);
+    return Number(value);
+  };
+  const testTimeout = limit('FEARLESS_TEST_TIMEOUT_MS');
+  const hookTimeout = limit('FEARLESS_HOOK_TIMEOUT_MS');
 
   const config = commonViteConfig({
     mode,
@@ -24,6 +36,8 @@ export default defineConfig(({ mode }) => {
       include: ['tests/**/*.{test,spec}.{js,ts,jsx,tsx}'],
       // Real scrypt/HD-key regression tests need bounded CPU and memory contention.
       maxWorkers: Number(workerOverride ?? '4'),
+      ...(testTimeout ? { testTimeout } : {}),
+      ...(hookTimeout ? { hookTimeout } : {}),
       environment: 'happy-dom',
       // A test that imports a key encoder module directly gets it with the build's scrypt rewrite
       // (scripts/keystore-scrypt-params.mjs); Node would load the package file unchanged.

@@ -32,6 +32,7 @@ vi.mock('@/extension/messaging/nfts', () => ({ fetchNfts: vi.fn() }));
 vi.mock('@/stores/extension', () => ({ useExtensionStore: () => ({ features: {} }) }));
 
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
+import ManageAssets from '@/screens/portfolio/ManageAssets.vue';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 
 const PRICES = { polkadot: 5, kusama: 20, ethereum: 2000 };
@@ -194,15 +195,10 @@ describe('first open after upgrading from 3.0.5', () => {
     // The background answers the first balance request at once.
     accountsStore.setBalance({ details: groups });
     accountsStore.setIsBalanceLoading(false);
-    // Rows are read per network section; the loading state is the same in both lenses.
-    accountsStore.updatePortfolioView({ lens: 'network' });
 
     const scope = effectScope();
     const portfolio = scope.run(() => usePortfolio())!;
-    const list = mount(Currencies, {
-      props: { balances: [], filterValue: '', showAssetsManagementForm: false, manageHiddenOnly: false },
-      global: { mocks, stubs },
-    });
+    const list = mount(Currencies, { props: { filterValue: '' }, global: { mocks, stubs } });
     const header = () =>
       mount(WalletBalance, {
         props: { balance: portfolio.summary.value.total, loading: portfolio.loadStatus.value.state === 'loading' },
@@ -242,7 +238,7 @@ describe('first open after upgrading from 3.0.5', () => {
     await nextTick();
 
     expect(list.find('[data-testid="portfolioLoading"]').exists()).toBe(false);
-    expect(list.find('.network-section[data-network="Polkadot"]').exists()).toBe(true);
+    expect(list.find('.token-row[data-symbol="DOT"][data-network="Polkadot"]').exists()).toBe(true);
     expect(list.get('[data-testid="portfolioChecking"]').text()).toBe(`portfolioPage.checkingNetworks:${substrateOnlyCount - 2}`);
     // 12.5 DOT at $5, now a real total (the fiat symbol comes from the fiat settings, not loaded here).
     expect(header().get('[data-testid="fiatBalance"]').text()).toMatch(/^\D*62\.50$/u);
@@ -286,15 +282,20 @@ describe('first open after upgrading from 3.0.5', () => {
     scope.stop();
   });
 
-  it('never shows the loading screen in Manage, which lists every asset whatever it holds', async () => {
+  it('never shows a loading screen on Manage assets: it lists every token and says which networks are still checked', async () => {
     const groups = await backgroundAfterUpgradeFrom305();
-    const { list, scope } = await openPopup(groups);
+    const { list, portfolio, scope } = await openPopup(groups);
+    expect(portfolio.loadStatus.value.state).toBe('loading');
 
-    await list.setProps({ showAssetsManagementForm: true });
+    const page = mount(ManageAssets, { global: { mocks, stubs: { ...stubs, SearchInput: true, Switcher: true } } });
+    await nextTick();
 
-    expect(list.find('[data-testid="portfolioLoading"]').exists()).toBe(false);
-    expect(list.find('[data-testid="portfolioNetworkList"]').exists()).toBe(true);
+    expect(page.find('[data-testid="portfolioLoading"]').exists()).toBe(false);
+    expect(page.get('[data-testid="manageChecking"]').text()).toMatch(/^portfolioPage\.checkingNetworks/u);
+    // Nothing has arrived yet, so nothing is shown as held; every supported token can still be added.
+    expect(page.findAll('[data-testid="manageAdd"] [data-testid="manageAssetRow"]').length).toBeGreaterThan(0);
 
+    page.unmount();
     list.unmount();
     scope.stop();
   });

@@ -51,6 +51,9 @@ const SendForm = () => import('@/screens/wallet&asset/SendForm.vue');
 const ReceiveForm = () => import('@/screens/wallet&asset/ReceiveForm.vue');
 const CrossChainForm = () => import('@/screens/wallet&asset/CrossChainForm.vue');
 
+const TokenOverview = () => import('@/screens/portfolio/TokenOverview.vue');
+const ManageAssets = () => import('@/screens/portfolio/ManageAssets.vue');
+
 const AssetNetworks = () =>
   import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetNetworks.vue');
 const AssetHistory = () => import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetHistory.vue');
@@ -121,6 +124,9 @@ export enum Components {
   AddFromGoogle = 'AddFromGoogle',
   Polkaswap = 'Polkaswap',
   TokenLocations = 'TokenLocations',
+  TokenOverview = 'TokenOverview',
+  ManageAssets = 'ManageAssets',
+  PortfolioAllocation = 'PortfolioAllocation',
   Polkamarkt = 'Polkamarkt',
   PolkaswapDisclaimer = 'PolkaswapDisclaimer',
   SoraSwap = 'SoraSwap',
@@ -171,6 +177,19 @@ const portfolioDashboardRoutes: RouteRecordRaw[] =
             token: firstQueryValue(route.query.token),
             holding: firstQueryValue(route.query.holding),
           }),
+          meta: { title: 'wallet', primaryNavigation: 'portfolio' },
+        },
+      ]
+    : [];
+
+// The wallet screen's Portfolio view (the sun-crow allocation chart), behind the same flag and folded away with it.
+const portfolioAllocationRoutes: RouteRecordRaw[] =
+  process.env.FW_PORTFOLIO_DASHBOARD === 'true'
+    ? [
+        {
+          path: 'allocation',
+          name: Components.PortfolioAllocation,
+          component: () => import('@/screens/portfolio/PortfolioAllocation.vue'),
           meta: { title: 'wallet', primaryNavigation: 'portfolio' },
         },
       ]
@@ -505,7 +524,24 @@ const routes: Array<RouteRecordRaw> = [
               primaryNavigation: 'portfolio',
             },
           },
+          ...portfolioAllocationRoutes,
         ],
+      },
+      // One token across the networks it is on: the level between the wallet's list and one network's asset page.
+      {
+        path: 'portfolio/token/:token',
+        name: Components.TokenOverview,
+        component: TokenOverview,
+        props: (route) => ({ token: String(route.params.token), search: firstQueryValue(route.query.search) }),
+        meta: { title: 'wallet', primaryNavigation: 'portfolio' },
+      },
+      // Which assets the wallet's list shows: what it holds is found on its own, and any other token can be added.
+      {
+        path: 'portfolio/manage',
+        name: Components.ManageAssets,
+        component: ManageAssets,
+        props: (route) => ({ focus: firstQueryValue(route.query.focus), search: firstQueryValue(route.query.search) }),
+        meta: { title: 'wallet', primaryNavigation: 'portfolio' },
       },
       {
         path: 'portfolio/nfts/:chainId/collection/:contract',

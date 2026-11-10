@@ -20,6 +20,7 @@ vi.mock('@extension-base/api/substrate', () => ({
 const DOT = '887a17c7-1370-4de0-97dd-5422e294fa75';
 const DAI = '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1';
 const ADDRESS = 'substrate-wallet';
+const ASSET_HUB_CHAIN_ID = '68d56f15f85d3136970ec16946040bc1752654e906147f7e43e9d539d7c3de2f';
 
 const group = (id: string, network: string, relayChain: string, transferable: string): TokenGroup =>
   ({
@@ -83,7 +84,10 @@ describe('background token lookup with a shared registry id', () => {
     const state = {
       balanceService: service,
       keyringService: { getSubstrateAddress: () => ADDRESS },
-      networkService: { assetsMap: {} },
+      networkService: {
+        assetsMap: {},
+        getNetworkJson: (name: string) => (name === 'Polkadot AssetHub' ? { chainId: ASSET_HUB_CHAIN_ID } : undefined),
+      },
       getSubstrateApiMap: {
         polkadot: { api: { isReady: Promise.resolve(), tx: { balances: { transferAllowDeath: relayTransfer } } } },
         'polkadot assethub': {
@@ -105,7 +109,7 @@ describe('background token lookup with a shared registry id', () => {
     expect(assetHubTransfer).toHaveBeenCalledWith('recipient', '0.25');
     expect(relayTransfer).not.toHaveBeenCalled();
     expect(mocks.signAndSendExtrinsic).toHaveBeenCalledWith(
-      expect.objectContaining({ extrinsic: 'assethub-extrinsic' }),
+      expect.objectContaining({ extrinsic: 'assethub-extrinsic', chainId: ASSET_HUB_CHAIN_ID }),
       state
     );
   });

@@ -46,6 +46,11 @@ export function exportJSON(address: string, password: string, network?: string):
   return sendMessage('pri(accounts.export.json)', { address, password, network });
 }
 
+// The Google Drive copy of the wallet being created, encrypted under the master password in the background.
+export function exportBackupJSON(address: string): Promise<ResponseAccountExport> {
+  return sendMessage('pri(accounts.export.backup)', address);
+}
+
 export function migrateExportJSON(address: string): Promise<ResponseAccountExport> {
   return sendMessage('pri(migrate.export.json)', address);
 }
@@ -60,6 +65,11 @@ export function exportMnemonic(
 
 export function exportRowSeed(address: string, password: string, isEVM: boolean): Promise<ResponseExportSeed> {
   return sendMessage('pri(keyring.export.rowSeed)', { address, password, isEVM });
+}
+
+// Only whether Raw seed export would open this wallet; the seed stays in the background.
+export function rawSeedAvailable(address: string, password: string): Promise<boolean> {
+  return sendMessage('pri(keyring.export.rawSeedAvailable)', { address, password });
 }
 
 export function generateMnemonic(

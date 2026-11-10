@@ -52,7 +52,7 @@ async function upgradedFrom305WithFailingRpc() {
       networkValues: networks,
       networksGithub: networks,
       authoritativeDiscoveryNetworks: networks,
-      evmApiHandler: { refreshEvmApi: vi.fn() },
+      evmApiHandler: { failover: vi.fn() },
     },
     pricesService: {
       getPrice: (reply: (prices: { tokenPriceMap: Record<string, number>; tokenPriceChange: Record<string, number> }) => void) =>

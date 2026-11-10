@@ -44,6 +44,10 @@ export const getters: Getters = {
         !isSameString(ecosystem, WalletEcosystem.Iroha)
     );
 
+    // An independently imported Ethereum key has no account on a Substrate network.
+    if (walletEcosystem === WalletEcosystem.Evm)
+      return substrateAndEvmNetworks.filter(({ ecosystem }) => !isSameString(ecosystem, WalletEcosystem.Substrate));
+
     const substrateNetworks = substrateAndEvmNetworks.filter(({ ecosystem }) =>
       isSameString(ecosystem, WalletEcosystem.Substrate)
     );
@@ -90,6 +94,7 @@ export const getters: Getters = {
       if (isSameString(ecosystem, WalletEcosystem.Solana)) return false;
       if (isSameString(ecosystem, WalletEcosystem.Bitcoin)) return false;
       if (isSameString(ecosystem, WalletEcosystem.Iroha)) return false;
+      if (selectedWallet.walletEcosystem === WalletEcosystem.Evm) return !isSameString(ecosystem, WalletEcosystem.Substrate);
 
       return selectedWallet.hasEthereum || isSameString(ecosystem, WalletEcosystem.Substrate);
     });

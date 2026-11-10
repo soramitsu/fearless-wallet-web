@@ -21,7 +21,7 @@ interface AddressMeta extends Meta {
   isMobile: boolean;
 }
 
-type TabWallet = Components.Currencies | Components.Nfts;
+type TabWallet = Components.Currencies | Components.Nfts | Components.PortfolioAllocation;
 type StakingTab = 'all' | 'my';
 type MyStakingTab = 'about' | 'alerts' | 'history';
 type PoolsTab = 'all' | 'my';

@@ -5,6 +5,7 @@
     :step="step"
     :completionConfirmed="isFinished"
     :isLoading="isLoading"
+    :backDisabled="isSaving"
     :header="header"
     :showFullScreenIcon="false"
     @back="back"
@@ -103,9 +104,8 @@ import BaseApi from '@/util/BaseApi';
 import {
   addAccount,
   createGoogleFile,
-  exportJSON,
+  exportBackupJSON,
   updateCurrentAccount,
-  getExtensionPassword,
   generateMnemonic,
 } from '@/extension/messaging';
 
@@ -194,6 +194,10 @@ export default defineComponent({ name: 'CreateGoogle',
     },
     confirmMnemonicStep() {
       return this.step === 3;
+    },
+    // Leaving now would not stop the wallet from being created, only its Drive backup.
+    isSaving() {
+      return this.step === 4 && this.isLoading;
     },
     mnemonicLength() {
       return UNIVERSAL_WALLET_DEFAULT_WORD_COUNT;
@@ -306,6 +310,7 @@ export default defineComponent({ name: 'CreateGoogle',
       this.$router.replace({ name: Components.Wallet, params: { access_token: '' } }).catch((e) => e);
     },
     back() {
+      if (this.isSaving) return;
       if (this.step === 1 || this.step === 4) this.goBack();
       else if (!this.isLoading) this.step -= 1;
     },
@@ -353,15 +358,13 @@ export default defineComponent({ name: 'CreateGoogle',
     async backupWallet(address: string, ownsRequest = () => this.isActive) {
       const token = this.$route.params.access_token;
       if (!this.backup) {
-        const password = await getExtensionPassword();
-        if (!ownsRequest()) return;
-        if (!password) throw new Error('Wallet is locked');
-        const { json } = await exportJSON(address, password);
+        // Encrypted under the master password in the background; the password never reaches this page.
+        const { json } = await exportBackupJSON(address);
         if (!ownsRequest()) return;
         const ethAddress = json.meta.ethereumAddress as string | undefined;
         let child: KeyringPair$Json | undefined;
         if (ethAddress && ethAddress.toLowerCase() !== address.toLowerCase()) {
-          child = (await exportJSON(ethAddress, password)).json;
+          child = (await exportBackupJSON(ethAddress)).json;
           if (!ownsRequest()) return;
         }
         this.backup = { primary: json, primaryAddress: address, child, childAddress: ethAddress };

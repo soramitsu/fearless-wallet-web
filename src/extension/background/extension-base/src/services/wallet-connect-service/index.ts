@@ -1,29 +1,28 @@
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import { formatJsonRpcError } from '@walletconnect/jsonrpc-utils';
-import WalletConnect from '@walletconnect/sign-client';
-import { getInternalError, getSdkError, isValidUrl } from '@walletconnect/utils';
+import { formatJsonRpcError } from '@extension-base/utils/jsonRpc';
+import { getInternalError, getSdkError, type SdkErrorKey } from '@extension-base/services/wallet-connect-service/protocol/errors';
+import { parsePairingUri } from '@extension-base/services/wallet-connect-service/protocol/uri';
 import { BehaviorSubject } from 'rxjs';
 import { convertConnectRequest, convertNotSupportRequest } from '@extension-base/services/wallet-connect-service/utils';
 import { type ResultApproveWalletConnectSession } from '@extension-base/services/wallet-connect-service/types';
-import WalletConnectStorage from '@extension-base/services/wallet-connect-service/storage';
+import { hasWalletConnectData } from '@extension-base/services/wallet-connect-service/storage';
+import { isWalletSession, walletConnectClient } from '@extension-base/services/wallet-connect-service/client';
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
-import {
-  DEFAULT_WALLET_CONNECT_OPTIONS,
-} from '@extension-base/services/wallet-connect-service/consts';
 import { isSameAddress } from '@extension-base/utils';
 import { sessionAuthority } from './sessionAuthority';
+import type { WalletConnectClient } from '@extension-base/services/wallet-connect-service/protocol/client';
 import type State from '@extension-base/background/handlers/State';
-import type { EngineTypes, SessionTypes, SignClientTypes } from '@walletconnect/types';
+import type { WcRespondParams, WcSession, WcSessionNamespace, WcSessionProposalEvent, WcSessionRequestEvent } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type { RequestService } from '@extension-base/services';
 import { PolkadotHandler } from '@/extension/background/extension-base/src/services/wallet-connect-service/requestHandlers/PolkadotHandler';
 import { Eip155RequestHandler } from '@/extension/background/extension-base/src/services/wallet-connect-service/requestHandlers/Eip155Handler';
 import { isSameString } from '@/helpers';
 
-const namespaceAccounts = (namespace: SessionTypes.Namespace | unknown[]): string[] =>
+const namespaceAccounts = (namespace: WcSessionNamespace | unknown[]): string[] =>
   Array.isArray(namespace) ? [] : (namespace.accounts ?? []);
 
 export class WalletConnectService {
-  private client?: WalletConnect;
+  private client?: WalletConnectClient;
   private initialization?: Promise<void>;
   private readonly sessionRevisions = new Map<string, number>();
   private readonly retiredTopics = new Set<string>();
@@ -57,7 +56,7 @@ export class WalletConnectService {
 
   readonly eip155RequestHandler: Eip155RequestHandler;
   readonly polkadotRequestHandler: PolkadotHandler;
-  readonly sessionSubject: BehaviorSubject<SessionTypes.Struct[]> = new BehaviorSubject<SessionTypes.Struct[]>([]);
+  readonly sessionSubject: BehaviorSubject<WcSession[]> = new BehaviorSubject<WcSession[]>([]);
 
   constructor(
     private state: State,
@@ -69,41 +68,26 @@ export class WalletConnectService {
     this.initClient().catch(console.error);
   }
 
+  // The client also holds Fearless's mobile pairings, where Fearless is the dApp. They are never listed or signed here.
+  private get walletSessions(): WcSession[] {
+    return (this.client?.session.values || []).filter(isWalletSession);
+  }
+
   get sessions() {
-    return (this.client?.session.values || []).filter((session) => !this.retiredTopics.has(session.topic) && this.authority.allows(session.topic));
+    return this.walletSessions.filter((session) => !this.retiredTopics.has(session.topic) && this.authority.allows(session.topic));
   }
-
-  private async haveData(): Promise<boolean> {
-    const keys = [
-      'wc@2:client:0.3//session',
-      'wc@2:client:0.3//proposal',
-      'wc@2:core:0.3//pairing',
-      'wc@2:core:0.3//subscription',
-      'wc@2:core:0.3//history',
-    ];
-    const sdkStorage = new WalletConnectStorage();
-    const data = Object.fromEntries(await Promise.all(keys.map(async (key) => [key, await sdkStorage.getItem(key)])));
-
-    const sessions = data['wc@2:client:0.3//session'] ?? [];
-    const pairings = data['wc@2:core:0.3//pairing'] ?? [];
-    const subscriptions = data['wc@2:core:0.3//subscription'] ?? [];
-    const history = data['wc@2:core:0.3//history'] ?? [];
-    const proposals = data['wc@2:client:0.3//proposal'] ?? [];
-
-    return !!sessions.length || !!pairings.length || !!subscriptions.length || !!history.length || !!proposals.length;
-  }
-
-
 
   private updateSessions() {
     this.sessionSubject.next(this.sessions);
+    // An open session keeps the node connections open (WorkerSleepService).
+    this.state?.workerSleepService?.refresh();
   }
 
-  getSession(key: string): SessionTypes.Struct {
+  getSession(key: string): WcSession {
     if (this.state.keyringService.isResetting) throw new Error('Wallet reset is in progress');
     const session = this.client?.session.get(key);
 
-    if (!session || this.retiredTopics.has(key) || !this.authority.allows(key)) {
+    if (!session || !isWalletSession(session) || this.retiredTopics.has(key) || !this.authority.allows(key)) {
       throw new Error(getInternalError('MISMATCHED_TOPIC').message);
     } else {
       return session;
@@ -112,17 +96,12 @@ export class WalletConnectService {
 
   async initClient(force?: boolean) {
     if (this.client) return;
-    if (!force && !(await this.haveData())) return;
+    if (!force && !(await hasWalletConnectData())) return;
     // The storage read above may yield while another caller initializes.
     if (this.client) return;
     if (!this.initialization) {
       this.initialization = this.authority.load()
-        .then(() => {
-          return WalletConnect.init({
-            ...DEFAULT_WALLET_CONNECT_OPTIONS,
-            storage: new WalletConnectStorage(),
-          });
-        })
+        .then(() => walletConnectClient(this.state))
         .then(async (client) => {
           await this.authority.load();
           this.client = client;
@@ -136,7 +115,7 @@ export class WalletConnectService {
     await this.initialization;
   }
 
-  public async responseRequest(response: EngineTypes.RespondParams) {
+  public async responseRequest(response: WcRespondParams) {
     this.checkClient();
 
     await this.client?.respond(response);
@@ -145,9 +124,8 @@ export class WalletConnectService {
   async connect(uri: string) {
     const resetRevision = this.state.keyringService.walletResetRevision;
     if (this.state.keyringService.isResetting) throw new Error('Wallet reset is in progress');
-    if (!isValidUrl(uri)) throw Error(getInternalError('MISSING_OR_INVALID').message);
-
-    if (uri.match('@1')) throw Error(getInternalError('UNKNOWN_TYPE').message);
+    // Throws MISSING_OR_INVALID for a malformed link and UNKNOWN_TYPE for a retired version 1 link.
+    parsePairingUri(uri);
 
     await this.initClient(true);
     if (this.state.keyringService.isResetting || this.state.keyringService.walletResetRevision !== resetRevision)
@@ -179,10 +157,10 @@ export class WalletConnectService {
     this.updateSessions();
   }
 
-  async rejectSession(id: number) {
+  async rejectSession(id: number, reason: SdkErrorKey = 'USER_REJECTED') {
     this.checkClient();
 
-    await this.client?.reject({ id, reason: getSdkError('USER_REJECTED') });
+    await this.client?.reject({ id, reason: getSdkError(reason) });
   }
 
   async disconnect(topic: string) {
@@ -198,7 +176,7 @@ export class WalletConnectService {
   }
 
   async resetWallet(): Promise<void> {
-    const topics = (this.client?.session.values ?? []).map((session) => session.topic);
+    const topics = this.walletSessions.map((session) => session.topic);
     const retirement = this.authority.reset(topics);
     for (const topic of topics) {
       this.invalidateSession(topic);
@@ -214,7 +192,7 @@ export class WalletConnectService {
     await this.initClient();
     // Include locally retired SDK records: a prior failed storage write still
     // needs acknowledgement on retry before the account can be removed.
-    const sessions = this.client?.session.values ?? [];
+    const sessions = this.walletSessions;
     await Promise.all(sessions.map(async (session) => {
       const ownsAccount = Object.entries(session.namespaces).some(([key, namespace]) =>
         namespaceAccounts(namespace).some((account) => {
@@ -229,7 +207,7 @@ export class WalletConnectService {
     }));
   }
 
-  private onSessionProposal(proposal: SignClientTypes.EventArguments['session_proposal']) {
+  private onSessionProposal(proposal: WcSessionProposalEvent) {
     this.checkClient();
     if (this.state.keyringService.isResetting) {
       void this.rejectSession(proposal.id).catch(console.error);
@@ -239,7 +217,7 @@ export class WalletConnectService {
     this.requestService.addConnectWCRequest(convertConnectRequest(proposal));
   }
 
-  private onSessionRequest(requestEvent: SignClientTypes.EventArguments['session_request']) {
+  private onSessionRequest(requestEvent: WcSessionRequestEvent) {
     this.checkClient();
 
     const { id, params, topic } = requestEvent;

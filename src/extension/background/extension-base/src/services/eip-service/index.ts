@@ -3,26 +3,48 @@ import { type RequestEvmProviderSend, type EvmEventType } from '@extension-base/
 import { CRON_GET_API_MAP_STATUS } from '@extension-base/const/intervals';
 import { captureEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
 import { createSigningRequestId } from '@extension-base/services/request-service/signingRequestId';
-import type { RequestArguments } from '@walletconnect/jsonrpc-types';
+import { subscriptionIdentity } from '@extension-base/utils/subscriptionIdentity';
+import type { RequestArguments } from '@extension-base/utils/jsonRpc';
 import type State from '@extension-base/background/handlers/State';
 import type { EvmAppState, EvmProvider } from '@extension-base/background/types/types';
 import { stripUrl } from '@/extension/background/extension-base/src/background/helpers';
+import { APP_VERSION } from '@/consts/global';
 
 type EvmEmitterCallback = (eventName: EvmEventType, payload: unknown) => void;
 
+type NetworkCheck = { check: () => void; interval?: ReturnType<typeof setInterval> };
+
 export class EipService {
   private evmEventEmitterMap: Record<string, Record<string, EvmEmitterCallback>> = {};
+  // Each site's event subscription checks its network every few seconds, a request to the site's node. While the
+  // wallet is quiet (WorkerSleepService) none runs; they start again when it reconnects.
+  private readonly networkChecks = new Set<NetworkCheck>();
 
-  constructor(private state: State) {}
+  constructor(private state: State) {
+    state.networkService?.suspendedSubject?.subscribe((suspended) =>
+      this.networkChecks.forEach((entry) => {
+        clearInterval(entry.interval);
+        entry.interval = suspended ? undefined : setInterval(entry.check, CRON_GET_API_MAP_STATUS);
+      })
+    );
+  }
 
   async getNetworkVersion(url: string) {
     const chainId = await this.getEvmCurrentChainId(url);
 
-    return parseInt(chainId, 16);
+    return BigInt(chainId).toString();
   }
 
   private async getEvmProvider(url: string): Promise<EvmProvider | undefined> {
     const evmState = await this.getEvmState(url);
+
+    // The network a site switched to is connected for it, not made the wallet's selection, so a restarted wallet
+    // connects it again when the site uses it. Only for a site the wallet is connected to.
+    if (!evmState.web3 && evmState.networkKey && (await this.state.getAuthInfo(url))?.isAllowed) {
+      await this.state.activateDappNetwork(evmState.networkKey);
+
+      return (await this.getEvmState(url)).web3;
+    }
 
     return evmState.web3;
   }
@@ -95,27 +117,35 @@ export class EipService {
   }
 
   private async getEvmCurrentAccount(url: string): Promise<string[]> {
-    return new Promise((resolve) => {
-      this.state.getAuthInfo(url).then((authInfo) => {
-        const result = authInfo?.evmAuthorizedAccount ? [authInfo.evmAuthorizedAccount] : [];
+    const authInfo = await this.state.getAuthInfo(url);
 
-        resolve(result);
-      });
-    });
+    return authInfo?.isAllowed === true && authInfo.evmAuthorizedAccount ? [authInfo.evmAuthorizedAccount] : [];
   }
 
-  async requestEvmPermission(url: string, id: string, request: RequestArguments, reConfirm = false) {
-    await this.state.requestService.authorizeUrl(url, {
-      origin: request.params.origin,
-      accountAuthType: 'evm',
-      reConfirm,
-    });
+  async requestEvmPermission(
+    url: string,
+    id: string,
+    request: RequestArguments,
+    reConfirm = false,
+    signal?: AbortSignal
+  ) {
+    await this.state.requestService.authorizeUrl(
+      url,
+      {
+        origin: request.params.origin,
+        accountAuthType: 'evm',
+        reConfirm,
+      },
+      signal
+    );
 
     return this.getEvmPermission(url, id);
   }
 
   private async getEvmPermission(url: string, id: string) {
     const account = await this.getEvmCurrentAccount(url);
+
+    if (!account.length) return [];
 
     return [
       {
@@ -131,6 +161,7 @@ export class EipService {
   async evmSubscribeEvents(url: string, id: string, port: chrome.runtime.Port) {
     // This method will be called after DApp request connect to extension
     const cb = this.state.subscriptionService.createSubscription<'evm(events.subscribe)'>(id, port);
+    const key = subscriptionIdentity(id, port);
 
     const emitEvent = (eventName: EvmEventType, payload: unknown) => {
       cb({ type: eventName, payload });
@@ -185,7 +216,12 @@ export class EipService {
         .catch(console.error);
     };
 
-    const networkCheckInterval = setInterval(networkCheck, CRON_GET_API_MAP_STATUS);
+    const networkCheckEntry: NetworkCheck = {
+      check: networkCheck,
+      interval: this.state.networkService?.suspended ? undefined : setInterval(networkCheck, CRON_GET_API_MAP_STATUS),
+    };
+
+    this.networkChecks.add(networkCheckEntry);
 
     const provider = await this.getEvmProvider(url);
 
@@ -210,10 +246,10 @@ export class EipService {
       this.evmEventEmitterMap[url] = {};
     }
 
-    this.evmEventEmitterMap[url][id] = emitEvent;
+    this.evmEventEmitterMap[url][key] = emitEvent;
 
     this.state.subscriptionService.setUnsubscriptionHandle(id, () => {
-      if (this.evmEventEmitterMap[url][id]) delete this.evmEventEmitterMap[url][id];
+      if (this.evmEventEmitterMap[url][key] === emitEvent) delete this.evmEventEmitterMap[url][key];
 
       Object.entries(eventMap).forEach(([event, callback]) => {
         provider?.removeListener(event, callback);
@@ -222,10 +258,11 @@ export class EipService {
       accountListSubscription.unsubscribe();
       authUrlSubscription.unsubscribe();
 
-      clearInterval(networkCheckInterval);
-    });
+      clearInterval(networkCheckEntry.interval);
+      this.networkChecks.delete(networkCheckEntry);
+    }, port);
 
-    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
+    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id, port));
 
     return true;
   }
@@ -239,10 +276,10 @@ export class EipService {
     provider.send(request.jsonrpc, []).then((result) => {
       cb({ error: null, result });
 
-      this.state.subscriptionService.cancelSubscription(id);
+      this.state.subscriptionService.cancelSubscription(id, port);
     });
 
-    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id));
+    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id, port));
 
     return true;
   }
@@ -256,7 +293,12 @@ export class EipService {
 
   // `_messageId` is the page's own message id. It is never a queue key: the page chooses it, so it could equal the key
   // of a request another site queued, and approving the request on screen would then sign this one instead.
-  private async evmSign(_messageId: string, url: string, { method, params }: RequestArguments): Promise<string> {
+  private async evmSign(
+    _messageId: string,
+    url: string,
+    { method, params }: RequestArguments,
+    signal?: AbortSignal
+  ): Promise<string> {
     const data = structuredClone(params);
     const context = await captureEvmSigningContext(this.state, url, method, data);
     const signResult = await this.state.requestService.evmRequestHandler.confirmSign(
@@ -264,24 +306,28 @@ export class EipService {
       url,
       method,
       data,
-      context
+      context,
+      signal
     );
 
     if (signResult) return signResult.payload;
     else throw new Error('Failed to sign message');
   }
 
-  async evmSendTransaction(id: string, url: string, payload: RequestArguments): Promise<string> {
-    return this.evmSign(id, url, payload);
+  async evmSendTransaction(id: string, url: string, payload: RequestArguments, signal?: AbortSignal): Promise<string> {
+    return this.evmSign(id, url, payload, signal);
   }
 
-  async handleEvmRequest(id: string, url: string, request: RequestArguments): Promise<unknown> {
+  // `signal` is aborted when the page's port closes; the requests this call queued then end.
+  async handleEvmRequest(id: string, url: string, request: RequestArguments, signal?: AbortSignal): Promise<unknown> {
     try {
       switch (request.method) {
         case 'eth_chainId':
           return this.getEvmCurrentChainId(url);
 
         case 'web3_clientVersion':
+          return `Fearless Wallet v${APP_VERSION}`;
+
         case 'net_version':
           return this.getNetworkVersion(url);
 
@@ -289,7 +335,7 @@ export class EipService {
           return this.getEvmCurrentAccount(url);
 
         case 'wallet_requestPermissions':
-          return this.requestEvmPermission(url, id, { ...request }, true);
+          return this.requestEvmPermission(url, id, { ...request }, true, signal);
 
         case 'wallet_getPermissions':
           return this.getEvmPermission(url, id);
@@ -301,7 +347,7 @@ export class EipService {
           return this.switchEvmNetwork(url, request);
 
         case 'eth_sendTransaction':
-          return this.evmSendTransaction(id, url, request);
+          return this.evmSendTransaction(id, url, request, signal);
 
         case 'eth_sign':
         case 'personal_sign':
@@ -309,7 +355,7 @@ export class EipService {
         case 'eth_signTypedData_v1':
         case 'eth_signTypedData_v3':
         case 'eth_signTypedData_v4':
-          return this.evmSign(id, url, request);
+          return this.evmSign(id, url, request, signal);
 
         default:
           return this.performWeb3Method(id, url, request);

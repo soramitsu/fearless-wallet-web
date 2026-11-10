@@ -115,6 +115,8 @@ export type AccountAuthType = 'substrate' | 'evm' | 'solana' | 'iroha' | 'both' 
 export interface SigningRequest {
   account: AccountJson;
   network?: SubstrateNetworkSnapshot;
+  /** The call as the wallet's own runtime decodes it, with every cross-chain transfer in it. */
+  callReview?: import('@extension-base/services/request-service/handlers/substrateCallReview').SubstrateCallReview;
   id: string;
   request: Pick<RequestSign, 'payload'>;
   url: string;
@@ -696,6 +698,14 @@ export interface RequestValidateMnemonic {
 
 export interface ResponseExportSeed {
   seed: string;
+  /** The phrase alone opens another account: the wallet was made with a derivation path or password. */
+  restoresOtherAccount?: boolean;
+}
+
+/** Asks whether Raw seed export would open this wallet; the answer never carries the seed. */
+export interface RequestRawSeedAvailable {
+  address: string;
+  password: string;
 }
 
 export type EvmProvider = JsonRpcProvider | WebSocketProvider;

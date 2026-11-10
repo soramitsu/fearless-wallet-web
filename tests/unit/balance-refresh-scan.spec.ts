@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { APIItemState } from '@extension-base/api/types/networks';
-import BalanceService from '@extension-base/services/balance-service';
+import BalanceService, { BALANCE_STORAGE_WRITE_DELAY_MS } from '@extension-base/services/balance-service';
 import type { BalanceItem, NetworkScanState } from '@extension-base/api/evm/types';
 import type State from '@extension-base/background/handlers/State';
 import type { NetworkJson } from '@extension-base/types';
@@ -49,9 +49,12 @@ const assetKey = (network: NetworkJson, assetId: string) => createAssetKey({
   assetId,
 });
 const units = (amount: number) => BigInt(amount) * 10n ** 18n;
-// Storage mocks resolve on microtasks; reaching another turn drains the queued
-// read/merge/write operations even on the pre-fix, fire-and-forget path.
-const flushStorage = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+// Storage mocks resolve on microtasks. The first turn lets answered reads queue their writes; balance writes then
+// wait BALANCE_STORAGE_WRITE_DELAY_MS, so a timer set after that fires once the queued read/merge/write has run.
+const flushStorage = async () => {
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  await new Promise<void>((resolve) => setTimeout(resolve, BALANCE_STORAGE_WRITE_DELAY_MS));
+};
 
 type StoredBalance = BalanceItem & { chain: string };
 type Persisted = {
@@ -249,6 +252,39 @@ describe('network scan state across concurrent EVM assets', () => {
     expect(context.section().error).toBeUndefined();
   });
 
+  it.each([
+    ['get', true], ['set', true], ['get', false], ['set', false],
+  ] as const)('keeps the scan stale when an asset cache %s fails (RPC failure=%s)', async (operation, rpcFails) => {
+    const context = await fixture();
+    context.persisted.networkScanStates[rootA].Ethereum = {
+      ...context.scan(), stale: true, error: 'balance_scan_failed', failedAssetKeys: [assetKey(networks[0], tokenId)],
+    };
+    await context.hydrate();
+    const batch = await context.startRefresh();
+    storageMock[operation].mockRejectedValueOnce(new Error('Temporary storage failure'));
+    if (rpcFails) batch.token.reject(new Error('RPC unavailable'));
+    else batch.token.resolve(units(8));
+    await flushStorage();
+    batch.native.resolve(units(5));
+    await batch.finished;
+    await flushStorage();
+
+    expect(context.persisted.assetBalances[rootA][assetKey(networks[0], tokenId)])
+      .toMatchObject({ total: '7', timestamp: cachedAt });
+    if (rpcFails)
+      expect(context.balance(tokenId)).toMatchObject({ state: APIItemState.ERROR, total: '7', timestamp: cachedAt });
+    expect(context.scan()).toMatchObject({ stale: true, error: 'balance_scan_failed', lastSuccess: cachedAt });
+    expect(context.section()).toMatchObject({ stale: true, error: 'balance_scan_failed' });
+
+    now = 3_000;
+    const retry = await context.startRefresh();
+    retry.token.resolve(units(8));
+    retry.native.resolve(units(6));
+    await retry.finished;
+    await flushStorage();
+    expect(context.scan()).toMatchObject({ stale: false, lastSuccess: now });
+  });
+
   it.each([false, true])('does not let an unrelated targeted success clear a failed asset (hydrated=%s)', async (restart) => {
     const context = await fixture();
     const failed = await context.startRefresh();
@@ -296,6 +332,46 @@ describe('network scan state across concurrent EVM assets', () => {
     expect(context.scan().error).toBeUndefined();
     expect(context.balance(nativeId).total).toBe('6.0');
     expect(context.balance(tokenId).total).toBe('8.0');
+  });
+
+  it('drops the failure of an asset the network no longer lists, once a refresh of the whole network succeeds', async () => {
+    const context = await fixture();
+    const failed = await context.startRefresh();
+    failed.native.resolve(units(4));
+    failed.token.reject(new Error('contract answered nothing'));
+    await failed.finished;
+    await flushStorage();
+    expect(context.scan().failedAssetKeys).toHaveLength(1);
+
+    const [ethereum] = networks;
+    const listed = ethereum.assets;
+    ethereum.assets = listed.filter(({ id }) => id !== tokenId);
+
+    try {
+      // Nothing clears the token's failure while the refresh fails: its own failure counts, and so does the record.
+      const outage = await context.startRefresh({ waitForStart: false });
+      outage.native.reject(new Error('RPC unavailable'));
+      await outage.finished;
+      await flushStorage();
+      expect(context.scan()).toMatchObject({ stale: true, error: 'balance_scan_failed', lastSuccess: cachedAt });
+      expect(context.scan().failedAssetKeys).toHaveLength(2);
+
+      now = 3_000;
+      const full = await context.startRefresh({ waitForStart: false });
+      full.native.resolve(units(5));
+      await full.finished;
+      await flushStorage();
+      expect(context.scan()).toMatchObject({ stale: false, lastSuccess: now });
+      expect(context.scan().error).toBeUndefined();
+      expect(context.scan().failedAssetKeys).toBeUndefined();
+      expect(context.section()).toMatchObject({ stale: false, latestTimestamp: now });
+
+      // The answer survives a restart: it is the stored state that was repaired.
+      const restarted = await context.hydrate();
+      expect(restarted.networkScanStates[rootA].Ethereum).toMatchObject({ stale: false, lastSuccess: now });
+    } finally {
+      ethereum.assets = listed;
+    }
   });
 
   it('requires a full successful refresh to clear a hydrated legacy failure without asset identities', async () => {

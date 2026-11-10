@@ -1,7 +1,7 @@
 import { captureWalletResetGuard } from '@extension-base/api/walletResetGuard';
 import { Address, beginCell, external, internal, storeMessage, toNano, SendMode } from '@ton/core';
 import { type BalanceItem } from '@extension-base/api/evm/types';
-import { TonProviderError } from '@extension-base/services/ton-provider';
+import { TonProviderError, type TonDataProvider } from '@extension-base/services/ton-provider';
 import type { BasicTxResponse } from '@extension-base/background/types/types';
 import type State from '@extension-base/background/handlers/State';
 import { TonKeyringError } from '@/util/tonKeyring';
@@ -19,6 +19,17 @@ interface TransferParams {
 }
 
 export const MAX_TON_FEE = '0.02';
+// The TON a jetton send gives the sender's own jetton wallet to pay for the transfer. TEP-74 reference jetton wallets
+// refuse (exit code 709) less than twice their gas plus their storage reserve, about 0.03 TON before forward fees; the
+// jetton wallet returns what it does not use to the response destination, the sender.
+export const JETTON_TRANSFER_TON = '0.05';
+// What a jetton send may cost in TON: the amount it gives the jetton wallet and the wallet's own fees.
+export const MAX_JETTON_TRANSFER_FEE = '0.07';
+
+/** The most a send of this balance item costs in TON, which is what the Send screen checks the TON balance against. */
+export function maxTonTransferFee(balance: Pick<BalanceItem, 'walletAddress'> | undefined): string {
+  return balance?.walletAddress ? MAX_JETTON_TRANSFER_FEE : MAX_TON_FEE;
+}
 
 function jettonUnits(amount: string, precision: number): bigint {
   if (!Number.isInteger(precision) || precision < 0 || precision > 255) {
@@ -31,6 +42,27 @@ function jettonUnits(amount: string, precision: number): bigint {
   if (significantFraction.length > precision) throw new Error('Jetton amount exceeds token precision');
 
   return BigInt(whole) * 10n ** BigInt(precision) + BigInt(significantFraction.padEnd(precision, '0') || '0');
+}
+
+/**
+ * Whether a TON transfer to `to` bounces, as in other TON wallets. A bounceable address asks for it, so a contract that
+ * refuses the transfer sends the TON back instead of keeping it. Only an account with code can refuse: a transfer to
+ * an address with nothing deployed, which is how a new wallet is funded, does not bounce. When the recipient cannot be
+ * read, the address decides, so a refused transfer still comes back.
+ */
+async function bouncesTo(provider: TonDataProvider, to: string, destination: Address): Promise<boolean> {
+  // A raw address carries no flag and counts as bounceable.
+  if (Address.isFriendly(to) && !Address.parseFriendly(to).isBounceable) return false;
+
+  try {
+    const status = await provider.getAccountStatus(destination);
+
+    return status === 'active' || status === 'frozen';
+  } catch (error) {
+    console.warn('[TON] Could not read the recipient account; the transfer bounces as its address asks', error);
+
+    return true;
+  }
 }
 
 export async function makeTonTransfer(params: TransferParams, state: State): Promise<void> {
@@ -84,15 +116,16 @@ export async function makeTonTransfer(params: TransferParams, state: State): Pro
   const internalMessage = walletAddress
     ? internal({
         to: walletAddress!,
-        value: toNano(MAX_TON_FEE),
-        bounce: false,
+        value: toNano(JETTON_TRANSFER_TON),
+        // A jetton wallet that refuses the transfer sends the TON back.
+        bounce: true,
         body: messageBody,
       })
     : internal({
         to: destinationAddress,
         value: toNano(amount),
         body: 'ton transfer',
-        bounce: false,
+        bounce: await bouncesTo(broadcaster, to, destinationAddress),
       });
 
   const { seqno, deployed } = await broadcaster.getWalletState(walletContract.address);

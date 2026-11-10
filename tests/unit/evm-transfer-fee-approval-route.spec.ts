@@ -102,4 +102,16 @@ describe('the EVM fee quote', () => {
     expect(evm.quoteEVMTransfer.mock.calls[0][0]).toMatchObject({ amount: priced });
     expect(quote.estimateFee).toBe('0.00021');
   });
+
+  it('answers a transfer the node cannot estimate with the Send screen’s fee estimate error', async () => {
+    evm.quoteEVMTransfer.mockRejectedValueOnce(new Error('execution reverted'));
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+
+    const quote = await extensionWith(vi.fn(), vi.fn()).checkTransfer({
+      networkKey: 'ethereum', from: '0xfrom', to: '0xto', assetId: 'ETH', amount: '1',
+    } as RequestTypes['pri(accounts.checkTransfer)']);
+
+    expect(quote).toMatchObject({ errors: [{ message: 'common.estimateFeeError' }] });
+    info.mockRestore();
+  });
 });

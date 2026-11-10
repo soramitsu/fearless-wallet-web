@@ -7,45 +7,44 @@
     :data-network="isGroup ? undefined : single.asset.networkName"
   >
     <div class="token-line">
-      <!-- In Manage a single row is not a button: its switch is the one control (as in a network section). -->
-      <component
-        :is="headerIsButton ? 'button' : 'div'"
+      <button
         class="token-header"
-        :type="headerIsButton ? 'button' : undefined"
-        :aria-expanded="isGroup ? expanded : undefined"
-        :aria-label="headerIsButton ? accessibleLabel : undefined"
+        type="button"
+        :aria-label="accessibleLabel"
         :data-testid="isGroup ? 'tokenGroupHeader' : 'tokenRowHeader'"
         @click="onHeaderClick"
       >
         <span class="token-icon">
-          <ExternalLogo :name="row.icon" :width="38" class="asset-logo" />
-          <ExternalLogo :name="row.networkIcon" :width="16" class="network-badge" />
+          <ExternalLogo :name="row.icon" :width="40" class="asset-logo" />
+          <!-- Held on one network: its logo. On several: how many, so the row reads as one token held in several places. -->
+          <span v-if="held.length > 1" class="network-stack" data-testid="networkCount">{{ held.length }}</span>
+          <ExternalLogo v-else :name="held[0].asset.networkIcon" :width="16" class="network-badge" />
         </span>
 
         <span class="token-identity">
-          <span class="token-symbol">
-            {{ row.symbol }}
-            <span v-if="isGroup" class="network-count" data-testid="networkCount">
-              {{ tc('portfolioPage.networkCount', row.networkCount, { count: row.networkCount }) }}
+          <span class="token-title">
+            <span class="token-symbol">{{ row.symbol }}</span>
+            <span v-if="!isGroup && single.asset.trust !== 'verified'" class="row-badge">{{ t('portfolioPage.unverified') }}</span>
+            <span v-if="!isGroup && single.asset.isTestnet" class="row-badge" data-testid="testnetBadge">{{ t('portfolioPage.testnetBadge') }}</span>
+            <span v-if="!isGroup && single.asset.hidden" class="row-badge" data-testid="hiddenBadge">{{ t('portfolioPage.hiddenBadge') }}</span>
+            <span
+              v-if="!isGroup && single.asset.hidden && single.asset.preferenceSource === 'legacy305'"
+              class="row-badge legacy"
+              data-testid="hiddenPreviousVersion"
+            >
+              {{ t('portfolioPage.hiddenPreviousVersion') }}
             </span>
-            <span v-else-if="single.asset.trust !== 'verified'" class="trust-badge">{{ t('portfolioPage.unverified') }}</span>
           </span>
 
-          <span v-if="isGroup" class="token-subtitle">{{ row.name }}</span>
-          <!-- The badges share the network's line, so a hidden token in Manage stays two lines tall like the rest. -->
-          <span v-else class="token-meta">
-            <span class="token-subtitle">
-              <span data-testid="tokenNetwork">{{ single.asset.networkName }}</span>
-              <span v-if="roleLabel(single.role)" class="role-chip" data-testid="memberRole">{{ roleLabel(single.role) }}</span>
-              <span v-if="single.asset.isTestnet" class="row-badge" data-testid="testnetBadge">{{ t('portfolioPage.testnetBadge') }}</span>
+          <!-- Price and its 24h move, then where it is: one network by name, several by count. -->
+          <span class="token-subtitle">
+            <span v-if="price" class="token-price" data-testid="tokenPrice">{{ price }}</span>
+            <span v-if="priceChange" class="token-change" :class="`token-change--${priceChange.direction}`" data-testid="tokenChange">
+              {{ priceChange.percentText }}
             </span>
-
-            <span v-if="single.asset.hidden" class="asset-badges">
-              <span class="row-badge" data-testid="hiddenBadge">{{ t('portfolioPage.hiddenBadge') }}</span>
-              <span v-if="single.asset.preferenceSource === 'legacy305'" class="row-badge legacy" data-testid="hiddenPreviousVersion">
-                {{ t('portfolioPage.hiddenPreviousVersion') }}
-              </span>
-            </span>
+            <span v-if="price" class="token-dot" aria-hidden="true">·</span>
+            <span v-if="held.length > 1" class="token-where token-where--count">{{ tc('walletHome.networks', held.length, { count: held.length }) }}</span>
+            <span v-else class="token-where" data-testid="tokenNetwork">{{ held[0].asset.networkName }}</span>
           </span>
         </span>
 
@@ -54,126 +53,34 @@
           <span class="token-failed">{{ t('portfolioPage.balanceStatus.failed') }}</span>
         </span>
         <span v-else class="token-balance">
-          <span data-testid="tokenAmount">{{ formatAmount(row.balanceText) }} {{ row.symbol }}</span>
-          <span class="token-fiat" data-testid="tokenFiat">{{ formatFiat(row.fiatValue) }}</span>
+          <template v-if="row.fiatValue !== null">
+            <span class="token-fiat" data-testid="tokenFiat">{{ formatFiat(row.fiatValue) }}</span>
+            <span class="token-amount" data-testid="tokenAmount">{{ formatAmount(row.balanceText) }} {{ row.symbol }}</span>
+          </template>
+          <template v-else>
+            <span class="token-fiat token-fiat--amount" data-testid="tokenAmount">{{ formatAmount(row.balanceText) }} {{ row.symbol }}</span>
+            <span v-if="row.hasBalance" class="token-amount" data-testid="tokenFiat">{{ t('portfolioPage.priceUnavailable') }}</span>
+          </template>
           <span v-if="row.fiatValue !== null && row.unpricedNetworkCount" class="token-note" data-testid="tokenPartialPrice">
             {{ tc('portfolioPage.priceUnavailableOn', row.unpricedNetworkCount, { count: row.unpricedNetworkCount }) }}
-          </span>
-          <span v-if="showsTransferable" class="token-note" data-testid="transferable">
-            {{ t('portfolioPage.transferable', { amount: `${formatAmount(row.transferableText)} ${row.symbol}` }) }}
           </span>
           <span v-if="row.balanceFailed" class="token-note token-failed" data-testid="tokenBalanceFailed">
             {{ t('portfolioPage.balanceStatus.failed') }}
           </span>
         </span>
 
-        <!-- In Manage a single row has only its switch; a group still opens to its networks. -->
-        <Icon
-          v-if="!manage || isGroup"
-          :icon="isGroup && expanded ? 'down' : 'chevron-right'"
-          className="chevron"
-          width="20px"
-          height="20px"
-          :hover="false"
-        />
-      </component>
-
-      <Switcher
-        v-if="manage"
-        class="row-switch"
-        data-testid="tokenRowSwitch"
-        :value="!row.hidden"
-        :ariaLabel="rowSwitchLabel"
-        @change="setRowPreference($event ? 'shown' : 'hidden')"
-      />
-    </div>
-
-    <div v-if="isGroup && expanded" class="token-networks" data-testid="tokenNetworks">
-      <div v-for="child in visibleChildren" :key="child.asset.key" class="network-line">
-        <component
-          :is="manage ? 'div' : 'button'"
-          class="network-row"
-          :class="{ 'network-row--hidden': child.asset.hidden }"
-          :type="manage ? undefined : 'button'"
-          :data-asset-key="child.asset.key"
-          :data-network="child.asset.networkName"
-          :data-symbol="child.asset.symbol"
-          :aria-label="manage ? undefined : childLabel(child)"
-          @click="openChild(child)"
-        >
-          <ExternalLogo :name="child.asset.networkIcon" :width="28" class="network-logo" />
-
-          <span class="network-identity">
-            <span class="network-name">{{ child.asset.networkName }}</span>
-            <span class="network-meta">
-              <span v-if="roleLabel(child.role)" class="role-chip" data-testid="memberRole">{{ roleLabel(child.role) }}</span>
-              <span v-if="child.asset.hidden" class="row-badge" data-testid="hiddenBadge">{{ t('portfolioPage.hiddenBadge') }}</span>
-              <span
-                v-if="child.asset.hidden && child.asset.preferenceSource === 'legacy305'"
-                class="row-badge legacy"
-                data-testid="hiddenPreviousVersion"
-              >
-                {{ t('portfolioPage.hiddenPreviousVersion') }}
-              </span>
-            </span>
-          </span>
-
-          <span v-if="child.asset.balanceUnavailable" class="network-balance" data-testid="networkBalanceUnavailable">
-            <span class="token-failed">{{ t('portfolioPage.balanceStatus.failed') }}</span>
-          </span>
-          <span v-else class="network-balance">
-            <span>{{ formatAmount(child.asset.balanceText) }} {{ child.asset.symbol }}</span>
-            <span class="token-fiat">{{ formatFiat(child.asset.fiatValue) }}</span>
-            <span v-if="childShowsTransferable(child)" class="token-note">
-              {{ t('portfolioPage.transferable', { amount: `${formatAmount(child.asset.transferableText)} ${child.asset.symbol}` }) }}
-            </span>
-            <span v-if="child.asset.balanceFailed" class="token-note token-failed" data-testid="networkBalanceFailed">
-              {{ t('portfolioPage.balanceStatus.failed') }}
-            </span>
-          </span>
-
-          <Icon v-if="!manage" icon="chevron-right" className="chevron" width="18px" height="18px" :hover="false" />
-        </component>
-
-        <Switcher
-          v-if="manage"
-          class="row-switch"
-          :value="!child.asset.hidden"
-          :ariaLabel="t('portfolioPage.showAssetOnNetwork', { symbol: child.asset.symbol, network: child.asset.networkName })"
-          @change="setPreference(child.asset.key, $event ? 'shown' : 'hidden')"
-        />
-      </div>
-
-      <button
-        v-if="row.zeroChildren.length && !showZeroChildren"
-        class="zero-children"
-        type="button"
-        data-testid="tokenZeroNetworks"
-        @click="zeroChildrenOpen = true"
-      >
-        {{ tc('portfolioPage.moreZeroNetworks', row.zeroChildren.length, { count: row.zeroChildren.length }) }}
+        <Icon icon="chevron-right" className="chevron" width="16px" height="16px" :hover="false" />
       </button>
-
-      <div v-if="!manage" class="token-actions">
-        <button type="button" class="token-action" data-testid="groupSend" :disabled="!canSend" @click="$emit('send', row)">
-          <Icon icon="send" className="action-icon" :hover="false" />
-          {{ t('assets.sendButtonText') }}
-        </button>
-        <button type="button" class="token-action" data-testid="groupReceive" @click="$emit('receive', row)">
-          <Icon icon="receive" className="action-icon" :hover="false" />
-          {{ t('assets.receiveButtonText') }}
-        </button>
-      </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import type { AssetPreference } from '@/portfolio/assetIdentity';
-import { toggleListEntry } from '@/portfolio/portfolioViewSettings';
-import { tokenRowKeys, type PortfolioTokenChild, type PortfolioTokenRow } from '@/portfolio/tokenLens';
+import type { PortfolioTokenChild, PortfolioTokenRow } from '@/portfolio/tokenLens';
+import { formatChange } from '@/portfolio/dashboard/format';
 import { usePortfolioFormatting } from '@/portfolio/usePortfolioFormatting';
 import { Components } from '@/router/routes';
 import { useAccountsStore } from '@/stores/accounts';
@@ -181,42 +88,34 @@ import { useI18n } from '@/locales/useI18n';
 
 const props = defineProps<{
   row: PortfolioTokenRow;
-  manage?: boolean;
   search?: string;
-  /** Keeps a group open while a search or the Hidden filter shows its matching networks. */
-  forceExpanded?: boolean;
-  /** Whether the Send of this group has a network to offer. */
-  canSend?: boolean;
 }>();
-
-defineEmits<{ (event: 'send', row: PortfolioTokenRow): void; (event: 'receive', row: PortfolioTokenRow): void }>();
 
 const router = useRouter();
 const { t, tc } = useI18n();
 const accountsStore = useAccountsStore();
-const { formatAmount, formatFiat, roleLabel } = usePortfolioFormatting();
-const zeroChildrenOpen = ref(false);
+const { formatAmount, formatFiat, formatPrice } = usePortfolioFormatting();
 
 const isGroup = computed(() => props.row.children.length + props.row.zeroChildren.length > 1);
 const single = computed<PortfolioTokenChild>(() => props.row.children[0] ?? props.row.zeroChildren[0]);
+// Where the token is held: its funded networks (a group's zero networks wait on its page), or all of them at zero.
+const held = computed<PortfolioTokenChild[]>(() => (props.row.children.length ? props.row.children : props.row.zeroChildren));
 
-// Expansion is remembered per wallet; only By token rows use `expandedGroups`, so it is per lens as well.
-const expanded = computed(() => props.forceExpanded || accountsStore.portfolioView.expandedGroups.includes(props.row.id));
-const showZeroChildren = computed(() => zeroChildrenOpen.value || props.forceExpanded || props.manage || !props.row.children.length);
-const visibleChildren = computed(() =>
-  showZeroChildren.value ? [...props.row.children, ...props.row.zeroChildren] : props.row.children
-);
+// A group's members are one asset with one trusted price: the first member that has one speaks for the row.
+const pricedChild = computed(() => [...props.row.children, ...props.row.zeroChildren].find(({ asset }) => asset.unitPrice !== null));
+const price = computed(() => {
+  const unitPrice = pricedChild.value?.asset.unitPrice;
 
-// Outside Manage every row opens something; in Manage only a group does (its networks).
-const headerIsButton = computed(() => !props.manage || isGroup.value);
+  return unitPrice ? formatPrice(unitPrice) : '';
+});
+const priceChange = computed(() => {
+  const percent = pricedChild.value?.asset.priceChangePercent;
+  if (percent === null || percent === undefined) return null;
 
-const showsTransferable = computed(
-  () => props.row.hasBalance && formatAmount(props.row.transferableText) !== formatAmount(props.row.balanceText)
-);
+  const change = formatChange('0', percent, '');
 
-function childShowsTransferable({ asset }: PortfolioTokenChild): boolean {
-  return asset.hasBalance && formatAmount(asset.transferableText) !== formatAmount(asset.balanceText);
-}
+  return change.direction === 'flat' ? null : change;
+});
 
 // The label replaces what a row shows for assistive technology, so it says what the row says: a balance nobody could
 // load has neither an amount nor a value (not "0", not "$0.00", not "Price unavailable"), and a kept amount whose
@@ -247,39 +146,20 @@ const accessibleLabel = computed(() => {
   return withFailure(label, row.balanceFailed);
 });
 
-function childLabel({ asset, role }: PortfolioTokenChild): string {
-  const network = roleLabel(role) ? `${asset.networkName} (${roleLabel(role)})` : asset.networkName;
-
-  if (asset.balanceUnavailable)
-    return t('portfolioPage.tokenSingleFailedLabel', {
-      symbol: asset.symbol,
-      network,
-      status: t('portfolioPage.balanceStatus.failed'),
-    });
-
-  const label = t('portfolioPage.tokenSingleLabel', {
-    symbol: asset.symbol,
-    network,
-    amount: `${formatAmount(asset.balanceText)} ${asset.symbol}`,
-    value: formatFiat(asset.fiatValue),
-  });
-
-  return withFailure(label, asset.balanceFailed);
-}
-
+// A token opens: a group on its own page, which lists its networks; a single network on its asset page.
 function onHeaderClick(): void {
   if (!isGroup.value) {
     openChild(single.value);
     return;
   }
 
-  accountsStore.updatePortfolioView({
-    expandedGroups: toggleListEntry(accountsStore.portfolioView.expandedGroups, props.row.id, !expanded.value),
-  });
+  // A token found by a search keeps it there, so its page lists the networks the search found, hidden ones included.
+  const search = props.search?.trim();
+
+  router.push({ name: Components.TokenOverview, params: { token: props.row.id }, ...(search ? { query: { search } } : {}) });
 }
 
 function openChild({ asset }: PortfolioTokenChild): void {
-  if (props.manage) return;
   if (props.search?.trim() && asset.preference === 'hidden') setPreference(asset.key, 'auto');
 
   router.push({
@@ -291,64 +171,54 @@ function openChild({ asset }: PortfolioTokenChild): void {
 function setPreference(key: string, preference: AssetPreference): void {
   accountsStore.setAssetPreference({ key, preference });
 }
-
-/** The switch of a row in Manage: one write for every network of the token, so a group is shown or hidden at once. */
-function setRowPreference(preference: AssetPreference): void {
-  accountsStore.setAssetPreferences({ entries: tokenRowKeys(props.row).map((key) => ({ key, preference })) });
-}
-
-// That switch is named for what it writes: every network of the token, or the one network of a single row.
-const rowSwitchLabel = computed(() =>
-  isGroup.value
-    ? tc('portfolioPage.showTokenOnNetworks', props.row.networkCount, { symbol: props.row.symbol, count: props.row.networkCount })
-    : t('portfolioPage.showAssetOnNetwork', { symbol: props.row.symbol, network: single.value.asset.networkName })
-);
 </script>
 
 <style lang="scss" scoped>
+// One line per token, as in Exodus: logo, symbol and price on the left, value and amount on the right.
+// The list scrolls in the page gutter (Currencies.vue), so a row keeps clear of it.
 .token-row {
   margin-right: 16px;
-  border-bottom: $default-border;
   text-align: left;
 }
 
-.token-line,
-.network-line {
+.token-line {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.token-header,
-.network-row,
-.zero-children {
+.token-header {
+  box-sizing: border-box;
   width: 100%;
+  min-height: 60px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
   border: 0;
+  border-radius: 12px;
   color: inherit;
   background: transparent;
   font: inherit;
-  cursor: pointer;
   text-align: left;
+  cursor: pointer;
+  transition: background var(--fw-dur-fast) var(--fw-ease);
+
+  &:hover {
+    background: var(--fw-raised-2);
+  }
 
   &:focus-visible {
     outline: 2px solid palette($pink-lavender-color, var(--fw-focus));
-    outline-offset: 2px;
+    outline-offset: -2px;
   }
-}
-
-.token-header {
-  min-height: 64px;
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto 20px;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 0;
 }
 
 .token-icon {
   position: relative;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
 
   .asset-logo {
     border-radius: 50%;
@@ -358,50 +228,105 @@ const rowSwitchLabel = computed(() =>
     position: absolute;
     right: -3px;
     bottom: -3px;
-    border: 2px solid $default-background-color;
+    border: 2px solid var(--fw-bg-base);
     border-radius: 50%;
-    background: $default-background-color;
+    background: var(--fw-bg-base);
   }
 }
 
+// Several networks: a small count where one network would show its logo.
+.network-stack {
+  position: absolute;
+  right: -5px;
+  bottom: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border: 2px solid var(--fw-bg-base);
+  border-radius: 9px;
+  background: var(--fw-raised-2);
+  color: var(--fw-text-1);
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 .token-identity,
-.network-identity,
-.token-balance,
-.network-balance {
+.token-balance {
   display: flex;
   min-width: 0;
   flex-direction: column;
+  gap: 3px;
 }
 
-.token-symbol,
-.network-name {
+.token-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  min-width: 0;
+}
+
+.token-symbol {
+  color: var(--fw-text-1);
+  font-size: 0.95rem;
   font-weight: 700;
   overflow-wrap: anywhere;
 }
 
-.network-count {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 1px 7px;
-  border-radius: 8px;
-  background: $pink-purple-color;
-  color: $plain-white;
-  font-size: 0.62rem;
-  font-weight: 600;
-  vertical-align: middle;
+.token-subtitle {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  color: var(--fw-text-2);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.token-subtitle,
-.token-fiat {
-  margin-top: 4px;
-  color: $gray-color;
-  font-size: 0.72rem;
+.token-where {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.token-dot {
+  color: var(--fw-text-3);
+}
+
+// Aqua and orange never carry the direction alone (design-system 3.5): the sign is in the text.
+.token-change--up {
+  color: var(--fw-up);
+}
+
+.token-change--down {
+  color: var(--fw-down);
+}
+
+.token-balance {
+  align-items: flex-end;
+  text-align: right;
   overflow-wrap: anywhere;
 }
 
+.token-fiat {
+  color: var(--fw-text-1);
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.token-amount {
+  color: var(--fw-text-2);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .token-note {
-  margin-top: 2px;
-  color: $gray-color;
+  color: var(--fw-text-2);
   font-size: 0.66rem;
 }
 
@@ -410,36 +335,6 @@ const rowSwitchLabel = computed(() =>
   color: $simple-orange-color;
 }
 
-.token-balance,
-.network-balance {
-  align-items: flex-end;
-  text-align: right;
-  overflow-wrap: anywhere;
-}
-
-// The network line of a single row: the subtitle dims with a hidden row, its badges keep full contrast.
-.token-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 6px;
-  margin-top: 4px;
-
-  .token-subtitle,
-  .asset-badges {
-    margin-top: 0;
-  }
-}
-
-.network-meta,
-.asset-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 4px;
-}
-
-.role-chip,
 .row-badge {
   display: inline-block;
   padding: 1px 6px;
@@ -451,18 +346,6 @@ const rowSwitchLabel = computed(() =>
   line-height: 1.5;
 }
 
-.role-chip {
-  // A tag in the HUD style: cyan text on a cyan trace.
-  border-color: $fw-hud-trace;
-  color: $pink-lavender-color;
-}
-
-.token-subtitle .role-chip,
-.token-subtitle .row-badge {
-  margin-left: 4px;
-  vertical-align: middle;
-}
-
 .row-badge {
   text-transform: uppercase;
 
@@ -472,40 +355,7 @@ const rowSwitchLabel = computed(() =>
   }
 }
 
-.trust-badge {
-  margin-left: 5px;
-  color: $gray-color;
-  font-size: 0.6rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.token-networks {
-  margin: 0 0 10px 18px;
-  padding-left: 12px;
-  // The circuit trace that joins a token's networks (design-system 5.5).
-  border-left: 2px solid $fw-hud-selection-line;
-}
-
-.network-row {
-  min-height: 52px;
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) auto 18px;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 0;
-  border-top: $default-border;
-}
-
-.network-logo {
-  border-radius: 50%;
-}
-
-.network-row--hidden,
 .token-row--hidden > .token-line {
-  .network-logo,
-  .network-name,
-  .network-balance,
   .token-icon,
   .token-symbol,
   .token-subtitle,
@@ -514,108 +364,34 @@ const rowSwitchLabel = computed(() =>
   }
 }
 
-.zero-children {
-  min-height: 40px;
-  padding: 8px 0;
-  border-top: $default-border;
-  color: $gray-color;
-  font-size: 0.75rem;
-}
-
-.token-actions {
-  display: flex;
-  gap: 8px;
-  padding-top: 10px;
-  border-top: $default-border;
-}
-
-.token-action {
-  flex: 1;
-  min-height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 1px solid $fw-control-edge;
-  border-radius: 17px;
-  background: $pink-purple-color;
-  color: $plain-white;
-  cursor: pointer;
-  font: inherit;
-  font-size: 0.75rem;
-  font-weight: 700;
-
-  &:disabled {
-    cursor: default;
-    opacity: 0.45;
-  }
-
-  &:focus-visible {
-    outline: 2px solid palette($plain-white, var(--fw-focus));
-    outline-offset: 2px;
-  }
-
-  .action-icon {
-    width: 16px;
-    height: 16px;
-  }
-}
-
 .chevron {
-  color: $gray-color;
+  color: var(--fw-text-3);
 }
 
-.row-switch {
-  flex: none;
-}
-
-// Below the popup's width, amounts move under the name so long numbers and network names never clip.
-@media (max-width: 480px) {
+@media (prefers-reduced-motion: reduce) {
   .token-header {
-    grid-template-columns: 38px minmax(0, 1fr) 20px;
-    gap: 6px 10px;
+    transition: none;
+  }
+}
+
+// In a narrow column the amounts keep their side; the price line gives way first.
+@media (max-width: 380px) {
+  .token-header {
+    grid-template-columns: 36px minmax(0, 1fr) auto 12px;
+    gap: 10px;
+    padding: 8px 6px;
+  }
+
+  // The badge on the logo already counts the networks; the price keeps the line.
+  .token-where--count,
+  .token-where--count + .token-dot,
+  .token-dot:has(+ .token-where--count) {
+    display: none;
   }
 
   .token-icon {
-    grid-row: 1 / 3;
-  }
-
-  .token-balance {
-    grid-column: 2;
-    grid-row: 2;
-    align-items: flex-start;
-    text-align: left;
-  }
-
-  .token-header > .chevron {
-    grid-column: 3;
-    grid-row: 1 / 3;
-  }
-
-  .network-row {
-    grid-template-columns: 28px minmax(0, 1fr) 18px;
-    gap: 4px 8px;
-  }
-
-  .network-logo {
-    grid-row: 1 / 3;
-  }
-
-  .network-balance {
-    grid-column: 2;
-    grid-row: 2;
-    align-items: flex-start;
-    text-align: left;
-  }
-
-  .network-row > .chevron {
-    grid-column: 3;
-    grid-row: 1 / 3;
-  }
-
-  .token-networks {
-    margin-left: 8px;
-    padding-left: 10px;
+    width: 36px;
+    height: 36px;
   }
 }
 </style>

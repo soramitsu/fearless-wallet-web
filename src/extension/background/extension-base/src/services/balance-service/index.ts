@@ -2,6 +2,7 @@ import { APIItemState } from '@extension-base/api/types/networks';
 import { storage } from '@extension-base/stores/Storage';
 import { Subject } from 'rxjs';
 import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
+import { getAssetOptions } from '@extension-base/api/substrate';
 import { type GetBalancesProps } from '../subscription-service';
 import { TonBalance } from '../ton-balance/TonBalance';
 import SubstrateBalanceService from './SubstrateBalanceService';
@@ -14,6 +15,7 @@ import type { BalanceItem, NetworkScanState } from '@extension-base/api/evm/type
 import type {
   BalanceMap,
   BalanceJson,
+  IState,
   RequestTotalBalances,
   ResponseTotalBalances,
   RequestPortfolioHoldings,
@@ -49,6 +51,18 @@ interface NetworkBalanceRefresh {
   unknownFailure?: boolean;
 }
 
+type BalanceStorage = Pick<IState, 'assetBalances' | 'networkScanStates'>;
+
+interface BalanceStorageMutation {
+  /** Applies one change to the copy read for this write and names the keys it changed. */
+  apply: (stored: BalanceStorage) => (keyof BalanceStorage)[];
+  resolve: () => void;
+  reject: (error: unknown) => void;
+}
+
+// Balance changes this close together share one read and one write of the cache, which holds every wallet's assets.
+export const BALANCE_STORAGE_WRITE_DELAY_MS = 200;
+
 export default class BalanceService {
   substrateBalanceService: SubstrateBalanceService;
   evmBalanceService: EvmBalanceService;
@@ -60,6 +74,8 @@ export default class BalanceService {
   networkScanStates: Record<string, Record<string, NetworkScanState>> = {};
   balanceSubject = new Subject<BalanceJson>();
   private balanceStorageMutation = Promise.resolve();
+  private pendingBalanceStorageMutations: BalanceStorageMutation[] = [];
+  private balanceStorageWriteTimer?: ReturnType<typeof setTimeout>;
   private networkRefreshQueue = new Map<string, Promise<unknown>>();
   private activeNetworkRefreshes = new Map<string, NetworkBalanceRefresh>();
 
@@ -140,10 +156,17 @@ export default class BalanceService {
 
   public updateBalanceStore(networkKey: string, item: BalanceItem, address: string) {
     const itemSnapshot = { ...item };
+    const scan = this.activeNetworkRefreshes.get(JSON.stringify([address, networkKey]));
+    // Preserve the read outcome before touching storage: a failed cache read must not hide an RPC failure.
+    if (scan && itemSnapshot.state === APIItemState.ERROR) scan.failed = true;
 
-    return this.enqueueBalanceStorageMutation(() =>
-      this.updateBalanceStorage(networkKey, address, itemSnapshot)
-    ).catch((e) => console.warn(e));
+    return this.enqueueBalanceStorageMutation((stored) =>
+      this.updateBalanceStorage(networkKey, address, itemSnapshot, stored)
+    ).catch((e) => {
+      // This scan cannot confirm its saved balances if an intermediate cache update was lost.
+      if (scan) scan.failed = true;
+      console.warn(e);
+    });
   }
 
   public async refreshNetworkBalances<T>(
@@ -163,7 +186,7 @@ export default class BalanceService {
       } finally {
         try {
           // Asset writes are queued synchronously by setBalanceItem. Finish only after all of them persist.
-          await this.enqueueBalanceStorageMutation(() => this.finishNetworkRefresh(chain, address, scan));
+          await this.enqueueBalanceStorageMutation((stored) => this.finishNetworkRefresh(chain, address, scan, stored));
         } finally {
           this.activeNetworkRefreshes.delete(key);
         }
@@ -178,12 +201,15 @@ export default class BalanceService {
     }
   }
 
-  private async finishNetworkRefresh(chain: string, address: string, scan: NetworkBalanceRefresh): Promise<void> {
-    const { networkScanStates } = await storage.get(['networkScanStates']);
-    const accountScanStates = { ...(networkScanStates?.[address] ?? {}) };
+  private finishNetworkRefresh(
+    chain: string, address: string, scan: NetworkBalanceRefresh, stored: BalanceStorage
+  ): (keyof BalanceStorage)[] {
+    const accountScanStates = { ...(stored.networkScanStates[address] ?? {}) };
     const previous = accountScanStates[chain];
-    const failed = scan.failed || Boolean(previous?.failedAssetKeys?.length) ||
-      (!scan.coversNetwork && Boolean(scan.unknownFailure));
+    // A refresh of the whole network that failed nowhere read every asset the network lists. A failure still on record
+    // belongs to an asset it has dropped, which nothing would ever read again to clear it.
+    const failed = scan.failed ||
+      (!scan.coversNetwork && (Boolean(previous?.failedAssetKeys?.length) || Boolean(scan.unknownFailure)));
     const now = Date.now();
     accountScanStates[chain] = {
       lastAttempt: now,
@@ -192,9 +218,11 @@ export default class BalanceService {
       coverage: previous?.coverage ?? 'limited',
       ...(failed ? { error: 'balance_scan_failed', failedAssetKeys: previous?.failedAssetKeys } : {}),
     };
-    await storage.set({ networkScanStates: { ...(networkScanStates ?? {}), [address]: accountScanStates } });
+    stored.networkScanStates[address] = accountScanStates;
     this.networkScanStates[address] = accountScanStates;
     this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 500);
+
+    return ['networkScanStates'];
   }
 
   public deleteBalanceStore(
@@ -203,45 +231,88 @@ export default class BalanceService {
     address: string
   ) {
     const identitySnapshot = { ...identity };
-    return this.enqueueBalanceStorageMutation(() =>
-      this.deleteBalanceStorage(networkKey, identitySnapshot, address)
+    return this.enqueueBalanceStorageMutation((stored) =>
+      this.deleteBalanceStorage(networkKey, identitySnapshot, address, stored)
     );
   }
 
-  private enqueueBalanceStorageMutation(mutation: () => Promise<void>): Promise<void> {
-    const pending = this.balanceStorageMutation.then(mutation);
-
-    this.balanceStorageMutation = pending.catch(() => undefined);
-
-    return pending;
+  /** Resolves once the change is written, together with every other change made within the write delay. */
+  private enqueueBalanceStorageMutation(apply: BalanceStorageMutation['apply']): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.pendingBalanceStorageMutations.push({ apply, resolve, reject });
+      this.balanceStorageWriteTimer ??= setTimeout(() => {
+        this.balanceStorageWriteTimer = undefined;
+        this.balanceStorageMutation = this.balanceStorageMutation.then(() => this.writeBalanceStorage());
+      }, BALANCE_STORAGE_WRITE_DELAY_MS);
+    });
   }
 
-  private async deleteBalanceStorage(
+  /**
+   * Reads the cache once, applies the queued changes in the order they were made and writes the changed keys once.
+   * Reading first keeps what other wallets and earlier writes stored.
+   */
+  private async writeBalanceStorage(): Promise<void> {
+    const mutations = this.pendingBalanceStorageMutations.splice(0);
+
+    if (!mutations.length) return;
+
+    try {
+      const { assetBalances, networkScanStates } = await storage.get(['assetBalances', 'networkScanStates']);
+      const stored: BalanceStorage = {
+        assetBalances: { ...(assetBalances ?? {}) },
+        networkScanStates: { ...(networkScanStates ?? {}) },
+      };
+      const changed = new Set<keyof BalanceStorage>();
+      const failures = mutations.map(({ apply }) => {
+        try {
+          apply(stored).forEach((key) => changed.add(key));
+
+          return undefined;
+        } catch (error) {
+          return { error };
+        }
+      });
+      const write: Partial<BalanceStorage> = {};
+
+      if (changed.has('assetBalances')) write.assetBalances = stored.assetBalances;
+      if (changed.has('networkScanStates')) write.networkScanStates = stored.networkScanStates;
+      if (changed.size) await storage.set(write);
+
+      mutations.forEach(({ resolve, reject }, index) => {
+        const failure = failures[index];
+
+        if (failure) reject(failure.error);
+        else resolve();
+      });
+    } catch (error) {
+      mutations.forEach(({ reject }) => reject(error));
+    }
+  }
+
+  private deleteBalanceStorage(
     chain: string,
     identity: Pick<BalanceItem, 'id'> & Partial<BalanceItem>,
-    address: string
-  ) {
-    const { assetBalances } = await storage.get(['assetBalances']);
-    const copyAssetBalances = { ...(assetBalances ?? {}) };
-    const canonicalForAccount = { ...(copyAssetBalances[address] ?? {}) };
+    address: string,
+    stored: BalanceStorage
+  ): (keyof BalanceStorage)[] {
+    const canonicalForAccount = { ...(stored.assetBalances[address] ?? {}) };
     const canonicalKey = this.getStorageAssetKey(chain, identity);
 
-    if (!canonicalForAccount[canonicalKey]) return;
+    if (!canonicalForAccount[canonicalKey]) return [];
 
     delete canonicalForAccount[canonicalKey];
-    if (Object.keys(canonicalForAccount).length) copyAssetBalances[address] = canonicalForAccount;
-    else delete copyAssetBalances[address];
+    if (Object.keys(canonicalForAccount).length) stored.assetBalances[address] = canonicalForAccount;
+    else delete stored.assetBalances[address];
 
-    await storage.set({ assetBalances: copyAssetBalances });
+    return ['assetBalances'];
   }
 
-  private async updateBalanceStorage(chain: string, address: string, item: BalanceItem) {
-    if (item.state !== APIItemState.READY && item.state !== APIItemState.ERROR) return;
+  private updateBalanceStorage(
+    chain: string, address: string, item: BalanceItem, stored: BalanceStorage
+  ): (keyof BalanceStorage)[] {
+    if (item.state !== APIItemState.READY && item.state !== APIItemState.ERROR) return [];
 
-    const { assetBalances, networkScanStates } = await storage.get(['assetBalances', 'networkScanStates']);
-    const copyAssetBalances = { ...(assetBalances ?? {}) };
-    const copyScanStates = { ...(networkScanStates ?? {}) };
-    const accountScanStates = { ...(copyScanStates[address] ?? {}) };
+    const accountScanStates = { ...(stored.networkScanStates[address] ?? {}) };
     const previousScan = accountScanStates[chain];
     const now = Date.now();
     const coverage = item.scanCoverage ?? previousScan?.coverage ?? 'limited';
@@ -266,20 +337,17 @@ export default class BalanceService {
       ...(failed ? { error: 'balance_scan_failed' } : {}),
       ...(failedAssetKeys.size ? { failedAssetKeys: [...failedAssetKeys] } : {}),
     };
-    copyScanStates[address] = accountScanStates;
+    stored.networkScanStates[address] = accountScanStates;
     this.networkScanStates[address] = accountScanStates;
 
-    if (item.state === APIItemState.ERROR) {
-      await storage.set({ networkScanStates: copyScanStates });
-      return;
-    }
+    if (item.state === APIItemState.ERROR) return ['networkScanStates'];
 
-    copyAssetBalances[address] = {
-      ...(copyAssetBalances[address] ?? {}),
+    stored.assetBalances[address] = {
+      ...(stored.assetBalances[address] ?? {}),
       [canonicalKey]: { chain, ...item } as BalanceItem & { chain: NetworkName },
     };
 
-    await storage.set({ assetBalances: copyAssetBalances, networkScanStates: copyScanStates });
+    return ['assetBalances', 'networkScanStates'];
   }
 
   /**
@@ -330,6 +398,54 @@ export default class BalanceService {
       this.balanceMap[address][currencyIndex].balances[index].existentialDeposit =
         existentialDeposit?.toString() ?? '0';
     });
+  }
+
+  /**
+   * The minimum balance (pallet-assets `min_balance`) of each assets-pallet token of a network, such as Asset Hub USDT,
+   * which the registry does not list. A balance sent below it is removed, so the Send screen asks first, as it does
+   * for the native existential deposit.
+   */
+  public async updateAssetMinimums(networkName: NetworkName): Promise<void> {
+    const network = Object.values(this.state.networkService.networkMap).find(({ name }) => isSameString(name, networkName));
+    const assetDetails = this.state.networkService.substrateApiHandler.api[networkName]?.api?.query?.assets?.asset;
+    const assets = network?.assets.filter(({ type, existentialDeposit }) => type === 'assets' && !existentialDeposit) ?? [];
+
+    if (!network || !assetDetails || !assets.length) return;
+
+    const minimums = new Map<string, string>();
+
+    await Promise.all(
+      assets.map(async ({ id }) => {
+        try {
+          const details = (await assetDetails(getAssetOptions(id, this.state.networkService.assetsMap))) as unknown as {
+            isSome: boolean;
+            unwrap: () => { minBalance: { toString: () => string } };
+          };
+
+          if (details.isSome) minimums.set(id, details.unwrap().minBalance.toString());
+        } catch (error) {
+          console.warn(`[Balances] ${network.name}: could not read the minimum balance of ${id}`, error);
+        }
+      })
+    );
+
+    let changed = false;
+
+    Object.values(this.balanceMap).forEach((groups) =>
+      groups.forEach(({ balances }) =>
+        balances.forEach((item) => {
+          const minimum = minimums.get(item.id);
+
+          if (minimum === undefined || !isSameString(PREP_NETWORKS_NAME[item.name] ?? item.name, network.name)) return;
+          if (item.existentialDeposit === minimum) return;
+
+          item.existentialDeposit = minimum;
+          changed = true;
+        })
+      )
+    );
+
+    if (changed) this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 500);
   }
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {

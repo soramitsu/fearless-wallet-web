@@ -68,6 +68,7 @@ type AssetType =
   | 'erc20'
   | 'token2'
   | 'assets'
+  | 'xcm' // Pendulum and Amplitude
   | 'assetId' // TODO add
   | 'bitcoin'
   | 'solana'

@@ -66,30 +66,32 @@ beforeEach(() => {
 afterEach(() => { wrapper?.unmount(); });
 
 describe('selectable wallets', () => {
-  it.each([WalletEcosystem.Evm, WalletEcosystem.Substrate])(
-    'excludes standalone Ethereum addresses with %s metadata without removing their records', async (ecosystem) => {
-      const account = standalone(ecosystem);
-      mocks.store.accounts = [account];
-      const selector = mountSelector();
-      await flushPromises();
+  it('offers a standalone Ethereum wallet and selects it as itself', async () => {
+    const account = standalone();
+    mocks.store.accounts = [account];
+    const selector = mountSelector();
+    await flushPromises();
 
-      expect(selector.findAll('[data-testid="walletContent"]')).toHaveLength(0);
-      expect(mocks.updateCurrentAccount).not.toHaveBeenCalled();
-      expect(mocks.store.accounts).toEqual([account]);
-    }
-  );
+    const choices = selector.findAll('[data-testid="content"]');
+    expect(choices.map((choice) => choice.attributes('aria-label'))).toEqual([account.name]);
 
-  it('filters subscription updates while keeping linked parents and TON wallets selectable in name order', async () => {
+    await choices[0].trigger('click');
+    await flushPromises();
+    expect(mocks.updateCurrentAccount).toHaveBeenCalledExactlyOnceWith(evmAddress, WalletEcosystem.Evm);
+    expect(selector.emitted('close')).toHaveLength(1);
+  });
+
+  it('follows subscription updates in name order without reordering the store', async () => {
     const selector = mountSelector();
     const accounts = [parent, standalone(), ton];
     mocks.store.accounts = accounts;
     await flushPromises();
 
     const choices = selector.findAll('[data-testid="content"]');
-    expect(choices.map((choice) => choice.attributes('aria-label'))).toEqual([ton.name, parent.name]);
-    expect(mocks.store.accounts).toEqual(accounts);
+    expect(choices.map((choice) => choice.attributes('aria-label'))).toEqual([ton.name, standalone().name, parent.name]);
+    expect(mocks.store.accounts.map(({ address }) => address)).toEqual([parent.address, evmAddress, ton.address]);
 
-    await choices[1].trigger('click');
+    await choices[2].trigger('click');
     await flushPromises();
     expect(mocks.updateCurrentAccount).toHaveBeenLastCalledWith(parent.address, WalletEcosystem.Substrate);
     expect(selector.emitted('close')).toHaveLength(1);

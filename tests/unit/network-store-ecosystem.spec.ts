@@ -106,6 +106,26 @@ describe('network store ecosystem filtering', () => {
     expect(networksStore.activeNetworkForSelectedWallet.map(({ name }) => name)).toEqual(['Polkadot', 'Ethereum']);
   });
 
+  it('keeps a standalone Ethereum wallet to the networks it has an account on', () => {
+    const accountsStore = useAccountsStore();
+    const networksStore = useNetworksStore();
+
+    networksStore.allNetworks = [...networksStore.allNetworks, network('Moonbeam', 'ethereumBased')];
+    accountsStore.selectedWallet = {
+      address: '0x0000000000000000000000000000000000000002',
+      ethereumAddress: '0x0000000000000000000000000000000000000002',
+      name: 'Imported EVM',
+      walletEcosystem: WalletEcosystem.Evm,
+      isSubstrate: false,
+      isTon: false,
+      hasEthereum: true,
+    };
+
+    expect(networksStore.networks.map(({ name }) => name)).toEqual(['Ethereum', 'Moonbeam']);
+    expect(networksStore.selectableNetworks.map(({ name }) => name)).toEqual(['Ethereum', 'Moonbeam']);
+    expect(networksStore.activeNetworkForSelectedWallet.map(({ name }) => name)).toEqual(['Ethereum', 'Moonbeam']);
+  });
+
   it('shows only Solana networks for Solana wallets', () => {
     const accountsStore = useAccountsStore();
     const networksStore = useNetworksStore();

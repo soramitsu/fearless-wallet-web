@@ -5,7 +5,12 @@ import type {
   SolanaSignAndSendTransactionResponse,
   SolanaSigningResponse,
 } from '@extension-base/page/types';
-import { getSolanaTransactionId, signSolanaSerializedTransaction } from '@/util/solanaTransaction';
+import {
+  getSolanaTransactionId,
+  parseSolanaSerializedTransaction,
+  signSolanaSerializedTransaction,
+  SolanaTransactionError,
+} from '@/util/solanaTransaction';
 import { signSolanaMessage } from '@/util/solanaKeyring';
 
 type SolanaKeyringAccount = {
@@ -30,6 +35,34 @@ type SolanaSigningMaterial = {
 
 const SUBSTRATE_ECOSYSTEM = 'substrate';
 const SOLANA_ECOSYSTEM = 'solana';
+const SIGNATURE_BYTES = 64;
+
+/**
+ * Refuses message bytes that are a whole legacy or v0 transaction message. Messages and transactions are signed with
+ * the same key, so a signature over such bytes would let the site submit that transaction.
+ */
+export function assertSolanaMessageIsNotTransaction(message: Uint8Array): void {
+  // The transaction parser reads the message after the signature slots its header asks for; empty slots will do.
+  const requiredSignatures = message[message[0] & 0x80 ? 1 : 0];
+
+  if (!requiredSignatures) return;
+
+  const count =
+    requiredSignatures < 0x80 ? [requiredSignatures] : [(requiredSignatures & 0x7f) | 0x80, requiredSignatures >> 7];
+  const transaction = new Uint8Array(count.length + requiredSignatures * SIGNATURE_BYTES + message.length);
+
+  transaction.set(count);
+  transaction.set(message, count.length + requiredSignatures * SIGNATURE_BYTES);
+
+  try {
+    parseSolanaSerializedTransaction(transaction);
+  } catch (error) {
+    if (error instanceof SolanaTransactionError) return;
+    throw error;
+  }
+
+  throw new Error('Solana message payload is a transaction');
+}
 
 export function findSolanaSigningAccount(
   accounts: SolanaKeyringAccount[],
@@ -57,10 +90,11 @@ export function resolveSolanaSigning({
   if (request.method === 'signMessage') {
     if (!request.messageBase64) throw new Error('Invalid Solana message payload');
 
-    const signature = signSolanaMessage({
-      message: base64ToBytes(request.messageBase64),
-      mnemonic: seed,
-    });
+    const message = base64ToBytes(request.messageBase64);
+
+    assertSolanaMessageIsNotTransaction(message);
+
+    const signature = signSolanaMessage({ message, mnemonic: seed });
 
     if (signature.address !== solanaAddress) throw new Error('Solana signing account mismatch');
 

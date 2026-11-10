@@ -2,6 +2,7 @@ import { chrome } from '@extension-base/utils/crossenv';
 import type { TransformStoredRecords } from './StoreMutation';
 
 type StoreValue = Record<string, unknown>;
+type Queue = { tail: Promise<void> };
 
 const lastError = (type: string): void => {
   const error = chrome.runtime.lastError;
@@ -11,8 +12,14 @@ const lastError = (type: string): void => {
 
 export default abstract class BaseExtensionStore<T> {
   readonly prefix: string;
-  private static writeQueue: Promise<void> = Promise.resolve();
+  private static readonly sharedQueue: Queue = { tail: Promise.resolve() };
   private static pendingWrites: Promise<void> = Promise.resolve();
+
+  // Operations run one at a time in the order they were queued, reads included. A store class whose keys no other
+  // store reads or writes may declare its own queue (static ownQueue), so other stores' reads do not wait for it.
+  private get queue(): Queue {
+    return (this.constructor as { ownQueue?: Queue }).ownQueue ?? BaseExtensionStore.sharedQueue;
+  }
 
   public static async flush(): Promise<void> {
     const pending = BaseExtensionStore.pendingWrites;
@@ -22,8 +29,9 @@ export default abstract class BaseExtensionStore<T> {
   }
 
   private enqueueWrite<TResult>(write: () => Promise<TResult>, trackFailure = true): Promise<TResult> {
-    const operation = BaseExtensionStore.writeQueue.then(write);
-    BaseExtensionStore.writeQueue = operation.then(() => {}, () => {});
+    const queue = this.queue;
+    const operation = queue.tail.then(write);
+    queue.tail = operation.then(() => {}, () => {});
     if (trackFailure) {
       BaseExtensionStore.pendingWrites = Promise.allSettled([BaseExtensionStore.pendingWrites, operation]).then((results) => {
         const failure = results.find((result): result is PromiseRejectedResult => result.status === 'rejected');

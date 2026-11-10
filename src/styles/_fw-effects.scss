@@ -22,6 +22,19 @@ html {
   }
 }
 
+// The soft brand light under a balance (the wallet home and a token's page), in the aurora's hues; flat where the
+// card surface is.
+@include v1-palette {
+  :root {
+    --fw-brand-glow: radial-gradient(ellipse at 50% 40%, rgb(230 0 111 / 0.16) 0%, rgb(139 92 255 / 0.08) 45%, transparent 72%);
+  }
+
+  [data-fw-effects='reduced'],
+  .fw-calm {
+    --fw-brand-glow: none;
+  }
+}
+
 // e0: a fixed layer under the app, so scrolling never repaints it. Geometry and alpha are the aurora tokens.
 .fw-backdrop {
   position: fixed;
@@ -29,7 +42,7 @@ html {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(circle 55vw at 15% 12%, rgb(255 0 154 / 0.18), transparent 70%),
+    radial-gradient(circle 55vw at 15% 12%, rgb(230 0 111 / 0.18), transparent 70%),
     radial-gradient(circle 45vw at 95% 8%, rgb(46 230 255 / 0.12), transparent 70%),
     radial-gradient(circle 60vw at 50% 100%, rgb(139 92 255 / 0.16), transparent 70%),
     var(--fw-bg-base);

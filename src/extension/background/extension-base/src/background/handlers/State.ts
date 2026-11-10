@@ -29,6 +29,7 @@ import {
   SoraDisclaimerService,
   LegacyExposureService,
   IrohaConnectService,
+  WorkerSleepService,
 } from '@extension-base/services';
 import { storage } from '@extension-base/stores/Storage';
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
@@ -56,6 +57,7 @@ import type {
   RequestUpdateCurrentAccount,
 } from '@extension-base/background/types/types';
 import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
+import type { RunAssetDiscoverySweepOptions } from '@extension-base/services/asset-discovery-service';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { SoraFees, NetworkName } from '@/interfaces';
@@ -63,11 +65,13 @@ import type { BitcoinNetworkKind } from '@/util/bitcoin';
 import { api as apiSora } from '@/sora';
 import BalanceService from '@/extension/background/extension-base/src/services/balance-service';
 import { WalletEcosystem } from '@/interfaces';
-import { stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
+import { getTabAuthorizationTarget, stripUrl, withErrorLog } from '@/extension/background/extension-base/src/background/helpers';
 import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
+import { walletEcosystemOf } from '@/extension/background/extension-base/src/background/helpers/walletEcosystem';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
 import { encodeIrohaI105Address, resolveCanonicalIrohaAddressNetwork, type IrohaNetworkInput } from '@/util/iroha';
+import { IS_EXTENSION } from '@/consts/global';
 
 type Wallet = {
   address: string;
@@ -81,6 +85,10 @@ type Wallet = {
 
 export default class State {
   private ready = false;
+  // The init() in progress, and whether the last one opened the node connections (WorkerSleepService).
+  private initialization?: Promise<void>;
+  private networksConnected = false;
+  private tabStatusRevision = 0;
   injectedProviders: Map<Port, ProviderInterface> = new Map();
   providers: Providers = {};
   serviceInfoSubject = new Subject<ServiceInfo>();
@@ -96,7 +104,7 @@ export default class State {
   evmContractService = new EvmContractService();
   keyringService = new KeyringService(this.eventService);
   networkService = new NetworkService(this.keyringService, this, () => {
-    if (this.ready) void this.assetDiscoverySweepService.runIfDue();
+    if (this.ready) void this.runAssetDiscovery();
   });
   requestService = new RequestService(this.keyringService, this);
   walletConnectService = new WalletConnectService(this, this.requestService);
@@ -110,6 +118,7 @@ export default class State {
       if (snapshot.phase === 'request-approval' && previous.phase !== 'request-approval') {
         this.requestService.popupOpen('/fearless/settings/iroha-connect');
       }
+      if (snapshot.phase !== previous.phase) this.workerSleepService.refresh();
     },
   });
   balanceService = new BalanceService(this);
@@ -147,8 +156,14 @@ export default class State {
   timeoutService = new TimeoutService(this);
   keyringLockService = new KeyringLockService(this);
   historyService = new HistoryService(this);
+  workerSleepService = new WorkerSleepService(
+    { hasOpenWork: () => this.hasOpenWork(), quiet: () => this.quiet(), restore: () => this.restore() },
+    IS_EXTENSION
+  );
 
   constructor() {
+    // The extension worker opens no node connection until a wallet page or a site needs the wallet.
+    if (this.workerSleepService.enabled) void this.networkService.suspend();
     this.injectFromStorage();
     this.init();
   }
@@ -193,7 +208,14 @@ export default class State {
   }
 
   updateCurrentTabsUrl([tab]: chrome.tabs.Tab[]) {
-    if (!tab || !tab.url) {
+    const revision = ++this.tabStatusRevision;
+    let url: URL | undefined;
+    try {
+      if (tab?.url) url = new URL(tab.url);
+    } catch { /* Browser-internal and malformed tabs have no dApp permission. */ }
+    const isSelf = url?.hostname === EXTENSION_ID || url?.hostname === EXTENSION_HOSTNAME;
+    const target = getTabAuthorizationTarget(tab?.url);
+    if (!url || (!isSelf && !target)) {
       this.currentTabStatus = {
         isAuthorize: false,
         authorizeAccountsCount: 0,
@@ -203,12 +225,11 @@ export default class State {
       return;
     }
 
-    const url = new URL(tab.url);
-    const isSelf = url.hostname === EXTENSION_ID || url.hostname === EXTENSION_HOSTNAME;
     const tabHostName = isSelf ? 'header.currentExtensionPage' : url.hostname;
-    const tabAuthKey = isSelf ? null : stripUrl(tab.url);
+    const tabAuthKey = isSelf ? null : target?.key;
 
     const cb = (authUrls: AuthUrls) => {
+      if (revision !== this.tabStatusRevision) return;
       const auth = tabAuthKey ? authUrls[tabAuthKey] : undefined;
       const isAuthorize = auth?.isAllowed === true;
 
@@ -225,9 +246,15 @@ export default class State {
   private async selectableAccounts() {
     const accounts = this.keyringService.getAllMainAccounts();
     if (!accounts.some((account) => account.meta.isMobile && account.meta.wcTopic)) return accounts;
-    const policy = await new WalletConnectRetiredSessions().readPolicy();
+    // A saved session record that cannot be read approves no mobile wallet; the wallet's own accounts stay selectable,
+    // where start-up used to choose none.
+    const policy = await new WalletConnectRetiredSessions().readPolicy().catch((error: unknown) => {
+      console.warn('[WalletConnect] The saved session record could not be read', error);
+
+      return undefined;
+    });
     return this.keyringService.getAllMainAccounts().filter((account) =>
-      !account.meta.isMobile || sessionIsApproved(policy, account.meta.wcTopic as string));
+      !account.meta.isMobile || (policy !== undefined && sessionIsApproved(policy, account.meta.wcTopic as string)));
   }
 
   async onInstall() {
@@ -324,6 +351,30 @@ export default class State {
     this.networkService.updateNetworkStore();
     this.networkService.saveSelectedNetworks();
 
+    this.updateServiceInfo();
+  }
+
+  /**
+   * Connects a network a site uses (wallet_switchEthereumChain, a WalletConnect transaction) without changing the
+   * wallet's network selection. setActiveNetworks(network) made that one network the selection, which hid the wallet's
+   * other balances and disconnected every other network.
+   */
+  async activateDappNetwork(networkKey: string): Promise<void> {
+    const network = this.networkService.getNetworkJson(networkKey);
+
+    if (!network || network.disabled) return;
+    // An active network's connection may have been closed while the wallet was quiet (WorkerSleepService).
+    if (network.active) {
+      if (this.ready && this.networkService.connectNetwork(network)) this.updateServiceInfo();
+
+      return;
+    }
+
+    this.networkService.networkMap[network.name].active = true;
+
+    if (this.ready) this.networkService.initNetworkApis();
+
+    this.networkService.updateNetworkStore();
     this.updateServiceInfo();
   }
 
@@ -446,7 +497,19 @@ export default class State {
     return this.currentAccount?.address ?? '';
   }
 
-  async init() {
+  async init(): Promise<void> {
+    const run = this.load();
+
+    this.initialization = run;
+    try {
+      await run;
+    } finally {
+      if (this.initialization === run) this.initialization = undefined;
+    }
+  }
+
+  private async load(): Promise<void> {
+    const wasReady = this.ready;
     await this.eventService.waitCryptoReady;
     await Promise.all([
       this.networkService.initNetworkMap(),
@@ -464,14 +527,65 @@ export default class State {
     });
 
     await this.balanceService.hydrateBalanceStorage(accounts.map(({ address }) => address));
+    // A page that asked while the worker started gets the stored balances now, before they are read again.
+    void this.balanceService.publishBalance();
 
     this.ready = true; // Set true if chain json is parsed and data is preped for init apis
-    this.scamService.refreshScamAddressList();
+    // The scam service loads the list when the worker starts. The daily refresh, or a start whose load failed, loads it again.
+    if (wasReady || !this.scamService.scamMap) this.scamService.refreshScamAddressList();
 
-    this.networkService.initNetworkApis();
-    this.onReady();
+    // A quiet wallet loads its settings and cached balances but opens nothing until restore() runs this again.
+    if (this.networkService.suspended) {
+      this.networksConnected = false;
+    } else {
+      this.networkService.initNetworkApis();
+      this.onReady();
+      this.networksConnected = true;
+    }
     this.updateServiceInfo();
-    void this.assetDiscoverySweepService.runIfDue();
+    void this.runAssetDiscovery();
+  }
+
+  /** Runs the discovery sweep when it is due. The worker keeps its connections meanwhile and closes what it opened. */
+  runAssetDiscovery(options?: RunAssetDiscoverySweepOptions) {
+    const release = this.workerSleepService.hold();
+
+    return this.assetDiscoverySweepService.runIfDue(options).finally(release);
+  }
+
+  /**
+   * Work that keeps the node connections open after the last wallet page closed: a request waiting for the person, a
+   * WalletConnect session of either role, an Iroha Connect session.
+   */
+  private hasOpenWork(): boolean {
+    const irohaConnectPhase = this.irohaConnectService.snapshot.phase;
+
+    return (
+      this.requestService.numRequests > 0 ||
+      this.walletConnectService.sessions.length > 0 ||
+      this.walletConnectDappService.sessions.length > 0 ||
+      (irohaConnectPhase !== 'idle' && irohaConnectPhase !== 'error')
+    );
+  }
+
+  /**
+   * Closes everything that kept the extension worker running once nothing needs the wallet (WorkerSleepService): the
+   * jobs, the balance subscriptions and every node connection. Cached balances stay in memory and storage.
+   */
+  private async quiet(): Promise<void> {
+    this.networksConnected = false;
+    this.cronService.stop();
+    this.subscriptionService.stop();
+    this.poolsService.unsubscribePools();
+    await this.networkService.suspend();
+  }
+
+  /** Opens the connections, subscriptions and jobs again, through init() as the daily refresh does. */
+  private async restore(): Promise<void> {
+    this.networkService.resume();
+    // A start-up or refresh in progress opens them itself unless it had passed that step.
+    await this.initialization?.catch(() => undefined);
+    if (!this.networksConnected) await this.init();
   }
 
   private async scanDiscoveryNetwork(registryNetwork: NetworkJson): Promise<void> {
@@ -480,71 +594,111 @@ export default class State {
 
     const ecosystem = network.ecosystem;
     const accounts = this.keyringService.getAllMainAccounts();
+    // A Substrate network is connected once for every wallet of the sweep: each connection downloads its metadata.
+    const substrateKey = network.name.toLowerCase();
+    const substrateWasActive = network.active;
+    let substrateApi = this.getSubstrateApiMap[substrateKey]?.api;
+    let substrateReady: Promise<void> | undefined;
+    const connectSubstrate = () => substrateReady ??= (async () => {
+      if (!substrateApi) {
+        const initializing = this.networkService.substrateApiHandler.initApi(network);
+        // Capture the installed API before yielding; a concurrent reconnect can replace it.
+        substrateApi = this.getSubstrateApiMap[substrateKey]?.api;
+        await initializing;
+      }
+      const api = this.getSubstrateApiMap[substrateKey]?.api;
+      if (api) {
+        let timeout: ReturnType<typeof setTimeout> | undefined;
+        try {
+          await Promise.race([api.isReady, new Promise((_, reject) => {
+            timeout = setTimeout(() => reject(new Error('discovery_api_timeout')), 15_000);
+          })]);
+        } finally {
+          clearTimeout(timeout);
+        }
+      }
+    })();
 
-    for (const account of accounts) {
-      const meta = account.meta as FWKeyringMeta;
-      const publicAccounts = meta.universalWallet?.publicAccounts ?? [];
-      const publicAddress = (walletEcosystem: WalletEcosystem) =>
-        publicAccounts.find(
-          (item) =>
-            item.ecosystem === walletEcosystem &&
-            (!item.chainId || isSameString(item.chainId, network.chainId) || item.chainId.includes(network.chainId))
-        )?.address;
-      const supports = (walletEcosystem: WalletEcosystem) =>
-        meta.walletEcosystem === walletEcosystem || publicAccounts.some((item) => item.ecosystem === walletEcosystem);
-      const evmAddress = resolveAssetDiscoveryEvmAddress({
-        primaryAddress: account.address,
-        primaryEcosystem: meta.walletEcosystem,
-        ethereumAddress: meta.ethereumAddress,
-        publicAccounts,
-      });
-      const supportsSubstrate = supports(WalletEcosystem.Substrate);
+    try {
+      for (const account of accounts) {
+        const meta = account.meta as FWKeyringMeta;
+        const publicAccounts = meta.universalWallet?.publicAccounts ?? [];
+        const publicAddress = (walletEcosystem: WalletEcosystem) =>
+          publicAccounts.find(
+            (item) =>
+              item.ecosystem === walletEcosystem &&
+              (!item.chainId || isSameString(item.chainId, network.chainId) || item.chainId.includes(network.chainId))
+          )?.address;
+        const supports = (walletEcosystem: WalletEcosystem) =>
+          walletEcosystemOf(account.address, meta.walletEcosystem) === walletEcosystem ||
+          publicAccounts.some((item) => item.ecosystem === walletEcosystem);
+        const evmAddress = resolveAssetDiscoveryEvmAddress({
+          primaryAddress: account.address,
+          primaryEcosystem: meta.walletEcosystem,
+          ethereumAddress: meta.ethereumAddress,
+          publicAccounts,
+        });
+        const supportsSubstrate = supports(WalletEcosystem.Substrate);
 
-      if (ecosystem === 'solana' && supports(WalletEcosystem.Solana)) {
-        await this.balanceService.solanaBalanceService.fetchBalance({
-          address: account.address,
-          solanaAddress: meta.solanaAddress ?? publicAddress(WalletEcosystem.Solana),
-          networks: [network.name],
-        });
-      } else if (ecosystem === 'bitcoin' && supports(WalletEcosystem.Bitcoin)) {
-        await this.balanceService.bitcoinBalanceService.fetchBalance({
-          address: account.address,
-          bitcoinAddress: meta.bitcoinAddress,
-          bitcoinTestnetAddress: meta.bitcoinTestnetAddress,
-          networks: [network.name],
-        });
-      } else if (ecosystem === 'iroha' && supports(WalletEcosystem.Iroha)) {
-        await this.balanceService.irohaBalanceService.fetchBalance({
-          address: account.address,
-          irohaAddress: meta.irohaAddress ?? publicAddress(WalletEcosystem.Iroha),
-          networks: [network.name],
-        });
-      } else if (ecosystem === 'ton' && supports(WalletEcosystem.Ton)) {
-        if (!this.getTonApiMap[network.name.toLowerCase()]) await this.networkService.tonApiHandler.initApi(network);
-        await this.balanceService.tonBalanceService.fetchBalance(account.address, [network.name]);
-      } else if (ecosystem === 'ethereum' && evmAddress) {
-        const wasActive = network.active;
-        if (!this.getEvmApi(network.name)) this.networkService.evmApiHandler.initEvmApi(network);
-        await this.balanceService.evmBalanceService.fetchBalance({
-          ethereumAddress: evmAddress,
-          networks: [network.name.toLowerCase()],
-          force: true,
-        });
-        if (!wasActive) this.networkService.evmApiHandler.destroyApi(network.name);
-      } else if (
-        canScanSubstrateBackedDiscoveryNetwork(ecosystem, supportsSubstrate, evmAddress)
-      ) {
-        const networkKey = network.name.toLowerCase();
-        const wasActive = network.active;
-        if (!this.getSubstrateApiMap[networkKey]?.api) await this.networkService.substrateApiHandler.initApi(network);
-        const api = this.getSubstrateApiMap[networkKey]?.api;
-        if (api) await Promise.race([api.isReady, new Promise((_, reject) => setTimeout(() => reject(new Error('discovery_api_timeout')), 15_000))]);
-        await this.balanceService.substrateBalanceService.fetchBalance({
-          address: publicAddress(WalletEcosystem.Substrate) ?? (supportsSubstrate ? account.address : evmAddress),
-          ethereumAddress: evmAddress,
-          networks: [network.name],
-        });
-        if (!wasActive) await this.networkService.substrateApiHandler.destroyApi(network.name);
+        if (ecosystem === 'solana' && supports(WalletEcosystem.Solana)) {
+          await this.balanceService.solanaBalanceService.fetchBalance({
+            address: account.address,
+            solanaAddress: meta.solanaAddress ?? publicAddress(WalletEcosystem.Solana),
+            networks: [network.name],
+          });
+        } else if (ecosystem === 'bitcoin' && supports(WalletEcosystem.Bitcoin)) {
+          await this.balanceService.bitcoinBalanceService.fetchBalance({
+            address: account.address,
+            bitcoinAddress: meta.bitcoinAddress,
+            bitcoinTestnetAddress: meta.bitcoinTestnetAddress,
+            networks: [network.name],
+          });
+        } else if (ecosystem === 'iroha' && supports(WalletEcosystem.Iroha)) {
+          await this.balanceService.irohaBalanceService.fetchBalance({
+            address: account.address,
+            irohaAddress: meta.irohaAddress ?? publicAddress(WalletEcosystem.Iroha),
+            networks: [network.name],
+          });
+        } else if (ecosystem === 'ton' && supports(WalletEcosystem.Ton)) {
+          if (!this.getTonApiMap[network.name.toLowerCase()]) await this.networkService.tonApiHandler.initApi(network);
+          await this.balanceService.tonBalanceService.fetchBalance(account.address, [network.name]);
+        } else if (ecosystem === 'ethereum' && evmAddress) {
+          const wasActive = network.active;
+          const networkKey = network.name.toLowerCase();
+          let discoveryApi = this.getEvmApi(network.name)?.api;
+          try {
+            if (!discoveryApi) {
+              this.networkService.evmApiHandler.initEvmApi(network);
+              discoveryApi = this.getEvmApiMap[networkKey]?.api;
+            }
+            await this.balanceService.evmBalanceService.fetchBalance({
+              ethereumAddress: evmAddress,
+              networks: [network.name.toLowerCase()],
+              force: true,
+            });
+          } finally {
+            const currentNetwork = this.networkService.networkMap[network.name];
+            if (!wasActive && currentNetwork?.active === false && discoveryApi &&
+                this.getEvmApiMap[networkKey]?.api === discoveryApi) {
+              this.networkService.evmApiHandler.destroyApi(network.name);
+            }
+          }
+        } else if (
+          canScanSubstrateBackedDiscoveryNetwork(ecosystem, supportsSubstrate, evmAddress)
+        ) {
+          await connectSubstrate();
+          await this.balanceService.substrateBalanceService.fetchBalance({
+            address: publicAddress(WalletEcosystem.Substrate) ?? (supportsSubstrate ? account.address : evmAddress),
+            ethereumAddress: evmAddress,
+            networks: [network.name],
+          });
+        }
+      }
+    } finally {
+      const currentNetwork = this.networkService.networkMap[network.name];
+      if (substrateReady && !substrateWasActive && currentNetwork?.active === false && substrateApi &&
+          this.getSubstrateApiMap[substrateKey]?.api === substrateApi) {
+        await this.networkService.substrateApiHandler.destroyApi(network.name);
       }
     }
   }
@@ -558,7 +712,16 @@ export default class State {
     isNew = true,
     selectionContext?: { assertCurrent: () => void; onCommitted?: () => void }
   ): Promise<boolean> {
-    if (isEthereumAddress(address)) return false;
+    if (isEthereumAddress(address)) {
+      // A linked Ethereum key is selected through its parent wallet. An independently imported one is a wallet of its
+      // own, whichever ecosystem the caller assumed (a restored file names none).
+      const wallet = this.keyringService.getAllMainAccounts().find((account) => isSameString(account.address, address));
+
+      if (!wallet) return false;
+
+      address = wallet.address;
+      walletEcosystem = WalletEcosystem.Evm;
+    }
 
     this.balanceService.generateDefaultBalance(address, walletEcosystem);
 
@@ -573,7 +736,7 @@ export default class State {
       if (isNew) this.setActiveNetworks(activeValue);
 
       this.nftService.publishNfts();
-      if (isNew && this.ready) void this.assetDiscoverySweepService.runIfDue({ force: true });
+      if (isNew && this.ready) void this.runAssetDiscovery({ force: true });
       selectionContext?.onCommitted?.();
     }, selectionContext?.assertCurrent);
 
@@ -585,7 +748,9 @@ export default class State {
   ): Promise<void> {
     const updateContext = (committed: CurrentAccountState) => {
       this.poolsService.unsubscribePools();
-      const pair = committed?.address && !committed.isMobile && committed.walletEcosystem === WalletEcosystem.Substrate
+      // The selected-wallet record written by 1.x-2.7.x has no walletEcosystem.
+      const pair = committed?.address && !committed.isMobile &&
+        walletEcosystemOf(committed.address, committed.walletEcosystem) === WalletEcosystem.Substrate
         ? this.keyringService.getPair(committed.address) : undefined;
       const soraAccount = pair ? { json: null, pair } : undefined;
       // The SDK exposes these fields as protected; clear the old signing pair
@@ -593,9 +758,6 @@ export default class State {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
       apiSora.account = soraAccount;
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      //@ts-ignore
-      apiSora.bridgeProxy.sub.account = soraAccount;
       this.updateServiceInfo();
     };
     await this.keyringService.setCurrentAccount(data, (committed) => {
@@ -631,7 +793,8 @@ export default class State {
       isMobile: !!(isMobile as boolean),
       wcTopic: typeof wcTopic === 'string' ? wcTopic : undefined,
       name: name as string,
-      ethereumAddress: (ethereumAddress as string) ?? '',
+      // The stored record of an independently imported key links no other address: its own is the Ethereum one.
+      ethereumAddress: isEthereumAddress(address) ? address : (ethereumAddress as string) ?? '',
       bitcoinAddress: bitcoinAddress as string | undefined,
       bitcoinTestnetAddress: bitcoinTestnetAddress as string | undefined,
       solanaAddress: solanaAddress as string | undefined,
@@ -647,7 +810,8 @@ export default class State {
     if (this.networkService.selectedNetworks[address]) {
       delete this.networkService.selectedNetworks[address];
 
-      storage.set({ selectedNetworks: this.networkService.selectedNetworks });
+      // Not before the saved choices were read; they would all be replaced.
+      this.networkService.saveSelectedNetworks();
     }
 
     this.nftService.deleteSavedNfts(address);
@@ -765,8 +929,7 @@ export default class State {
     const initial = this.getEvmAuthorizationSnapshot(shortenUrl);
     if (!initial.authorization?.isAllowed || !initial.authorization.evmAuthorizedAccount)
       throw new Error('EVM account is not authorized for this site');
-    const network = this.networkService.getNetworkJson(networkKey);
-    if (!network.active) await this.setActiveNetworks(networkKey);
+    await this.activateDappNetwork(networkKey);
     await this.requestService.mutateAuthorizations((entries) => {
       if (this.getEvmAuthorizationSnapshot(shortenUrl).revision !== initial.revision || !entries[shortenUrl])
         throw new Error('Site authorization changed during network activation');

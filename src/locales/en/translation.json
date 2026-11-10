@@ -1554,5 +1554,9 @@
       "allMoved": "Every old wallet is marked as moved. Keep them in the list until you are sure nothing is left: late payments can still arrive at the old addresses.",
       "later": "Continue to wallet"
     }
+  },
+  "brand": {
+    "playCall": "Play the crow's call",
+    "callSound": "Crow's call sound"
   }
 }

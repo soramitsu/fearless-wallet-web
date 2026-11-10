@@ -1,36 +1,39 @@
-# Approved Fearless sun-disc artwork
+# Fearless brand: the Yatagarasu
 
-The artwork originates in Figma file `6nJRypk3njagBkp9B642tg`, frame
-`60201-10535`, exported on 10 October 2026. The colour, silhouette and feather
-lockups remain unchanged. The two circular badges implement the design approved
-on 6 November 2026: SORA disc radius 64 (original 33.85), a 2.2-unit gradient
-joint, and no cobras or their centre bridges. Every retained wing contour is
-copied byte-for-byte from the original export, without scaling or reshaping.
-The original badge masters are preserved in `scripts/brand/masters`; the parent
-workspace's `brand/sun-disc` also retains all five original exports.
+The owner approved the Yatagarasu (three-legged crow) brand on 10 November 2026, replacing the winged-sun badge. The
+same masters ship in the iOS, Android and browser apps. They come from the shared brand kit (workspace
+`brand/yatagarasu`, generated from the design package `design/yatagarasu-20261110`). The kit's manifest hash is
+recorded in `docs/release/brand-asset-provenance.json`.
 
-Use the line-art badge for app icons above 32px and the solid badge at 16/32px.
-Use the colour lockup for onboarding and unlock; the silhouette is the compact
-header and QR mark. Generated public icons retain the existing filenames and
-application identifiers. The external-image placeholder is neutral artwork,
-so unavailable token or site images do not appear to be Fearless-branded assets.
+| File | Use |
+| --- | --- |
+| `fearless-lockup-stacked.svg` | Full-page brand screens: onboarding start, unlock |
+| `fearless-lockup-horizontal.svg` | Headers that carry the name |
+| `fearless-crest.svg` | The crest alone, 64 px and above |
+| `fearless-crest-small.svg` | The crest below 64 px |
+| `fearless-crest-ink.svg` | The crest on pale surfaces |
+| `fearless-wordmark.svg` | The FEARLESS wordmark alone |
+| `crest-badge.svg`, `crest-badge-small.svg` | Round slots (logo, loader, QR centre, WalletConnect wallet, portfolio sun) |
+| `hero/popup-*` | The animated crow on the onboarding start, framed for the 561x600 popup |
 
-`fearless-cuneiform.svg` outlines the approved `𒉡𒉎𒋼` signature from the bundled
-Noto Sans Cuneiform regular font. It contains paths only and needs no system
-font. Its SIL Open Font License is in `NotoSansCuneiform-OFL.txt`.
-The same outline is copied into the SVG sprite under `src/assets/icons`.
+Rules:
+- Use the primary crest at 64 px and above and the small crest below.
+- Keep an eighth of the crest's width clear on every side.
+- Use white on dark, ink on pale, or gold on plum.
+- Keep pink for primary actions and active navigation.
+- Never redraw, warp or re-serialise a mark; the files are exact copies of the masters.
 
-The onboarding signature makes one1000ms entrance and then settles. Reduced
-motion, Reduced effects, forced colours and Calm surfaces suppress the motion.
-Shared loading indicators use static badge art; no glyph animation is added
-to signing, recovery or transaction surfaces.
+`scripts/brand/masters` holds the masters, pinned by SHA-256. Regenerate the marks, icon-sprite aliases, extension
+icons (`public/icons/logo-*.png`, `logo.icns`, `public/favicon.ico`) and the provenance record with
+`node scripts/generate-brand-assets.mjs`; `--check` verifies every output without writing.
 
-Master, raster and motif provenance is recorded with the release evidence.
-Regenerate with `node scripts/generate-brand-assets.mjs`; append `--check` to
-verify every output without modifying files. This needs Sharp 0.35.5; if it is
-installed outside this checkout, pass `--sharp-module /absolute/path/to/sharp`.
-For example, install it with `npm install --prefix /tmp/fearless-brand-tools
---no-audit --no-fund sharp@0.35.5`, then use
-`--sharp-module /tmp/fearless-brand-tools/node_modules/sharp`.
-Run `node --test scripts/test-brand-assets.mjs` to check preserved contours,
-disc geometry, aliases, container representations and provenance hashes.
+The generator needs Sharp 0.35.5. If it is installed outside this checkout, pass
+`--sharp-module /absolute/path/to/sharp`. Run `node --test scripts/test-brand-assets.mjs` to check masters, aliases,
+sizes, containers and provenance.
+
+The welcome hero (`src/components/WelcomeHero.vue`) loops muted. Clicking the crow plays its call, an eagle's scream
+breaking into a crow's caw, with sound when the sound toggle is on. Reduced motion, reduced effects and calm surfaces
+show the still poster.
+
+Brand colours live in `design/fw.tokens.json`. The kit's `tools/apply-tokens.mjs` moved the brand magentas to the
+Yatagarasu pinks, and `src/styles/fw-tokens.scss` follows them.

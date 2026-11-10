@@ -15,16 +15,10 @@
 
       <div class="logo-container">
         <div class="logo-mark" role="img" :aria-label="t('common.fearlessLogo')">
-          <img :src="sunColour" class="unlock-logo" alt="" />
+          <img :src="lockup" class="unlock-logo" alt="" />
         </div>
 
-        <Logo
-          class="description"
-          size="big"
-          text="common.fearlessWallet"
-          :subtext="$t('welcome.deFiWallet')"
-          :showLogo="false"
-        />
+        <BrandSignature :text="t('welcome.deFiWallet')" />
       </div>
     </div>
 
@@ -81,7 +75,8 @@
 <script lang="ts" setup>
 import { watch, ref, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import sunColour from '@/assets/brand/winged-sun-colour.svg';
+import lockup from '@/assets/brand/fearless-lockup-stacked.svg';
+import BrandSignature from '@/components/BrandSignature.vue';
 import { useI18n } from '@/locales/useI18n';
 import { unlockExtension, windowOpen } from '@/extension/messaging';
 import { Components } from '@/router/routes';
@@ -174,13 +169,11 @@ const toggleResetPopup = () => (showResetPopup.value = !showResetPopup.value);
     padding: 24px 0 8px;
 
     :deep(.unlock-logo) {
-      width: 240px;
-      max-width: 100%;
+      width: 152px;
+      max-width: 60%;
       height: auto;
     }
   }
-
-  .description :deep(.text) { font-size: 1.75rem; }
 
 
   .pass-block {

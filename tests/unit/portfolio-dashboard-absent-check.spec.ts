@@ -24,7 +24,7 @@ describe('check that a build carries no portfolio dashboard', () => {
     const root = build({
       'popup.js': 'console.log("portfolio");',
       'chunks/router.js': 'name(){return this.$t(`portfolioDashboard.allWallets`)}',
-      'assets/winged-sun-colour-abc123.svg': '<svg></svg>',
+      'assets/fearless-lockup-stacked-abc123.svg': '<svg></svg>',
     });
 
     expect(await findDashboardInBuild(root)).toEqual([]);

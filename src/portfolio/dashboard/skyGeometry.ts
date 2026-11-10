@@ -2,13 +2,12 @@ import { CHART_SLOT_COUNT, RAY_COUNT, type AllocationGroup } from '@/portfolio/d
 
 /**
  * The sky's geometry in CSS px (design spec 6.1, Chrome popup). `cx`, `cy` is the sun disc's centre; rays run from
- * `r0` to `r1` across `span` degrees above it. The winged sun is placed so the disc centre of the master artwork
- * (501, 107 in a 1002 x 206 box) sits on (`cx`, `cy`).
+ * `r0` to `r1` across `span` degrees above it. The disc is the Yatagarasu crest badge: the sun crow in its sun, with
+ * the allocation rays as its corona.
  */
 export interface SkyGeometry {
   w: number;
   h: number;
-  logoW: number;
   cx: number;
   cy: number;
   r0: number;
@@ -17,10 +16,7 @@ export interface SkyGeometry {
 }
 
 // The design's popup sky is 196 high; the popup is only 600, so the empty sky above the fan is trimmed by 20.
-export const POPUP_SKY: SkyGeometry = { w: 262, h: 176, logoW: 318, cx: 131, cy: 106, r0: 30, r1: 68, span: 168 };
-
-/** The master's own box and the disc centre in it. */
-export const MASTER = { w: 1002, h: 206, discX: 501, discY: 107 } as const;
+export const POPUP_SKY: SkyGeometry = { w: 262, h: 176, cx: 131, cy: 106, r0: 30, r1: 68, span: 168 };
 
 /** Degrees to radians, 0 straight up and negative to the left. */
 export function rayAngle(index: number, geometry: SkyGeometry = POPUP_SKY, count: number = RAY_COUNT): number {
@@ -54,125 +50,14 @@ export function rayLine(index: number, geometry: SkyGeometry = POPUP_SKY): RayLi
   };
 }
 
-/** Where the winged sun sits so its disc lands on the sky's disc centre. */
-export function logoPlacement(geometry: SkyGeometry = POPUP_SKY): { left: number; top: number; width: number; height: number } {
-  const height = (geometry.logoW * MASTER.h) / MASTER.w;
-
-  return {
-    left: round(geometry.cx - (geometry.logoW * MASTER.discX) / MASTER.w),
-    top: round(geometry.cy - (height * MASTER.discY) / MASTER.h),
-    width: geometry.logoW,
-    height: round(height),
-  };
-}
-
 /**
- * The wings run off the edges of the hero card, as they run off the screen on phones (design spec 3.1). The disc sets
- * the master's size, so its wingspan alone stops short of the card: past the shoulder each wing stretches sideways just
- * enough for its tip to run off its own edge. Distances are master units from the disc centre. The cobras end at 151,
- * so the sun, the cobras and the inner wing are always the master unchanged.
+ * Where the crest badge sits: centred on the disc centre, one pixel inside the rays' inner radius, so each ray starts at
+ * its rim. The badge is under 64 px, so the sky draws the small crest (brand rule).
  */
-const WING_SHOULDER = 160;
-const WING_TIP = 491.1;
-/** The edge cuts a stretched wing at 85% of its length past the shoulder: the tip runs off, the wing never ends. */
-const WING_SHOWN = 0.85;
-/** The stretch eases in over the first 35% of the wing past the shoulder, so no feather bends there. */
-const WING_EASE = 0.35;
+export function crestPlacement(geometry: SkyGeometry = POPUP_SKY): { left: number; top: number; size: number } {
+  const radius = geometry.r0 - 1;
 
-/** One wing: the distance a point of the master is drawn at, for a card edge `reach` master units from the disc. */
-export function wingStretch(reach: number): (distance: number) => number {
-  const length = WING_TIP - WING_SHOULDER;
-  const target = (reach - WING_SHOULDER) / WING_SHOWN;
-
-  // The master's own tip already runs off this edge.
-  if (target <= length) return (distance) => distance;
-
-  const ease = WING_EASE * length;
-  const factor = (target - ease / 2) / (length - ease / 2);
-
-  return (distance) => {
-    const past = distance - WING_SHOULDER;
-
-    if (past <= 0) return distance;
-    if (past <= ease) return distance + ((factor - 1) * past * past) / (2 * ease);
-
-    return WING_SHOULDER + ease + ((factor - 1) * ease) / 2 + factor * (past - ease);
-  };
-}
-
-export interface WingPath {
-  d: string;
-  fill: string;
-}
-
-/** The wings layer's paths. It draws with absolute moves and lines only, which a sideways stretch keeps exact. */
-export function wingPaths(svg: string): WingPath[] {
-  return Array.from(svg.matchAll(/<path d="([^"]+)" fill="([^"]+)"\/>/g), ([, d, fill]) => {
-    if (/[^MLHVZ\d .]/.test(d)) throw new Error('The wings layer draws with M, L, H, V and Z only');
-
-    return { d, fill };
-  });
-}
-
-/** CSS px from the disc centre to the edge each wing runs off. */
-export interface WingReach {
-  left: number;
-  right: number;
-}
-
-/** The sky's own box: how far the wings reach until the card around it is measured. */
-export const skyReach = (geometry: SkyGeometry = POPUP_SKY): WingReach => ({ left: geometry.cx, right: geometry.w - geometry.cx });
-
-/** The wings layer from one edge to the other (sky px), the slice of the master it shows, and its stretched paths. */
-export function wingsLayer(
-  paths: readonly WingPath[],
-  reach: WingReach,
-  geometry: SkyGeometry = POPUP_SKY
-): { left: number; top: number; width: number; height: number; viewBox: string; paths: WingPath[] } {
-  const scale = geometry.logoW / MASTER.w;
-  const left = reach.left / scale;
-  const right = reach.right / scale;
-  const stretchLeft = wingStretch(left);
-  const stretchRight = wingStretch(right);
-  const x = (value: number): number =>
-    round(value < MASTER.discX ? MASTER.discX - stretchLeft(MASTER.discX - value) : MASTER.discX + stretchRight(value - MASTER.discX));
-  const stretch = (d: string): string =>
-    d.replace(/([MLHV])([^MLHVZ]+)/g, (_, command: string, args: string) => {
-      const values = args.trim().split(/ +/).map(Number);
-
-      if (command === 'V') return command + args;
-
-      return command + values.map((value, index) => (command === 'H' || index % 2 === 0 ? x(value) : value)).join(' ');
-    });
-  const { top, height } = logoPlacement(geometry);
-
-  return {
-    left: geometry.cx - reach.left,
-    top,
-    width: reach.left + reach.right,
-    height,
-    viewBox: `${round(MASTER.discX - left)} 0 ${round(left + right)} ${MASTER.h}`,
-    paths: paths.map(({ d, fill }) => ({ d: stretch(d), fill })),
-  };
-}
-
-/** How far inside the sky the veil fades out, in px. Beside the sky, where the hero text runs, a wing is fully veiled. */
-const VEIL_FADE = 60;
-
-/**
- * The wings layer's mask. Where a wing leaves the sky's own box it may run behind text, so the host veils it there with
- * `--sky-veil`, an opacity (unset, nothing is veiled). A wing that does not leave the box is never veiled.
- */
-export function wingsVeil(layer: { left: number; width: number }, geometry: SkyGeometry = POPUP_SKY): string {
-  const start = -layer.left;
-  const end = start + geometry.w;
-  const veil = 'rgb(0 0 0 / var(--sky-veil, 1))';
-  const stops = [
-    ...(start > 1 ? [`${veil} ${start}px`, `#000 ${start + VEIL_FADE}px`] : ['#000 0']),
-    ...(layer.width - end > 1 ? [`#000 ${end - VEIL_FADE}px`, `${veil} ${end}px`] : ['#000 100%']),
-  ];
-
-  return `linear-gradient(to right, ${stops.join(', ')})`;
+  return { left: round(geometry.cx - radius), top: round(geometry.cy - radius), size: radius * 2 };
 }
 
 /**

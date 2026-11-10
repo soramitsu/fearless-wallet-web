@@ -1,78 +1,63 @@
 <template>
-  <span class="brand-signature" :class="{ animated }" role="img" :aria-label="t('common.fearlessWallet')">
-    <Icon icon="fearless-cuneiform" className="signature-base" :hover="false" />
-    <Icon icon="fearless-cuneiform" className="signature-echo signature-cyan" :hover="false" />
-    <Icon icon="fearless-cuneiform" className="signature-echo signature-pink" :hover="false" />
-  </span>
+  <!-- The Yatagarasu tagline: letter-spaced Sora between two gold rules, as on the brand's welcome screen. -->
+  <component :is="as" class="brand-signature" :class="{ animated }">
+    <span class="signature-rule" aria-hidden="true"></span>
+    <span class="signature-text">{{ text }}</span>
+    <span class="signature-rule" aria-hidden="true"></span>
+  </component>
 </template>
 
 <script setup lang="ts">
-import Icon from '@/components/Icon.vue';
-import { useI18n } from '@/locales/useI18n';
-
-defineProps<{ animated?: boolean }>();
-const { t } = useI18n();
+withDefaults(defineProps<{ text: string; animated?: boolean; as?: string }>(), { as: 'p', animated: false });
 </script>
 
 <style scoped lang="scss">
 .brand-signature {
-  display: block;
-  position: relative;
-  width: 132px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   max-width: 100%;
-  aspect-ratio: 3827 / 1183;
-  margin: 12px auto;
+  margin: 10px auto 0;
   color: var(--fw-text-1);
+  // Localised titles render here too, so the hieroglyph and cuneiform fonts back the display face.
+  font-family: 'Sora Variable', 'Noto Sans Egyptian Hieroglyphs', 'Noto Sans Cuneiform', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.32em;
+  text-align: center;
+  text-transform: uppercase;
+}
 
-  :deep(svg) {
-    display: block;
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
+.signature-rule {
+  flex: 0 0 28px;
+  height: 1px;
+  background: #ffc24a;
+}
 
-  .signature-base {
-    filter: drop-shadow(0 0 8px rgb(221 189 124 / 0.3));
-  }
+.signature-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 
-  .signature-echo {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .signature-cyan {
-    color: #38e8e0;
-    clip-path: inset(15% 0 60%);
-  }
-
-  .signature-pink {
-    color: #ee0077;
-    clip-path: inset(65% 0 10%);
-  }
-
-  &.animated .signature-cyan {
-    animation: signature-arrival 1000ms ease-out 1;
-  }
-
-  &.animated .signature-pink {
-    animation: signature-arrival 1000ms ease-out 1 reverse;
-  }
+.brand-signature.animated {
+  animation: signature-arrival 700ms var(--fw-ease) 1 both;
 }
 
 @keyframes signature-arrival {
-  0%, 100% { opacity: 0; transform: translateX(0); }
-  20% { opacity: 0.5; transform: translateX(2px); }
-  45% { opacity: 0; transform: translateX(-1px); }
+  from { opacity: 0; letter-spacing: 0.5em; }
+  to { opacity: 1; letter-spacing: 0.32em; }
 }
 
 @media (prefers-reduced-motion: reduce), (forced-colors: active) {
-  .brand-signature.animated .signature-echo { animation: none; }
+  .brand-signature.animated { animation: none; }
 }
 
-html[data-fw-effects='reduced'] .brand-signature.animated .signature-echo,
-.fw-calm .brand-signature.animated .signature-echo { animation: none; }
-.fw-calm .brand-signature .signature-base { filter: none; }
+html[data-fw-effects='reduced'] .brand-signature.animated,
+.fw-calm .brand-signature.animated { animation: none; }
+
+@media (forced-colors: active) {
+  .signature-rule { background: CanvasText; }
+}
 </style>

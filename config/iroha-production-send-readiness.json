@@ -59,16 +59,16 @@
     {
       "amount": "0.5",
       "assetDefinitionId": "6TEAJqbb8oEPmLncoNiMRbLEK6tw",
-      "blockHeight": 3805,
+      "blockHeight": 12569,
       "fee": "0.01",
       "network": "taira",
       "networkId": "hash:4978D0BD15FC32B834672B27BBD8A03653B1DF060A1EEE7E9374D29AF3886D91#6774",
       "recipient": "testuﾛ1NﾐoaｳｼヱﾃﾆﾑﾄaAｻwmｼｴPﾜKｱｿﾗ2Kiｵﾗgｻ2ﾁ3zcﾗｳﾓY7YWWD",
-      "recordedAt": "2026-10-25T01:28:24.498Z",
+      "recordedAt": "2026-11-10T11:46:08.985Z",
       "source": "testuﾛ1NﾆhUﾁzｦHﾖﾒnXJ2ALWMﾎfｾRi2kﾀ9SGﾀA4ｵMvHr6ｿRLWDTX",
-      "transactionHash": "1ad9d15e8af7fbe296423d7738381a4fb40dce9a6e629ae8f7882a24f4cbceab",
-      "commit": "64690945c432d81b1dc51b5a4b41893d2963d578",
-      "operator": "codex (yarn test:smoke:taira)"
+      "transactionHash": "6c346dcba6ce2a82a973782e2be6403765cca275d07207f536eea7fd874c3879",
+      "commit": "d3c204a175f7b7996d00d01102f4e9484f74bc87",
+      "operator": "claude (yarn test:smoke:taira)"
     }
   ]
 }

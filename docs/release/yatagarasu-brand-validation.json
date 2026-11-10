@@ -3,8 +3,8 @@
   "task": "Roll out the Yatagarasu brand in the browser extension (owner request: implement the new brand across the iOS, Android and browser apps)",
   "claudeSession": "6fd17e54-549d-4911-9043-346c25eb095c",
   "baseCommit": "b0d2bb0df4e406040f8c61b0d216fb74b0c31877",
-  "applicationSourceCommit": "2e3c2ef4b2aead4df11873a9d4efa7254db9c53b",
-  "reviewedHead": "64ecd63993e872a0c1a9f3cc17a3b01bda8447b5",
+  "applicationSourceCommit": "274ee674c54b8452fb29aea7300e3065b3019dde",
+  "reviewedHead": "274ee674c54b8452fb29aea7300e3065b3019dde",
   "branch": "claude/yatagarasu-brand",
   "brandKit": {
     "manifestSha256": "70771ec29c8607b1964a966066affb15bb02a2032973227d7f7d2ae3c80c048b",
@@ -18,6 +18,7 @@
     "Brand magentas moved to the Yatagarasu pinks by the kit's token remap; fills keep white text at 5.035:1 or more",
     "Brand colours named as Sass roles in common.scss; the raw-colour baseline only shrinks",
     "Side panel: below a 1:2 aspect the hero keeps its frame at 150 % of the width so both wingtips stay in view; the tagline tightens below 480 px",
+    "Pages move to the brand ink, as on iOS and Android: base #120A2E, ink-hued raised, glass and chrome steps with the navy lightness offsets, and warm white text; tertiary #A093C3 and cyan links keep 4.5:1 over the aurora backdrop",
     "Retired winged-sun art, tests and wording; the sky label reads 'Sun crow with your allocation' (Russian too)",
     "Refresh both reviewed Firefox warning fingerprints without weakening policy (docs/release/yatagarasu-brand-firefox-warning-review.json)"
   ],
@@ -26,7 +27,8 @@
     "eslint": "pass; 0 errors, 37 existing warnings",
     "rawColourAudit": "pass; 149 sites, 170 occurrences in 58 files; baseline only shrinks from b0d2bb0d",
     "brandAssets": "7 tests pass; generate-brand-assets --check with Sharp 0.35.5 verified 24 assets and provenance files",
-    "tokenRemap": "design/fw.tokens.json already on the Yatagarasu pinks (kit tools/apply-tokens.mjs --check)",
+    "tokenRemap": "design/fw.tokens.json is on the Yatagarasu pinks (kit tools/apply-tokens.mjs --check); surfaces and text use the ink palette; fw-tokens.scss regenerated with gen-fw-tokens.mjs --web",
+    "contrastContract": "every one of the 688 pair results meets its floor (172 pairs in 2 palettes and 2 alpha encodings); tightest is textBrand on glass, 4.52 against 4.5",
     "fullUnitCoverage": {
       "result": "pass",
       "filesPassed": 552,
@@ -41,11 +43,11 @@
       "branchPercent": 75.76
     },
     "chromeProductionBuild": "pass; Node 24.19.0, NODE_ENV=production, no provider keys",
-    "chromeReleaseAudit": "pass; version 4.2.7, 326 files, 8899219 bytes",
+    "chromeReleaseAudit": "pass; version 4.2.7, 326 files, 8899213 bytes",
     "chromeBundleAudit": "pass; 327 files, 226 allowed hosts, no 3.0.x upload strings",
     "keyExfiltrationAudit": "pass; 802 runtime files; self-test 10/10",
     "firefoxProductionBuilds": "keyless (CI recipe, no NODE_ENV) and store (release provider configuration) both pass; Node 24.19.0",
-    "firefoxExactWarningAudit": "keyless --ci and store both pass; 36 reviewed warnings, 0 errors, 0 notices",
+    "firefoxExactWarningAudit": "keyless --ci and store both pass with the baselines refreshed in 64ecd639, unchanged by the CSS-only ink palette; 36 reviewed warnings, 0 errors, 0 notices",
     "firefoxPolicy": "19 adversarial tests + 6 baseline-selection checks + 34 build assertions pass",
     "firefoxBundleAudit": "pass; keyless build 325 files, 235 allowed hosts",
     "dashboardSmoke": "pass; 27 captures, 53 checks (solana-extension-smoke.mjs --dashboard-screenshots on a NODE_ENV=production test build, offline fixtures, Chrome for Testing)",
@@ -55,19 +57,19 @@
       "onboardingHero": "idle loop playing (readyState 4)",
       "call": "a real click plays the call clip unmuted and fades it in; it fades out when it ends",
       "soundToggle": "aria-pressed false, saved 'off'",
-      "screens": "onboarding start, call, sound off, Welcome (#/welcome), Unlock (#/unlock after a forced lock), wallet home",
+      "screens": "onboarding start, call, sound off, Welcome (#/welcome), Unlock (#/unlock after a forced lock), wallet home, on the ink palette",
       "sidePanel400x900": "both wingtips in view at rest and mid-call; tagline on one line",
       "fullTab1280x800": "unchanged; static regions identical to the build before the side-panel change"
     },
     "packageSize": {
-      "chromeZipBytes": 8899219,
+      "chromeZipBytes": 8899213,
       "baseChromeZipBytes": 7516295,
       "heroMediaBytes": 1161447,
       "note": "The rest of the growth is the crest's larger PNG and ICNS icons, partly offset by the retired winged-sun art"
     },
     "chromeZipIntegrity": {
-      "applicationSourceCommit": "2e3c2ef4b2aead4df11873a9d4efa7254db9c53b",
-      "zipSha256": "d493bec4add3fe9ca24c5da8f49acea92da30300c76745b5289f9ad19d54456c",
+      "applicationSourceCommit": "274ee674c54b8452fb29aea7300e3065b3019dde",
+      "zipSha256": "eb725e640416cc9b472d5058ab2cb6ff3fe5a6e21f0ad975d110c83eaa364bee",
       "fileCount": 326,
       "allEntriesEqualBuiltFiles": true,
       "buildMode": "production",
@@ -78,8 +80,8 @@
       "storeReleasePrepared": false
     },
     "firefoxZipIntegrity": {
-      "applicationSourceCommit": "2e3c2ef4b2aead4df11873a9d4efa7254db9c53b",
-      "zipSha256": "40c96666ab83e538878d22ac3e9fae32177f9787e38ce95f6877e179040fa590",
+      "applicationSourceCommit": "274ee674c54b8452fb29aea7300e3065b3019dde",
+      "zipSha256": "74759a745c50d73c981ba27e4cc4960909f855a99f21e2443140b8af8ac8ad68",
       "fileCount": 324,
       "allEntriesEqualBuiltFiles": true,
       "buildMode": "production (keyless CI recipe)",

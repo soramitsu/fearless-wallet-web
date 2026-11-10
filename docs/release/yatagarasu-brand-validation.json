@@ -1,0 +1,97 @@
+{
+  "date": "2026-11-10",
+  "task": "Roll out the Yatagarasu brand in the browser extension (owner request: implement the new brand across the iOS, Android and browser apps)",
+  "claudeSession": "6fd17e54-549d-4911-9043-346c25eb095c",
+  "baseCommit": "b0d2bb0df4e406040f8c61b0d216fb74b0c31877",
+  "applicationSourceCommit": "2e3c2ef4b2aead4df11873a9d4efa7254db9c53b",
+  "reviewedHead": "64ecd63993e872a0c1a9f3cc17a3b01bda8447b5",
+  "branch": "claude/yatagarasu-brand",
+  "brandKit": {
+    "manifestSha256": "70771ec29c8607b1964a966066affb15bb02a2032973227d7f7d2ae3c80c048b",
+    "provenance": "docs/release/brand-asset-provenance.json"
+  },
+  "changes": [
+    "Replace the winged-sun marks with the Yatagarasu crest in the extension icons (16-1042 px, ICO, ICNS), favicon, notification icon, logo, loader, QR centre and header badge; masters pinned by SHA-256 to the shared brand kit",
+    "Onboarding start: the animated crow (muted 12 s loop); clicking it plays the eagle-into-crow call with sound; remembered sound toggle; reduced motion, reduced effects and calm screens show the still poster",
+    "Onboarding start, Welcome and Unlock show the stacked lockup over the gold-ruled tagline",
+    "Portfolio sky: the crest badge is the sun inside the 100-ray allocation fan; wing, cobra and disc layers removed",
+    "Brand magentas moved to the Yatagarasu pinks by the kit's token remap; fills keep white text at 5.035:1 or more",
+    "Brand colours named as Sass roles in common.scss; the raw-colour baseline only shrinks",
+    "Side panel: below a 1:2 aspect the hero keeps its frame at 150 % of the width so both wingtips stay in view; the tagline tightens below 480 px",
+    "Retired winged-sun art, tests and wording; the sky label reads 'Sun crow with your allocation' (Russian too)",
+    "Refresh both reviewed Firefox warning fingerprints without weakening policy (docs/release/yatagarasu-brand-firefox-warning-review.json)"
+  ],
+  "checks": {
+    "typecheck": "pass",
+    "eslint": "pass; 0 errors, 37 existing warnings",
+    "rawColourAudit": "pass; 149 sites, 170 occurrences in 58 files; baseline only shrinks from b0d2bb0d",
+    "brandAssets": "7 tests pass; generate-brand-assets --check with Sharp 0.35.5 verified 24 assets and provenance files",
+    "tokenRemap": "design/fw.tokens.json already on the Yatagarasu pinks (kit tools/apply-tokens.mjs --check)",
+    "fullUnitCoverage": {
+      "result": "pass",
+      "filesPassed": 552,
+      "filesSkipped": 2,
+      "testsPassed": 6228,
+      "testsSkipped": 19,
+      "command": "NODE_OPTIONS=--no-experimental-webstorage FEARLESS_TEST_WORKERS=4 FEARLESS_TEST_TIMEOUT_MS=60000 FEARLESS_HOOK_TIMEOUT_MS=60000 node node_modules/vitest/vitest.mjs run --coverage --reporter=dot && node scripts/check-coverage.mjs",
+      "node": "26.13.0",
+      "coverageGate": "All 780 production source files represented; 27520/33144 authored executable lines covered (83.03%).",
+      "branchesCovered": 22161,
+      "branchesTotal": 29252,
+      "branchPercent": 75.76
+    },
+    "chromeProductionBuild": "pass; Node 24.19.0, NODE_ENV=production, no provider keys",
+    "chromeReleaseAudit": "pass; version 4.2.7, 326 files, 8899219 bytes",
+    "chromeBundleAudit": "pass; 327 files, 226 allowed hosts, no 3.0.x upload strings",
+    "keyExfiltrationAudit": "pass; 802 runtime files; self-test 10/10",
+    "firefoxProductionBuilds": "keyless (CI recipe, no NODE_ENV) and store (release provider configuration) both pass; Node 24.19.0",
+    "firefoxExactWarningAudit": "keyless --ci and store both pass; 36 reviewed warnings, 0 errors, 0 notices",
+    "firefoxPolicy": "19 adversarial tests + 6 baseline-selection checks + 34 build assertions pass",
+    "firefoxBundleAudit": "pass; keyless build 325 files, 235 allowed hosts",
+    "dashboardSmoke": "pass; 27 captures, 53 checks (solana-extension-smoke.mjs --dashboard-screenshots on a NODE_ENV=production test build, offline fixtures, Chrome for Testing)",
+    "popupBrandCapture": {
+      "result": "pass",
+      "browser": "Chrome for Testing (playwright chromium-1243), headless, 561x600",
+      "onboardingHero": "idle loop playing (readyState 4)",
+      "call": "a real click plays the call clip unmuted and fades it in; it fades out when it ends",
+      "soundToggle": "aria-pressed false, saved 'off'",
+      "screens": "onboarding start, call, sound off, Welcome (#/welcome), Unlock (#/unlock after a forced lock), wallet home",
+      "sidePanel400x900": "both wingtips in view at rest and mid-call; tagline on one line",
+      "fullTab1280x800": "unchanged; static regions identical to the build before the side-panel change"
+    },
+    "packageSize": {
+      "chromeZipBytes": 8899219,
+      "baseChromeZipBytes": 7516295,
+      "heroMediaBytes": 1161447,
+      "note": "The rest of the growth is the crest's larger PNG and ICNS icons, partly offset by the retired winged-sun art"
+    },
+    "chromeZipIntegrity": {
+      "applicationSourceCommit": "2e3c2ef4b2aead4df11873a9d4efa7254db9c53b",
+      "zipSha256": "d493bec4add3fe9ca24c5da8f49acea92da30300c76745b5289f9ad19d54456c",
+      "fileCount": 326,
+      "allEntriesEqualBuiltFiles": true,
+      "buildMode": "production",
+      "node": "24.19.0",
+      "publicProviderConfiguration": false,
+      "testOnly": false,
+      "smokeHarness": false,
+      "storeReleasePrepared": false
+    },
+    "firefoxZipIntegrity": {
+      "applicationSourceCommit": "2e3c2ef4b2aead4df11873a9d4efa7254db9c53b",
+      "zipSha256": "40c96666ab83e538878d22ac3e9fae32177f9787e38ce95f6877e179040fa590",
+      "fileCount": 324,
+      "allEntriesEqualBuiltFiles": true,
+      "buildMode": "production (keyless CI recipe)",
+      "node": "24.19.0",
+      "publicProviderConfiguration": false,
+      "testOnly": false,
+      "smokeHarness": false
+    }
+  },
+  "notRun": [
+    "Firefox runtime smoke: not run; headless Firefox did not start on this machine in earlier attempts, so the static Firefox checks above ran instead",
+    "Store submission: not part of this change"
+  ],
+  "evidenceDirectory": "../output/yatagarasu-rollout-20261110/web"
+}

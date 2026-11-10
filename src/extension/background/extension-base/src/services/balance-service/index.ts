@@ -156,10 +156,17 @@ export default class BalanceService {
 
   public updateBalanceStore(networkKey: string, item: BalanceItem, address: string) {
     const itemSnapshot = { ...item };
+    const scan = this.activeNetworkRefreshes.get(JSON.stringify([address, networkKey]));
+    // Preserve the read outcome before touching storage: a failed cache read must not hide an RPC failure.
+    if (scan && itemSnapshot.state === APIItemState.ERROR) scan.failed = true;
 
     return this.enqueueBalanceStorageMutation((stored) =>
       this.updateBalanceStorage(networkKey, address, itemSnapshot, stored)
-    ).catch((e) => console.warn(e));
+    ).catch((e) => {
+      // This scan cannot confirm its saved balances if an intermediate cache update was lost.
+      if (scan) scan.failed = true;
+      console.warn(e);
+    });
   }
 
   public async refreshNetworkBalances<T>(

@@ -132,6 +132,8 @@ onBeforeUnmount(() => {
   inset: 0;
   overflow: hidden;
   background: $fw-brand-ink;
+  // Sized by its parent, never by its content, so the frame below can follow the hero's shape.
+  container-type: size;
 
   // The lower part fades into ink so the lockup and the actions over it stay legible.
   &::after {
@@ -218,6 +220,25 @@ onBeforeUnmount(() => {
   &:focus-visible {
     outline: 2px solid var(--fw-focus);
     outline-offset: 2px;
+  }
+}
+
+// Much taller than wide (the side panel): filling the height would enlarge the frame until a wingtip leaves the
+// panel. The frame keeps its shape at 150 % of the width instead, which keeps both wingtips in view, and fades into the
+// ink below. The crow target follows it.
+@container (max-aspect-ratio: 1 / 2) {
+  .hero-layer {
+    left: -25%;
+    width: 150%;
+    height: auto;
+    aspect-ratio: 561 / 600;
+    mask-image: linear-gradient(180deg, black 72%, transparent 100%);
+  }
+
+  .hero-crow {
+    top: 3cqw;
+    width: 84%;
+    height: 83cqw;
   }
 }
 

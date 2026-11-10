@@ -13,6 +13,8 @@ withDefaults(defineProps<{ text: string; animated?: boolean; as?: string }>(), {
 
 <style scoped lang="scss">
 .brand-signature {
+  // The tracking the arrival animation settles on; narrow windows tighten it.
+  --signature-tracking: 0.32em;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -25,9 +27,21 @@ withDefaults(defineProps<{ text: string; animated?: boolean; as?: string }>(), {
   font-size: 12px;
   font-weight: 400;
   line-height: 1.5;
-  letter-spacing: 0.32em;
+  letter-spacing: var(--signature-tracking);
   text-align: center;
   text-transform: uppercase;
+}
+
+// The side panel and phones: tighter tracking and shorter rules keep the English tagline on one line.
+@media (max-width: 480px) {
+  .brand-signature {
+    --signature-tracking: 0.2em;
+    gap: 8px;
+  }
+
+  .signature-rule {
+    flex-basis: 16px;
+  }
 }
 
 .signature-rule {
@@ -47,7 +61,7 @@ withDefaults(defineProps<{ text: string; animated?: boolean; as?: string }>(), {
 
 @keyframes signature-arrival {
   from { opacity: 0; letter-spacing: 0.5em; }
-  to { opacity: 1; letter-spacing: 0.32em; }
+  to { opacity: 1; letter-spacing: var(--signature-tracking); }
 }
 
 @media (prefers-reduced-motion: reduce), (forced-colors: active) {

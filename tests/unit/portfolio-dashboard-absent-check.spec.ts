@@ -48,20 +48,18 @@ describe('check that a build carries no portfolio dashboard', () => {
     ]);
   });
 
-  it('finds the dashboard by its screens and the layers of the sun it draws', async () => {
+  it('finds the dashboard by its screens', async () => {
     const root = build({
       'chunks/PortfolioDashboard.js': 'export {}',
       'chunks/TokenLocations.js': 'export {}',
       'chunks/PortfolioOrbit.js': 'export {}',
-      'assets/wings-9f8e7d.svg': '<svg></svg>',
-      'assets/uraeus-left.svg': '<svg></svg>',
+      'chunks/PortfolioSky-9f8e7d.js': 'export {}',
     });
 
     expect((await findDashboardInBuild(root)).sort()).toEqual([
-      'assets/uraeus-left.svg: a dashboard file',
-      'assets/wings-9f8e7d.svg: a dashboard file',
       'chunks/PortfolioDashboard.js: a dashboard file',
       'chunks/PortfolioOrbit.js: a dashboard file',
+      'chunks/PortfolioSky-9f8e7d.js: a dashboard file',
       'chunks/TokenLocations.js: a dashboard file',
     ]);
   });

@@ -1,6 +1,6 @@
 # Portfolio dashboard (phases P0 and P1)
 
-A winged-sun hero over the portfolio, an **All wallets** scope and a calm, honest sync state (P0), and **Where it lives**:
+A hero over the portfolio, an **All wallets** scope and a calm, honest sync state (P0), and **Where it lives**:
 for any token, where it is held across wallets and networks, how each holding stands to a swap on Polkaswap, and a hand
 over to the screens the extension already has for moving, swapping, sending and receiving (P1). It **ships**: Chrome and
 Firefox releases carry it from 4.2.0. Design spec, renders and the prototype live outside this repository
@@ -19,7 +19,7 @@ networks narrow it (a search or a chip) instead of regrouping it, in every scope
 | Manage assets | A page of its own (route `portfolio/manage`): a search, then **Shown in your wallet**, **Found, not verified**, **Popular tokens** (or the search's results to add), **Hidden** and **Options**, one switch per token and network | `ManageAssets.vue`, `ManageAssetRow.vue`, `src/portfolio/manageAssets.ts` |
 | A token | Its total across networks, its value, share and price, the same round buttons, and **Networks**: each network it is held on with its balance and what can be sent now; networks at zero behind one line | `TokenOverview.vue` (route `portfolio/token/:token`) |
 | A network | The existing asset page: balance, actions and history on that network | `Asset.vue`, `AssetHistory.vue` |
-| Portfolio | The winged sun as the allocation chart (one ray per percent of each token), then a row per token, per network and (All wallets) per wallet with its share and value, one part under the other with no switch between them. A network row of one wallet opens its list on that network | `PortfolioAllocation.vue` (route `portfolio/allocation`) |
+| Portfolio | The sun crow as the allocation chart: the Yatagarasu crest badge as the sun, with one ray per percent of each token around it; then a row per token, per network and (All wallets) per wallet with its share and value, one part under the other with no switch between them. A network row of one wallet opens its list on that network | `PortfolioAllocation.vue` (route `portfolio/allocation`) |
 
 - **A row opens the next level.** A token held on several networks opens its page; a token on one network opens that
   network's asset page. Nothing expands in place. A token found by a search opens with the same search, so
@@ -94,7 +94,7 @@ Three files outside the dashboard know about it. The route table (`src/router/ro
 | Piece | Where |
 |---|---|
 | Hero: total, 24 h change, what is not included, how we count, sync chip, and Send, Receive and Swap (with the Polkaswap mark) | `src/screens/portfolio/PortfolioHero.vue` |
-| Winged sun in four depth layers plus the 100-ray allocation fan (static: no parallax yet), on the Portfolio view. Past the shoulder each wing stretches sideways until its tip runs off its own edge | `PortfolioSky.vue`, `PortfolioAllocation.vue`, `skyGeometry.ts`, `src/assets/brand/portfolio-sun/` |
+| The sun crow: the Yatagarasu crest badge (`crest-badge.svg`) in the sun's place, ringed by the 100-ray allocation fan, on the Portfolio view (static: no parallax) | `PortfolioSky.vue`, `PortfolioAllocation.vue`, `skyGeometry.ts` (`crestPlacement`) |
 | All wallets scope: one token list with search and network chips, then each wallet; read only, every holding names its wallet | `PortfolioAllWallets.vue` |
 | All wallets row in the wallet picker; the header names it on the portfolio | `PortfolioScopeRow.vue`, `SelectWalletPopup.vue`, `Header.vue` |
 | How we count and balance status sheets | `PortfolioCountingSheet.vue`, `PortfolioSyncSheet.vue`, `PortfolioSheet.vue` |

@@ -33,7 +33,7 @@ withDefaults(defineProps<{ text: string; animated?: boolean; as?: string }>(), {
 .signature-rule {
   flex: 0 0 28px;
   height: 1px;
-  background: #ffc24a;
+  background: $fw-brand-gold;
 }
 
 .signature-text {

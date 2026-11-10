@@ -131,7 +131,7 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: #120a2e;
+  background: $fw-brand-ink;
 
   // The lower part fades into ink so the lockup and the actions over it stay legible.
   &::after {
@@ -141,7 +141,7 @@ onBeforeUnmount(() => {
     right: 0;
     bottom: 0;
     height: 50%;
-    background: linear-gradient(180deg, rgb(18 10 46 / 0) 0%, rgb(18 10 46 / 0.82) 28%, #120a2e 60%);
+    background: linear-gradient(180deg, $fw-brand-ink-clear 0%, $fw-brand-ink-veil 28%, $fw-brand-ink 60%);
     pointer-events: none;
   }
 }
@@ -199,15 +199,15 @@ onBeforeUnmount(() => {
   width: 40px;
   height: 40px;
   padding: 0;
-  border: 1px solid rgb(255 255 255 / 0.18);
+  border: 1px solid $fw-brand-hairline;
   border-radius: 14px;
-  background: rgb(18 10 46 / 0.72);
-  color: #faf6ff;
+  background: $fw-brand-ink-glass;
+  color: $fw-brand-on-ink;
   cursor: pointer;
   z-index: 1;
 
   &[aria-pressed='false'] {
-    color: #b9aed0;
+    color: $fw-brand-on-ink-muted;
   }
 
   &[aria-pressed='false'] .sound-on,

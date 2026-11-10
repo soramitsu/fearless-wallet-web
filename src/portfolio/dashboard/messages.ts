@@ -14,7 +14,7 @@ const en = {
   notIncluded: '{parts} not included',
   hiddenCount: '{count} hidden',
   unpricedCount: '{count} unpriced',
-  sky: 'Winged sun with your allocation',
+  sky: 'Sun crow with your allocation',
   sync: {
     live: 'Live',
     saved: 'Saved',
@@ -191,7 +191,7 @@ const ru: typeof en = {
   notIncluded: '{parts} не учтено',
   hiddenCount: 'скрыто: {count}',
   unpricedCount: 'без цены: {count}',
-  sky: 'Крылатое солнце со структурой баланса',
+  sky: 'Солнечный ворон со структурой баланса',
   sync: {
     live: 'Онлайн',
     saved: 'Сохранено',

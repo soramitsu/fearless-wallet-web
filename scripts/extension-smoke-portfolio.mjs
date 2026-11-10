@@ -370,7 +370,7 @@ export async function capturePortfolioScreenshots({
     await evaluate(cdp, sessionId, `${APP}.router.replace({ name: 'PortfolioAllocation' }).then(() => true)`);
     await waitFor('allocationRows', 'the Portfolio view');
     await scrollTo('[data-testid="portfolioAllocation"]');
-    await capture('10-portfolio-allocation', 'The Portfolio view: the winged sun charts the allocation, the rows give each share.');
+    await capture('10-portfolio-allocation', 'The Portfolio view: the rays around the sun crow chart the allocation, the rows give each share.');
     await scrollTo('[data-testid="allocationRows-network"]');
     await capture('11-portfolio-by-network', 'Under the tokens, the same total by network, on the same page: no switch.');
 

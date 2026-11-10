@@ -293,7 +293,7 @@ export async function captureDashboardScreenshots({
     await click('[data-testid="portfolioSheetClose"]');
     await wait(`!document.querySelector('[data-testid="walletChooser"]')`, 'the chooser closed');
 
-    // The Portfolio view: the winged sun charts the allocation; its rows give each share and add up to the whole.
+    // The Portfolio view: the sun crow's rays chart the allocation; its rows give each share and add up to the whole.
     await click('[data-testid="optTab"][data-tab="PortfolioAllocation"]');
     await wait(`Boolean(document.querySelector('[data-testid="allocationRows"]'))`, 'the Portfolio view');
     const shares = await evalPage(`[...document.querySelectorAll('[data-testid="allocationRow"] .share')].map((node) => parseInt(node.innerText, 10))`);
@@ -303,7 +303,7 @@ export async function captureDashboardScreenshots({
     await check('the Portfolio view has no switch: tokens, then networks, then wallets', `[...document.querySelectorAll('[data-testid="portfolioAllocation"] .part')].map((part) => part.dataset.facet)`, ['token', 'network', 'wallet']);
     await check('no allocation switch is left', `document.querySelectorAll('[data-testid^="allocationLens-"]').length`, 0);
     await evalPage(`(document.querySelector('[data-testid="portfolioAllocation"]')?.scrollIntoView({ block: 'start' }), true)`);
-    await capture('02-all-wallets-portfolio', 'The Portfolio view of every wallet: the winged sun with one ray per percent, and the share of each token.');
+    await capture('02-all-wallets-portfolio', 'The Portfolio view of every wallet: the sun crow with one ray per percent, and the share of each token.');
 
     // Drill-down: the first pick highlights, the second opens the token.
     const firstKey = await evalPage(`document.querySelector('[data-testid="allocationRow"]').dataset.key`);

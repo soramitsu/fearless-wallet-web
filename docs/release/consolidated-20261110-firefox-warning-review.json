@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-10",
+  "applicationSourceCommit": "25ce274c98f4596401b9d4dbe55466bcc8475f83",
+  "baselineBuildSourceCommit": "25ce274c98f4596401b9d4dbe55466bcc8475f83",
+  "referenceSourceCommit": "0cefbaa65a75a084a255f7f5f0c0f40091bcf433",
+  "toolchain": {
+    "node": "24.19.0",
+    "webExt": "10.6.0"
+  },
+  "summary": "Review and refresh both exact Firefox warning baselines after every open web PR was folded into one branch for master (#1115 with #1099 and #1104). The same 36 warnings remain: 35 DANGEROUS_EVAL and one UNSAFE_VAR_ASSIGNMENT, at the same sites with the same messages; zero errors or notices.",
+  "configurations": {
+    "keyless": {
+      "baseline": "config/firefox-webext-warning-baseline-ci.json",
+      "previousBaselineSha256": "975e3645806e7ac56b7b0618d13b5fc4b2acd4feefdd9df7affadb1dba7101ee",
+      "previousWarningSetSha256": "9c6c73f8aa05bc0ea83b319f413b7467ea28bd9bb2438dc6aa96a948f68993c4",
+      "baselineSha256": "49975316f171bc92ffbf0ee67d54bd16e84431933f188c798f9b104ac4b2ac0c",
+      "comparisonReportSha256": "69de5299525dea27e42f0a73df042758fed362e0762b406100d9944c315cbc9b",
+      "summary": {
+        "errors": 0,
+        "notices": 0,
+        "warnings": 36
+      }
+    },
+    "store": {
+      "baseline": "config/firefox-webext-warning-baseline.json",
+      "previousBaselineSha256": "4a69f0383f186df482d4a0a61d96fd1ec053a43e92ff205a180ca3259ec18f64",
+      "previousWarningSetSha256": "8f7cae5e8dc545fd0111515b16bec22e47baa9aeb7ae5bffb7e467e4250bda1b",
+      "baselineSha256": "cd112b7aa856f5fed30028d947bba5737f99332ee394f15b59449755213b4963",
+      "comparisonReportSha256": "6a147ad6c6ffaa49daa19b68efaaf7a54f4444076d801bba6e6a54f5c2ac3137",
+      "summary": {
+        "errors": 0,
+        "notices": 0,
+        "warnings": 36
+      }
+    }
+  },
+  "review": [
+    "Both configurations were first built from the reference 0cefbaa6 (#1115's head, which holds the Yatagarasu brand) with the same toolchain. The keyless build passed the committed --ci baseline and the store build passed the committed store baseline, so the toolchain reproduces both.",
+    "The keyless build is CI's recipe (the Firefox extension build with no NODE_ENV). The store build is the same command under the release provider configuration through env-cmd; that configuration was not printed or recorded.",
+    "Compared with line and column ignored, the consolidated builds have the same warning sites as the reference in both configurations: code, file (content hash removed) and message, 36 of 36.",
+    "Compared by the 60 characters of minified code on each side, 35 of 36 sites are identical. The remaining one is lodash's global fallback Function(`return this`)() in chunks/mountApp.js, a previously reviewed site; only the minifier's identifier names around it changed, because mountApp.js now also carries #1099's swap form and #1104's password screens.",
+    "Per file, only the content hashes in two vendor chunk names change (chunks/background-vendor/bcryptjs-*.js and subwallet-keyring-*.js), with the same warning count in each. Their code is the same: bcryptjs (310,025 bytes in both) differs only in the name it imports from the shared base-x chunk, whose exports were renumbered, and subwallet-keyring (881,327 to 881,333 bytes) only in minified identifier names.",
+    "The strict warning verifier and both warning policies are unchanged, and their self-tests pass. New warnings, errors, notices, fingerprint drift and warning-bearing artifact drift remain blocking. The ci-named file is the local keyless-build fixture; no hosted CI was required or modified."
+  ],
+  "evidenceDirectory": "../output/consolidated-20261110/web/validation-25ce274c/firefox"
+}

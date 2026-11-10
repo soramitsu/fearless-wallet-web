@@ -9,37 +9,37 @@
   },
   "warningFiles": {
     "chunks/background-vendor/assert-CYQ49uO2.js": 8,
-    "chunks/background-vendor/bcryptjs-BxUKfXb_.js": 9,
+    "chunks/background-vendor/bcryptjs-R9iWXEb1.js": 9,
     "chunks/background-vendor/core-js-pure-CPQEBsNf.js": 1,
-    "chunks/background-vendor/subwallet-keyring-BZJxy4JR.js": 1,
+    "chunks/background-vendor/subwallet-keyring-BDV_5sZ2.js": 1,
     "chunks/mountApp.js": 1,
     "chunks/SendForm.js": 16
   },
-  "warningSetSha256": "9c6c73f8aa05bc0ea83b319f413b7467ea28bd9bb2438dc6aa96a948f68993c4",
+  "warningSetSha256": "5220fa6722bf56469d1d745ba522b58106234be52ab4f3f1e73889558576ea70",
   "artifacts": [
     {
       "file": "chunks/background-vendor/assert-CYQ49uO2.js",
       "sha256": "6c5c9d718695c3be4a87116a63f8e7eac5a84b0f63063c023a3b539e5b836d52"
     },
     {
-      "file": "chunks/background-vendor/bcryptjs-BxUKfXb_.js",
-      "sha256": "6f2aa452c9cd23060f1ead37972d8b898d9462c149a128a33c07ff6a2a5ecf06"
+      "file": "chunks/background-vendor/bcryptjs-R9iWXEb1.js",
+      "sha256": "b1b7ae900c6beacb02b971d22bfa4bf041a21924f2755b22dce78fbefa298e0c"
     },
     {
       "file": "chunks/background-vendor/core-js-pure-CPQEBsNf.js",
       "sha256": "9a03815812d43f280c6678a7c27a6f65dc90e598b389e04ffc0d520eb16934bf"
     },
     {
-      "file": "chunks/background-vendor/subwallet-keyring-BZJxy4JR.js",
-      "sha256": "b833e3dc199956057c37e20fe8aeac9a72b80d3b5239ce6958492d1cd8c16d47"
+      "file": "chunks/background-vendor/subwallet-keyring-BDV_5sZ2.js",
+      "sha256": "f6213c5476dac8ad32789ccfc69fa7983bd1a7907becb1bb1ca9c3464a39467b"
     },
     {
       "file": "chunks/mountApp.js",
-      "sha256": "9d12eaeed76287b2bc26cef28c2b82daacae9f3297cb3e7d5eedf1dc74c9b889"
+      "sha256": "ac7a7103045b4e2c551be9f41ff596a96ebb620f0d969213b1257b4bb8eb9ae6"
     },
     {
       "file": "chunks/SendForm.js",
-      "sha256": "bd829896b31844d3c84c5ca6c165287d60c08ba4050df38762605ee0cef71a40"
+      "sha256": "b91fc2702f24aab84007bd3d5507fc7028a3909cbf6b61fb972a28d421847377"
     }
   ]
 }

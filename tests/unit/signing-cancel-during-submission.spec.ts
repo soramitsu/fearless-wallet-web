@@ -138,6 +138,9 @@ beforeEach(() => {
       getAddress: vi.fn(() => undefined),
       getPassword: () => '',
       exportMnemonic: vi.fn(() => ({ seed: vectors.vectors[0].mnemonic })),
+      // Solana signing reads the pair's meta only to match a wallet password (exportUniversalWalletSecret); this
+      // wallet has none.
+      getPair: vi.fn(() => undefined),
       accountExportPrivateKey: vi.fn(() => ({ privateKey: wallet.privateKey })),
     },
   } as unknown as State;

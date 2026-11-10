@@ -9,37 +9,37 @@
   },
   "warningFiles": {
     "chunks/background-vendor/assert-CYQ49uO2.js": 8,
-    "chunks/background-vendor/bcryptjs-BxUKfXb_.js": 9,
+    "chunks/background-vendor/bcryptjs-R9iWXEb1.js": 9,
     "chunks/background-vendor/core-js-pure-CPQEBsNf.js": 1,
-    "chunks/background-vendor/subwallet-keyring-BZJxy4JR.js": 1,
+    "chunks/background-vendor/subwallet-keyring-BDV_5sZ2.js": 1,
     "chunks/mountApp.js": 1,
     "chunks/SendForm.js": 16
   },
-  "warningSetSha256": "8f7cae5e8dc545fd0111515b16bec22e47baa9aeb7ae5bffb7e467e4250bda1b",
+  "warningSetSha256": "abde1172b0921a4f3d57cbe1eb31dcf4e7c6ea0852b8050546f5f781bc7fd68d",
   "artifacts": [
     {
       "file": "chunks/background-vendor/assert-CYQ49uO2.js",
       "sha256": "6c5c9d718695c3be4a87116a63f8e7eac5a84b0f63063c023a3b539e5b836d52"
     },
     {
-      "file": "chunks/background-vendor/bcryptjs-BxUKfXb_.js",
-      "sha256": "6f2aa452c9cd23060f1ead37972d8b898d9462c149a128a33c07ff6a2a5ecf06"
+      "file": "chunks/background-vendor/bcryptjs-R9iWXEb1.js",
+      "sha256": "b1b7ae900c6beacb02b971d22bfa4bf041a21924f2755b22dce78fbefa298e0c"
     },
     {
       "file": "chunks/background-vendor/core-js-pure-CPQEBsNf.js",
       "sha256": "9a03815812d43f280c6678a7c27a6f65dc90e598b389e04ffc0d520eb16934bf"
     },
     {
-      "file": "chunks/background-vendor/subwallet-keyring-BZJxy4JR.js",
-      "sha256": "b833e3dc199956057c37e20fe8aeac9a72b80d3b5239ce6958492d1cd8c16d47"
+      "file": "chunks/background-vendor/subwallet-keyring-BDV_5sZ2.js",
+      "sha256": "f6213c5476dac8ad32789ccfc69fa7983bd1a7907becb1bb1ca9c3464a39467b"
     },
     {
       "file": "chunks/mountApp.js",
-      "sha256": "bdd1ad7c2fa1d1b9a15615dbb182469f8dbe59f2fd4ab24ca8e46166de861530"
+      "sha256": "0c9a457a5ba33f3302385c4972af8a24fc97efd7d06c9b6c77de2dd1474072ce"
     },
     {
       "file": "chunks/SendForm.js",
-      "sha256": "7eadebe91d3718c33e335f0ae930d1092070c699f0519753e6daccd48813108e"
+      "sha256": "4c4bab57c99a3b5bb3edf42557f7a3237536c92f8207d18171a735593ff7d0be"
     }
   ]
 }

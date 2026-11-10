@@ -36,4 +36,13 @@ breaking into a crow's caw, with sound when the sound toggle is on. Reduced moti
 show the still poster.
 
 Brand colours live in `design/fw.tokens.json`. The kit's `tools/apply-tokens.mjs` moved the brand magentas to the
-Yatagarasu pinks, and `src/styles/fw-tokens.scss` follows them.
+Yatagarasu pinks. Surfaces and text use the brand's ink palette, as the iOS and Android apps do:
+- The page base is ink `#120A2E`.
+- The raised, glass, chrome, sunken and scrim steps (raw `night`) are ink-hued versions of the former navy steps. Each
+  keeps its OKLCH lightness offset from the base, so cards stand off the page as before.
+- Pressed is `#2E1968`.
+- Text uses the brand's warm whites. Tertiary text is a touch lighter than on the phones (`#A093C3`, Android
+  `#978ABA`), so it keeps 4.5:1 on glass and selected rows over the aurora.
+- Links and the focus ring stay cyan, because the brand pink reads only 3.8:1 on the aurora's brightest point.
+
+`src/styles/fw-tokens.scss` is generated from the token file (`gen-fw-tokens.mjs --web`, sha256 in its header).

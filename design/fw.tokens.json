@@ -9,17 +9,17 @@
   },
   "color": {
     "raw": {
-      "navy": {
+      "night": {
         "600": {
           "$type": "color",
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.1412,
-              0.1647,
-              0.302
+              0.1804,
+              0.098,
+              0.4078
             ],
-            "hex": "#242A4D"
+            "hex": "#2E1968"
           }
         },
         "700": {
@@ -27,11 +27,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.102,
-              0.1176,
-              0.2275
+              0.149,
+              0.0824,
+              0.349
             ],
-            "hex": "#1A1E3A"
+            "hex": "#261559"
           }
         },
         "750": {
@@ -39,11 +39,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.0784,
-              0.0941,
-              0.2
+              0.1294,
+              0.051,
+              0.3176
             ],
-            "hex": "#141833"
+            "hex": "#210D51"
           }
         },
         "800": {
@@ -51,11 +51,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.0706,
-              0.0824,
-              0.1686
+              0.1098,
+              0.0588,
+              0.2706
             ],
-            "hex": "#12152B"
+            "hex": "#1C0F45"
           }
         },
         "850": {
@@ -63,11 +63,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.0549,
-              0.0667,
-              0.149
+              0.0941,
+              0.0431,
+              0.2471
             ],
-            "hex": "#0E1126"
+            "hex": "#180B3F"
           }
         },
         "900": {
@@ -75,11 +75,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
+              0.0706,
               0.0392,
-              0.0471,
-              0.1059
+              0.1804
             ],
-            "hex": "#0A0C1B"
+            "hex": "#120A2E"
           }
         },
         "950": {
@@ -87,11 +87,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.0157,
+              0.0353,
               0.0196,
-              0.051
+              0.102
             ],
-            "hex": "#04050D"
+            "hex": "#09051A"
           }
         },
         "sunken": {
@@ -99,11 +99,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.0235,
-              0.0275,
-              0.0588
+              0.0431,
+              0.0314,
+              0.1098
             ],
-            "hex": "#06070F"
+            "hex": "#0B081C"
           }
         }
       },
@@ -203,11 +203,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.9294,
-              0.9412,
-              0.9804
+              0.9804,
+              0.9647,
+              1
             ],
-            "hex": "#EDF0FA"
+            "hex": "#FAF6FF"
           }
         },
         "300": {
@@ -215,11 +215,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.7216,
-              0.7451,
-              0.8588
+              0.8118,
+              0.7686,
+              0.902
             ],
-            "hex": "#B8BEDB"
+            "hex": "#CFC4E6"
           }
         },
         "400": {
@@ -227,11 +227,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.5686,
-              0.5961,
-              0.7373
+              0.6275,
+              0.5765,
+              0.7647
             ],
-            "hex": "#9198BC"
+            "hex": "#A093C3"
           }
         },
         "600": {
@@ -239,11 +239,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.3686,
-              0.3922,
-              0.5294
+              0.4157,
+              0.3647,
+              0.549
             ],
-            "hex": "#5E6487"
+            "hex": "#6A5D8C"
           }
         },
         "hc2": {
@@ -251,11 +251,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.8353,
-              0.8549,
-              0.9176
+              0.9137,
+              0.8863,
+              0.9608
             ],
-            "hex": "#D5DAEA"
+            "hex": "#E9E2F5"
           }
         },
         "hc3": {
@@ -263,11 +263,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.7294,
-              0.7529,
-              0.8314
+              0.8118,
+              0.7686,
+              0.902
             ],
-            "hex": "#BAC0D4"
+            "hex": "#CFC4E6"
           }
         },
         "thumb": {
@@ -275,11 +275,11 @@
           "$value": {
             "colorSpace": "srgb",
             "components": [
-              0.7882,
-              0.8078,
-              0.9098
+              0.8118,
+              0.7686,
+              0.902
             ],
-            "hex": "#C9CEE8"
+            "hex": "#CFC4E6"
           }
         }
       },
@@ -386,17 +386,17 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
+            0.0706,
             0.0392,
-            0.0471,
-            0.1059
+            0.1804
           ],
-          "hex": "#0A0C1B"
+          "hex": "#120A2E"
         },
         "$description": "Page background, scrim-free calm pages.",
         "$extensions": {
           "fw": {
             "semantic": "bg.base",
-            "raw": "navy.900",
+            "raw": "night.900",
             "ios": "fwBgBase",
             "css": "--fw-bg-base"
           }
@@ -407,17 +407,17 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.0706,
-            0.0824,
-            0.1686
+            0.1098,
+            0.0588,
+            0.2706
           ],
-          "hex": "#12152B"
+          "hex": "#1C0F45"
         },
         "$description": "Opaque fallback for every glass; calm surfaces; signing sheet.",
         "$extensions": {
           "fw": {
             "semantic": "surface.raised",
-            "raw": "navy.800",
+            "raw": "night.800",
             "ios": "fwSurfaceRaised",
             "css": "--fw-raised"
           }
@@ -428,17 +428,17 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.102,
-            0.1176,
-            0.2275
+            0.149,
+            0.0824,
+            0.349
           ],
-          "hex": "#1A1E3A"
+          "hex": "#261559"
         },
         "$description": "Segmented thumb, tags, disabled button fill, dialogs.",
         "$extensions": {
           "fw": {
             "semantic": "surface.raised2",
-            "raw": "navy.700",
+            "raw": "night.700",
             "ios": "fwSurfaceRaised2",
             "css": "--fw-raised-2"
           }
@@ -449,17 +449,17 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.1412,
-            0.1647,
-            0.302
+            0.1804,
+            0.098,
+            0.4078
           ],
-          "hex": "#242A4D"
+          "hex": "#2E1968"
         },
         "$description": "Pressed and selected rows (opaque).",
         "$extensions": {
           "fw": {
             "semantic": "surface.pressed",
-            "raw": "navy.600",
+            "raw": "night.600",
             "ios": "fwSurfacePressed",
             "css": "--fw-pressed"
           }
@@ -470,17 +470,17 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.0235,
-            0.0275,
-            0.0588
+            0.0431,
+            0.0314,
+            0.1098
           ],
-          "hex": "#06070F"
+          "hex": "#0B081C"
         },
         "$description": "Input wells, children container.",
         "$extensions": {
           "fw": {
             "semantic": "surface.sunken",
-            "raw": "navy.sunken",
+            "raw": "night.sunken",
             "ios": "fwSurfaceSunken",
             "css": "--fw-sunken"
           }
@@ -491,18 +491,18 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.0784,
-            0.0941,
-            0.2
+            0.1294,
+            0.051,
+            0.3176
           ],
           "alpha": 0.72,
-          "hex": "#141833"
+          "hex": "#210D51"
         },
         "$description": "Cards and list containers (with glassSheen).",
         "$extensions": {
           "fw": {
             "semantic": "surface.glass",
-            "raw": "navy.750",
+            "raw": "night.750",
             "ios": "fwSurfaceGlass",
             "css": "--fw-glass"
           }
@@ -535,18 +535,18 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.102,
-            0.1176,
-            0.2275
+            0.149,
+            0.0824,
+            0.349
           ],
           "alpha": 0.86,
-          "hex": "#1A1E3A"
+          "hex": "#261559"
         },
         "$description": "Popovers and menus.",
         "$extensions": {
           "fw": {
             "semantic": "surface.glass.elevated",
-            "raw": "navy.700",
+            "raw": "night.700",
             "ios": "fwSurfaceGlassElevated",
             "css": "--fw-glass-elevated"
           }
@@ -579,18 +579,18 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.0549,
-            0.0667,
-            0.149
+            0.0941,
+            0.0431,
+            0.2471
           ],
           "alpha": 0.88,
-          "hex": "#0E1126"
+          "hex": "#180B3F"
         },
         "$description": "Bottom bar, sticky headers, sheets over blur 24 (Full).",
         "$extensions": {
           "fw": {
             "semantic": "surface.chrome",
-            "raw": "navy.850",
+            "raw": "night.850",
             "ios": "fwSurfaceChrome",
             "css": "--fw-chrome"
           }
@@ -623,18 +623,18 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.0549,
-            0.0667,
-            0.149
+            0.0941,
+            0.0431,
+            0.2471
           ],
           "alpha": 0.96,
-          "hex": "#0E1126"
+          "hex": "#180B3F"
         },
         "$description": "Chrome in Lite or when blur is unavailable.",
         "$extensions": {
           "fw": {
             "semantic": "surface.chrome.solid",
-            "raw": "navy.850",
+            "raw": "night.850",
             "ios": "fwSurfaceChromeSolid",
             "css": "--fw-chrome-solid"
           }
@@ -645,18 +645,18 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.0157,
+            0.0353,
             0.0196,
-            0.051
+            0.102
           ],
           "alpha": 0.72,
-          "hex": "#04050D"
+          "hex": "#09051A"
         },
         "$description": "Behind sheets and dialogs.",
         "$extensions": {
           "fw": {
             "semantic": "scrim",
-            "raw": "navy.950",
+            "raw": "night.950",
             "ios": "fwScrim",
             "css": "--fw-scrim"
           }
@@ -667,11 +667,11 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.9294,
-            0.9412,
-            0.9804
+            0.9804,
+            0.9647,
+            1
           ],
-          "hex": "#EDF0FA"
+          "hex": "#FAF6FF"
         },
         "$description": "Headings, amounts, body.",
         "$extensions": {
@@ -688,11 +688,11 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.7216,
-            0.7451,
-            0.8588
+            0.8118,
+            0.7686,
+            0.902
           ],
-          "hex": "#B8BEDB"
+          "hex": "#CFC4E6"
         },
         "$description": "Secondary lines, captions, HUD overlines, unselected tabs.",
         "$extensions": {
@@ -709,11 +709,11 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.5686,
-            0.5961,
-            0.7373
+            0.6275,
+            0.5765,
+            0.7647
           ],
-          "hex": "#9198BC"
+          "hex": "#A093C3"
         },
         "$description": "Meta, timestamps, indices. Restricted (3.4).",
         "$extensions": {
@@ -730,11 +730,11 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.3686,
-            0.3922,
-            0.5294
+            0.4157,
+            0.3647,
+            0.549
           ],
-          "hex": "#5E6487"
+          "hex": "#6A5D8C"
         },
         "$description": "Disabled labels only, with a reason line in text.secondary.",
         "$extensions": {
@@ -1284,11 +1284,11 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.7882,
-            0.8078,
-            0.9098
+            0.8118,
+            0.7686,
+            0.902
           ],
-          "hex": "#C9CEE8"
+          "hex": "#CFC4E6"
         },
         "$description": "Toggle-off thumb.",
         "$extensions": {
@@ -1305,17 +1305,17 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
+            0.0706,
             0.0392,
-            0.0471,
-            0.1059
+            0.1804
           ],
-          "hex": "#0A0C1B"
+          "hex": "#120A2E"
         },
         "$description": "QR modules (19.42:1 on qr.field).",
         "$extensions": {
           "fw": {
             "semantic": "qr.module",
-            "raw": "navy.900",
+            "raw": "night.900",
             "ios": "fwQrModule",
             "css": "--fw-qr-module"
           }
@@ -1350,11 +1350,11 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.8353,
-            0.8549,
-            0.9176
+            0.9137,
+            0.8863,
+            0.9608
           ],
-          "hex": "#D5DAEA"
+          "hex": "#E9E2F5"
         },
         "$extensions": {
           "fw": {
@@ -1367,11 +1367,11 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0.7294,
-            0.7529,
-            0.8314
+            0.8118,
+            0.7686,
+            0.902
           ],
-          "hex": "#BAC0D4"
+          "hex": "#CFC4E6"
         },
         "$extensions": {
           "fw": {

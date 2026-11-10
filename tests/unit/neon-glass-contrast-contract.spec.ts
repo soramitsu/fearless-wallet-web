@@ -51,8 +51,10 @@ describe('complete shared contrast contract on compiled CSS tokens', () => {
   });
 
   it('retains source/byte alpha differences and exact gradient midpoint colours', () => {
-    expect(resolver(native, pairs, false, 'source')('peakAllDither')[0].rgb).toEqual([68, 49, 101]);
-    expect(resolver(native, pairs, false, 'byte')('peakAllDither')[0].rgb).toEqual([68, 50, 101]);
+    // The aurora's brightest point over the page base; since the Yatagarasu ink base (#120A2E, 2026-11-10) it is
+    // lighter and more violet than it was over the navy base (68, 49, 101 and 68, 50, 101).
+    expect(resolver(native, pairs, false, 'source')('peakAllDither')[0].rgb).toEqual([72, 48, 113]);
+    expect(resolver(native, pairs, false, 'byte')('peakAllDither')[0].rgb).toEqual([73, 48, 113]);
     const opposing = structuredClone(native);
     opposing.actualCss.standard['--fw-fill'] = 'linear-gradient(180deg,#000100 0%,#010000 100%)';
     expect(resolver(opposing, pairs)('primaryFill').map((p) => p.rgb)).toContainEqual([1, 1, 0]);

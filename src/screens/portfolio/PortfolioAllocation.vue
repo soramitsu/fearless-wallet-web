@@ -8,7 +8,7 @@
     <p v-else-if="!tokenGroups.length" class="state state--empty" data-testid="allocationEmpty">{{ t('walletHome.allocation.empty') }}</p>
 
     <template v-else>
-      <!-- The winged sun is the chart: one ray per percent, coloured by token (design spec 3.1). -->
+      <!-- The sun crow's corona is the chart: one ray per percent, coloured by token (design spec 3.1). -->
       <div class="chart">
         <PortfolioSky class="chart-sky" :groups="tokenGroups" :activeKey="activeKey" @select="select" />
       </div>
@@ -199,16 +199,12 @@ function select(key: string): void {
   white-space: nowrap;
 }
 
-// The sun sits centred; its wings run to the panel's edges.
+// The sun crow sits centred in its fan of rays.
 .chart {
   position: relative;
   display: flex;
   justify-content: center;
   min-width: 0;
-}
-
-.chart-sky {
-  --sky-veil: 1;
 }
 
 .rows {

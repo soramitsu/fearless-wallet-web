@@ -31,7 +31,9 @@ describe('complete shared contrast contract on compiled CSS tokens', () => {
   it('checks all 172 pairs in both palettes and alpha encodings, including white-backed chrome', () => {
     const report = checkContrast(native, pairs);
     expect(report.pairResults).toHaveLength(688);
-    expect(report.pairResults.reduce((sum, row) => sum + row.variants, 0)).toBe(2996);
+    // 2940 since the Yatagarasu pinks (2026-11-10): the primary fill gradient now resolves to 63 byte colours, not 70,
+    // over its 2 pair uses in all 4 modes. Every pair still meets its floor (checkContrast throws otherwise).
+    expect(report.pairResults.reduce((sum, row) => sum + row.variants, 0)).toBe(2940);
     expect(resolver(native, pairs)('chromeSurface')).toHaveLength(7);
     expect(report.cvd.map((row) => Math.round(row.deltaE76))).toEqual([95, 54, 67, 97]);
   });
@@ -49,8 +51,10 @@ describe('complete shared contrast contract on compiled CSS tokens', () => {
   });
 
   it('retains source/byte alpha differences and exact gradient midpoint colours', () => {
-    expect(resolver(native, pairs, false, 'source')('peakAllDither')[0].rgb).toEqual([71, 49, 107]);
-    expect(resolver(native, pairs, false, 'byte')('peakAllDither')[0].rgb).toEqual([71, 50, 107]);
+    // The aurora's brightest point over the page base; since the Yatagarasu ink base (#120A2E, 2026-11-10) it is
+    // lighter and more violet than it was over the navy base (68, 49, 101 and 68, 50, 101).
+    expect(resolver(native, pairs, false, 'source')('peakAllDither')[0].rgb).toEqual([72, 48, 113]);
+    expect(resolver(native, pairs, false, 'byte')('peakAllDither')[0].rgb).toEqual([73, 48, 113]);
     const opposing = structuredClone(native);
     opposing.actualCss.standard['--fw-fill'] = 'linear-gradient(180deg,#000100 0%,#010000 100%)';
     expect(resolver(opposing, pairs)('primaryFill').map((p) => p.rgb)).toContainEqual([1, 1, 0]);

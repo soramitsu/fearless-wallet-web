@@ -1,5 +1,7 @@
 #!/usr/bin/env node
-// Approved 2026-11-06: larger SORA disc, no cobras, original wings verbatim.
+// Yatagarasu brand, approved 2026-11-10. The masters in scripts/brand/masters are byte-for-byte copies from the shared
+// Fearless brand kit (workspace brand/yatagarasu, generated from design/yatagarasu-20261110); every output here
+// derives from them. Regenerate with `node scripts/generate-brand-assets.mjs`; `--check` verifies without writing.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -8,93 +10,48 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-export const masterHashes = {
-  'winged-sun-badge.svg': 'c46079a2baf438c13b6782c176f173aab70418a80bc2457c56ad8b797990bb8e',
-  'winged-sun-badge-lines.svg': '61695664e36233812e24676fd5d6d533f009e237279a95f9ae6ce5f3c0889a07',
-};
-export const geometry = { cx: 256.05, cy: 257.7, originalRadius: 33.85, radius: 64, keyline: 2.2 };
 export const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
-// Parsing is used only to identify contours. Wing strings are never re-serialized.
-function points(contour) {
-  assert.match(contour, /^M[\d.]/);
-  assert(!/[^MLHVZ\d.eE\s,+-]/.test(contour), 'unexpected master path command');
-  const result = [];
-  let x = 0,
-    y = 0;
-  for (const [, command, values] of contour.matchAll(/([MLHVZ])([^MLHVZ]*)/g)) {
-    const numbers = (values.match(/-?\d*\.?\d+(?:e-?\d+)?/g) ?? []).map(Number);
-    if (command === 'M' || command === 'L') {
-      for (let i = 0; i < numbers.length; i += 2) {
-        x = numbers[i];
-        y = numbers[i + 1];
-        result.push([x, y]);
-      }
-    } else if (command === 'H') {
-      for (const value of numbers) {
-        x = value;
-        result.push([x, y]);
-      }
-    } else if (command === 'V') {
-      for (const value of numbers) {
-        y = value;
-        result.push([x, y]);
-      }
-    }
-  }
-  return result;
-}
-
-export function splitMaster(svg) {
-  const match = svg.match(/<path fill-rule="evenodd" clip-rule="evenodd" d="([^"]+)" fill="white"\/>/);
-  assert(match, 'master white path not found');
-  const rings = match[1].split(/(?=M)/).map((raw) => {
-    const pts = points(raw);
-    const xs = pts.map(([x]) => x),
-      ys = pts.map(([, y]) => y);
-    return { raw, pts, box: [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)] };
-  });
-  const inside = ({ box: [x0, x1, y0, y1] }, [a, b, c, d]) => x0 >= a && x1 <= b && y0 >= c && y1 <= d;
-  const cobraBoxes = rings
-    .filter(({ box: [a, b, c, d] }) => b - a > 24 && b - a < 26 && d - c > 80)
-    .map(({ box }) => box);
-  assert.equal(cobraBoxes.length, 2, 'expected two original cobra outlines');
-  const parts = { wings: [], disc: [], cobras: [], bridges: [] };
-  for (const ring of rings) {
-    const [x0, x1, y0] = ring.box;
-    if (inside(ring, [222, 290.2, 223.5, 292]) && x1 - x0 > 30) parts.disc.push(ring);
-    else if (cobraBoxes.some(([a, b, c, d]) => inside(ring, [a - 0.01, b + 0.01, c - 0.01, d + 0.01])))
-      parts.cobras.push(ring);
-    else if (inside(ring, [210, 302, 226, 290.5]) && y0 < 230) parts.bridges.push(ring);
-    else parts.wings.push(ring);
-  }
-  assert.equal(parts.disc.length, 2, 'expected SORA disc and glyph contours');
-  return { ...parts, match };
-}
-
-export function deriveBadge(master, name) {
-  assert.equal(sha256(master), masterHashes[name], `unrecognized ${name} master`);
-  const svg = master.toString();
-  const { wings, disc, match } = splitMaster(svg);
-  const { cx, cy, originalRadius, radius, keyline } = geometry;
-  const scale = radius / originalRadius;
-  // Centre rounding matches the approved comparison. Wings retain full precision.
-  const scaled = disc
-    .map(
-      ({ pts }) =>
-        'M' +
-        pts.map(([x, y]) => `${+(cx + scale * (x - cx)).toFixed(2)} ${+(cy + scale * (y - cy)).toFixed(2)}`).join('L') +
-        'Z'
-    )
-    .join('');
-  const gradient = svg.match(/<linearGradient id="([^"]+)"/)[1];
-  const r = radius + keyline;
-  const keylinePath = `M${+(cx - r).toFixed(2)} ${cy}A${r} ${r} 0 1 0 ${+(cx + r).toFixed(2)} ${cy}A${r} ${r} 0 1 0 ${+(cx - r).toFixed(2)} ${cy}Z`;
-  return svg.replace(
-    match[0],
-    `<path id="badge-wings" fill-rule="evenodd" clip-rule="evenodd" d="${wings.map(({ raw }) => raw).join('')}" fill="white"/>\n<path id="badge-disc-keyline" d="${keylinePath}" fill="url(#${gradient})"/>\n<path id="badge-disc" fill-rule="evenodd" clip-rule="evenodd" d="${scaled}" fill="white"/>`
-  );
-}
+export const KIT = {
+  manifestSha256: '70771ec29c8607b1964a966066affb15bb02a2032973227d7f7d2ae3c80c048b',
+  designPackage: 'design/yatagarasu-20261110 (package r3)',
+};
+export const masterHashes = {
+  'crest-badge-small.svg': 'cc2bce14632d0d24eedcb578e47fadc4852478a01b67fa0d81c2d99b37bad004',
+  'crest-badge.svg': '7bb8f75f8df17f72b36fe783bf5f35f31f7d9e53b1025b7d8fe2ae42824e240c',
+  'fearless-app-icon-small.svg': '20458821ba5c3f15b44ed6691eaf52145742a3f75e93be934ed1bb6718f71853',
+  'fearless-app-icon.svg': 'e0e36a01482cdedd0ac5c8cb4698caef2237885f431e692a686d5a0117985c32',
+  'fearless-crest-gold.svg': 'aa899e4fc5cd315279354d1163c85c3a9ea6ae8313a78a72335d0041d4ec8784',
+  'fearless-crest-ink.svg': 'c4fe23a568a1b1b1ef80ede26cd3dfb8e22b8c0a0dc6f65de2a425955c58d08f',
+  'fearless-crest-small.svg': 'e5fdf61cbe6300ff4242c603d273b316b9866d770897cbf31cdc8aeec32a5910',
+  'fearless-crest.svg': '0dddb03fc97971d0c9226e6ed052565dfe52e75681b1df99f5b3c356f75bede5',
+  'fearless-lockup-horizontal.svg': 'febd3cec4b40a681955dc5f77550e16b99730e0b216da643b0e161da7c314ca8',
+  'fearless-lockup-stacked.svg': '459285f612e3283fa4c8aefcd46fab37ff3a67c447b1ef76d96a5cca9aa2f119',
+  'fearless-wordmark-ink.svg': '48d08df86d712769a94479d1175a3c15cb13ae57a6641060787a4c8dad9e2222',
+  'fearless-wordmark.svg': 'f38bc054643ffe94cb9b3bd325684e09b75e046e3bc9ef30f173fb2d461dc7ca',
+};
+// Marks the interface imports, shipped as exact copies of their masters.
+export const SOURCE_MARKS = [
+  'crest-badge.svg',
+  'crest-badge-small.svg',
+  'fearless-crest.svg',
+  'fearless-crest-small.svg',
+  'fearless-crest-ink.svg',
+  'fearless-lockup-horizontal.svg',
+  'fearless-lockup-stacked.svg',
+  'fearless-wordmark.svg',
+];
+// Icon-sprite names that other code refers to; each is a copy of a mark.
+export const ALIASES = {
+  'src/assets/icons/fw-logo.svg': 'fearless-crest.svg',
+  'src/assets/icons/logo-qr.svg': 'crest-badge.svg',
+  'src/assets/icons/wallet-logo.svg': 'crest-badge.svg',
+  'src/assets/icons/wallet-logo-transaction.svg': 'crest-badge.svg',
+};
+export const ICON_SIZES = [16, 32, 48, 64, 128, 256, 512, 1024, 1042];
+// Below 64 px the small crest replaces the detailed one (brand rule).
+export const iconSource = (size) => (size < 64 ? 'fearless-app-icon-small.svg' : 'fearless-app-icon.svg');
+const INK = '#120A2E';
 
 function ico(images) {
   const header = Buffer.alloc(6 + 16 * images.length);
@@ -139,6 +96,16 @@ function icns(pngs) {
   return Buffer.concat([header, ...entries]);
 }
 
+export async function readMasters() {
+  const masters = {};
+  for (const [name, expected] of Object.entries(masterHashes)) {
+    const bytes = await fs.readFile(path.join(root, 'scripts/brand/masters', name));
+    assert.equal(sha256(bytes), expected, `unrecognized ${name} master`);
+    masters[name] = bytes;
+  }
+  return masters;
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const check = args.includes('--check');
@@ -151,21 +118,17 @@ async function main() {
   );
   const sharp = createRequire(import.meta.url)(sharpModule);
   assert.equal(sharp.versions.sharp, '0.35.5', 'use the pinned Sharp 0.35.5 rasterizer');
+  const masters = await readMasters();
   const outputs = new Map();
-  const badges = {};
-  for (const name of Object.keys(masterHashes)) {
-    const master = await fs.readFile(path.join(root, 'scripts/brand/masters', name));
-    badges[name] = deriveBadge(master, name);
-    outputs.set(`src/assets/brand/${name}`, Buffer.from(badges[name]));
-  }
-  for (const alias of ['wallet-logo.svg', 'wallet-logo-transaction.svg'])
-    outputs.set(`src/assets/icons/${alias}`, Buffer.from(badges['winged-sun-badge.svg']));
+  for (const name of SOURCE_MARKS) outputs.set(`src/assets/brand/${name}`, masters[name]);
+  for (const [alias, name] of Object.entries(ALIASES)) outputs.set(alias, masters[name]);
   const pngs = {};
-  const sizes = [16, 32, 48, 64, 128, 256, 512, 1024, 1042];
-  const sourceForSize = (size) => `winged-sun-badge${size <= 32 ? '' : '-lines'}.svg`;
-  for (const size of sizes) {
-    pngs[size] = await sharp(Buffer.from(badges[sourceForSize(size)]), { density: ((72 * size) / 512) * 4 })
+  for (const size of ICON_SIZES) {
+    // The icon masters are 1024-unit squares; render at four times the target, then reduce, on an opaque ink field.
+    pngs[size] = await sharp(masters[iconSource(size)], { density: ((72 * size) / 1024) * 4 })
       .resize(size, size)
+      .flatten({ background: INK })
+      .removeAlpha()
       .png()
       .toBuffer();
     outputs.set(`public/icons/logo-${size}.png`, pngs[size]);
@@ -173,48 +136,51 @@ async function main() {
   outputs.set('public/favicon.ico', ico([16, 32].map((size) => [size, pngs[size]])));
   outputs.set('public/icons/logo.icns', icns(pngs));
   const provenanceFile = 'docs/release/brand-asset-provenance.json';
-  const provenance = JSON.parse(await fs.readFile(path.join(root, provenanceFile), 'utf8'));
-  provenance.provenance.recordedAt = '2026-11-06T12:10:03.135Z';
-  provenance.provenance.source =
-    '2026-11-06 approved larger SORA badge derived from preserved Figma masters; other artwork unchanged';
-  provenance.provenance.badgeRevision = {
-    geometry,
-    masterDirectory: 'scripts/brand/masters',
-    masterSha256: masterHashes,
-    generator: 'scripts/generate-brand-assets.mjs',
-    wings: 'Original contour strings preserved byte-for-byte',
-    cobras: 'Removed, including shen holes and centre bridges',
+  const provenance = {
+    provenance: {
+      recordedAt: '2026-11-10T03:00:00.000Z',
+      source: '2026-11-10 approved Yatagarasu brand: crest, wordmark and app icon masters copied verbatim from the Fearless brand kit',
+      kit: KIT,
+      masterDirectory: 'scripts/brand/masters',
+      masterSha256: masterHashes,
+      generator: 'scripts/generate-brand-assets.mjs',
+      rule: 'Icons below 64 px use the small crest; all icons are opaque on ink #120A2E',
+      rasterizer: sharp.versions,
+      outputs: {},
+    },
+    sourceAssets: {},
+    generatedAssets: {},
+    aliases: {},
   };
-  provenance.provenance.rasterizer = sharp.versions;
   for (const [file, bytes] of outputs) {
     const hash = sha256(bytes);
     if (file.startsWith('public/')) provenance.generatedAssets[file] = hash;
     else if (file.startsWith('src/assets/brand/')) provenance.sourceAssets[file] = hash;
-    else provenance.aliases[file].sha256 = hash;
+    else provenance.aliases[file] = { master: ALIASES[file], sha256: hash };
   }
-  for (const size of sizes)
-    provenance.provenance.outputs[`logo-${size}.png`] = {
-      sha256: sha256(pngs[size]),
-      size,
-      source: sourceForSize(size),
-    };
+  for (const size of ICON_SIZES)
+    provenance.provenance.outputs[`logo-${size}.png`] = { sha256: sha256(pngs[size]), size, source: iconSource(size) };
   for (const [file, source] of [
     ['public/favicon.ico', 'logo-16.png and logo-32.png; PNG-backed ICO'],
     ['public/icons/logo.icns', 'size-specific PNG representations; ICNS'],
   ])
     provenance.provenance.outputs[path.basename(file)] = { sha256: sha256(outputs.get(file)), source };
-  provenance.sourceAssets['src/assets/brand/README.md'] = sha256(
-    await fs.readFile(path.join(root, 'src/assets/brand/README.md'))
-  );
+  // Hand-written brand files the outputs travel with: the brand notes and the welcome hero media.
+  for (const file of ['src/assets/brand/README.md', ...(await heroFiles())])
+    provenance.sourceAssets[file] = sha256(await fs.readFile(path.join(root, file)));
   outputs.set(provenanceFile, Buffer.from(JSON.stringify(provenance, null, 2) + '\n'));
   for (const [file, bytes] of outputs) {
     const destination = path.join(root, file);
     if (check) assert.deepEqual(await fs.readFile(destination), bytes, `${file} differs from reproducible output`);
     else await fs.writeFile(destination, bytes);
   }
-  console.log(
-    `${check ? 'Verified' : 'Generated'} ${outputs.size} brand assets/provenance files; wings unchanged; SORA disc radius 64.`
-  );
+  console.log(`${check ? 'Verified' : 'Generated'} ${outputs.size} Yatagarasu brand assets and provenance files.`);
+}
+
+async function heroFiles() {
+  const dir = path.join(root, 'src/assets/brand/hero');
+  const names = await fs.readdir(dir).catch(() => []);
+  return names.filter((name) => !name.startsWith('.')).sort().map((name) => `src/assets/brand/hero/${name}`);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) await main();

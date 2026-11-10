@@ -182,7 +182,7 @@ const portfolioDashboardRoutes: RouteRecordRaw[] =
       ]
     : [];
 
-// The wallet screen's Portfolio view (the winged-sun allocation chart), behind the same flag and folded away with it.
+// The wallet screen's Portfolio view (the sun-crow allocation chart), behind the same flag and folded away with it.
 const portfolioAllocationRoutes: RouteRecordRaw[] =
   process.env.FW_PORTFOLIO_DASHBOARD === 'true'
     ? [

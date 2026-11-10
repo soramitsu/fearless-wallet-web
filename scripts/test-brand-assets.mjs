@@ -1,45 +1,54 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
-import { deriveBadge, geometry, masterHashes, sha256, splitMaster } from './generate-brand-assets.mjs';
+import { ALIASES, ICON_SIZES, KIT, SOURCE_MARKS, iconSource, masterHashes, readMasters, sha256 } from './generate-brand-assets.mjs';
 
 const root = new URL('../', import.meta.url);
 const read = (file) => fs.readFile(new URL(file, root));
-const pathData = (svg, id) => svg.match(new RegExp(`<path id="${id}"[^>]* d="([^"]+)"`))[1];
 
-for (const name of Object.keys(masterHashes)) {
-  test(`${name}: original wing contours survive verbatim, approved centre replaces cobras`, async () => {
-    const master = await read(`scripts/brand/masters/${name}`);
-    const actual = (await read(`src/assets/brand/${name}`)).toString();
-    const parts = splitMaster(master.toString());
-    assert.equal(parts.wings.length, name.includes('-lines') ? 110 : 2);
-    assert.equal(pathData(actual, 'badge-wings'), parts.wings.map(({ raw }) => raw).join(''));
-    for (const { raw } of [...parts.cobras, ...parts.bridges]) assert(!actual.includes(raw));
-    assert.match(pathData(actual, 'badge-disc-keyline'), /^M189\.85 257\.7A66\.2 66\.2 /);
-    assert.equal(geometry.radius / geometry.originalRadius, 64 / 33.85);
-    assert.equal(actual, deriveBadge(master, name));
-    const modifiedMaster = Buffer.from(master.toString().replace('210.209', '211.209'));
-    // A changed original must not silently regenerate a differently shaped wing.
-    if (!modifiedMaster.equals(master)) assert.throws(() => deriveBadge(modifiedMaster, name), /unrecognized/);
-  });
-}
+test('every master is the pinned kit file', async () => {
+  const masters = await readMasters();
+  assert.deepEqual(Object.keys(masters).sort(), Object.keys(masterHashes).sort());
+  for (const [name, bytes] of Object.entries(masters)) assert.equal(sha256(bytes), masterHashes[name], name);
+});
 
-test('all provenance hashes and badge aliases match the shipped files', async () => {
+test('shipped marks and icon-sprite aliases are exact copies of their masters', async () => {
+  for (const name of SOURCE_MARKS)
+    assert.deepEqual(await read(`src/assets/brand/${name}`), await read(`scripts/brand/masters/${name}`), name);
+  for (const [alias, name] of Object.entries(ALIASES))
+    assert.deepEqual(await read(alias), await read(`scripts/brand/masters/${name}`), alias);
+});
+
+test('the retired winged-sun and cuneiform art is gone from the brand folders', async () => {
+  const brand = await fs.readdir(new URL('src/assets/brand/', root));
+  const icons = await fs.readdir(new URL('src/assets/icons/', root));
+  for (const name of [...brand, ...icons]) assert(!/winged-sun|cuneiform|uraeus|portfolio-sun/.test(name), name);
+});
+
+test('all provenance hashes and aliases match the shipped files', async () => {
   const p = JSON.parse(await read('docs/release/brand-asset-provenance.json'));
+  assert.equal(p.provenance.kit.manifestSha256, KIT.manifestSha256);
+  assert.deepEqual(p.provenance.masterSha256, masterHashes);
   for (const [file, expected] of Object.entries({ ...p.sourceAssets, ...p.generatedAssets }))
     assert.equal(sha256(await read(file)), expected, file);
   for (const [file, { master, sha256: expected }] of Object.entries(p.aliases)) {
-    const bytes = await read(file);
-    assert.equal(sha256(bytes), expected, file);
-    assert.deepEqual(bytes, await read(`src/assets/brand/${master}`));
+    assert.equal(ALIASES[file], master, file);
+    assert.equal(sha256(await read(file)), expected, file);
   }
+  for (const size of ICON_SIZES) assert.equal(p.provenance.outputs[`logo-${size}.png`].source, iconSource(size));
 });
 
-test('every PNG has its advertised dimensions and ICO/ICNS contain the right size-specific PNGs', async () => {
-  for (const size of [16, 32, 48, 64, 128, 256, 512, 1024, 1042]) {
+test('icons below 64 px use the small crest; the rest use the detailed one', () => {
+  for (const size of ICON_SIZES) assert.equal(iconSource(size), size < 64 ? 'fearless-app-icon-small.svg' : 'fearless-app-icon.svg');
+});
+
+test('every PNG is opaque and has its advertised dimensions; ICO/ICNS contain the right size-specific PNGs', async () => {
+  for (const size of ICON_SIZES) {
     const bytes = await read(`public/icons/logo-${size}.png`);
     assert.equal(bytes.readUInt32BE(16), size);
     assert.equal(bytes.readUInt32BE(20), size);
+    // IHDR colour type 2 is RGB: no alpha channel, so stores never draw the icon on an unexpected background.
+    assert.equal(bytes[25], 2, `logo-${size}.png colour type`);
   }
   const ico = await read('public/favicon.ico');
   assert.equal(ico.readUInt16LE(2), 1);
@@ -65,4 +74,11 @@ test('every PNG has its advertised dimensions and ICO/ICNS contain the right siz
     entries++;
   }
   assert.equal(entries, 11);
+});
+
+test('the welcome hero media are recorded in provenance', async () => {
+  const p = JSON.parse(await read('docs/release/brand-asset-provenance.json'));
+  const hero = (await fs.readdir(new URL('src/assets/brand/hero/', root))).filter((name) => !name.startsWith('.'));
+  assert.deepEqual(hero.sort(), ['popup-caw.webm', 'popup-idle.webm', 'popup-poster.webp']);
+  for (const name of hero) assert.equal(p.sourceAssets[`src/assets/brand/hero/${name}`], sha256(await read(`src/assets/brand/hero/${name}`)));
 });

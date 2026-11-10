@@ -1,13 +1,13 @@
 <template>
   <div class="loader" data-testid="loader">
     <div class="circle">
-      <img :src="sunBadge" class="logo" alt="" />
+      <img :src="crestBadge" class="logo" alt="" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import sunBadge from '@/assets/brand/winged-sun-badge-lines.svg';
+import crestBadge from '@/assets/brand/crest-badge.svg';
 </script>
 
 <style lang="scss" scoped>

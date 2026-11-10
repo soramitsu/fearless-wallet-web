@@ -94,7 +94,14 @@ async function openShell(path: string) {
       plugins: [router],
       config: { errorHandler: (error) => { errors.push(error); } },
       mocks: { $t: (key: string) => key },
-      stubs: { ContentForm: { template: '<div><slot /></div>' }, Loading: true, Tooltip: true, PortfolioDashboard: true },
+      // The shell's password notice has its own specs (universal-wallet-password-notice, main-shell-warnings).
+      stubs: {
+        ContentForm: { template: '<div><slot /></div>' },
+        Loading: true,
+        Tooltip: true,
+        PortfolioDashboard: true,
+        UniversalWalletPasswordNotice: true,
+      },
     },
   });
   await flushPromises();

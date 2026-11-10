@@ -42,6 +42,8 @@ type DiscoverBitcoinReceiveAddressesParams = {
   maxLookahead?: number;
   mnemonicOrSeed: string;
   network?: BitcoinDerivationNetwork;
+  /** BIP39 passphrase (the wallet password); '' for accounts derived from the words alone. */
+  passphrase?: string;
 };
 
 type BitcoinWalletDiscoveryResult = {
@@ -76,6 +78,7 @@ export async function discoverBitcoinReceiveAddresses({
   maxLookahead = BITCOIN_DISCOVERY_DEFAULT_MAX_LOOKAHEAD,
   mnemonicOrSeed,
   network = 'mainnet',
+  passphrase,
 }: DiscoverBitcoinReceiveAddressesParams): Promise<BitcoinDiscoveryResult> {
   const resolvedGapLimit = gapLimit ?? UNIVERSAL_WALLET_BITCOIN_NETWORKS[network].defaultGapLimit;
 
@@ -90,7 +93,7 @@ export async function discoverBitcoinReceiveAddresses({
 
   while (consecutiveUnused < resolvedGapLimit && index < maxLookahead) {
     const path = getBitcoinReceivePath(network, index, change);
-    const address = deriveBitcoinReceiveAddress({ mnemonicOrSeed, network, path });
+    const address = deriveBitcoinReceiveAddress({ mnemonicOrSeed, network, passphrase, path });
     const stats = await indexer.getAddress(address);
     const txCount = getTransactionCount(stats);
     const balance = getAddressBalance(stats);
@@ -121,7 +124,7 @@ export async function discoverBitcoinReceiveAddresses({
 
   const nextReceiveIndex = (lastUsedIndex ?? -1) + 1;
   const nextReceivePath = getBitcoinReceivePath(network, nextReceiveIndex, change);
-  const nextReceiveAddress = deriveBitcoinReceiveAddress({ mnemonicOrSeed, network, path: nextReceivePath });
+  const nextReceiveAddress = deriveBitcoinReceiveAddress({ mnemonicOrSeed, network, passphrase, path: nextReceivePath });
   const usedAddresses = addresses.filter(({ used }) => used);
 
   return {

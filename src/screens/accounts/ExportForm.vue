@@ -33,6 +33,14 @@
         <div v-if="isMnemonic">
           <MnemonicBackupForm :mnemonicArray="mnemonicArray" :mnemonicLength="mnemonicLength">
             <Hint
+              v-if="hasUniversalWalletPassword"
+              class="as-typed-hint"
+              iconName="warning"
+              text="ux.universalWalletPasswordBackup"
+              role="note"
+              data-testid="universalWalletPasswordBackup"
+            />
+            <Hint
               v-if="isPhraseAsTyped"
               class="as-typed-hint"
               iconName="warning"
@@ -84,7 +92,7 @@ import { defineComponent } from 'vue';
 
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import BaseApi from '@/util/BaseApi';
-import { exportJSON, exportMnemonic, exportRowSeed } from '@/extension/messaging';
+import { exportJSON, exportMnemonic, exportRowSeed, universalWalletPasswordStatus } from '@/extension/messaging';
 import { isSameString } from '@/helpers';
 import { clearCopiedSecret, copySecretToClipboard } from '@/util/clipboardSecret';
 import { downloadJsonAccount } from '@/helpers/files';
@@ -118,6 +126,8 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
       seed: '',
       /** The phrase alone opens another account; its derivation path or password is needed too. */
       restoresOtherAccount: false,
+      /** The wallet password also protects this wallet's Bitcoin, Solana, TON and Taira accounts. */
+      hasUniversalWalletPassword: false,
       /** Why the export could not run; the screen then offers the next step instead of a phrase. */
       errorKey: '',
       canUnlockAccount: false,
@@ -196,9 +206,18 @@ export default defineComponent({ name: 'ExportForm', components: { MnemonicBacku
         const { address, walletEcosystem } = this.exportedAccount;
         const { seed, restoresOtherAccount } = await exportMnemonic(address, this.password, walletEcosystem);
 
+        // The words alone no longer restore Bitcoin, Solana, TON and Taira of a wallet with a password.
+        // A status that cannot be read leaves the note out; it never blocks the phrase.
+        const hasUniversalWalletPassword = await (async () => {
+          const { state } = await universalWalletPasswordStatus(address);
+
+          return state === 'protected' || state === 'legacy';
+        })().catch(() => false);
+
         if (stillSelected()) {
           this.seed = seed;
           this.restoresOtherAccount = !!restoresOtherAccount;
+          this.hasUniversalWalletPassword = hasUniversalWalletPassword;
         }
       } else if (this.isRowSeed) {
         const { seed } = await exportRowSeed(this.addressByNetwork, this.password, this.isEthereumNetwork);

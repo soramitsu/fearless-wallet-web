@@ -4,6 +4,7 @@ import type { KeyringPair$Meta } from '@subwallet/keyring/types';
 import type { AssetType, BuyProvider, XcmVersion, ExternalApi, WalletEcosystem } from '@/interfaces';
 import type { TonImportDerivation } from '@/util/tonKeyring';
 import type { UniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMeta';
+import type { SealedUniversalWalletPassphrase, UniversalWalletPasswordNetwork } from '@/util/universalWalletPassphrase';
 
 export interface Message extends MessageEvent {
   data: {
@@ -163,6 +164,14 @@ export interface FWKeyringMeta extends KeyringPair$Meta {
   irohaAddress?: string;
   irohaPublicKeyHex?: string;
   universalWallet?: UniversalWalletKeyringMeta;
+  /** The `///password` of this account's SURI, sealed with its own secret: the Universal Wallet passphrase. */
+  universalWalletPassphrase?: SealedUniversalWalletPassphrase;
+  /** Universal Wallet networks this password wallet still shows at the address its words alone open. */
+  universalWalletLegacyNetworks?: UniversalWalletPasswordNetwork[];
+  /** Networks that left the address the words alone open; that address stays watched for late deposits. */
+  universalWalletWatchedNetworks?: UniversalWalletPasswordNetwork[];
+  /** Watched networks whose old address received funds while the protected account holds or may hold some. */
+  universalWalletArrivedNetworks?: UniversalWalletPasswordNetwork[];
   name?: string;
   walletEcosystem?: WalletEcosystem;
 }

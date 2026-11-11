@@ -1,38 +1,33 @@
 <template>
-  <Scroll>
-    <div class="create-wallet">
-      <MnemonicBackupForm v-if="showMnemonicBackupForm" :mnemonicArray="mnemonicArray" :mnemonicLength="mnemonicLength">
-        <BorderButton
-          class="copy__phrase"
-          size="small"
-          fontSize="small"
-          borderRadius="small"
-          width="186px"
-          type="secondary"
-          text="common.copyToClipboard"
-          @click="onCopy"
-        />
-
-        <AdvancedButton v-if="isSubstrate" @click="toggleAdvancedFormVisible" />
-
-        <Tooltip text="common.copied" target=".copy__phrase" trigger="click" :arrow="true" />
-      </MnemonicBackupForm>
-
-      <MnemonicConfirmationForm
-        v-if="showMnemonicConfirmationForm"
-        :mnemonicMix="mnemonicMix"
-        :mnemonicLength="mnemonicLength"
-        :selectedMnemonicElements="syncedSelectedMnemonicElements"
-        @update:selectedMnemonicElements="updateSelectedMnemonicElements"
+  <div class="create-wallet">
+    <MnemonicBackupForm v-if="showMnemonicBackupForm" :mnemonicArray="mnemonicArray" :mnemonicLength="mnemonicLength">
+      <BorderButton
+        class="copy__phrase"
+        size="small"
+        fontSize="small"
+        borderRadius="small"
+        width="186px"
+        type="secondary"
+        text="common.copyToClipboard"
+        @click="onCopy"
       />
-    </div>
-  </Scroll>
+
+      <AdvancedButton v-if="isSubstrate" @click="toggleAdvancedFormVisible" />
+
+      <Tooltip text="common.copied" target=".copy__phrase" trigger="click" :arrow="true" />
+    </MnemonicBackupForm>
+
+    <MnemonicConfirmationForm
+      v-if="showMnemonicConfirmationForm"
+      :mnemonic="mnemonic"
+      @update:mnemonicConfirmed="$emit('update:mnemonicConfirmed', $event)"
+    />
+  </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
 
-import type { MnemonicConfirmation } from '@/interfaces/common';
 import MnemonicConfirmationForm from '@/screens/addWallet/MnemonicConfirmationForm.vue';
 import MnemonicBackupForm from '@/screens/addWallet/MnemonicBackupForm.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
@@ -44,12 +39,12 @@ export default defineComponent({ name: 'CreateWallet',
     MnemonicBackupForm,
     MnemonicConfirmationForm,
   },
+  emits: ['update:mnemonicConfirmed', 'toggleAdvancedFormVisible'],
   props: {
     step: Number,
     mnemonic: String,
     mnemonicLength: Number,
     isSubstrate: Boolean,
-    selectedMnemonicElements: { type: Array },
   },
   beforeUnmount() {
     void clearCopiedSecret();
@@ -58,28 +53,14 @@ export default defineComponent({ name: 'CreateWallet',
     mnemonicArray() {
       return this.mnemonic.split(' ');
     },
-    mnemonicMix() {
-      return [...this.mnemonicArray].sort(() => Math.random() - 0.5).map((word) => `${word} `);
-    },
     showMnemonicBackupForm() {
       return this.step === 2;
     },
     showMnemonicConfirmationForm() {
       return this.step === 3;
     },
-    syncedSelectedMnemonicElements: {
-      get() {
-        return this.selectedMnemonicElements;
-      },
-      set(value) {
-        this.$emit('update:selectedMnemonicElements', value);
-      },
-    },
   },
   methods: {
-    updateSelectedMnemonicElements(value: MnemonicConfirmation[]) {
-      this.syncedSelectedMnemonicElements = value;
-    },
     // Cleared again after a minute, when this screen closes, or when the wallet next opens.
     onCopy() {
       void copySecretToClipboard(this.mnemonic);
@@ -92,12 +73,6 @@ export default defineComponent({ name: 'CreateWallet',
 </script>
 
 <style lang="scss" scoped>
-@media (max-height: 600px) {
-  .create-wallet {
-    height: 315px;
-  }
-}
-
 .create-wallet {
   width: 100%;
 }

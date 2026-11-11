@@ -64,14 +64,15 @@
     "backupNonDigital": "Use a non-digital way to backup. Write it down on paper (or etch it into metal) and make sure not to loose it.",
     "backupPassphrase": "Backup the passphrase for your new wallet",
     "confirmPassphrase": "Confirm the passphrase",
-    "selectPassphraseWords": "Select words in the right order:",
+    "selectPassphraseWords": "Use your backup to choose these 3 words.",
+    "wordNumber": "Word {position}",
+    "tryAnotherWord": "Check your backup and try another word.",
     "advancedSettings": "Advanced backup settings",
     "advanced": "Advanced",
     "recommended": "recommended",
     "alternative": "alternative",
     "btcEthCompatible": "BTC/ETH compatible",
     "example": "Example: {example} ",
-    "securityWritten": "A security measure to make sure you have written it down",
     "importAccount": "Import {type} account",
     "importWallet": "Import wallet",
     "enterPassphrase": "Enter Passphrase",
@@ -98,10 +99,6 @@
     "ethereumDP": "Ethereum secret derivation path",
     "ethereumCryptoType": "ETHEREUM KEYPAIR CRYPTO TYPE",
     "warningMessages": {
-      "mnemonicSequence": {
-        "text": "Invalid passphrase",
-        "subtext": "Invalid passphrase sequence, please try again"
-      },
       "mnemonic": {
         "text": "Mnemonic is invalid",
         "subtext": "Please, make sure your input contains 12 or 24 words"

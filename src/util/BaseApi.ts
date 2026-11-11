@@ -52,13 +52,6 @@ export default class BaseApi {
     return hdValidatePath(value);
   }
 
-  public static isValidSequenceMnemonic(mnemonic: string, selectedMnemonicElements: string[]): boolean {
-    return mnemonic
-      .split(' ')
-      .map((mnemonicElement, index) => selectedMnemonicElements[index] === mnemonicElement)
-      .every((item) => item);
-  }
-
   public static isKeyringPairs$Json(json: KeyringPair$Json | KeyringPairs$Json): json is KeyringPairs$Json {
     return json.encoding.content.includes('batch-pkcs8');
   }

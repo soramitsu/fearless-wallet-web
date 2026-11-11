@@ -47,11 +47,12 @@
     "backupNonDigital": "𓁹 𓅓𓂧𓅱 𓂋 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 · 𓋴𓈙𓏛 𓊪𓅱 𓐍𓂋 𓁷 𓅓𓂧𓅱 ( 𓂋𓊪𓅱 𓅓𓂧𓅱 𓊪𓅱 𓂋 𓐍𓈖𓅱 𓅓𓂧𓅱 ) 𓎛𓈖𓂝 𓅓𓂧𓅱 𓐙 𓈖𓈖 𓂋 𓅓𓂧𓅱 𓊪𓅱 ·",
     "backupPassphrase": "𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓈖 𓈖 𓈖𓏏𓎡 𓅓𓄿𓅱 𓉒",
     "confirmPassphrase": "𓅓𓄿𓂝 𓐙 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿",
-    "selectPassphraseWords": "𓋴𓏏𓊪 𓅓𓂧𓅱𓏥 𓅓 𓅓𓂧𓅱 𓅱𓂧 ·",
+    "selectPassphraseWords": "𓋴𓏏𓊪 3 𓅓𓂧𓅱𓏥 𓈖 𓈖𓏏𓎡 𓋴𓈙𓏛.",
+    "wordNumber": "𓅓𓂧𓅱 {position}",
+    "tryAnotherWord": "𓋴𓏏𓊪 𓅓𓂧𓅱 𓎡𓇌.",
     "advancedSettings": "𓁷𓂋𓇋 𓋴𓄿𓅱 𓅓𓆓𓄿𓏏 𓋴𓅓𓈖𓏥",
     "advanced": "𓁷𓂋𓇋",
     "example": "𓅓𓇋 𓊪𓈖 · {example}",
-    "securityWritten": "𓋴𓄿𓅱 𓅓𓂧𓅱 𓂋 𓅓𓂧𓅱 𓐙 𓈖𓏏𓎡 𓋴𓈙𓏛 𓊪𓅱 𓐍𓂋",
     "importAccount": "𓇋𓈖 {type} 𓇋𓊪𓏥 𓈖 𓂋𓈖",
     "importWallet": "𓇋𓈖 𓉒",
     "enterPassphrase": "𓂝𓎡 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿",
@@ -78,10 +79,6 @@
     "ethereumDP": "Ethereum 𓅱𓄿𓏏 𓈖 𓈙𓇾𓍔𓄿𓏴𓏛",
     "ethereumCryptoType": "ETHEREUM 𓅓𓂧𓅱 𓇋𓂋𓅱",
     "warningMessages": {
-      "mnemonicSequence": {
-        "text": "𓈖 𓐙 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿",
-        "subtext": "𓈖 𓐙 𓅓𓂧𓅱𓏥 𓈖 𓋴𓐍𓄿 𓅓𓂧𓅱 · 𓅓 𓊵 𓁹 𓋴𓊪 𓅱𓎛𓅓"
-      },
       "mnemonic": {
         "text": "𓅓𓂧𓅱 𓈖 𓐙",
         "subtext": "𓅓 𓊵 · 𓅓𓂧𓅱 𓐙 𓈖 𓈖𓏏𓎡 𓂞 𓅓𓂧𓅱 12 𓂋𓊪𓅱 24 𓅓𓂧𓅱𓏥"

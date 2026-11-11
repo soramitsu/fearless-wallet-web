@@ -71,8 +71,14 @@ const openFromAccounts = async (button: number) => {
 const mountAddWallet = (route: RouteLocationNormalizedLoaded) =>
   shallowMount(AddWallet, {
     global: {
-      mocks: { $t: (key: string) => key, $i18n: { locale: 'en-EN' }, $route: route, $router: { push: mocks.push } },
-      stubs: { CircleButton: true, FButton: true, NotificationPopup: true },
+      mocks: {
+        $t: (key: string, args?: { position: number }) => key === 'addWallet.wordNumber' ? `Word ${args?.position}` : key,
+        $i18n: { locale: 'en-EN' }, $route: route, $router: { push: mocks.push },
+      },
+      stubs: {
+        CircleButton: true, FButton: true, NotificationPopup: true,
+        CreateWallet: false, MnemonicConfirmationForm: false, Scroll: { template: '<div><slot /></div>' },
+      },
     },
   });
 
@@ -99,7 +105,19 @@ describe('Adding an Ethereum account to the selected wallet', () => {
 
     await wrapper.vm.proceed();
     expect(wrapper.vm.step).toBe(3);
-    await wrapper.setData({ selectedMnemonicElements: PHRASE.split(' ').map((word, initialIndex) => ({ word, initialIndex })) });
+    expect(wrapper.vm.disabledProceed).toBe(true);
+    await wrapper.vm.proceed();
+    expect(wrapper.vm.step).toBe(3);
+    expect(mocks.addAccount).not.toHaveBeenCalled();
+
+    const questions = wrapper.findAll('fieldset');
+    const words = PHRASE.split(' ');
+    expect(questions).toHaveLength(3);
+    for (const question of questions) {
+      const number = Number(question.get('legend').text().replace('Word ', ''));
+      await question.get(`input[value="${words[number - 1]}"]`).setValue(true);
+    }
+    expect(wrapper.vm.disabledProceed).toBe(false);
     let linked!: (value: boolean) => void;
     mocks.updatePairMeta.mockReturnValueOnce(new Promise<boolean>((resolve) => { linked = resolve; }));
     await wrapper.vm.proceed();

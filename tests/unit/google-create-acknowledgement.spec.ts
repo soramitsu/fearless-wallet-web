@@ -7,12 +7,11 @@ vi.mock('@/extension/messaging', () => ({ addAccount: mocks.add, createGoogleFil
   updateCurrentAccount: mocks.select, generateMnemonic: mocks.phrase }));
 vi.mock('@/router/routes', () => ({ Components: { Wallet: 'Wallet' } }));
 vi.mock('@/util/universalWalletKeyringFields', () => ({ deriveUniversalWalletKeyringFields: () => ({}) }));
-vi.mock('@/util/BaseApi', () => ({ default: { isValidSequenceMnemonic: () => true } }));
 vi.mock('@/screens/addWallet/AdvancedButton.vue', () => ({ default: { template: '<div />' } }));
 vi.mock('@/screens/addWallet/NicknameForm.vue', () => ({ default: { template: '<div />' } }));
-vi.mock('@/screens/addWallet/CreateWallet.vue', () => ({ default: { template: '<div />' } }));
 vi.mock('@/screens/addWallet/AdvancedForm.vue', () => ({ default: { template: '<div />' } }));
 import CreateGoogle from '@/screens/addWallet/google/CreateGoogle.vue';
+import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 const root = { address: 'public-root', encoded: 'public-encrypted-root', meta: { name: 'Root', ethereumAddress: '0xPublicChild' } };
 const child = { address: '0xPublicChild', encoded: 'public-encrypted-child', meta: { name: 'Child' } };
 const deferred = <T>() => {
@@ -22,12 +21,14 @@ const deferred = <T>() => {
   return { promise, resolve, reject };
 };
 const settle = (promise: unknown) => Promise.resolve(promise).catch(() => undefined);
-const open = async (translate = (key: string) => key) => {
-  const wrapper = shallowMount(CreateGoogle, { global: {
+const mountGoogle = (translate = (key: string) => key) =>
+  shallowMount(CreateGoogle, { global: {
     config: { errorHandler: vi.fn() },
     mocks: { $t: translate, $i18n: { locale: 'en-EN' }, $route: { params: { access_token: 'public-test-token' } }, $router: { replace: vi.fn().mockResolvedValue(undefined) } },
     stubs: { FlowStepLayout: false, CircleButton: true, Loader: true, FinishForm: { template: '<div data-testid="finishForm">Finished</div>' }, FButton: true, NotificationPopup: true, NegativeMessage: true },
   } });
+const open = async (translate?: (key: string) => string) => {
+  const wrapper = mountGoogle(translate);
   await flushPromises();
   await wrapper.setData({ nickname: 'Public fixture', step: 4 });
   await flushPromises();
@@ -43,6 +44,35 @@ beforeEach(() => {
 });
 
 describe('Google create backup acknowledgements', () => {
+  it('requires confirmation again after reviewing the phrase and still offers Skip', async () => {
+    const wrapper = mountGoogle();
+    await flushPromises();
+    await wrapper.setData({ nickname: 'Public fixture' });
+    await wrapper.vm.proceed();
+    await wrapper.vm.proceed();
+    expect(wrapper.vm.step).toBe(3);
+    expect(wrapper.vm.disabledProceed).toBe(true);
+    await wrapper.vm.proceed();
+    expect(wrapper.vm.step).toBe(3);
+    expect(mocks.add).not.toHaveBeenCalled();
+
+    wrapper.getComponent(CreateWallet).vm.$emit('update:mnemonicConfirmed', true);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.disabledProceed).toBe(false);
+    wrapper.vm.back();
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.step).toBe(2);
+    await wrapper.vm.proceed();
+    expect(wrapper.vm.step).toBe(3);
+    expect(wrapper.vm.disabledProceed).toBe(true);
+
+    wrapper.vm.skipStep();
+    await flushPromises();
+    expect(wrapper.vm.isFinished).toBe(true);
+    expect(mocks.upload).toHaveBeenCalledTimes(2);
+    wrapper.unmount();
+  });
+
   it('keeps the completion action in the current language', async () => {
     const locale = ref('en');
     const wrapper = await open((key) => `${locale.value}:${key}`);

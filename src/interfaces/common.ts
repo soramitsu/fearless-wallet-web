@@ -43,11 +43,6 @@ interface ValidateJsonResultNegative {
 
 type ValidateJsonResult = ValidateJsonResultPositive | ValidateJsonResultNegative;
 
-interface MnemonicConfirmation {
-  word: string;
-  initialIndex: number;
-}
-
 enum MenuItems {
   wallet = 'Wallet',
   staking = 'Staking',
@@ -125,7 +120,6 @@ export {
   ValidateJsonResult,
   WalletAddress,
   Meta,
-  MnemonicConfirmation,
   ChainAccount,
   ComponentText,
   AddressMeta,

@@ -99,10 +99,11 @@ describe('starting the launch', () => {
     document.body.innerHTML = '';
   });
 
-  it('covers nothing in a harness build', () => {
+  it('covers nothing in a harness build, and lets the balance count at once', () => {
     const state = startLaunch({ api: api(), ready: Promise.resolve(), harnessBuild: true });
 
     expect(state.mode).toBe('none');
+    expect(state.revealed).toBe(true);
     expect(overlay()).toBeNull();
   });
 
@@ -118,6 +119,8 @@ describe('starting the launch', () => {
     const first = startLaunch({ api: api(), ready: new Promise(() => undefined), harnessBuild: false });
     expect(overlay()).not.toBeNull();
     await vi.waitFor(() => expect(first.mode).toBe('ignite'));
+    // The wallet is still covered: the balance waits to count until the dive shows it.
+    expect(first.revealed).toBe(false);
     expect(session[LAUNCH_SESSION_KEY]).toEqual(expect.any(Number));
     expect(overlay()?.querySelector('video')?.muted).toBe(true);
     expect(overlay()?.getAttribute('aria-hidden')).toBe('true');

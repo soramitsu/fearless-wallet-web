@@ -2,7 +2,7 @@
 // from zero on its first reveal in the page. Only the digits on screen move; the accessible label and anything copied
 // always read the final value.
 import { onScopeDispose, ref, watch, type Ref } from 'vue';
-import { claimFirstBalanceReveal, motionAllowed } from '@/feel/motion';
+import { claimFirstBalanceReveal, motionAllowed, whenLaunchRevealed } from '@/feel/motion';
 
 export const COUNT_UP_MS = 600;
 const easeOutCubic = (t: number): number => 1 - (1 - t) ** 3;
@@ -17,6 +17,8 @@ export function useCountUp(target: () => string, active: () => boolean): Ref<str
   const shown = ref(target());
   let frame = 0;
   let revealed = false;
+  // The page's first count waits for the launch to show the wallet, so it is seen.
+  let waiting = false;
 
   const stop = () => {
     if (frame) cancelAnimationFrame(frame);
@@ -52,18 +54,26 @@ export function useCountUp(target: () => string, active: () => boolean): Ref<str
     ([value, isActive], previous) => {
       if (!isActive) {
         stop();
+        waiting = false;
         shown.value = value;
         return;
       }
       if (!revealed) {
         revealed = true;
-        if (claimFirstBalanceReveal()) {
-          run('0', value);
+        if (claimFirstBalanceReveal() && motionAllowed()) {
+          waiting = true;
+          shown.value = countUpFrame(0, Number(value) || 0, 0);
+          void whenLaunchRevealed().then(() => {
+            if (!waiting) return;
+            waiting = false;
+            run('0', target());
+          });
           return;
         }
         shown.value = value;
         return;
       }
+      if (waiting) return;
       const before = previous?.[0];
       if (before !== undefined && before !== value) run(shown.value, value);
       else if (!frame) shown.value = value;

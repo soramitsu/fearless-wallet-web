@@ -9,6 +9,28 @@ const effectsTier = (): string | undefined => globalThis.document?.documentEleme
 /** Motion that carries meaning (a number counting to its value, a list arriving): off under reduced motion. */
 export const motionAllowed = (): boolean => !prefersReducedMotion() && effectsTier() !== 'reduced';
 
+/** Sent by the launch (launchOverlay.ts) when the wallet under it starts to show, or at once when there is no launch. */
+export const LAUNCH_REVEAL_EVENT = 'fw:launch-reveal';
+
+const launchCovering = (): boolean => {
+  const state = (globalThis as { __fwLaunch?: { revealed?: boolean } }).__fwLaunch;
+  return Boolean(state && !state.revealed);
+};
+
+/** Resolves when no launch covers the wallet any more (at the latest after `timeoutMs`). */
+export function whenLaunchRevealed(timeoutMs = 12000): Promise<void> {
+  if (!launchCovering()) return Promise.resolve();
+  return new Promise((resolve) => {
+    const done = () => {
+      clearTimeout(timer);
+      globalThis.removeEventListener?.(LAUNCH_REVEAL_EVENT, done);
+      resolve();
+    };
+    const timer = setTimeout(done, timeoutMs);
+    globalThis.addEventListener?.(LAUNCH_REVEAL_EVENT, done);
+  });
+}
+
 /** The first reveal of the balance in this page counts up from zero; later changes count from the last value. */
 let balanceRevealed = false;
 export function claimFirstBalanceReveal(): boolean {

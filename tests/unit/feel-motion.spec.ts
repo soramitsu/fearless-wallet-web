@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { effectScope, nextTick, ref } from 'vue';
 import { COUNT_UP_MS, countUpFrame, useCountUp } from '@/feel/countUp';
-import { claimListEntrance, resetFeelMotion } from '@/feel/motion';
+import { LAUNCH_REVEAL_EVENT, claimListEntrance, resetFeelMotion } from '@/feel/motion';
 import { IGNITE_REST, SOLAR, strokeProgress, solarPath, solarTicks } from '@/feel/solarGeometry';
 
 // Brand kit v3 SPEC part 3: the living balance, the list entrance and the solar geometry.
@@ -31,6 +31,23 @@ describe('the living balance', () => {
     expect(Number(shown.value)).toBeLessThan(1300);
     await vi.waitFor(() => expect(shown.value).toBe('1300'), { timeout: COUNT_UP_MS * 4 });
     scope.stop();
+  });
+
+  it('starts the first count only when the launch shows the wallet', async () => {
+    const launch = { revealed: false };
+    (window as Window & { __fwLaunch?: unknown }).__fwLaunch = launch;
+    const scope = effectScope();
+    const shown = scope.run(() => useCountUp(() => '80', () => true))!;
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      expect(shown.value).toBe('0.00');
+      launch.revealed = true;
+      window.dispatchEvent(new Event(LAUNCH_REVEAL_EVENT));
+      await vi.waitFor(() => expect(shown.value).toBe('80'), { timeout: COUNT_UP_MS * 4 });
+    } finally {
+      scope.stop();
+      delete (window as Window & { __fwLaunch?: unknown }).__fwLaunch;
+    }
   });
 
   it('shows the value at once on a later reveal, while loading, and under the Reduced paint', () => {

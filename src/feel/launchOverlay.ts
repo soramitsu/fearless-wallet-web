@@ -7,6 +7,7 @@
 // and a key press always reaches the page (a password field under the overlay takes the typing).
 import timeline from '@/assets/brand/hero/launch-timeline.json';
 import clipUrl from '@/assets/brand/hero/popup-launch-ignite.webm';
+import { LAUNCH_REVEAL_EVENT } from '@/feel/motion';
 
 /** storage.session key: set when a session's launch starts, so a reload mid-clip lands instead of replaying. */
 export const LAUNCH_SESSION_KEY = 'fearless:launch-ignite';
@@ -150,6 +151,14 @@ export interface LaunchState {
   /** For checks and screenshots: what the overlay did last. */
   phase: 'deciding' | 'playing' | 'holding' | 'handing-off' | 'dropped' | 'done';
   reason?: string;
+  /** The wallet underneath has started to show: the balance may count now (src/feel/countUp.ts). */
+  revealed: boolean;
+}
+
+function reveal(state: LaunchState): void {
+  if (state.revealed) return;
+  state.revealed = true;
+  globalThis.dispatchEvent?.(new Event(LAUNCH_REVEAL_EVENT));
 }
 
 export interface StartLaunchOptions {
@@ -164,7 +173,7 @@ export interface StartLaunchOptions {
  * well, so nothing shows when the cover goes), decides in a few milliseconds, then plays, lands or steps aside.
  */
 export function startLaunch({ api, ready, harnessBuild }: StartLaunchOptions): LaunchState {
-  const state: LaunchState = { mode: 'none', phase: 'deciding' };
+  const state: LaunchState = { mode: 'none', phase: 'deciding', revealed: false };
   (window as Window & { __fwLaunch?: LaunchState }).__fwLaunch = state;
   const forced = new URLSearchParams(location.search).get(LAUNCH_FORCE_PARAM) === 'force';
   const reducedMotion = motionReduced();
@@ -179,6 +188,7 @@ export function startLaunch({ api, ready, harnessBuild }: StartLaunchOptions): L
   if ((harnessBuild && !forced) || reducedMotion || reducedEffects) {
     state.mode = decideLaunch({ reducedMotion, reducedEffects, harnessBuild, forced, requestWindow: false, playedThisSession: true });
     state.phase = 'done';
+    reveal(state);
     if (state.mode === 'still') void ready.then(() => revealApp('still'), () => undefined);
     return state;
   }
@@ -202,6 +212,7 @@ export function startLaunch({ api, ready, harnessBuild }: StartLaunchOptions): L
       if (state.mode !== 'ignite') {
         cover.remove();
         state.phase = 'done';
+        reveal(state);
         if (state.mode === 'landing') void ready.then(() => revealApp('landing'), () => undefined);
         return;
       }
@@ -282,6 +293,7 @@ function ignite(cover: HTMLElement, state: LaunchState, ready: () => boolean): v
     video.load();
     cover.remove();
     if (state.phase !== 'dropped') state.phase = 'done';
+    reveal(state);
   };
 
   // The clip cannot load or has stopped moving: the overlay fades away and the wallet is simply there.
@@ -290,6 +302,7 @@ function ignite(cover: HTMLElement, state: LaunchState, ready: () => boolean): v
     handedOff = true;
     state.phase = 'dropped';
     state.reason = reason;
+    reveal(state);
     cover.style.pointerEvents = 'none';
     const fade = cover.animate?.([{ opacity: 1 }, { opacity: 0 }], { duration: LAUNCH_DURATIONS.drop, fill: 'forwards' });
     if (fade) fade.onfinish = finish;
@@ -301,6 +314,7 @@ function ignite(cover: HTMLElement, state: LaunchState, ready: () => boolean): v
     handedOff = true;
     state.phase = 'handing-off';
     if (fast) state.reason = 'skipped';
+    reveal(state);
     cover.style.pointerEvents = 'none';
     const { focus } = framing;
     const app = appRoot();

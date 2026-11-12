@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
-import { ALIASES, ICON_SIZES, KIT, SOURCE_MARKS, iconSource, masterHashes, readMasters, sha256 } from './generate-brand-assets.mjs';
+import { ALIASES, ICON_SIZES, KIT, KIT_COPIES, SOURCE_MARKS, iconSource, masterHashes, readMasters, sha256 } from './generate-brand-assets.mjs';
 
 const root = new URL('../', import.meta.url);
 const read = (file) => fs.readFile(new URL(file, root));
@@ -79,6 +79,27 @@ test('every PNG is opaque and has its advertised dimensions; ICO/ICNS contain th
 test('the welcome hero media are recorded in provenance', async () => {
   const p = JSON.parse(await read('docs/release/brand-asset-provenance.json'));
   const hero = (await fs.readdir(new URL('src/assets/brand/hero/', root))).filter((name) => !name.startsWith('.'));
-  assert.deepEqual(hero.sort(), ['popup-caw.webm', 'popup-idle.webm', 'popup-poster.webp']);
+  assert.deepEqual(hero.sort(), ['launch-timeline.json', 'popup-caw.webm', 'popup-idle.webm', 'popup-launch-ignite.webm', 'popup-poster.webp']);
   for (const name of hero) assert.equal(p.sourceAssets[`src/assets/brand/hero/${name}`], sha256(await read(`src/assets/brand/hero/${name}`)));
+});
+
+test('the kit v3 copies are the kit manifest\'s files and are recorded in provenance', async () => {
+  const p = JSON.parse(await read('docs/release/brand-asset-provenance.json'));
+  assert.deepEqual(p.provenance.kitCopies, KIT_COPIES);
+  assert.deepEqual(Object.keys(KIT_COPIES).sort(), [
+    'src/assets/brand/audio/receive.m4a',
+    'src/assets/brand/audio/send.m4a',
+    'src/assets/brand/hero/launch-timeline.json',
+    'src/assets/brand/hero/popup-launch-ignite.webm',
+    'src/assets/brand/sky/sky-card.webp',
+    'src/assets/brand/solar-geometry.json',
+  ]);
+  for (const [file, { sha256: expected }] of Object.entries(KIT_COPIES)) {
+    assert.equal(sha256(await read(file)), expected, file);
+    assert.equal(p.sourceAssets[file], expected, file);
+  }
+  // The launch is the popup framing of the kit's clip; the extension ships one clip and frames it for every surface.
+  const timeline = JSON.parse(await read('src/assets/brand/hero/launch-timeline.json'));
+  assert.equal(timeline.holdSeconds, 2);
+  assert.ok(timeline.focus.popup.x > 0 && timeline.focus.popup.y > 0);
 });

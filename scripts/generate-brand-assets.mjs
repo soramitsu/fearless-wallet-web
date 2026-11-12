@@ -12,9 +12,40 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../', import.meta.url));
 export const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
+// Kit v3 (2026-11-13) adds the launch clip, the transfer sounds, the solar geometry and the sky card; every v2 file,
+// the masters included, is byte-identical to v2.
 export const KIT = {
-  manifestSha256: '70771ec29c8607b1964a966066affb15bb02a2032973227d7f7d2ae3c80c048b',
+  manifestSha256: 'e49da29bbf91dc96d2afe3772b5ec50acc23bc28ff4af500aff0ff7f631ddb84',
   designPackage: 'design/yatagarasu-20261110 (package r3)',
+};
+// Kit files the interface ships as they are, each pinned to its entry in the kit manifest: the launch (src/feel), the
+// send and receive sounds, the solar geometry and the wallet home's sky card. The welcome hero media before them were
+// recorded by hash only.
+export const KIT_COPIES = {
+  'src/assets/brand/hero/popup-launch-ignite.webm': {
+    kitPath: 'hero/popup-launch-ignite.webm',
+    sha256: '1af621f8722f34ee39162176d8dbb509b3a94df946296dd91be94a49fb466ea1',
+  },
+  'src/assets/brand/hero/launch-timeline.json': {
+    kitPath: 'hero/launch-timeline.json',
+    sha256: '310a7a84148ede4bfcaeca479f5e46522d9e591299687cae3c2055ba101b2f4d',
+  },
+  'src/assets/brand/audio/send.m4a': {
+    kitPath: 'audio/send.m4a',
+    sha256: 'f1fb4969c2e4bdd8eeb93352ae10d6e39c884b297e44ffb7122c7f5ed4b8e8be',
+  },
+  'src/assets/brand/audio/receive.m4a': {
+    kitPath: 'audio/receive.m4a',
+    sha256: 'ac85389cbf68db5a1c4e75ae685c6b26e7dfefc132e38eb17215189924678811',
+  },
+  'src/assets/brand/solar-geometry.json': {
+    kitPath: 'tokens/solar-geometry.json',
+    sha256: '0e544952f4cd25efc4483a3ef0e8b43c3e570aa7fb98b69ecee725c9aaa29648',
+  },
+  'src/assets/brand/sky/sky-card.webp': {
+    kitPath: 'png/sky/sky-card.webp',
+    sha256: '4e8418b6c898579cdd2e105ec12caf6c20f7e71b6c4c328937a7139992323474',
+  },
 };
 export const masterHashes = {
   'crest-badge-small.svg': 'cc2bce14632d0d24eedcb578e47fadc4852478a01b67fa0d81c2d99b37bad004',
@@ -138,8 +169,10 @@ async function main() {
   const provenanceFile = 'docs/release/brand-asset-provenance.json';
   const provenance = {
     provenance: {
-      recordedAt: '2026-11-10T03:00:00.000Z',
-      source: '2026-11-10 approved Yatagarasu brand: crest, wordmark and app icon masters copied verbatim from the Fearless brand kit',
+      recordedAt: '2026-11-13T00:00:00.000Z',
+      source:
+        '2026-11-10 approved Yatagarasu brand: crest, wordmark and app icon masters copied verbatim from the Fearless brand kit; ' +
+        'kit v3 (2026-11-13) adds the launch, the transfer sounds, the solar geometry and the sky card, also verbatim',
       kit: KIT,
       masterDirectory: 'scripts/brand/masters',
       masterSha256: masterHashes,
@@ -147,6 +180,7 @@ async function main() {
       rule: 'Icons below 64 px use the small crest; all icons are opaque on ink #120A2E',
       rasterizer: sharp.versions,
       outputs: {},
+      kitCopies: KIT_COPIES,
     },
     sourceAssets: {},
     generatedAssets: {},
@@ -168,6 +202,12 @@ async function main() {
   // Hand-written brand files the outputs travel with: the brand notes and the welcome hero media.
   for (const file of ['src/assets/brand/README.md', ...(await heroFiles())])
     provenance.sourceAssets[file] = sha256(await fs.readFile(path.join(root, file)));
+  // Kit copies, each the exact file of the kit manifest.
+  for (const [file, { sha256: expected }] of Object.entries(KIT_COPIES)) {
+    const actual = sha256(await fs.readFile(path.join(root, file)));
+    assert.equal(actual, expected, `${file} is not the kit's file`);
+    provenance.sourceAssets[file] = actual;
+  }
   outputs.set(provenanceFile, Buffer.from(JSON.stringify(provenance, null, 2) + '\n'));
   for (const [file, bytes] of outputs) {
     const destination = path.join(root, file);

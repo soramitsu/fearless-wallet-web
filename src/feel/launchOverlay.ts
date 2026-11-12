@@ -36,6 +36,12 @@ export const LAUNCH_DURATIONS = {
   holdCap: 8000,
 } as const;
 const DECELERATE = 'cubic-bezier(0.05, 0.7, 0.1, 1)';
+// Where the clip does not fill the view, its edges melt into the ink behind it.
+const FEATHER: Record<LaunchFraming['mode'], string> = {
+  cover: '',
+  contain: 'linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent)',
+  band: 'linear-gradient(180deg, #000 0%, #000 78%, transparent 100%)',
+};
 const ACCELERATE = 'cubic-bezier(0.3, 0, 1, 1)';
 
 export type LaunchMode = 'ignite' | 'landing' | 'still' | 'none';
@@ -64,8 +70,12 @@ export function decideLaunch(input: LaunchDecisionInput): LaunchMode {
 }
 
 export interface LaunchFraming {
-  /** cover fills the view and crops the clip; contain keeps the whole clip at full height with feathered sides. */
-  mode: 'cover' | 'contain';
+  /**
+   * cover fills the view and crops the clip; contain keeps the whole clip at full height with feathered sides (a wide
+   * tab); band keeps the crow's open wings and the solar rings across a tall, narrow view (the side panel), anchored
+   * at the top with its lower edge melting into the ink.
+   */
+  mode: 'cover' | 'contain' | 'band';
   /** The video element's box in the view, in CSS pixels. */
   box: { left: number; top: number; width: number; height: number };
   /** object-position of the clip inside that box (cover), in CSS pixels. */
@@ -76,9 +86,14 @@ export interface LaunchFraming {
 
 const clamp = (value: number, low: number, high: number): number => Math.min(high, Math.max(low, value));
 
+/** The share of the clip's width that holds the crow's open wings and the solar rings, centred. */
+export const LAUNCH_SUBJECT_WIDTH = 0.8;
+
 /**
  * Aspect-fill, centred on the focus as far as the frame allows. A view much wider than the clip (a full tab) would
- * crop the crow's head and the solar disc, so there the clip keeps its full height, centred, with feathered sides.
+ * crop the crow's head and the solar disc, so there the clip keeps its full height, centred, with feathered sides. A
+ * view so narrow that filling it would cut off the wings and the rings (the side panel) shows the clip's middle
+ * LAUNCH_SUBJECT_WIDTH across its width instead, from the top.
  */
 export function launchFraming(
   view: { width: number; height: number },
@@ -98,6 +113,17 @@ export function launchFraming(
     };
   }
   const scale = Math.max(width / clip.width, height / clip.height);
+  if (width / (clip.width * scale) < LAUNCH_SUBJECT_WIDTH) {
+    const boxWidth = width / LAUNCH_SUBJECT_WIDTH;
+    const boxHeight = (boxWidth * clip.height) / clip.width;
+    const left = (width - boxWidth) / 2;
+    return {
+      mode: 'band',
+      box: { left, top: 0, width: boxWidth, height: boxHeight },
+      objectPosition: { x: 0, y: 0 },
+      focus: { x: left + focus.x * boxWidth, y: focus.y * boxHeight },
+    };
+  }
   const drawnWidth = clip.width * scale;
   const drawnHeight = clip.height * scale;
   const x = clamp(width / 2 - focus.x * drawnWidth, width - drawnWidth, 0);
@@ -263,8 +289,8 @@ function ignite(cover: HTMLElement, state: LaunchState, ready: () => boolean): v
       objectFit: 'cover',
       objectPosition: mode === 'cover' ? `${objectPosition.x}px ${objectPosition.y}px` : '50% 50%',
       // A full tab shows the whole clip at full height; its sides melt into the ink.
-      maskImage: mode === 'contain' ? 'linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent)' : '',
-      webkitMaskImage: mode === 'contain' ? 'linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent)' : '',
+      maskImage: FEATHER[mode],
+      webkitMaskImage: FEATHER[mode],
       pointerEvents: 'none',
     });
   };

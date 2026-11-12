@@ -3,6 +3,7 @@ import {
   LAUNCH_CLIP,
   LAUNCH_FOCUS,
   LAUNCH_SESSION_KEY,
+  LAUNCH_SUBJECT_WIDTH,
   decideLaunch,
   launchFraming,
   startLaunch,
@@ -55,13 +56,21 @@ describe('how the clip fills the view', () => {
     expect(framing.focus.y).toBeCloseTo(600 * LAUNCH_FOCUS.y, 0);
   });
 
-  it('fills a tall side panel and keeps the crow centred', () => {
+  it('keeps the open wings and the rings across a tall side panel, from the top', () => {
     const framing = launchFraming({ width: 360, height: 709 });
-    const drawnWidth = (LAUNCH_CLIP.width * 709) / LAUNCH_CLIP.height;
+    const width = 360 / LAUNCH_SUBJECT_WIDTH;
 
-    expect(framing.mode).toBe('cover');
-    expect(framing.objectPosition.x).toBeCloseTo((360 - drawnWidth) / 2, 1);
-    expect(framing.focus.x).toBeCloseTo(180, 1);
+    expect(framing.mode).toBe('band');
+    expect(framing.box.width).toBeCloseTo(width, 5);
+    expect(framing.box.height).toBeCloseTo((width * LAUNCH_CLIP.height) / LAUNCH_CLIP.width, 5);
+    expect(framing.box.top).toBe(0);
+    expect(framing.box.left).toBeCloseTo((360 - width) / 2, 5);
+    expect(framing.focus.x).toBeCloseTo(180, 5);
+    expect(framing.focus.y).toBeCloseTo(framing.box.height * LAUNCH_FOCUS.y, 5);
+  });
+
+  it('still fills a popup that is a little narrower than the clip', () => {
+    expect(launchFraming({ width: 500, height: 600 }).mode).toBe('cover');
   });
 
   it('keeps the whole clip at full height in a wide tab, centred with feathered sides', () => {

@@ -171,7 +171,12 @@ async function handleMessage(data: TransportRequestMessage<MessageTypes>, port: 
 // A wallet page (popup, side panel or tab) keeps the connections open until it closes. A
 // site's port does not: only its requests do.
 function onConnect(port: Port, closed: Promise<void>): void {
-  if (port.name === PORT_EXTENSION && isWalletPagePort(port)) state.workerSleepService.pageOpened(closed);
+  if (port.name !== PORT_EXTENSION || !isWalletPagePort(port)) return;
+
+  const wasAwake = !state.workerSleepService.isQuiet;
+
+  state.workerSleepService.pageOpened(closed);
+  if (wasAwake) state.onWalletPageOpened();
 }
 
 export const backgroundRuntime = {

@@ -31,7 +31,7 @@ import type {
   WalletEcosystem,
 } from '@/interfaces';
 import type { WarningValueName } from '@/consts/messages';
-import type { AssetDiscoverySweepState } from '@extension-base/services/asset-discovery-service';
+import type { AssetDiscoveryProgress, AssetDiscoverySweepState } from '@extension-base/services/asset-discovery-service';
 import type { CrossChainRouteProviderId } from '@/cross-chain/reviewedRoutes';
 import type { CrossChainSendRecords } from '@/cross-chain/sendLedger';
 import type { ActionCapabilityConfig } from '@extension-base/services/action-capability-service';
@@ -272,6 +272,8 @@ export interface BalanceJson {
   reset?: boolean;
   details: TokenGroup[];
   scanStates?: Record<NetworkName, NetworkScanState>;
+  /** How far the search of every network for the wallets' tokens is (AssetDiscoverySweepService). */
+  discovery?: AssetDiscoveryProgress;
 }
 
 export interface RequestMobileSign {

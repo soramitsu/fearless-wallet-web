@@ -7,6 +7,9 @@ import {
   CRON_UPDATE_JSON_INTERVAL,
 } from '@extension-base/const/intervals';
 import type State from '@extension-base/background/handlers/State';
+
+/** How often the balance polls are looked at; each ecosystem is read when its own interval has passed. */
+export const CRON_POLL_BALANCES_INTERVAL = 15_000;
 import type { ServiceInfo } from '@extension-base/background/types/types';
 
 export class CronService {
@@ -70,6 +73,9 @@ export class CronService {
 
     if (!this.state.currentAccount?.address) return;
 
+    // Also for a wallet with no Substrate or EVM connection (Solana, Bitcoin, TON, Iroha), whose balances are all polled.
+    this.addCron('pollBalances', () => this.pollBalances(), CRON_POLL_BALANCES_INTERVAL, false);
+
     if (Object.keys(this.state.getSubstrateApiMap).length !== 0 || Object.keys(this.state.getEvmApiMap).length !== 0) {
       this.addCron('refreshPrice', () => this.state.pricesService.refreshPrice(), CRON_REFRESH_PRICE_INTERVAL);
       this.addCron('checkStatusApiMap', () => this.updateApiMapStatus(), CRON_GET_API_MAP_STATUS);
@@ -81,6 +87,11 @@ export class CronService {
 
   updateCron(serviceInfo: ServiceInfo) {
     this.logger.log('Update Crones');
+
+    // A selected wallet's balances are polled whichever networks it has (pollBalances reads only while a page is open).
+    if (!serviceInfo.currentAccountInfo) this.removeCron('pollBalances');
+    else if (!this.isCronExist('pollBalances'))
+      this.addCron('pollBalances', () => this.pollBalances(), CRON_POLL_BALANCES_INTERVAL, false);
 
     // Если не подключены ни к одной сети или нет выбранного аккаунта
     if (!serviceInfo.currentAccountInfo || !this.checkNetworkAvailable(serviceInfo)) {
@@ -99,6 +110,16 @@ export class CronService {
 
     if (!this.isCronExist('recoverApiMap'))
       this.addCron('recoverApiMap', () => this.recoverApiMap(), CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
+  }
+
+  /**
+   * Reads again the selected wallet's balances that no subscription keeps current, while a wallet page shows them. The
+   * worker also stays awake for a site's request or a WalletConnect session; nobody is looking then.
+   */
+  pollBalances() {
+    if (!this.state.workerSleepService?.hasOpenPages) return;
+
+    void this.state.subscriptionService.refreshCurrentWallet().catch(() => undefined);
   }
 
   stop() {

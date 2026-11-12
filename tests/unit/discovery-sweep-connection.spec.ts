@@ -45,13 +45,15 @@ describe('discovery sweep connections', () => {
     expect(handler.destroyApi.mock.invocationCallOrder[0]).toBeGreaterThan(fetchBalance.mock.invocationCallOrder[4]);
   });
 
-  it('uses and keeps the connection of an active network', async () => {
+  it('leaves a network the wallets follow to their own reads, and keeps its connection', async () => {
     const { state, polkadot, handler, fetchBalance } = sweep(true);
 
     await state.scanDiscoveryNetwork(polkadot);
 
+    // Every wallet's balances there are read as the wallet starts (SubscriptionService); reading them again here
+    // competed with that first read.
     expect(handler.initApi).not.toHaveBeenCalled();
-    expect(fetchBalance).toHaveBeenCalledTimes(5);
+    expect(fetchBalance).not.toHaveBeenCalled();
     expect(handler.destroyApi).not.toHaveBeenCalled();
   });
 

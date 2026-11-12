@@ -40,6 +40,7 @@ import {
   pickDefaultCurrentAccount,
   toCurrentAccountInfo,
 } from '@extension-base/background/helpers/currentAccount';
+import { PAGE_OPEN_REFRESH_AGE_MS } from '@extension-base/services/subscription-service';
 import EvmContractService from '../../services/evm-contract-service';
 import { HistoryService } from '../../services/history-service';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
@@ -128,6 +129,9 @@ export default class State {
     scanNetwork: (network) => this.scanDiscoveryNetwork(network),
     readState: async () => (await storage.get(['assetDiscoverySweep'])).assetDiscoverySweep,
     writeState: async (assetDiscoverySweep) => storage.set({ assetDiscoverySweep }),
+    getWalletKeys: () => this.keyringService.getAllMainAccounts().map(({ address }) => address),
+    // The open pages say how far the search for the wallets' tokens is.
+    onProgress: () => this.balanceService.schedulePublish(),
   });
   actionCapabilityService = new ActionCapabilityService({
     read: async () => (await storage.get(['actionCapabilities'])).actionCapabilities,
@@ -548,6 +552,16 @@ export default class State {
     void this.runAssetDiscovery();
   }
 
+  /**
+   * A wallet page opened while the wallet was awake: what was read longer ago than a moment is read again, so the page
+   * does not show balances from before it was last closed. A wallet that was quiet reads everything as it reconnects.
+   */
+  onWalletPageOpened(): void {
+    if (!this.ready || !this.networksConnected) return;
+
+    void this.subscriptionService.refreshCurrentWallet({ maxAgeMs: PAGE_OPEN_REFRESH_AGE_MS }).catch(() => undefined);
+  }
+
   /** Runs the discovery sweep when it is due. The worker keeps its connections meanwhile and closes what it opened. */
   runAssetDiscovery(options?: RunAssetDiscoverySweepOptions) {
     const release = this.workerSleepService.hold();
@@ -593,6 +607,9 @@ export default class State {
   private async scanDiscoveryNetwork(registryNetwork: NetworkJson): Promise<void> {
     const network = this.networkService.networkMap[registryNetwork.name];
     if (!network) return;
+    // Every wallet's balances on a network the wallets follow are read by the wallet itself, when it starts and when the
+    // network is added (SubscriptionService). Reading them here as well competed with that first read for the same nodes.
+    if (network.active) return;
 
     const ecosystem = network.ecosystem;
     const accounts = this.keyringService.getAllMainAccounts();

@@ -1,4 +1,5 @@
 import { APIItemState } from '@extension-base/api/types/networks';
+import { BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS } from '@extension-base/services/balance-service/publishTiming';
 import {
   type SolanaIndexerClient,
   type SolanaNativeBalance,
@@ -234,7 +235,7 @@ export default class SolanaBalanceService {
     else tokenGroup.balances[existingIndex] = { ...tokenGroup.balances[existingIndex], ...balanceItem };
 
     this.state.balanceService.updateBalanceStore(network.name, balanceItem, address);
-    this.state.timeoutService.lazyNext('setSolanaBalanceItem', () => this.state.balanceService.publishBalance(), 500);
+    this.state.timeoutService.lazyNext('setSolanaBalanceItem', () => this.state.balanceService.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
   }
 
   private markCachedBalancesErrored(
@@ -267,7 +268,7 @@ export default class SolanaBalanceService {
     });
 
     if (balances.length) {
-      this.state.timeoutService.lazyNext('setSolanaBalanceItem', () => this.state.balanceService.publishBalance(), 500);
+      this.state.timeoutService.lazyNext('setSolanaBalanceItem', () => this.state.balanceService.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
     }
 
     return balances;
@@ -433,7 +434,7 @@ export default class SolanaBalanceService {
     else tokenGroup.balances[existingIndex] = { ...tokenGroup.balances[existingIndex], ...balanceItem };
 
     this.state.balanceService.updateBalanceStore(network.name, balanceItem, address);
-    this.state.timeoutService.lazyNext('setSolanaBalanceItem', () => this.state.balanceService.publishBalance(), 500);
+    this.state.timeoutService.lazyNext('setSolanaBalanceItem', () => this.state.balanceService.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
   }
 
   private getOrCreateTokenGroup(

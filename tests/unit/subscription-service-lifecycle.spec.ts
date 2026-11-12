@@ -1,6 +1,10 @@
 import { Subject } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { SubscriptionService } from '@extension-base/services/subscription-service';
+import {
+  FIRST_SERVICE_INFO_DELAY_MS,
+  SERVICE_INFO_DELAY_MS,
+  SubscriptionService,
+} from '@extension-base/services/subscription-service';
 import { TimeoutService } from '@extension-base/services/timeout-service';
 import type State from '@extension-base/background/handlers/State';
 import type { ServiceInfo } from '@extension-base/background/types/types';
@@ -261,11 +265,22 @@ describe('balance subscription lifecycle', () => {
     state.serviceInfoSubject.next(info(['kusama']));
     const latest = info(['polkadot']);
     state.serviceInfoSubject.next(latest);
-    vi.advanceTimersByTime(999);
+    // Nothing was read before the first change after a start: it is read almost at once.
+    vi.advanceTimersByTime(FIRST_SERVICE_INFO_DELAY_MS - 1);
     expect(state.cronService.updateCron).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);
     expect(state.cronService.updateCron).toHaveBeenCalledExactlyOnceWith(latest);
     expect(state.nftService.publishNfts).toHaveBeenCalledOnce();
+
+    // Later changes are gathered for longer: a burst of network switches is read once.
+    const next = info(['polkadot', 'kusama']);
+    state.serviceInfoSubject.next(info(['polkadot', 'acala']));
+    state.serviceInfoSubject.next(next);
+    vi.advanceTimersByTime(SERVICE_INFO_DELAY_MS - 1);
+    expect(state.cronService.updateCron).toHaveBeenCalledOnce();
+    vi.advanceTimersByTime(1);
+    expect(state.cronService.updateCron).toHaveBeenLastCalledWith(next);
+    expect(state.cronService.updateCron).toHaveBeenCalledTimes(2);
   });
 
   it('stops sending to a cancelled client and invokes its cleanup once', () => {

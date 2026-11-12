@@ -18,6 +18,43 @@ it('debounces only the matching key and preserves independent work', () => {
   expect(vi.getTimerCount()).toBe(0);
 });
 
+it('runs no later than maxWait after the first call, however often the calls come', () => {
+  const service = new TimeoutService({} as State);
+  const publish = vi.fn();
+
+  // A call every 100 ms with a 120 ms delay would postpone it for ever.
+  for (let index = 0; index < 10; index += 1) {
+    service.lazyNext('publish', publish, 120, 400);
+    vi.advanceTimersByTime(100);
+    if (index < 3) expect(publish).not.toHaveBeenCalled();
+  }
+  expect(publish).toHaveBeenCalled();
+  expect(publish.mock.calls.length).toBeGreaterThanOrEqual(2);
+
+  // Once the calls stop, the last one runs after the delay.
+  publish.mockClear();
+  service.lazyNext('publish', publish, 120, 400);
+  vi.advanceTimersByTime(119);
+  expect(publish).not.toHaveBeenCalled();
+  vi.advanceTimersByTime(1);
+  expect(publish).toHaveBeenCalledOnce();
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+it('starts the wait again after it ran', () => {
+  const service = new TimeoutService({} as State);
+  const publish = vi.fn();
+
+  service.lazyNext('publish', publish, 120, 400);
+  vi.advanceTimersByTime(120);
+  expect(publish).toHaveBeenCalledOnce();
+  service.lazyNext('publish', publish, 120, 400);
+  vi.advanceTimersByTime(119);
+  expect(publish).toHaveBeenCalledOnce();
+  vi.advanceTimersByTime(1);
+  expect(publish).toHaveBeenCalledTimes(2);
+});
+
 it('preserves work rescheduled by its own callback', () => {
   const service = new TimeoutService({} as State);
   const next = vi.fn();

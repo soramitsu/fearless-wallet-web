@@ -342,6 +342,7 @@ export interface RequestSignatures {
 
   // Ether
   'pri(balance)': [null, BalanceJson];
+  'pri(balance.refresh)': [null, boolean];
   'pri(fetch.evm.balance)': [FetchBalancePayload, void];
   'pri(balance.subscription)': [null, BalanceJson, BalanceJson];
   'pri(fetch.balance)': [FetchBalanceRequest, ResponseBalanceRequest[]];

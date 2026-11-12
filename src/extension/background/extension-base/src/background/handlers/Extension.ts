@@ -3073,6 +3073,9 @@ export default class Extension extends FWExtensionBase {
       case 'pri(balance)':
         return this.state.balanceService.getBalance();
 
+      case 'pri(balance.refresh)':
+        return this.state.subscriptionService.refreshCurrentWallet({ force: true });
+
       case 'pri(fetch.evm.balance)':
         return this.fetchEvmBalance(request as FetchBalancePayload);
 

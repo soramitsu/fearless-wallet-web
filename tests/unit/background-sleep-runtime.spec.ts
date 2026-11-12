@@ -69,6 +69,7 @@ async function startWorker() {
     legacyExposureService: { init: () => Promise.resolve() },
     ensureCurrentAccount: () => Promise.resolve(),
     workerSleepService: new WorkerSleepService(host, true),
+    onWalletPageOpened: vi.fn(),
   };
   const { backgroundReady } = await import('@/extension/entry/backgroundRuntime');
   const { registerBackgroundListeners } = await import('@/extension/entry/backgroundBootstrap');
@@ -93,7 +94,7 @@ async function startWorker() {
   const popup = () => open(PORT_EXTENSION, `${WALLET}popup.html`);
   const site = () => open(PORT_CONTENT, 'https://dapp.example/');
   const flush = () => vi.advanceTimersByTimeAsync(0);
-  return { host, order, handled, popup, site, flush };
+  return { host, order, handled, popup, site, flush, state: mocks.state as { onWalletPageOpened: ReturnType<typeof vi.fn> } };
 }
 
 beforeEach(() => { vi.useFakeTimers(); });
@@ -112,6 +113,27 @@ describe('the extension worker sleeping between uses', () => {
     expect(worker.host.quiet).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
     expect(worker.host.quiet).toHaveBeenCalledOnce();
+  });
+
+  it('has a page that opens on an awake wallet read its balances again; a quiet wallet reads them as it reconnects', async () => {
+    const worker = await startWorker();
+
+    const first = worker.popup();
+    await worker.flush();
+    expect(worker.host.restore).toHaveBeenCalledOnce();
+    expect(worker.state.onWalletPageOpened).not.toHaveBeenCalled();
+
+    first.close();
+    await vi.advanceTimersByTimeAsync(1_000);
+    worker.popup();
+    await worker.flush();
+    expect(worker.host.restore).toHaveBeenCalledOnce();
+    expect(worker.state.onWalletPageOpened).toHaveBeenCalledOnce();
+
+    // A site's port is not a wallet page.
+    worker.site();
+    await worker.flush();
+    expect(worker.state.onWalletPageOpened).toHaveBeenCalledOnce();
   });
 
   it('opens nothing for a site that only connected, and keeps them a minute after its last request', async () => {

@@ -1,4 +1,5 @@
 import { APIItemState } from '@extension-base/api/types/networks';
+import { BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS } from '@extension-base/services/balance-service/publishTiming';
 import { BitcoinEsploraClient, type BitcoinAddressBalance } from '@extension-base/services/bitcoin-indexer-service';
 import { isAccountAccessError } from '@extension-base/services/keyring-service/AccountAccessErrors';
 import { exportUniversalWalletSecret } from '@extension-base/services/keyring-service/UniversalWalletPassword';
@@ -460,7 +461,7 @@ export default class BitcoinBalanceService {
     }
 
     if (persist) this.state.balanceService.updateBalanceStore(network.name, storedBalanceItem, address);
-    this.state.timeoutService.lazyNext('setBitcoinBalanceItem', () => this.state.balanceService.publishBalance(), 500);
+    this.state.timeoutService.lazyNext('setBitcoinBalanceItem', () => this.state.balanceService.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
 
     return storedBalanceItem;
   }
@@ -504,7 +505,7 @@ export default class BitcoinBalanceService {
       });
 
     if (balances.length) {
-      this.state.timeoutService.lazyNext('setBitcoinBalanceItem', () => this.state.balanceService.publishBalance(), 500);
+      this.state.timeoutService.lazyNext('setBitcoinBalanceItem', () => this.state.balanceService.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
     }
 
     return balances;

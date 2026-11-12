@@ -63,6 +63,9 @@ function balanceStorage<T>(
   return [pallets.tokens?.accounts, [address, options]];
 }
 
+// How soon a network whose connection does not exist yet is looked for again.
+const SUBSCRIBE_RETRY_MS = 250;
+
 export default class SubstrateBalanceService {
   private readonly equilibriumBalanceService: EquilibriumBalanceService;
 
@@ -274,7 +277,7 @@ export default class SubstrateBalanceService {
         if (!api) {
           const network = Object.values(state.networkService.networkMap).find(({ name }) => isSameString(name, networkName));
           if (network?.networkStatus === NETWORK_STATUS.DISCONNECTED) finish();
-          else retry = setTimeout(subscribeOnReady, 1000);
+          else retry = setTimeout(subscribeOnReady, SUBSCRIBE_RETRY_MS);
           return;
         }
         void api.isReadyOrError.then(() => {
@@ -284,8 +287,9 @@ export default class SubstrateBalanceService {
       };
 
       const deadline = setTimeout(() => finish(), 60_000);
-      if (isSora(networkName)) subscribeOnReady();
-      else retry = setTimeout(subscribeOnReady, 1000);
+      // A connection that is ready is subscribed at once. One that is still opening is awaited (isReadyOrError), and
+      // one that has not been created yet is looked for again shortly.
+      subscribeOnReady();
     }));
   }
 }

@@ -1,4 +1,5 @@
 import { APIItemState } from '@extension-base/api/types/networks';
+import { BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS } from '@extension-base/services/balance-service/publishTiming';
 import { storage } from '@extension-base/stores/Storage';
 import { Subject } from 'rxjs';
 import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
@@ -220,7 +221,7 @@ export default class BalanceService {
     };
     stored.networkScanStates[address] = accountScanStates;
     this.networkScanStates[address] = accountScanStates;
-    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 500);
+    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
 
     return ['networkScanStates'];
   }
@@ -445,7 +446,7 @@ export default class BalanceService {
       )
     );
 
-    if (changed) this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 500);
+    if (changed) this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
   }
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
@@ -497,7 +498,7 @@ export default class BalanceService {
 
     this.updateBalanceStore(networkKey, mergedBalance, address);
 
-    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 500);
+    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
   }
 
   public setJettonBalanceItem(networkKey: string, item: Partial<BalanceItem>, accountAddress: string) {
@@ -540,13 +541,18 @@ export default class BalanceService {
 
     this.updateBalanceStore(networkKey, balance, accountAddress);
 
-    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 500);
+    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
   }
 
   public async publishBalance() {
     const balance = await this.getBalance();
 
     return this.balanceSubject.next(balance);
+  }
+
+  /** Sends the open pages the selected wallet's balances once the changes made around now are in. */
+  public schedulePublish() {
+    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
   }
 
   /**
@@ -633,14 +639,14 @@ export default class BalanceService {
 
   public async getBalance(): Promise<BalanceJson> {
     const account = this.state.currentAccount;
+    const discovery = this.state.assetDiscoverySweepService?.getProgress?.();
 
     if (account) {
-      return new Promise((resolve) => {
-        resolve({
-          details: this.balanceMap[account.address] ?? [],
-          scanStates: this.networkScanStates[account.address] ?? {},
-        });
-      });
+      return {
+        details: this.balanceMap[account.address] ?? [],
+        scanStates: this.networkScanStates[account.address] ?? {},
+        ...(discovery ? { discovery } : {}),
+      };
     }
 
     return { details: [] };
@@ -720,7 +726,12 @@ export default class BalanceService {
     bitcoinTestnetAddress,
     irohaAddress,
     walletEcosystem,
+    only,
+    force,
   }: GetBalancesProps): Promise<ResponseBalanceRequest[]> {
+    // Every ecosystem of the wallet, or only those asked for. A service that is not called reads nothing: an empty
+    // network list would make the Solana, Bitcoin and Iroha services read their default network.
+    const wants = (ecosystem: WalletEcosystem) => !only || only.has(ecosystem);
     const account = this.state.keyringService?.getAllMainAccounts?.().find(({ address: accountAddress }) =>
       isSameString(accountAddress, address)
     );
@@ -736,30 +747,31 @@ export default class BalanceService {
         )?.address;
       const tasks: Promise<ResponseBalanceRequest[]>[] = [];
 
-      if (ecosystems.has(WalletEcosystem.Substrate)) {
+      if (ecosystems.has(WalletEcosystem.Substrate) && wants(WalletEcosystem.Substrate)) {
         tasks.push(this.substrateBalanceService.fetchBalance({
           address: publicAddress(WalletEcosystem.Substrate) ?? address,
           networks: substrateNetworks,
           ethereumAddress: ethereumAddress ?? publicAddress(WalletEcosystem.Evm),
         }));
       }
-      if (ecosystems.has(WalletEcosystem.Evm)) {
+      if (ecosystems.has(WalletEcosystem.Evm) && wants(WalletEcosystem.Evm)) {
         tasks.push(this.evmBalanceService.fetchBalance({
           networks: evmNetworks,
           ethereumAddress: ethereumAddress || publicAddress(WalletEcosystem.Evm),
+          force,
         }));
       }
-      if (ecosystems.has(WalletEcosystem.Ton)) {
+      if (ecosystems.has(WalletEcosystem.Ton) && wants(WalletEcosystem.Ton)) {
         tasks.push(this.tonBalanceService.fetchBalance(address, tonNetworks));
       }
-      if (ecosystems.has(WalletEcosystem.Solana)) {
+      if (ecosystems.has(WalletEcosystem.Solana) && wants(WalletEcosystem.Solana)) {
         tasks.push(this.solanaBalanceService.fetchBalance({
           address,
           solanaAddress: solanaAddress ?? publicAddress(WalletEcosystem.Solana),
           networks: solanaNetworks,
         }));
       }
-      if (ecosystems.has(WalletEcosystem.Bitcoin)) {
+      if (ecosystems.has(WalletEcosystem.Bitcoin) && wants(WalletEcosystem.Bitcoin)) {
         tasks.push(this.bitcoinBalanceService.fetchBalance({
           address,
           bitcoinAddress: bitcoinAddress ?? publicAddress(WalletEcosystem.Bitcoin, 'mainnet'),
@@ -767,7 +779,7 @@ export default class BalanceService {
           networks: bitcoinNetworks,
         }));
       }
-      if (ecosystems.has(WalletEcosystem.Iroha)) {
+      if (ecosystems.has(WalletEcosystem.Iroha) && wants(WalletEcosystem.Iroha)) {
         tasks.push(this.irohaBalanceService.fetchBalance({
           address,
           irohaAddress: irohaAddress ?? publicAddress(WalletEcosystem.Iroha, 'taira'),
@@ -778,26 +790,28 @@ export default class BalanceService {
       return (await Promise.all(tasks)).flat();
     }
 
-    if (walletEcosystem === WalletEcosystem.Ton) return this.tonBalanceService.fetchBalance(address, tonNetworks);
+    if (walletEcosystem === WalletEcosystem.Ton)
+      return wants(WalletEcosystem.Ton) ? this.tonBalanceService.fetchBalance(address, tonNetworks) : [];
     if (walletEcosystem === WalletEcosystem.Solana)
-      return this.solanaBalanceService.fetchBalance({ address, solanaAddress, networks: solanaNetworks });
+      return wants(WalletEcosystem.Solana)
+        ? this.solanaBalanceService.fetchBalance({ address, solanaAddress, networks: solanaNetworks })
+        : [];
     if (walletEcosystem === WalletEcosystem.Bitcoin)
-      return this.bitcoinBalanceService.fetchBalance({
-        address,
-        bitcoinAddress,
-        bitcoinTestnetAddress,
-        networks: bitcoinNetworks,
-      });
+      return wants(WalletEcosystem.Bitcoin)
+        ? this.bitcoinBalanceService.fetchBalance({ address, bitcoinAddress, bitcoinTestnetAddress, networks: bitcoinNetworks })
+        : [];
     if (walletEcosystem === WalletEcosystem.Iroha)
-      return this.irohaBalanceService.fetchBalance({ address, irohaAddress, networks: irohaNetworks });
+      return wants(WalletEcosystem.Iroha)
+        ? this.irohaBalanceService.fetchBalance({ address, irohaAddress, networks: irohaNetworks })
+        : [];
 
-    const evmBalances = await this.evmBalanceService.fetchBalance({ networks: evmNetworks, ethereumAddress });
-
-    const substrateBalances = await this.substrateBalanceService.fetchBalance({
-      address,
-      networks: substrateNetworks,
-      ethereumAddress,
-    });
+    // Read together: the slower of the two no longer holds the other back.
+    const [evmBalances, substrateBalances] = await Promise.all([
+      wants(WalletEcosystem.Evm) ? this.evmBalanceService.fetchBalance({ networks: evmNetworks, ethereumAddress, force }) : [],
+      wants(WalletEcosystem.Substrate)
+        ? this.substrateBalanceService.fetchBalance({ address, networks: substrateNetworks, ethereumAddress })
+        : [],
+    ]);
 
     return [...substrateBalances, ...evmBalances];
   }

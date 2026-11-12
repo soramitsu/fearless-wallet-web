@@ -1,6 +1,6 @@
 import { Subject } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { SubscriptionService } from '@extension-base/services/subscription-service';
+import { OTHER_WALLETS_START_DELAY_MS, SubscriptionService } from '@extension-base/services/subscription-service';
 import { TimeoutService } from '@extension-base/services/timeout-service';
 import { DOTSAMA_API_TIMEOUT } from '@extension-base/const/intervals';
 import type State from '@extension-base/background/handlers/State';
@@ -74,10 +74,13 @@ afterEach(() => {
 });
 
 describe('start-up refresh of the other wallets', () => {
-  it('starts every other ecosystem at once, without Substrate', async () => {
+  it('starts every other ecosystem together, without Substrate, a moment after the selected wallet', async () => {
     const { service, state } = fixture();
 
     await service.start();
+    // The selected wallet is read first; the others do not compete with it for the same nodes.
+    expect(state.balanceService.fetchBalance).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(OTHER_WALLETS_START_DELAY_MS);
 
     const requests = state.balanceService.fetchBalance.mock.calls.map(([request]) => request);
     expect(requests.map(({ address }) => address)).toEqual(['wallet-b', 'ton-wallet', 'universal']);

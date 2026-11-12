@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CronService } from '@extension-base/services/cron-service';
+import { CRON_POLL_BALANCES_INTERVAL, CronService } from '@extension-base/services/cron-service';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { CRON_REFRESH_PRICE_INTERVAL, CRON_UPDATE_JSON_INTERVAL } from '@extension-base/const/intervals';
 import type State from '@extension-base/background/handlers/State';
@@ -97,7 +97,7 @@ describe('background cron lifecycle', () => {
     service.start();
     expect(state.pricesService.refreshPrice).toHaveBeenCalledOnce();
     expect(state.init).not.toHaveBeenCalled();
-    expect(vi.getTimerCount()).toBe(4);
+    expect(vi.getTimerCount()).toBe(5);
     vi.advanceTimersByTime(CRON_REFRESH_PRICE_INTERVAL);
     expect(state.pricesService.refreshPrice).toHaveBeenCalledTimes(2);
     expect(state.init).not.toHaveBeenCalled();
@@ -111,23 +111,51 @@ describe('background cron lifecycle', () => {
     vi.advanceTimersByTime(CRON_REFRESH_PRICE_INTERVAL);
     expect(state.pricesService.refreshPrice).toHaveBeenCalledOnce();
     service.start();
-    expect(vi.getTimerCount()).toBe(4);
+    expect(vi.getTimerCount()).toBe(5);
     expect(state.pricesService.refreshPrice).toHaveBeenCalledTimes(2);
     vi.advanceTimersByTime(CRON_REFRESH_PRICE_INTERVAL);
     expect(state.pricesService.refreshPrice).toHaveBeenCalledTimes(3);
   });
 
-  it.each([[false, true], [true, false]])('pauses wallet polling when connected=%s, account=%s', (connected, account) => {
+  // Without a connection only the registry refresh and the balance poll of the selected wallet stay; without a wallet
+  // only the registry refresh.
+  it.each([[false, true, 2], [true, false, 1]])('pauses wallet polling when connected=%s, account=%s', (connected, account, left) => {
     const { service, state } = fixture();
     service.start();
     service.updateCron(info(connected, account));
-    expect(vi.getTimerCount()).toBe(1);
+    expect(vi.getTimerCount()).toBe(left);
     vi.advanceTimersByTime(CRON_REFRESH_PRICE_INTERVAL);
     expect(state.pricesService.refreshPrice).toHaveBeenCalledOnce();
     service.updateCron(info());
     service.updateCron(info());
-    expect(vi.getTimerCount()).toBe(4);
+    expect(vi.getTimerCount()).toBe(5);
     expect(state.pricesService.refreshPrice).toHaveBeenCalledTimes(2);
+  });
+
+  it('polls the balances of a wallet that has no Substrate or EVM connection', () => {
+    const { service, state } = fixture();
+    state.getSubstrateApiMap = {} as typeof state.getSubstrateApiMap;
+    service.start();
+
+    expect(service.isCronExist('pollBalances')).toBe(true);
+    expect(service.isCronExist('refreshPrice')).toBe(false);
+  });
+
+  it('reads the polled balances again only while a wallet page is open', () => {
+    const { service, state } = fixture();
+    const refreshCurrentWallet = vi.fn().mockResolvedValue(true);
+    const sleep = { hasOpenPages: false };
+    Object.assign(state, { workerSleepService: sleep, subscriptionService: { refreshCurrentWallet } });
+
+    service.start();
+    vi.advanceTimersByTime(CRON_POLL_BALANCES_INTERVAL);
+    expect(refreshCurrentWallet).not.toHaveBeenCalled();
+
+    sleep.hasOpenPages = true;
+    vi.advanceTimersByTime(CRON_POLL_BALANCES_INTERVAL);
+    expect(refreshCurrentWallet).toHaveBeenCalledOnce();
+    // Each ecosystem's own interval is the subscription service's to judge.
+    expect(refreshCurrentWallet).toHaveBeenCalledWith();
   });
 
   it('keeps only registry refresh running when no account is selected', () => {

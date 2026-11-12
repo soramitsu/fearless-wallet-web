@@ -1,4 +1,5 @@
 import { APIItemState } from '@extension-base/api/types/networks';
+import { BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS } from '@extension-base/services/balance-service/publishTiming';
 import {
   createIrohaToriiWalletClient,
   type IrohaToriiPage,
@@ -626,7 +627,7 @@ export default class IrohaBalanceService {
     else tokenGroup.balances[existingIndex] = { ...tokenGroup.balances[existingIndex], ...balanceItem };
 
     this.state.balanceService.updateBalanceStore(network.name, balanceItem, address);
-    this.state.timeoutService.lazyNext('setIrohaBalanceItem', () => this.state.balanceService.publishBalance(), 500);
+    this.state.timeoutService.lazyNext('setIrohaBalanceItem', () => this.state.balanceService.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
   }
 
   private markCachedBalancesErrored(address: string, network: NetworkJson): ResponseBalanceRequest[] {
@@ -654,7 +655,7 @@ export default class IrohaBalanceService {
       });
 
     if (balances.length) {
-      this.state.timeoutService.lazyNext('setIrohaBalanceItem', () => this.state.balanceService.publishBalance(), 500);
+      this.state.timeoutService.lazyNext('setIrohaBalanceItem', () => this.state.balanceService.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
     }
 
     return balances;

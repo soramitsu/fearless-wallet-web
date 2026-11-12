@@ -56,6 +56,11 @@ export class WorkerSleepService {
     return this.sleeping;
   }
 
+  /** Whether a wallet page (popup, side panel or tab) is open. */
+  get hasOpenPages(): boolean {
+    return this.pages > 0;
+  }
+
   /** A wallet page (popup, side panel or tab) keeps the connections open until its port closes. */
   pageOpened(closed: Promise<unknown>): void {
     this.pages += 1;

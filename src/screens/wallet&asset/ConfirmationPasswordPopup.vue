@@ -43,9 +43,9 @@
         </template>
 
         <template v-if="extrinsicType !== 'nft'">
-          <div class="descriptions">
+          <div class="descriptions" :class="{ 'descriptions--ignite': showsIgnite }">
             <!-- Brand kit v3: a sent transfer ignites the solar geometry around it, with the send sound. -->
-            <SolarIgnite v-if="showsIgnite" class="send-ignite" :size="200" />
+            <SolarIgnite v-if="showsIgnite" class="send-ignite" :size="IGNITE_SIZE" />
             <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" class="asset-icon" />
 
             <template v-if="secondIcon">
@@ -90,8 +90,8 @@
         </template>
 
         <template v-else>
-          <div class="icon-circle">
-            <SolarIgnite v-if="showsIgnite" class="send-ignite" :size="200" />
+          <div class="icon-circle" :class="{ 'icon-circle--ignite': showsIgnite }">
+            <SolarIgnite v-if="showsIgnite" class="send-ignite" :size="IGNITE_SIZE" />
             <Icon
               :icon="isFailed ? 'close' : 'check'"
               className="icon__lock-green"
@@ -214,6 +214,8 @@ export default defineComponent({
       signedPayload: null,
       transactionState: null,
       transactionResponse: null as BasicTxResponse | ResponseNftTransfer | null,
+      // Small enough to stay inside the popup's scroll box around the success mark.
+      IGNITE_SIZE: 112,
     };
   },
   computed: {
@@ -576,6 +578,11 @@ export default defineComponent({
     background-color: #ffffff08;
     border-radius: 50%;
     padding: 21px;
+  }
+
+  .descriptions--ignite,
+  .icon-circle--ignite {
+    margin-top: 18px;
   }
 
   .send-ignite {

@@ -20,7 +20,14 @@
       </div>
 
       <template v-else>
-        <button type="button" class="total" :aria-label="totalLabel" data-testid="heroTotal" @click="$emit('openFiats')">
+        <button
+        type="button"
+        class="total"
+        :class="totalSize && `total--${totalSize}`"
+        :aria-label="totalLabel"
+        data-testid="heroTotal"
+        @click="$emit('openFiats')"
+      >
           <span class="total-symbol">{{ fiatSymbol }}</span>
           <span class="total-whole">{{ shownAmount.whole }}</span>
           <span class="total-fraction">.{{ shownAmount.fraction }}</span>
@@ -113,6 +120,12 @@ const amount = computed(() => splitTotal(props.total));
 // The digits count to a new total (src/feel/countUp.ts); the label above and anything copied read the final value.
 const shownTotal = useCountUp(() => props.total, () => !props.loading);
 const shownAmount = computed(() => splitTotal(shownTotal.value));
+// A long total steps its digits down, so it stays on one line inside the sky card's ink, even in the side panel. It
+// follows the final value, so the size never changes while the digits count.
+const totalSize = computed(() => {
+  const digits = amount.value.whole.length;
+  return digits > 12 ? 'longer' : digits > 9 ? 'long' : '';
+});
 
 const ringsPath = solarPath(['ring']);
 const latticePath = solarPath(['lattice', 'hexagram']);
@@ -579,6 +592,28 @@ html[data-fw-effects='reduced'] .hero-sky,
 @media (max-width: 380px) {
   .total-whole {
     font-size: 2.2rem;
+  }
+}
+
+.total--long {
+  .total-whole {
+    font-size: 1.8rem;
+  }
+
+  .total-symbol,
+  .total-fraction {
+    font-size: 1.2rem;
+  }
+}
+
+.total--longer {
+  .total-whole {
+    font-size: 1.45rem;
+  }
+
+  .total-symbol,
+  .total-fraction {
+    font-size: 1rem;
   }
 }
 </style>

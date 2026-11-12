@@ -165,6 +165,12 @@ describe('portfolio total and explanatory controls', () => {
     expect(wrapper.get('[data-testid="heroTotal"]').attributes('aria-label')).toContain('1,234.56');
   });
 
+  it('steps a long total down so it keeps to one line on the sky card', () => {
+    expect(hero().get('[data-testid="heroTotal"]').classes()).toEqual(['total']);
+    expect(hero({ total: '120003020' }).get('[data-testid="heroTotal"]').classes()).toContain('total--long');
+    expect(hero({ total: '120003020456' }).get('[data-testid="heroTotal"]').classes()).toContain('total--longer');
+  });
+
   it('uses a loading announcement and removes actions unavailable to the scope', () => {
     const wrapper = hero({ loading: true, showSwap: false });
     expect(wrapper.get('[data-testid="heroLoading"]').attributes('role')).toBe('status');

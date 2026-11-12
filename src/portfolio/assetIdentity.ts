@@ -128,7 +128,7 @@ export function getCanonicalAssetId(balance: BalanceItem): string {
   );
 }
 
-function findRegistryAsset(network: NetworkJson, balance: BalanceItem): NetworkJson['assets'][number] | undefined {
+export function findRegistryAsset(network: NetworkJson, balance: BalanceItem): NetworkJson['assets'][number] | undefined {
   const ecosystem = String(network.ecosystem ?? balance.relayChain ?? '').toLowerCase();
   const normalizeId = (value: unknown): string => {
     const id = String(value ?? '').trim();
@@ -228,7 +228,7 @@ function isBalanceUnavailable(balance: BalanceItem): boolean {
  * What the wallet holds on this row: the total balance (free + reserved on Substrate, where staked and locked funds
  * live inside free or reserved). Every other ecosystem reports `total === transferable`.
  */
-function holdingBalance(balance: BalanceItem): string {
+export function holdingBalance(balance: BalanceItem): string {
   return decimalAmount(balance.total ?? balance.free ?? balance.transferable ?? '0');
 }
 

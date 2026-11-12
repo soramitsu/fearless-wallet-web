@@ -33,6 +33,7 @@
             </button>
           </section>
           <VisualEffectsSetting v-if="group.id === 'preferences'" />
+          <SoundEffectsSetting v-if="group.id === 'preferences'" />
         </template>
       </Scroll>
     </ContentForm>
@@ -44,6 +45,7 @@ import { computed, onActivated, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { chrome } from '@extension-base/utils/crossenv';
 import VisualEffectsSetting from './VisualEffectsSetting.vue';
+import SoundEffectsSetting from './SoundEffectsSetting.vue';
 import type { LegacyExposureStatus } from '@extension-base/services/legacy-exposure-service';
 import { IS_EXTENSION } from '@/consts/global';
 import { IS_SIDE_PANEL } from '@/consts/globalClient';

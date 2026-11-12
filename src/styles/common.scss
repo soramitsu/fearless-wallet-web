@@ -61,6 +61,30 @@ $fw-brand-hairline: rgb(255 255 255 / 0.18);
 $fw-brand-gold: #ffc24a;
 $fw-primary-glow: rgb(230 0 111 / 0.4);
 
+// Brand kit v3 feel (SPEC "Launch, feel and sound" part 3), the same in both palettes. The lit rim: gold at 55 % on the
+// upper left fading through pink at 30 % to nothing, an inner top highlight and a soft plum shadow.
+$fw-rim-gold: rgb(255 194 74 / 0.55);
+$fw-rim-pink: rgb(255 79 163 / 0.3);
+$fw-rim-clear: rgb(255 79 163 / 0);
+$fw-rim-highlight: rgb(255 255 255 / 0.08);
+$fw-rim-shadow: rgb(58 16 96 / 0.55);
+// The sunset sky behind the balance sits under ink, strongest where the text is (measured at 4.5:1 or better).
+$fw-sky-scrim-strong: rgb(18 10 46 / 0.9);
+$fw-sky-scrim-soft: rgb(18 10 46 / 0.32);
+$fw-sky-geometry: rgb(255 194 74 / 0.5);
+// Tokens arriving: a gold pulse on the balance card.
+$fw-arrival-gold: rgb(255 194 74 / 0.7);
+$fw-arrival-gold-clear: rgb(255 194 74 / 0);
+// The wallet home's aurora: two very soft drifting glows, pink and ember, each under 18 %.
+$fw-aurora-pink: rgb(230 0 111 / 0.16);
+$fw-aurora-ember: rgb(255 122 26 / 0.12);
+$fw-aurora-clear: rgb(18 10 46 / 0);
+// The slow sheen across the primary action, and the active tab's glow and dot.
+$fw-sheen: rgb(255 255 255 / 0.32);
+$fw-sheen-clear: rgb(255 255 255 / 0);
+$fw-tab-glow: rgb(230 0 111 / 0.38);
+$fw-tab-glow-clear: rgb(230 0 111 / 0);
+
 $extension-width: 561px;
 $extension-height: 600px;
 $default-height-page: 100%;
@@ -89,6 +113,50 @@ $default-height-page: 100%;
 @function toRem($value) {
     $remValue: math.div($value, 16) * 1rem;
     @return $remValue;
+}
+
+// Brand kit v3's lit rim on cards and the tab bar: a one-pixel gold-to-pink edge on the upper left that fades out to the
+// lower right, an inner top highlight and a soft plum shadow. The element needs a position; the rim is its ::after, on
+// $layer (-1 puts it under the element's own children, as the dock needs for its raised Swap mark).
+// Reduced and Calm surfaces keep a plain hairline and no shadow; forced colours draw their own borders.
+@mixin fw-lit-rim($radius: inherit, $layer: 2) {
+  box-shadow:
+    inset 0 1px 0 $fw-rim-highlight,
+    0 12px 28px -16px $fw-rim-shadow;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: $layer;
+    padding: 1px;
+    border-radius: $radius;
+    background: linear-gradient(135deg, $fw-rim-gold 0%, $fw-rim-pink 42%, $fw-rim-clear 80%);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  html[data-fw-effects='reduced'] &,
+  .fw-calm & {
+    box-shadow: none;
+
+    &::after {
+      background: $fw-rim-highlight;
+    }
+  }
+
+  @media (forced-colors: active) {
+    &::after {
+      display: none;
+    }
+  }
 }
 
 $header-height: toRem(48);

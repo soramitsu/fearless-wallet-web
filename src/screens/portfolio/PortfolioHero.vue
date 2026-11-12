@@ -1,45 +1,58 @@
 <template>
   <section class="hero" :aria-label="t('portfolioDashboard.totalBalance')" data-testid="portfolioHero">
-    <p class="overline" data-testid="heroOverline">{{ t('portfolioDashboard.totalBalance') }}</p>
+    <!-- Brand kit v3: the balance on the sunset sky, the solar rings turning slowly at its sides, a lit rim. -->
+    <div ref="card" class="hero-card" data-testid="heroCard">
+      <div class="hero-sky" aria-hidden="true">
+        <img ref="skyImage" class="hero-sky-image" :src="skyCard" alt="" draggable="false" />
+        <svg class="hero-lattice" viewBox="-1 -1 2 2" focusable="false"><path :d="latticePath" /></svg>
+        <svg class="hero-rings" viewBox="-1 -1 2 2" focusable="false">
+          <path :d="ringsPath" />
+          <circle v-for="(tick, index) in ticks" :key="index" :cx="tick.x" :cy="tick.y" :r="tick.r" />
+        </svg>
+      </div>
+      <span v-if="pulseKey" :key="pulseKey" class="hero-pulse" aria-hidden="true" data-testid="heroArrivalPulse"></span>
 
-    <div v-if="loading" class="total-loading" role="status" :aria-label="t('portfolioPage.loadingBalances')" data-testid="heroLoading">
-      <Shimmer height="40px" width="196px" />
-      <Shimmer height="16px" width="128px" />
+      <p class="overline" data-testid="heroOverline">{{ t('portfolioDashboard.totalBalance') }}</p>
+
+      <div v-if="loading" class="total-loading" role="status" :aria-label="t('portfolioPage.loadingBalances')" data-testid="heroLoading">
+        <Shimmer height="40px" width="196px" />
+        <Shimmer height="16px" width="128px" />
+      </div>
+
+      <template v-else>
+        <button type="button" class="total" :aria-label="totalLabel" data-testid="heroTotal" @click="$emit('openFiats')">
+          <span class="total-symbol">{{ fiatSymbol }}</span>
+          <span class="total-whole">{{ shownAmount.whole }}</span>
+          <span class="total-fraction">.{{ shownAmount.fraction }}</span>
+        </button>
+
+        <p class="change" :class="`change--${change.direction}`" data-testid="heroChange">
+          <span v-if="change.direction !== 'flat'" class="change-arrow" aria-hidden="true">{{ change.direction === 'up' ? '▲' : '▼' }}</span>
+          {{ change.amountText }} · {{ change.percentText }} · {{ t('portfolioDashboard.changeLabel') }}
+        </p>
+      </template>
+
+      <div class="meta">
+        <button
+          type="button"
+          class="sync-chip"
+          :class="`sync-chip--${sync.kind}`"
+          :aria-label="t('portfolioDashboard.sync.open', { state: syncText })"
+          data-testid="heroSync"
+          @click="$emit('openSync')"
+        >
+          <span class="sync-dot" aria-hidden="true"></span>{{ syncText }}
+        </button>
+
+        <span class="meta-dot" aria-hidden="true">·</span>
+
+        <button type="button" class="count-link" data-testid="heroHowWeCount" @click="$emit('openCounting')">
+          {{ t('portfolioDashboard.howWeCount') }}
+        </button>
+      </div>
+
+      <p v-if="!loading && captions.length" class="caption" data-testid="heroCaption">{{ captions.join(' · ') }}</p>
     </div>
-
-    <template v-else>
-      <button type="button" class="total" :aria-label="totalLabel" data-testid="heroTotal" @click="$emit('openFiats')">
-        <span class="total-symbol">{{ fiatSymbol }}</span>
-        <span class="total-whole">{{ amount.whole }}</span>
-        <span class="total-fraction">.{{ amount.fraction }}</span>
-      </button>
-
-      <p class="change" :class="`change--${change.direction}`" data-testid="heroChange">
-        <span v-if="change.direction !== 'flat'" class="change-arrow" aria-hidden="true">{{ change.direction === 'up' ? '▲' : '▼' }}</span>
-        {{ change.amountText }} · {{ change.percentText }} · {{ t('portfolioDashboard.changeLabel') }}
-      </p>
-    </template>
-
-    <div class="meta">
-      <button
-        type="button"
-        class="sync-chip"
-        :class="`sync-chip--${sync.kind}`"
-        :aria-label="t('portfolioDashboard.sync.open', { state: syncText })"
-        data-testid="heroSync"
-        @click="$emit('openSync')"
-      >
-        <span class="sync-dot" aria-hidden="true"></span>{{ syncText }}
-      </button>
-
-      <span class="meta-dot" aria-hidden="true">·</span>
-
-      <button type="button" class="count-link" data-testid="heroHowWeCount" @click="$emit('openCounting')">
-        {{ t('portfolioDashboard.howWeCount') }}
-      </button>
-    </div>
-
-    <p v-if="!loading && captions.length" class="caption" data-testid="heroCaption">{{ captions.join(' · ') }}</p>
 
     <!-- What a wallet is for, one press away. -->
     <RoundActions v-if="actions.length" class="actions" :actions="actions" data-testid="heroActions" @action="onAction" />
@@ -47,8 +60,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue';
 import type { SyncState } from '@/portfolio/dashboard/syncState';
+import skyCard from '@/assets/brand/sky/sky-card.webp';
+import { arrivalPulse } from '@/feel/arrivalPulse';
+import { useCountUp } from '@/feel/countUp';
+import { motionAllowed } from '@/feel/motion';
+import { solarPath, solarTicks } from '@/feel/solarGeometry';
 import RoundActions, { type RoundAction } from '@/screens/portfolio/RoundActions.vue';
 import { formatChange, splitTotal } from '@/portfolio/dashboard/format';
 import { formatSyncAge } from '@/portfolio/syncFreshness';
@@ -92,6 +110,65 @@ const accountsStore = useAccountsStore();
 
 const fiatSymbol = computed(() => accountsStore.fiatSymbol);
 const amount = computed(() => splitTotal(props.total));
+// The digits count to a new total (src/feel/countUp.ts); the label above and anything copied read the final value.
+const shownTotal = useCountUp(() => props.total, () => !props.loading);
+const shownAmount = computed(() => splitTotal(shownTotal.value));
+
+const ringsPath = solarPath(['ring']);
+const latticePath = solarPath(['lattice', 'hexagram']);
+const ticks = solarTicks();
+
+// Tokens arriving pulse the card gold (src/feel/useArrivalFeedback.ts).
+const pulseKey = ref(0);
+let pulseTimer: ReturnType<typeof setTimeout> | undefined;
+watch(arrivalPulse, (count) => {
+  pulseKey.value = count;
+  clearTimeout(pulseTimer);
+  pulseTimer = setTimeout(() => (pulseKey.value = 0), 1600);
+});
+
+// The sky drifts a few points with the page's scroll, on the compositor only.
+const card = ref<HTMLElement>();
+const skyImage = ref<HTMLImageElement>();
+let scroller: HTMLElement | null = null;
+let driftFrame = 0;
+const scrollParent = (element: HTMLElement | undefined): HTMLElement | null => {
+  for (let node = element?.parentElement; node; node = node.parentElement) {
+    const { overflowY } = getComputedStyle(node);
+    if (overflowY === 'auto' || overflowY === 'scroll') return node;
+  }
+  return null;
+};
+const onScroll = () => {
+  if (driftFrame) return;
+  driftFrame = requestAnimationFrame(() => {
+    driftFrame = 0;
+    const drift = Math.min(14, (scroller?.scrollTop ?? 0) * 0.12);
+    if (skyImage.value) skyImage.value.style.transform = `translate3d(0, ${drift.toFixed(1)}px, 0)`;
+  });
+};
+onMounted(() => {
+  markHome(true);
+  if (!motionAllowed()) return;
+  scroller = scrollParent(card.value);
+  scroller?.addEventListener('scroll', onScroll, { passive: true });
+});
+onBeforeUnmount(() => {
+  markHome(false);
+  scroller?.removeEventListener('scroll', onScroll);
+  if (driftFrame) cancelAnimationFrame(driftFrame);
+  clearTimeout(pulseTimer);
+});
+
+// The wallet home's aurora (styles/_fw-effects.scss) shows while this screen does; a kept-alive copy off screen hides it.
+function markHome(on: boolean): void {
+  const root = globalThis.document?.documentElement;
+  if (!root) return;
+  if (on) root.dataset.fwHome = 'wallet';
+  else delete root.dataset.fwHome;
+}
+onActivated(() => markHome(true));
+onDeactivated(() => markHome(false));
 const change = computed(() => formatChange(props.changeAmount, props.changePercent, fiatSymbol.value));
 
 const totalLabel = computed(
@@ -136,7 +213,7 @@ const syncText = computed(() => {
 
 const actions = computed<RoundAction[]>(() =>
   ([] as (RoundAction | false)[]).concat(
-    props.showSend && { id: 'send', icon: 'send', testId: 'heroSend', label: t('walletHome.send'), aria: t('walletHome.sendAria') },
+    props.showSend && { id: 'send', icon: 'send', testId: 'heroSend', label: t('walletHome.send'), aria: t('walletHome.sendAria'), primary: true },
     props.showReceive && {
       id: 'receive',
       icon: 'receive',
@@ -156,30 +233,172 @@ function onAction(id: string): void {
 </script>
 
 <style lang="scss" scoped>
-// The balance first, then what to do with it (Exodus' home): centred, no card, no chart in the way of the list.
+// The balance first, then what to do with it (Exodus' home). Brand kit v3 sets the balance on a card of the sunset sky;
+// the actions stay under it, and nothing gets in the way of the list.
 .hero {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  min-width: 0;
+  padding: 2px 0 10px;
+  text-align: center;
+}
+
+.hero-card {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
   min-width: 0;
-  padding: 2px 0 10px;
-  text-align: center;
+  padding: 12px 16px 10px;
+  border-radius: 20px;
+  background: var(--fw-raised);
+  @include fw-lit-rim(20px);
 
-  // A soft brand glow under the total, painted behind everything and never in the way of a click.
-  &::before {
-    content: '';
-    position: absolute;
-    inset: -24px 8% 30%;
-    z-index: 0;
-    background: var(--fw-brand-glow);
-    pointer-events: none;
-  }
-
-  > * {
+  > :not(.hero-sky, .hero-pulse) {
     position: relative;
     z-index: 1;
+  }
+}
+
+.hero-sky {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+
+  // Ink over the sky, strongest under the text, so every line on it keeps 4.5:1 against the brightest pixel behind it;
+  // the sky shows at the sides, where nothing is written.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      $fw-sky-scrim-soft 0%,
+      $fw-sky-scrim-strong 21%,
+      $fw-sky-scrim-strong 79%,
+      $fw-sky-scrim-soft 100%
+    );
+  }
+}
+
+.hero-sky-image {
+  position: absolute;
+  left: 0;
+  top: -10%;
+  width: 100%;
+  height: 120%;
+  object-fit: cover;
+  object-position: 50% 42%;
+  user-select: none;
+  will-change: transform;
+}
+
+// The solar geometry, centred on the card: its rings and ticks turn once in about six minutes at the card's sides, the
+// lattice and the hexagram rest behind the text under the ink.
+.hero-rings,
+.hero-lattice {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 92%;
+  aspect-ratio: 1;
+  overflow: visible;
+  translate: -50% -50%;
+  fill: none;
+}
+
+.hero-rings {
+  animation: hero-turn 349s linear infinite;
+
+  path {
+    stroke: $fw-sky-geometry;
+    stroke-width: 1.25px;
+    vector-effect: non-scaling-stroke;
+  }
+
+  circle {
+    fill: $fw-sky-geometry;
+  }
+}
+
+.hero-lattice {
+  opacity: 0.35;
+
+  path {
+    stroke: $fw-sky-geometry;
+    stroke-width: 1px;
+    vector-effect: non-scaling-stroke;
+  }
+}
+
+@keyframes hero-turn {
+  to {
+    rotate: -360deg;
+  }
+}
+
+// Tokens arrived: a gold ring runs out from the card's edge and fades.
+.hero-pulse {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: hero-arrival 1.4s var(--fw-ease) forwards;
+}
+
+@keyframes hero-arrival {
+  0% {
+    box-shadow:
+      inset 0 0 0 2px $fw-arrival-gold,
+      0 0 0 0 $fw-arrival-gold;
+  }
+
+  60% {
+    box-shadow:
+      inset 0 0 0 1px $fw-arrival-gold,
+      0 0 0 10px $fw-arrival-gold-clear;
+  }
+
+  100% {
+    box-shadow:
+      inset 0 0 0 1px $fw-arrival-gold-clear,
+      0 0 0 16px $fw-arrival-gold-clear;
+  }
+}
+
+// Lite keeps the sky still; Reduced and Calm paint a plain raised card; forced colours draw no picture.
+html[data-fw-effects='lite'] .hero-rings {
+  animation: none;
+}
+
+html[data-fw-effects='reduced'] .hero-sky,
+.fw-calm .hero-sky {
+  display: none;
+}
+
+@media (forced-colors: active) {
+  .hero-sky {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-rings {
+    animation: none;
+  }
+
+  .hero-pulse {
+    animation: none;
+    box-shadow: inset 0 0 0 2px $fw-arrival-gold;
   }
 }
 
@@ -323,7 +542,8 @@ function onAction(id: string): void {
 }
 
 .caption {
-  max-width: 420px;
+  // Inside the ink under the card's middle (.hero-sky).
+  max-width: min(420px, 58%);
   margin: 0;
   color: var(--fw-text-2);
   font-size: 0.72rem;
@@ -332,7 +552,7 @@ function onAction(id: string): void {
 }
 
 .actions {
-  margin-top: 8px;
+  margin-top: 0;
 }
 
 @media (max-width: 380px) {

@@ -153,9 +153,11 @@ describe('rendered all-wallets navigation', () => {
 });
 
 describe('portfolio total and explanatory controls', () => {
-  it('renders the total and all exclusions without hiding unavailable balances', () => {
+  it('renders the total and all exclusions without hiding unavailable balances', async () => {
     const wrapper = hero({ caption: 'Ethereum', hiddenCount: 2, unpricedCount: 1, unavailableCount: 1, poolStakesExcluded: true });
-    expect(wrapper.get('[data-testid="heroTotal"]').text()).toContain('1,234');
+    // The label reads the final value at once; the digits count up to it (brand kit v3, src/feel/countUp.ts).
+    expect(wrapper.get('[data-testid="heroTotal"]').attributes('aria-label')).toContain('1,234.56');
+    await vi.waitFor(() => expect(wrapper.get('[data-testid="heroTotal"]').text()).toContain('1,234.56'), { timeout: 3000 });
     const caption = wrapper.get('[data-testid="heroCaption"]').text();
     expect(caption).toContain('Ethereum');
     expect(caption).toContain('2');

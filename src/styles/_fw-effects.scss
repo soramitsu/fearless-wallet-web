@@ -41,6 +41,8 @@ html {
   inset: 0;
   z-index: -1;
   pointer-events: none;
+  // The wallet home's drifting glows (below) reach past the window; they never widen the page.
+  overflow: hidden;
   background:
     radial-gradient(circle 55vw at 15% 12%, rgb(230 0 111 / 0.18), transparent 70%),
     radial-gradient(circle 45vw at 95% 8%, rgb(46 230 255 / 0.12), transparent 70%),
@@ -51,6 +53,72 @@ html {
 [data-fw-effects='reduced'] .fw-backdrop,
 .fw-calm .fw-backdrop {
   background: var(--fw-bg-base);
+}
+
+// Brand kit v3's aurora on the wallet home (the hero marks <html data-fw-home="wallet"> while it is on screen): two very
+// soft glows, pink and ember, drift behind everything, one cycle a minute, moving only on the compositor.
+.fw-backdrop::before,
+.fw-backdrop::after {
+  content: '';
+  position: absolute;
+  display: none;
+  width: 80vmax;
+  height: 80vmax;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+.fw-backdrop::before {
+  left: -34vmax;
+  top: -38vmax;
+  background: radial-gradient(circle, $fw-aurora-pink 0%, $fw-aurora-clear 68%);
+  animation: fw-aurora-drift-a 60s ease-in-out infinite;
+}
+
+.fw-backdrop::after {
+  right: -36vmax;
+  bottom: -40vmax;
+  background: radial-gradient(circle, $fw-aurora-ember 0%, $fw-aurora-clear 68%);
+  animation: fw-aurora-drift-b 60s ease-in-out infinite;
+}
+
+html[data-fw-home='wallet'] .fw-backdrop::before,
+html[data-fw-home='wallet'] .fw-backdrop::after {
+  display: block;
+}
+
+html[data-fw-effects='lite'] .fw-backdrop::before,
+html[data-fw-effects='lite'] .fw-backdrop::after {
+  animation: none;
+}
+
+html[data-fw-effects='reduced'] .fw-backdrop::before,
+html[data-fw-effects='reduced'] .fw-backdrop::after,
+.fw-calm .fw-backdrop::before,
+.fw-calm .fw-backdrop::after {
+  display: none;
+}
+
+@keyframes fw-aurora-drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(18vmax, 12vmax, 0);
+  }
+}
+
+@keyframes fw-aurora-drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(-16vmax, -14vmax, 0);
+  }
 }
 
 :is(a, button, summary, select, input[type='checkbox'], input[type='radio'], [tabindex]):focus-visible {

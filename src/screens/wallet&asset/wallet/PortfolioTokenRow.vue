@@ -1,7 +1,7 @@
 <template>
   <section
     class="token-row"
-    :class="{ 'token-row--hidden': row.hidden }"
+    :class="{ 'token-row--hidden': row.hidden, 'token-row--enter': entering }"
     :data-token="row.id"
     :data-symbol="row.symbol"
     :data-network="isGroup ? undefined : single.asset.networkName"
@@ -85,6 +85,7 @@ import { usePortfolioFormatting } from '@/portfolio/usePortfolioFormatting';
 import { Components } from '@/router/routes';
 import { useAccountsStore } from '@/stores/accounts';
 import { useI18n } from '@/locales/useI18n';
+import { claimListEntrance } from '@/feel/motion';
 
 const props = defineProps<{
   row: PortfolioTokenRow;
@@ -95,6 +96,9 @@ const router = useRouter();
 const { t, tc } = useI18n();
 const accountsStore = useAccountsStore();
 const { formatAmount, formatFiat, formatPrice } = usePortfolioFormatting();
+
+// Brand kit v3: the rows of the page's first list rise in one after another, once; rows that come later just appear.
+const entering = claimListEntrance();
 
 const isGroup = computed(() => props.row.children.length + props.row.zeroChildren.length > 1);
 const single = computed<PortfolioTokenChild>(() => props.row.children[0] ?? props.row.zeroChildren[0]);
@@ -179,6 +183,35 @@ function setPreference(key: string, preference: AssetPreference): void {
 .token-row {
   margin-right: 16px;
   text-align: left;
+}
+
+// 12 px rise and fade, 30 ms apart, the thirteenth row onwards together.
+.token-row--enter {
+  animation: token-row-rise 320ms var(--fw-ease) both;
+  animation-delay: 360ms;
+
+  @for $index from 1 through 12 {
+    &:nth-child(#{$index}) {
+      animation-delay: ($index - 1) * 30ms;
+    }
+  }
+}
+
+@keyframes token-row-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+html[data-fw-effects='reduced'] .token-row--enter,
+.fw-calm .token-row--enter {
+  animation: none;
 }
 
 .token-line {

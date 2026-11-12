@@ -5,6 +5,7 @@
       :key="action.id"
       type="button"
       class="round-action"
+      :class="{ 'round-action--primary': action.primary }"
       :aria-label="action.aria ?? action.label"
       :disabled="action.disabled"
       :data-testid="action.testId"
@@ -26,6 +27,8 @@ export interface RoundAction {
   aria?: string;
   testId?: string;
   disabled?: boolean;
+  /** The one pink action of the row (brand kit v3): a filled disc with a slow sheen. */
+  primary?: boolean;
 }
 
 defineProps<{ actions: RoundAction[] }>();
@@ -75,18 +78,74 @@ defineEmits<{ (event: 'action', id: string): void }>();
 }
 
 .round-action-disc {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 48px;
   height: 48px;
+  overflow: hidden;
   border: 1px solid var(--fw-stroke-strong);
   border-radius: 50%;
   background: var(--fw-raised-2);
   color: var(--fw-text-1);
+  // Brand kit v3: a press sinks the disc to 94 % and it springs back.
   transition:
     background var(--fw-dur-fast) var(--fw-ease),
-    border-color var(--fw-dur-fast) var(--fw-ease);
+    border-color var(--fw-dur-fast) var(--fw-ease),
+    transform 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.round-action:active:not(:disabled) .round-action-disc {
+  transform: scale(0.94);
+  transition-duration: var(--fw-dur-fast), var(--fw-dur-fast), 90ms;
+}
+
+// The primary action: the brand fill under a white mark, a soft pink glow, and a slow sheen every 6 s.
+.round-action--primary .round-action-disc {
+  border-color: palette($pink-color, var(--fw-fill-top));
+  background: palette($pink-lavender-color, var(--fw-fill));
+  color: $fw-on-accent;
+  box-shadow: 0 6px 18px -6px $fw-primary-glow;
+
+  .round-action-icon {
+    filter: brightness(0) invert(1);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -20%;
+    background: linear-gradient(105deg, $fw-sheen-clear 35%, $fw-sheen 50%, $fw-sheen-clear 65%);
+    transform: translateX(-120%);
+    animation: round-action-sheen 6s ease-in-out 1.5s infinite;
+    pointer-events: none;
+  }
+}
+
+.round-action--primary:hover:not(:disabled) .round-action-disc {
+  border-color: palette($pink-color, var(--fw-fill-top));
+  background: palette($pink-lavender-color, var(--fw-fill));
+}
+
+@keyframes round-action-sheen {
+  0%,
+  78% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+html[data-fw-effects='lite'] .round-action--primary .round-action-disc::after,
+html[data-fw-effects='reduced'] .round-action--primary .round-action-disc::after {
+  display: none;
+}
+
+html[data-fw-effects='reduced'] .round-action--primary .round-action-disc {
+  box-shadow: none;
 }
 
 // The Polkaswap mark keeps its own colours: this is the brand's Swap, never a generic arrows glyph.
@@ -115,6 +174,14 @@ defineEmits<{ (event: 'action', id: string): void }>();
 @media (prefers-reduced-motion: reduce) {
   .round-action-disc {
     transition: none;
+  }
+
+  .round-action:active:not(:disabled) .round-action-disc {
+    transform: none;
+  }
+
+  .round-action--primary .round-action-disc::after {
+    display: none;
   }
 }
 </style>

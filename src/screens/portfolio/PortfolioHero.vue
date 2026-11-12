@@ -257,6 +257,8 @@ function onAction(id: string): void {
   padding: 12px 16px 10px;
   border-radius: 20px;
   background: var(--fw-raised);
+  // The ink under the text widens on a narrow card (.hero-sky below).
+  container-type: inline-size;
   @include fw-lit-rim(20px);
 
   > :not(.hero-sky, .hero-pulse) {
@@ -281,9 +283,24 @@ function onAction(id: string): void {
     inset: 0;
     background: linear-gradient(
       90deg,
+      $fw-sky-scrim-clear 0%,
+      $fw-sky-scrim-soft 12%,
+      $fw-sky-scrim-strong 25%,
+      $fw-sky-scrim-strong 75%,
+      $fw-sky-scrim-soft 88%,
+      $fw-sky-scrim-clear 100%
+    );
+  }
+}
+
+// A narrow card (the side panel) can carry a total almost as wide as itself: the ink reaches nearly to its edges.
+@container (max-width: 420px) {
+  .hero-sky::after {
+    background: linear-gradient(
+      90deg,
       $fw-sky-scrim-soft 0%,
-      $fw-sky-scrim-strong 21%,
-      $fw-sky-scrim-strong 79%,
+      $fw-sky-scrim-strong 9%,
+      $fw-sky-scrim-strong 91%,
       $fw-sky-scrim-soft 100%
     );
   }
@@ -297,6 +314,8 @@ function onAction(id: string): void {
   height: 120%;
   object-fit: cover;
   object-position: 50% 42%;
+  // The sunset at full glow where it shows; the ink above it keeps the text readable.
+  filter: saturate(1.3) brightness(1.18);
   user-select: none;
   will-change: transform;
 }
@@ -316,11 +335,12 @@ function onAction(id: string): void {
 }
 
 .hero-rings {
+  filter: drop-shadow(0 0 3px $fw-sky-geometry-glow);
   animation: hero-turn 349s linear infinite;
 
   path {
     stroke: $fw-sky-geometry;
-    stroke-width: 1.25px;
+    stroke-width: 1.4px;
     vector-effect: non-scaling-stroke;
   }
 
@@ -404,7 +424,8 @@ html[data-fw-effects='reduced'] .hero-sky,
 
 .overline {
   margin: 0;
-  color: var(--fw-text-3);
+  // Secondary rather than tertiary text: it sits on the sky card.
+  color: var(--fw-text-2);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -543,7 +564,7 @@ html[data-fw-effects='reduced'] .hero-sky,
 
 .caption {
   // Inside the ink under the card's middle (.hero-sky).
-  max-width: min(420px, 58%);
+  max-width: min(420px, 48%);
   margin: 0;
   color: var(--fw-text-2);
   font-size: 0.72rem;

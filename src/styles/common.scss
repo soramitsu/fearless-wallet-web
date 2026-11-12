@@ -70,8 +70,10 @@ $fw-rim-highlight: rgb(255 255 255 / 0.08);
 $fw-rim-shadow: rgb(58 16 96 / 0.55);
 // The sunset sky behind the balance sits under ink, strongest where the text is (measured at 4.5:1 or better).
 $fw-sky-scrim-strong: rgb(18 10 46 / 0.9);
-$fw-sky-scrim-soft: rgb(18 10 46 / 0.32);
-$fw-sky-geometry: rgb(255 194 74 / 0.5);
+$fw-sky-scrim-soft: rgb(18 10 46 / 0.3);
+$fw-sky-scrim-clear: rgb(18 10 46 / 0.06);
+$fw-sky-geometry: rgb(255 194 74 / 0.68);
+$fw-sky-geometry-glow: rgb(255 138 66 / 0.55);
 // Tokens arriving: a gold pulse on the balance card.
 $fw-arrival-gold: rgb(255 194 74 / 0.7);
 $fw-arrival-gold-clear: rgb(255 194 74 / 0);

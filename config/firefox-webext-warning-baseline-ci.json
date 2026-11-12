@@ -15,7 +15,7 @@
     "chunks/mountApp.js": 1,
     "chunks/SendForm.js": 16
   },
-  "warningSetSha256": "5220fa6722bf56469d1d745ba522b58106234be52ab4f3f1e73889558576ea70",
+  "warningSetSha256": "fc38c5e835c4d8013654b7ad1bb19bd9d6365107939e09c45908f593b52d51ed",
   "artifacts": [
     {
       "file": "chunks/background-vendor/assert-CYQ49uO2.js",
@@ -35,11 +35,11 @@
     },
     {
       "file": "chunks/mountApp.js",
-      "sha256": "ac7a7103045b4e2c551be9f41ff596a96ebb620f0d969213b1257b4bb8eb9ae6"
+      "sha256": "b4d55e07c5f92f29da2e32a3b0c535b8dc1eb145a2a6704b8b727797aa1b2bb9"
     },
     {
       "file": "chunks/SendForm.js",
-      "sha256": "b91fc2702f24aab84007bd3d5507fc7028a3909cbf6b61fb972a28d421847377"
+      "sha256": "6bf2682c5fa933429fc9cf4674967ad07a33681e25aef1a1795c11c7e221af35"
     }
   ]
 }

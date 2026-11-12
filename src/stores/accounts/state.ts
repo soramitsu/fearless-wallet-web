@@ -1,6 +1,7 @@
 import type { AvailableNftState, ChainNftState } from '@extension-base/services/nft-service/types';
 import type { AccountJson, TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkScanState } from '@extension-base/api/evm/types';
+import type { AssetDiscoveryProgress } from '@extension-base/services/asset-discovery-service';
 import type { SelectedWallet, SelectedNetworks, AutoSelectNode, HiddenAssets, AssetPreferences } from './types';
 import type { NetworkName, WalletAddress } from '@/interfaces';
 import type { PortfolioLayoutRecord } from '@/portfolio/layoutNotice';
@@ -13,6 +14,8 @@ export type State = {
   accounts: AccountJson[];
   balances: TokenGroup[];
   networkScanStates: Record<NetworkName, NetworkScanState>;
+  /** How far the search of every network for the wallets' tokens is; unknown until the background has said. */
+  discoveryProgress: AssetDiscoveryProgress | null;
   nfts: ChainNftState;
   availableNfts: AvailableNftState;
   hiddenAssetsForAllAccounts: HiddenAssets;
@@ -37,6 +40,7 @@ export const state = (): State => {
     selectedNetworks: accountController.getNetworkFilters(),
     balances: [],
     networkScanStates: {},
+    discoveryProgress: null,
     nfts: {},
     availableNfts: {},
     hiddenAssetsForAllAccounts: accountController.getHiddenAssets(),

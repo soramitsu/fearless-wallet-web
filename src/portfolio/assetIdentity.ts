@@ -625,6 +625,11 @@ export interface PortfolioSummary {
   unavailableCount: number;
   /** A counted native holding sits on a network with nomination pools, whose stakes are outside free + reserved. */
   poolStakesExcluded: boolean;
+  /**
+   * Funded tokens the wallet found that are not on the verified list, not hidden and not added by the owner. They are
+   * never counted; the list names how many there are so they can be reviewed (Manage assets, "Found, not verified").
+   */
+  unverifiedHeldCount: number;
 }
 
 export type PortfolioSummaryInput = Omit<
@@ -683,6 +688,7 @@ export function summarizePortfolio(input: PortfolioSummaryInput): { summary: Por
   let hiddenTestnetAssetCount = 0;
   let testnetFundedCount = 0;
   let poolStakesExcluded = false;
+  let unverifiedHeldCount = 0;
 
   const networks: PortfolioNetworkTotal[] = [];
 
@@ -701,6 +707,7 @@ export function summarizePortfolio(input: PortfolioSummaryInput): { summary: Por
       }
       if (asset.hidden) hiddenAssetCount += 1;
       else if (asset.balanceUnavailable) unavailableCount += 1;
+      else if (asset.trust !== 'verified' && asset.hasBalance && asset.preference !== 'shown') unverifiedHeldCount += 1;
       if (asset.trust !== 'verified' || !asset.hasBalance) return;
 
       if (asset.hidden) {
@@ -755,6 +762,7 @@ export function summarizePortfolio(input: PortfolioSummaryInput): { summary: Por
       unpricedCount,
       unavailableCount,
       poolStakesExcluded,
+      unverifiedHeldCount,
     },
     networks: networks.sort(compareNetworkTotals),
   };

@@ -28,7 +28,13 @@
       <p v-if="!view.wallet.length" class="section-empty">{{ t('walletHome.manage.shownEmpty') }}</p>
     </section>
 
-    <section v-if="view.unverified.length" class="manage-section" data-testid="manageUnverified" aria-labelledby="manage-unverified">
+    <section
+      v-if="view.unverified.length"
+      ref="unverifiedSection"
+      class="manage-section"
+      data-testid="manageUnverified"
+      aria-labelledby="manage-unverified"
+    >
       <h2 id="manage-unverified" class="section-title">
         {{ t('walletHome.manage.unverified') }} <span class="section-count">{{ view.unverified.length }}</span>
       </h2>
@@ -188,18 +194,22 @@ function setSort(value: PortfolioSort): void {
   accountsStore.updatePortfolioView({ sort: value });
 }
 
-// "Review" opens the page on the hidden assets; they may arrive a moment later than the page.
+// "Review" opens the page on the hidden assets, or on the tokens found that are not verified; they may arrive a moment
+// later than the page.
 const hiddenSection = ref<HTMLElement | null>(null);
+const unverifiedSection = ref<HTMLElement | null>(null);
 let hiddenShown = false;
 
 function showHiddenSection(): void {
-  if (hiddenShown || props.focus !== 'hidden' || !hiddenSection.value) return;
+  const section = props.focus === 'hidden' ? hiddenSection.value : props.focus === 'unverified' ? unverifiedSection.value : null;
+
+  if (hiddenShown || !section) return;
 
   hiddenShown = true;
-  hiddenSection.value.scrollIntoView?.({ block: 'start' });
+  section.scrollIntoView?.({ block: 'start' });
 }
 
-watch(hiddenSection, () => void nextTick(showHiddenSection));
+watch([hiddenSection, unverifiedSection], () => void nextTick(showHiddenSection));
 
 onMounted(() => {
   showHiddenSection();

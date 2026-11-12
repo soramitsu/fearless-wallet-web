@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@/extension/messaging/asset-discovery', () => ({ forceAssetDiscoverySweep: mocks.forceAssetDiscoverySweep }));
+vi.mock('@/extension/messaging/balance', () => ({ refreshWalletBalances: vi.fn().mockResolvedValue(true) }));
 vi.mock('@/extension/messaging/nfts', () => ({ fetchNfts: mocks.fetchNfts }));
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => mocks.accountsStore }));
 vi.mock('@/stores/networks', () => ({ useNetworksStore: () => mocks.networksStore }));

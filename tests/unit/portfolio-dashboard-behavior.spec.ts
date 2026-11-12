@@ -15,7 +15,9 @@ vi.mock('@/portfolio/dashboard/useWalletSwitch', () => ({ useWalletSwitch: () =>
 vi.mock('@/portfolio/dashboard/locales', () => ({ registerDashboardMessages: vi.fn() }));
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => ({ accounts: boundary.accounts, fiatSymbol: '$' }) }));
 vi.mock('@/stores/portfolioDashboard', () => ({ usePortfolioDashboardStore: () => ({ setScope: boundary.setScope, setLens: boundary.setLens }) }));
-vi.mock('@/extension/messaging', () => ({ updateCurrentAccount: boundary.updateAccount, forceAssetDiscoverySweep: boundary.discover }));
+vi.mock('@/extension/messaging', () => ({ updateCurrentAccount: boundary.updateAccount }));
+// Refresh reads the selected wallet again (and starts the search of the other networks) before every wallet's read.
+vi.mock('@/portfolio/refreshBalances', () => ({ refreshWalletBalancesWithin: boundary.discover }));
 vi.mock('@/consts/global', async original => ({ ...await original<typeof import('@/consts/global')>(), IS_EXTENSION: true }));
 vi.mock('@/util/walletRecoveryPolicy', () => ({ isSelectedWalletRecoveryOnly: (_accounts: unknown, address: string) => boundary.recoveryOnly.has(address) }));
 vi.mock('@/screens/portfolio/PortfolioHero.vue', () => ({ default: { name: 'PortfolioHero', props: ['total', 'changeAmount', 'changePercent', 'caption', 'hiddenCount', 'unpricedCount', 'unavailableCount', 'poolStakesExcluded', 'loading', 'showSwap', 'showSend', 'showReceive'], template: '<div />' } }));
@@ -135,7 +137,7 @@ describe('portfolio dashboard orchestration', () => {
     all(wrapper).vm.$emit('openWallet', 'alice'); await flushPromises(); expect(boundary.updateAccount).toHaveBeenCalledWith('alice', 'substrate'); expect(boundary.setScope).not.toHaveBeenCalled();
     finish(); await flushPromises(); expect(boundary.setScope).toHaveBeenCalledWith('wallet');
   });
-  it('coalesces refresh clicks and still refreshes cached wallets when discovery fails', async () => {
+  it('coalesces refresh clicks and still refreshes cached wallets when the wallet read fails', async () => {
     const wrapper = form(); hero(wrapper).vm.$emit('openSync'); await flushPromises(); const sheet = wrapper.getComponent({ name: 'PortfolioSyncSheet' });
     let fail!: (error: Error) => void; boundary.discover.mockReturnValueOnce(new Promise((_resolve, reject) => { fail = reject; }));
     sheet.vm.$emit('refresh'); sheet.vm.$emit('refresh'); await flushPromises(); expect(sheet.props('refreshing')).toBe(true); expect(boundary.discover).toHaveBeenCalledTimes(1);

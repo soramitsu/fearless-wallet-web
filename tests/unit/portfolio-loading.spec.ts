@@ -66,8 +66,9 @@ const createLocalStorageStub = () => {
 const balanceOf = (groups: TokenGroup[], networkName: string, symbol: string) =>
   groups.flatMap(({ balances }) => balances).find((balance) => balance.name === networkName.toLowerCase() && balance.symbol === symbol)!;
 
+// Answers carry the time they arrived: in this load, not an earlier one.
 function answer(groups: TokenGroup[], networkName: string, symbol: string, amount: string) {
-  Object.assign(balanceOf(groups, networkName, symbol), { state: APIItemState.READY, total: amount, transferable: amount, timestamp: 1 });
+  Object.assign(balanceOf(groups, networkName, symbol), { state: APIItemState.READY, total: amount, transferable: amount, timestamp: Date.now() });
 }
 
 /** Every balance of a network answered (zero unless funded). */
@@ -75,7 +76,7 @@ function answerNetwork(groups: TokenGroup[], networkName: string) {
   groups
     .flatMap(({ balances }) => balances)
     .filter(({ name }) => name === networkName.toLowerCase())
-    .forEach((balance) => Object.assign(balance, { state: APIItemState.READY, total: balance.total ?? '0', timestamp: 1 }));
+    .forEach((balance) => Object.assign(balance, { state: APIItemState.READY, total: balance.total ?? '0', timestamp: Date.now() }));
 }
 
 /**
@@ -99,10 +100,11 @@ describe('portfolio load status', () => {
   const placeholders = () => getMockAssets(networkMap, WalletEcosystem.Substrate);
 
   it('is loading while every network of the wallet still answers with placeholders', () => {
-    expect(getPortfolioLoadStatus({ groups: placeholders(), networks })).toEqual({
-      state: 'loading',
-      pendingCount: substrateNetworkCount,
-    });
+    const status = getPortfolioLoadStatus({ groups: placeholders(), networks });
+
+    expect(status).toMatchObject({ state: 'loading', pendingCount: substrateNetworkCount, waiting: true });
+    expect(status.pendingNetworks).toHaveLength(substrateNetworkCount);
+    expect(status.pendingNetworks).toContain('Polkadot');
   });
 
   it('stays loading when only empty networks have answered, so a fast zero never reads as an empty wallet', () => {
@@ -110,14 +112,17 @@ describe('portfolio load status', () => {
     answerNetwork(groups, 'Kusama');
     answerNetwork(groups, 'Acala');
 
-    expect(getPortfolioLoadStatus({ groups, networks })).toEqual({ state: 'loading', pendingCount: substrateNetworkCount - 2 });
+    expect(getPortfolioLoadStatus({ groups, networks })).toMatchObject({ state: 'loading', pendingCount: substrateNetworkCount - 2 });
   });
 
   it('shows what has arrived once the wallet holds something, while it keeps checking the rest', () => {
     const groups = placeholders();
     answer(groups, 'Polkadot', 'dot', '12.5');
 
-    expect(getPortfolioLoadStatus({ groups, networks })).toEqual({ state: 'syncing', pendingCount: substrateNetworkCount - 1 });
+    const status = getPortfolioLoadStatus({ groups, networks });
+
+    expect(status).toMatchObject({ state: 'syncing', pendingCount: substrateNetworkCount - 1 });
+    expect(status.pendingNetworks).not.toContain('Polkadot');
   });
 
   it('settles once every network has answered or failed', () => {
@@ -126,14 +131,42 @@ describe('portfolio load status', () => {
       balances.forEach((balance, index) => Object.assign(balance, { state: index % 2 ? APIItemState.ERROR : APIItemState.READY }))
     );
 
-    expect(getPortfolioLoadStatus({ groups, networks })).toEqual({ state: 'settled', pendingCount: 0 });
+    expect(getPortfolioLoadStatus({ groups, networks })).toMatchObject({ state: 'settled', pendingCount: 0, pendingNetworks: [] });
   });
 
   it('counts a cached balance as answered: it loaded in an earlier session', () => {
     const groups = placeholders();
     groups.forEach(({ balances }) => balances.forEach((balance) => Object.assign(balance, { timestamp: 1 })));
 
-    expect(getPortfolioLoadStatus({ groups, networks })).toEqual({ state: 'settled', pendingCount: 0 });
+    expect(getPortfolioLoadStatus({ groups, networks })).toMatchObject({ state: 'settled', pendingCount: 0 });
+  });
+
+  it('shows a saved picture at once: balances from an earlier visit are shown while the networks answer again', () => {
+    const startedAt = 1_800_000_000_000;
+    const saved = placeholders();
+    // Kusama answered, with nothing, the last time the wallet was open.
+    saved
+      .flatMap(({ balances }) => balances)
+      .filter(({ name }) => name === 'kusama')
+      .forEach((balance) => Object.assign(balance, { state: APIItemState.READY, total: '0', timestamp: startedAt - 60_000 }));
+
+    expect(getPortfolioLoadStatus({ groups: saved, networks, startedAt })).toMatchObject({
+      state: 'syncing',
+      pendingCount: substrateNetworkCount - 1,
+    });
+
+    // The same zero arriving in this load is not a picture yet: a fast zero never reads as an empty wallet.
+    const fresh = placeholders();
+    fresh
+      .flatMap(({ balances }) => balances)
+      .filter(({ name }) => name === 'kusama')
+      .forEach((balance) => Object.assign(balance, { state: APIItemState.READY, total: '0', timestamp: startedAt + 500 }));
+
+    expect(getPortfolioLoadStatus({ groups: fresh, networks, startedAt }).state).toBe('loading');
+  });
+
+  it('says the wait is over once the first-load wait has passed', () => {
+    expect(getPortfolioLoadStatus({ groups: placeholders(), networks, timedOut: true })).toMatchObject({ waiting: false });
   });
 
   it('never waits on a network that is not being loaded: inactive, disconnected, a testnet, or not this wallet', () => {
@@ -144,17 +177,17 @@ describe('portfolio load status', () => {
 
     expect(
       getPortfolioLoadStatus({ groups, networks: only([{ active: false }, { networkStatus: NETWORK_STATUS.DISCONNECTED }, {}]) })
-    ).toEqual({ state: 'loading', pendingCount: 1 });
+    ).toMatchObject({ state: 'loading', pendingCount: 1, pendingNetworks: ['Acala'] });
     expect(
       getPortfolioLoadStatus({ groups, networks: only([{}, {}, {}]), isTestnet: ({ name }) => name !== 'Acala', walletScope: ({ name }) => name !== 'Acala' })
-    ).toEqual({ state: 'settled', pendingCount: 0 });
+    ).toMatchObject({ state: 'settled', pendingCount: 0 });
   });
 
   it('is loading before the first balance message or the network list, and gives up waiting after the timeout', () => {
-    expect(getPortfolioLoadStatus({ groups: [], networks })).toEqual({ state: 'loading', pendingCount: 0 });
-    expect(getPortfolioLoadStatus({ groups: placeholders(), networks: [] })).toEqual({ state: 'loading', pendingCount: 0 });
-    expect(getPortfolioLoadStatus({ groups: [], networks, timedOut: true })).toEqual({ state: 'settled', pendingCount: 0 });
-    expect(getPortfolioLoadStatus({ groups: placeholders(), networks, timedOut: true })).toEqual({
+    expect(getPortfolioLoadStatus({ groups: [], networks })).toMatchObject({ state: 'loading', pendingCount: 0 });
+    expect(getPortfolioLoadStatus({ groups: placeholders(), networks: [] })).toMatchObject({ state: 'loading', pendingCount: 0 });
+    expect(getPortfolioLoadStatus({ groups: [], networks, timedOut: true })).toMatchObject({ state: 'settled', pendingCount: 0 });
+    expect(getPortfolioLoadStatus({ groups: placeholders(), networks, timedOut: true })).toMatchObject({
       state: 'syncing',
       pendingCount: substrateNetworkCount,
     });
@@ -248,7 +281,7 @@ describe('first open after upgrading from 3.0.5', () => {
     scope.stop();
   });
 
-  it('after the wait, an empty wallet says so and still names the networks it is checking', async () => {
+  it('after the wait, an empty wallet says so and counts the networks that have not answered', async () => {
     const groups = await backgroundAfterUpgradeFrom305();
     const { list, scope } = await openPopup(groups);
     expect(list.find('[data-testid="portfolioLoading"]').exists()).toBe(true);
@@ -257,7 +290,28 @@ describe('first open after upgrading from 3.0.5', () => {
 
     expect(list.find('[data-testid="portfolioLoading"]').exists()).toBe(false);
     expect(list.get('[data-testid="infoText"]').text()).toContain('portfolioPage.noAssetsDetected');
-    expect(list.get('[data-testid="portfolioChecking"]').text()).toBe(`portfolioPage.checkingNetworks:${substrateOnlyCount}`);
+    // Still being checked during the wait; after it, those networks are named as not responding.
+    expect(list.get('[data-testid="portfolioChecking"]').text()).toBe(`balanceStatus.notResponding:${substrateOnlyCount}`);
+
+    list.unmount();
+    scope.stop();
+  });
+
+  it('says how far the search of the other networks is once the wallet\'s own networks have answered', async () => {
+    const groups = await backgroundAfterUpgradeFrom305();
+    groups.flatMap(({ balances }) => balances).forEach((balance) => Object.assign(balance, { state: APIItemState.READY, total: '0', timestamp: Date.now() }));
+    answer(groups, 'Polkadot', 'dot', '12.5');
+    const { accountsStore, list, scope } = await openPopup(groups);
+    expect(list.find('[data-testid="portfolioChecking"]').exists()).toBe(false);
+
+    accountsStore.setBalance({ details: groups, discovery: { total: 80, checked: 12, unreachable: 0, running: true } });
+    await nextTick();
+    expect(list.get('[data-testid="portfolioChecking"]').text()).toBe('balanceStatus.discovering');
+
+    // Once the search is done the line goes; what it found is in the list.
+    accountsStore.setBalance({ details: groups, discovery: { total: 80, checked: 80, unreachable: 0, running: false } });
+    await nextTick();
+    expect(list.find('[data-testid="portfolioChecking"]').exists()).toBe(false);
 
     list.unmount();
     scope.stop();

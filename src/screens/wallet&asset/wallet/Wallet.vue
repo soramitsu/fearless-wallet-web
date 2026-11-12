@@ -11,6 +11,7 @@
       :swapAvailable="!selectedWalletRecoveryOnly"
       :receiveAvailable="!selectedWalletRecoveryOnly"
       :showAllWalletsList="activeTabName === assetsTab"
+      :loadStatus="loadStatus"
       @openFiats="$emit('openFiatsPopup', true)"
     >
       <template #toolbar="{ allWallets }">

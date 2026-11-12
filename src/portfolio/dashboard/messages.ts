@@ -17,6 +17,10 @@ const en = {
   sky: 'Sun crow with your allocation',
   sync: {
     live: 'Live',
+    updating: 'Updating',
+    updatingText: 'Some networks are still answering. The total includes what has arrived and grows as they answer.',
+    pendingNetworks: 'Still answering',
+    notResponding: 'Not responding',
     saved: 'Saved',
     savedAge: 'Saved · {age}',
     partial: 'Partial',
@@ -194,6 +198,10 @@ const ru: typeof en = {
   sky: 'Солнечный ворон со структурой баланса',
   sync: {
     live: 'Онлайн',
+    updating: 'Обновляется',
+    updatingText: 'Некоторые сети ещё отвечают. В итог входит то, что уже пришло, и он растёт по мере ответов.',
+    pendingNetworks: 'Ещё отвечают',
+    notResponding: 'Не отвечают',
     saved: 'Сохранено',
     savedAge: 'Сохранено · {age}',
     partial: 'Частично',

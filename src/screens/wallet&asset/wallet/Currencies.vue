@@ -118,8 +118,10 @@
         :unpricedCount="summary.unpricedCount"
         :poolStakesExcluded="summary.poolStakesExcluded"
         :testnetCount="testnetsNotShownCount"
+        :unverifiedCount="unverifiedNotListedCount"
         @manageHidden="reviewHidden"
         @showTestnets="showTestnets"
+        @reviewUnverified="reviewUnverified"
       />
     </template>
 
@@ -148,7 +150,7 @@ import { isSameString } from '@/helpers';
 import { isNetworkGroup } from '@/helpers/common';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
-import { forceAssetDiscoverySweep } from '@/extension/messaging/asset-discovery';
+import { refreshWalletBalancesWithin } from '@/portfolio/refreshBalances';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { fetchNfts } from '@/extension/messaging/nfts';
 
@@ -225,8 +227,26 @@ export default defineComponent({
 
       return this.$t('portfolioPage.checkingNetworks', count, { count });
     },
+    /**
+     * What the list may still be missing: networks of this wallet still being checked, then, once the first-load wait
+     * is over, the ones that have not answered; otherwise how far the search of the other networks for tokens is.
+     */
     checkingNetworksText(): string {
-      return this.loadStatus.state === 'syncing' ? this.pendingNetworksText : '';
+      const { state, pendingCount, waiting } = this.loadStatus;
+
+      if (state === 'syncing') {
+        return waiting
+          ? this.pendingNetworksText
+          : this.$t('balanceStatus.notResponding', pendingCount, { count: pendingCount });
+      }
+
+      const discovery = this.accountsStore.discoveryProgress;
+
+      if (discovery?.running && discovery.total > 0) {
+        return this.$t('balanceStatus.discovering', { checked: discovery.checked, total: discovery.total });
+      }
+
+      return '';
     },
     viewSettings(): PortfolioViewSettings {
       return this.accountsStore.portfolioView;
@@ -300,6 +320,10 @@ export default defineComponent({
       if (this.searching) return true;
 
       return this.filteredSummary.hiddenCount === 0 || !navigator.onLine;
+    },
+    /** Funded tokens found off the verified list that this list leaves out; the footer offers to review them. */
+    unverifiedNotListedCount(): number {
+      return this.detectedSections.length ? 0 : this.summary.unverifiedHeldCount ?? 0;
     },
     /** Funded test-network assets the Testnets switch keeps out of this view; the footer offers to show them. */
     testnetsNotShownCount(): number {
@@ -382,9 +406,10 @@ export default defineComponent({
       this.refreshError = '';
 
       try {
-        // The sweep skips test networks, so a selected one is reloaded directly.
+        // The wallet's networks are read again and the others searched; a selected test network, which the search
+        // skips, is also read directly.
         const refreshes: Promise<unknown>[] = [
-          forceAssetDiscoverySweep(),
+          refreshWalletBalancesWithin(),
           this.networksStore.loadIndexerNetworkBalance(this.accountsStore.selectedNetwork),
         ];
         const ethereumAddress = this.accountsStore.selectedWallet.ethereumAddress;
@@ -401,6 +426,10 @@ export default defineComponent({
     // Hidden assets are reviewed in Manage assets, which opens on them.
     reviewHidden() {
       this.$router.push({ name: MANAGE_ASSETS, query: { focus: 'hidden' } }).catch(() => undefined);
+    },
+    // So are the tokens found that are not verified.
+    reviewUnverified() {
+      this.$router.push({ name: MANAGE_ASSETS, query: { focus: 'unverified' } }).catch(() => undefined);
     },
     // Add tokens: Manage opens ready to search, on the network the list is narrowed to, if it is narrowed to one.
     openManageAssets() {

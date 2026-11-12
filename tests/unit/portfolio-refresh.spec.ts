@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 
 const mocks = vi.hoisted(() => ({
   forceAssetDiscoverySweep: vi.fn(),
+  refreshWalletBalances: vi.fn(),
   fetchNfts: vi.fn(),
   accountsStore: {
     accounts: [],
@@ -32,6 +33,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/extension/messaging/asset-discovery', () => ({
   forceAssetDiscoverySweep: mocks.forceAssetDiscoverySweep,
 }));
+vi.mock('@/extension/messaging/balance', () => ({ refreshWalletBalances: mocks.refreshWalletBalances }));
 vi.mock('@/extension/messaging/nfts', () => ({ fetchNfts: mocks.fetchNfts }));
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => mocks.accountsStore }));
 vi.mock('@/stores/networks', () => ({ useNetworksStore: () => mocks.networksStore }));
@@ -105,12 +107,12 @@ const mountPortfolio = (refreshSlotId = '') =>
 describe('Portfolio manual refresh', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('runs one forced asset sweep, refreshes NFTs and prevents overlapping scans', async () => {
-    let completeSweep: (() => void) | undefined;
+  it('reads the wallet again, starts one search of the other networks, refreshes NFTs and prevents overlapping reads', async () => {
+    let completeRefresh: ((value: boolean) => void) | undefined;
 
-    mocks.forceAssetDiscoverySweep.mockImplementation(
-      () => new Promise<void>((resolve) => (completeSweep = resolve))
-    );
+    // The search of the other networks goes on by itself: Refresh does not wait for it.
+    mocks.forceAssetDiscoverySweep.mockImplementation(() => new Promise<void>(() => undefined));
+    mocks.refreshWalletBalances.mockImplementation(() => new Promise<boolean>((resolve) => (completeRefresh = resolve)));
     mocks.fetchNfts.mockResolvedValue(undefined);
     mocks.networksStore.loadIndexerNetworkBalance.mockResolvedValue(undefined);
 
@@ -120,22 +122,45 @@ describe('Portfolio manual refresh', () => {
     await refresh.trigger('click');
     await (wrapper.vm as InstanceType<typeof Currencies>).refreshPortfolio();
 
+    expect(mocks.refreshWalletBalances).toHaveBeenCalledTimes(1);
     expect(mocks.forceAssetDiscoverySweep).toHaveBeenCalledTimes(1);
-    // The sweep skips test networks, so the selected network is also reloaded directly.
+    // The search skips test networks, so the selected network is also reloaded directly.
     expect(mocks.networksStore.loadIndexerNetworkBalance).toHaveBeenCalledWith('All networks');
     expect(mocks.fetchNfts).toHaveBeenCalledWith('0x0000000000000000000000000000000000000001');
     expect(refresh.attributes('aria-busy')).toBe('true');
     expect(refresh.text()).toBe('Syncing');
 
-    completeSweep?.();
+    completeRefresh?.(true);
     await flushPromises();
 
     expect(refresh.attributes('aria-busy')).toBe('false');
     expect(refresh.text()).toBe('Refresh');
   });
 
+  it('stops showing that it works after a while, even if a network is still answering', async () => {
+    vi.useFakeTimers();
+    try {
+      mocks.forceAssetDiscoverySweep.mockResolvedValue(undefined);
+      mocks.refreshWalletBalances.mockImplementation(() => new Promise<boolean>(() => undefined));
+      mocks.fetchNfts.mockResolvedValue(undefined);
+      mocks.networksStore.loadIndexerNetworkBalance.mockResolvedValue(undefined);
+
+      const wrapper = mountPortfolio();
+      const refresh = wrapper.get('[data-testid="portfolioRefresh"]');
+
+      await refresh.trigger('click');
+      expect(refresh.attributes('aria-busy')).toBe('true');
+      await vi.advanceTimersByTimeAsync(15_000);
+      await flushPromises();
+      expect(refresh.attributes('aria-busy')).toBe('false');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('puts Refresh in the toolbar place the wallet screen keeps for it, leaving no empty row above the list', async () => {
     mocks.forceAssetDiscoverySweep.mockResolvedValue(undefined);
+    mocks.refreshWalletBalances.mockResolvedValue(true);
     mocks.fetchNfts.mockResolvedValue(undefined);
     mocks.networksStore.loadIndexerNetworkBalance.mockResolvedValue(undefined);
     const slot = Object.assign(document.createElement('span'), { id: 'portfolio-refresh-test' });
@@ -148,7 +173,7 @@ describe('Portfolio manual refresh', () => {
     expect(refresh?.textContent?.trim()).toBe('Refresh');
     expect(wrapper.get('.portfolio-actions').element.querySelector('button')).toBeNull();
     refresh?.click();
-    expect(mocks.forceAssetDiscoverySweep).toHaveBeenCalledTimes(1);
+    expect(mocks.refreshWalletBalances).toHaveBeenCalledTimes(1);
 
     wrapper.unmount();
     expect(slot.querySelector('[data-testid="portfolioRefresh"]')).toBeNull();

@@ -61,9 +61,10 @@ export const actions: Actions = {
     this.availableNfts = { ...this.availableNfts, ...nfts };
   },
 
-  setBalance({ details, scanStates }) {
+  setBalance({ details, scanStates, discovery }) {
     this.balances = details;
     if (scanStates) this.networkScanStates = scanStates;
+    if (discovery) this.discoveryProgress = discovery;
   },
 
   hideNetworkWarning(network) {

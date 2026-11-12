@@ -157,6 +157,7 @@ function createPortfolio() {
       networks: networksStore.allNetworks,
       walletScope: walletScope.value,
       timedOut: firstLoadTimedOut.value,
+      startedAt: accountsStore.balanceLoadStartedAt,
     })
   );
 

@@ -566,6 +566,24 @@ html[data-fw-effects='reduced'] .hero-sky,
   background: var(--fw-success);
 }
 
+// Networks are still answering: the dot breathes until they have.
+.sync-chip--updating .sync-dot {
+  background: var(--fw-text-2);
+  animation: sync-breathe 1.4s ease-in-out infinite;
+}
+
+@keyframes sync-breathe {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sync-chip--updating .sync-dot {
+    animation: none;
+  }
+}
+
 .sync-chip--saved,
 .sync-chip--partial {
   color: var(--fw-warning);

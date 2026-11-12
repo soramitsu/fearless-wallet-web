@@ -10,7 +10,7 @@
       :unavailableCount="exclusions.unavailable"
       :poolStakesExcluded="exclusions.poolStakes"
       :loading="heroLoading"
-      :sync="dashboard.syncState.value"
+      :sync="heroSync"
       :showSend="true"
       :showReceive="singleWallet ? receiveAvailable : anyWalletTakesFunds"
       :showSwap="singleWallet ? swapAvailable : anyWalletTakesFunds"
@@ -52,7 +52,7 @@
       @close="countingOpen = false"
     />
 
-    <PortfolioSyncSheet v-if="syncOpen" :state="dashboard.syncState.value" :refreshing="refreshing" @close="syncOpen = false" @refresh="refreshBalances" />
+    <PortfolioSyncSheet v-if="syncOpen" :state="heroSync" :refreshing="refreshing" @close="syncOpen = false" @refresh="refreshBalances" />
 
     <!-- All wallets acts through one wallet: it is chosen first, then selected, then the action goes on there. -->
     <PortfolioSheet v-if="walletChoice" :title="walletChoiceTitle" testid="walletChooser" @close="walletChoice = null">
@@ -83,6 +83,9 @@
 import { computed, onDeactivated, ref, toRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import type { PortfolioSummary, PortfolioSummaryInput } from '@/portfolio/assetIdentity';
+import type { PortfolioLoadStatus } from '@/portfolio/portfolioLoading';
+import { withSelectedWalletLoad } from '@/portfolio/dashboard/syncState';
+import { refreshWalletBalancesWithin } from '@/portfolio/refreshBalances';
 import AssetPickerSheet from '@/screens/portfolio/AssetPickerSheet.vue';
 import PortfolioAllWallets from '@/screens/portfolio/PortfolioAllWallets.vue';
 import PortfolioCountingSheet from '@/screens/portfolio/PortfolioCountingSheet.vue';
@@ -96,7 +99,7 @@ import { useReadiness } from '@/portfolio/dashboard/useReadiness';
 import { useWalletSwitch } from '@/portfolio/dashboard/useWalletSwitch';
 import { usePortfolioFormatting } from '@/portfolio/usePortfolioFormatting';
 import { Components } from '@/router/routes';
-import { forceAssetDiscoverySweep, updateCurrentAccount } from '@/extension/messaging';
+import { updateCurrentAccount } from '@/extension/messaging';
 import { IS_EXTENSION } from '@/consts/global';
 import { useI18n } from '@/locales/useI18n';
 import { useAccountsStore } from '@/stores/accounts';
@@ -122,8 +125,10 @@ const props = withDefaults(
     receiveAvailable?: boolean;
     /** All wallets lists its holdings on the Assets view; its Portfolio view is the wallet screen's own. */
     showAllWalletsList?: boolean;
+    /** The selected wallet's own load (usePortfolio): which networks have not answered since it opened. */
+    loadStatus?: PortfolioLoadStatus;
   }>(),
-  { swapAvailable: true, receiveAvailable: true, showAllWalletsList: true }
+  { swapAvailable: true, receiveAvailable: true, showAllWalletsList: true, loadStatus: undefined }
 );
 
 defineEmits<{ (event: 'openFiats'): void }>();
@@ -151,6 +156,10 @@ const heroTotal = computed(() => (singleWallet.value ? props.summary.total : das
 const heroChangeAmount = computed(() => (singleWallet.value ? props.summary.changeAmount : dashboard.aggregate.value.changeAmount));
 const heroChangePercent = computed(() => (singleWallet.value ? props.summary.changePercent : dashboard.aggregate.value.changePercent));
 const heroLoading = computed(() => props.loading || dashboard.pending.value);
+// One wallet's status also says when its networks are still answering, or have not answered at all.
+const heroSync = computed(() =>
+  singleWallet.value ? withSelectedWalletLoad(dashboard.syncState.value, props.loadStatus) : dashboard.syncState.value
+);
 const exclusions = computed(() => {
   const source = singleWallet.value ? props.summary : dashboard.aggregate.value;
 
@@ -231,8 +240,8 @@ async function refreshBalances(): Promise<void> {
 
   refreshing.value = true;
   try {
-    // The same sweep the list's Refresh runs, then a fresh read of every wallet.
-    await forceAssetDiscoverySweep().catch(() => undefined);
+    // The list's Refresh: the selected wallet read again (and the other networks searched), then every wallet's read.
+    await refreshWalletBalancesWithin().catch(() => undefined);
     await dashboard.refresh();
   } finally {
     refreshing.value = false;

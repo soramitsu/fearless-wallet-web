@@ -43,7 +43,7 @@ function allWallets(props: Record<string, unknown> = {}) {
 function hero(props: Record<string, unknown> = {}) {
   const wrapper = mount(PortfolioHero, { props: { total: '1234.56', changeAmount: '12', changePercent: '1', caption: '',
     hiddenCount: 0, unpricedCount: 0, unavailableCount: 0, poolStakesExcluded: false, loading: false,
-    sync: { kind: 'live', savedWallets: [], staleNetworks: [] }, showSwap: true, showSend: true, showReceive: true, ...props,
+    sync: { kind: 'live', savedWallets: [], staleNetworks: [], pendingNetworks: [] }, showSwap: true, showSend: true, showReceive: true, ...props,
   }, global: { stubs } });
   wrappers.push(wrapper);
   return wrapper;

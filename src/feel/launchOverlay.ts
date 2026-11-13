@@ -249,14 +249,20 @@ export function startLaunch({ api, ready, harnessBuild }: StartLaunchOptions): L
   return state;
 }
 
-/** The short arrival of every later view: the wallet scales from 1.04 to 1 and fades in (Reduced: a fade only). */
+// Scaling the document root outward adds scrollable width to Chrome's fixed-width side panel.
+function walletStartScale(outset: number): string {
+  const scale = document.documentElement.dataset.fwSurface === 'side-panel' ? 1 / outset : outset;
+  return `scale(${scale})`;
+}
+
+/** Later views settle to their normal size and fade in. Reduced motion uses the fade alone. */
 function revealApp(kind: 'landing' | 'still'): void {
   const app = appRoot();
   if (!app?.animate) return;
   const keyframes: Keyframe[] =
     kind === 'landing'
       ? [
-          { transform: 'scale(1.04)', opacity: 0 },
+          { transform: walletStartScale(1.04), opacity: 0 },
           { transform: 'scale(1)', opacity: 1 },
         ]
       : [{ opacity: 0 }, { opacity: 1 }];
@@ -349,7 +355,7 @@ function ignite(cover: HTMLElement, state: LaunchState, ready: () => boolean): v
       app.style.transformOrigin = `${focus.x - rect.left}px ${focus.y - rect.top}px`;
       const zoom = app.animate(
         [
-          { transform: 'scale(1.18)', opacity: 0 },
+          { transform: walletStartScale(1.18), opacity: 0 },
           { transform: 'scale(1)', opacity: 1 },
         ],
         { duration: fast ? LAUNCH_DURATIONS.skip : LAUNCH_DURATIONS.appIn, easing: DECELERATE }

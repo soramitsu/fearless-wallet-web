@@ -51,8 +51,13 @@ the registry's other production networks:
 - The sweep runs one at a time and keeps its state in `assetDiscoverySweep` (`scannedAt`, `failedAt`, the wallets and
   each network's asset list), written as it goes, so a sweep that is cut short resumes.
 
+On EVM networks, each read also finds ERC-20 tokens outside the registry: once a day it reads every token on the
+network's token list through Multicall3, on the network's own node, and every read reads again the tokens found before
+(`docs/evm-token-discovery.md`).
+
 What it finds on the registry's own tokens shows in the list like any holding. Tokens found that are not on the
-verified list (Solana, TON and Iroha tokens outside the registry) are never counted. While discovered-asset surfacing
+verified list (Solana, TON and Iroha tokens outside the registry, and ERC-20 tokens found through the lists) are never
+counted. While discovered-asset surfacing
 is off (`assetDiscoveryMode: 'shadow'`, the fail-closed default; a fresh remote `web_config.json` can set `visible`),
 the list leaves them out and its footer says "N more tokens found, not verified · Review", which opens Manage assets on
 "Found, not verified".
@@ -60,6 +65,7 @@ the list leaves them out and its footer says "N more tokens found, not verified 
 ## Checking it
 
 - Unit: `tests/unit/balance-responsiveness.spec.ts`, `balance-status-popup.spec.ts`, `asset-discovery-sweep.spec.ts`,
-  `portfolio-loading.spec.ts`, `portfolio-dashboard-sync-state.spec.ts`, `timeout-service-reentrancy.spec.ts`.
+  `portfolio-loading.spec.ts`, `portfolio-dashboard-sync-state.spec.ts`, `timeout-service-reentrancy.spec.ts`,
+  `evm-token-discovery.spec.ts`, `evm-token-balances.spec.ts`.
 - Timing against the live networks: a production build driven by a headless Chrome for Testing, recording when each
   network's balance arrives in a page on first open, on reopen, and after the worker was stopped.

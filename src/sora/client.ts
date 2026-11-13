@@ -10,6 +10,7 @@ import { SoraSubmissionUnknownError } from './submission';
 import schema from './schema/types.json';
 import type { ApiInterfaceEvents } from '@polkadot/api/types';
 import type { KeyringPair } from '@polkadot/keyring/types';
+import type { HexString } from '@polkadot/util/types';
 import { isDefiniteSubstratePoolRejection } from '@/util/substratePoolRejection';
 
 export class SoraClient {
@@ -207,13 +208,19 @@ export class SoraClient {
   }
 }
 
-export type SoraConnectionOptions = { autoConnectMs?: number; eventListeners?: [ApiInterfaceEvents, (...args: Runtime[]) => void][] };
+export type SoraConnectionOptions = {
+  autoConnectMs?: number;
+  eventListeners?: [ApiInterfaceEvents, (...args: Runtime[]) => void][];
+  /** Saved runtime metadata by `${genesisHash}-${specVersion}` (SubstrateMetadataCache), filled in as the socket opens. */
+  metadata?: Record<string, HexString>;
+};
 
 /** Each endpoint owns its API/provider; delayed cleanup never mutates a replacement. */
 export function createConnection(endpoint: string, options: SoraConnectionOptions = {}) {
   if (!/^wss?:\/\//.test(endpoint)) throw new Error('Invalid SORA WebSocket endpoint');
   const provider = new WsProvider(endpoint, options.autoConnectMs);
-  const connectedApi = new ApiPromise({ provider, types: schema as Runtime, signedExtensions: { ChargeTransactionPayment2: { extrinsic: { charge_fee_info: 'ChargeFeeInfo' }, payload: {} } } });
+  const connectedApi = new ApiPromise({ provider, types: schema as Runtime, signedExtensions: { ChargeTransactionPayment2: { extrinsic: { charge_fee_info: 'ChargeFeeInfo' }, payload: {} } },
+    ...(options.metadata ? { metadata: options.metadata } : {}) });
   for (const [event, callback] of options.eventListeners ?? []) connectedApi.on(event, callback);
   return { api: connectedApi, provider };
 }

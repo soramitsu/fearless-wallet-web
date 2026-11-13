@@ -21,6 +21,24 @@ Balance changes reach the open pages no more than 400 ms after the first of them
 gathered over 120 ms (`BALANCE_PUBLISH_DELAY_MS`). Before, each change postponed the message again, so a wallet on many
 networks was sent nothing until the slowest network had answered.
 
+## Substrate runtime metadata
+
+A Substrate connection needs its chain's runtime metadata: 0.3–1.5 MB a network, about 23.5 MB for every production
+network. The wallet saves it (`SubstrateMetadataCache`, IndexedDB database `fw-substrate-metadata`) and gives it to the
+next connection to the same chain. A worker that wakes up or restarts downloads none of it again.
+
+- One record per chain, keyed by genesis hash, holds the latest runtime seen (`${genesisHash}-${specVersion}`). When a
+  chain's runtime has been upgraded since, the connection uses the node's new metadata, which then replaces the saved
+  one.
+- A downloaded runtime is saved 5 s after its connection is ready (`METADATA_SAVE_DELAY_MS`), once its first balances
+  have been asked for. It is saved only if the node serves the chain the registry lists.
+- A record that is malformed, cut short, does not match its SHA-256 digest or holds a metadata version the wallet
+  cannot read is deleted, and the node's own metadata is used. If a saved runtime passes those checks but the API still
+  cannot set it up ("Unable to initialize the API"), it is deleted too, and the network connects again without it.
+- After each successful registry download, the records of chains that no network lists any more are deleted.
+- It is a cache of public chain data in a database of its own. The extension keeps its wallet records in
+  `chrome.storage.local`. The web wallet keeps them in the `fw-wallet` database, which the cache never opens.
+
 ## What the list says while balances arrive
 
 - **Saved picture.** Balances from an earlier visit are shown at once, while the networks answer again. A loader is
@@ -67,5 +85,9 @@ the list leaves them out and its footer says "N more tokens found, not verified 
 - Unit: `tests/unit/balance-responsiveness.spec.ts`, `balance-status-popup.spec.ts`, `asset-discovery-sweep.spec.ts`,
   `portfolio-loading.spec.ts`, `portfolio-dashboard-sync-state.spec.ts`, `timeout-service-reentrancy.spec.ts`,
   `evm-token-discovery.spec.ts`, `evm-token-balances.spec.ts`.
-- Timing against the live networks: a production build driven by a headless Chrome for Testing, recording when each
-  network's balance arrives in a page on first open, on reopen, and after the worker was stopped.
+- Runtime metadata: `tests/unit/substrate-metadata-cache.spec.ts`, `substrate-metadata-connection.spec.ts`,
+  `substrate-metadata-prune.spec.ts`. `substrate-metadata-polkadot-contract.spec.ts` runs the real `ApiPromise`
+  against a scripted node, to pin the `@polkadot/api` behaviour the cache relies on.
+- Timing against the live networks: a production build driven by a headless Chrome for Testing. It records when each
+  network's balance arrives in a page at four moments: first open, reopen, reopen after the wallet went quiet, and
+  after the extension restarted.

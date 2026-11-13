@@ -7,6 +7,7 @@ import { EvmApiHandler } from '@extension-base/services/network-service/handlers
 import { SubstrateApiHandler } from '@extension-base/services/network-service/handlers/SubstrateApiHandler';
 import { logger as createLogger } from '@polkadot/util';
 import { chrome } from '@extension-base/utils/crossenv';
+import { substrateMetadataCache } from '@extension-base/stores/SubstrateMetadataCache';
 import { TonApiHandler } from './handlers/TonApiHandler';
 import { withAcceptedRegistryNodes } from './nodeUrlPolicy';
 import { nodePreferences, sameNodePreferences, type NodePreferences } from './preferences';
@@ -345,6 +346,11 @@ export class NetworkService {
       //Migration from old network management
       if (!this.selectedNetworks[el.address]) this.selectedNetworks[el.address] = ALL_NETWORKS;
     });
+
+    // With the maintained registry in hand, the saved runtimes of chains no network lists any more are deleted.
+    if (remote) {
+      void substrateMetadataCache.prune([...networks, ...Object.values(this.networkMap)].map(({ chainId }) => chainId));
+    }
 
     // Re-enable writes only after saved preferences have been rebased into the active map.
     this.cacheReadable = networksFromStorage !== undefined;

@@ -1,4 +1,5 @@
 import type { ApiInterfaceEvents } from '@polkadot/api/types';
+import type { HexString } from '@polkadot/util/types';
 import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import type { SoraFees } from '@/interfaces';
 import type State from '@extension-base/background/handlers/State';
@@ -12,10 +13,13 @@ type Connection = ReturnType<typeof createConnection>;
 export class SoraApiHandler {
   private static current?: { connection: Connection; listeners: Listeners };
 
-  /** `chainId` is the registry chainId of the SORA network: SORA signs only through a node of that genesis. */
-  static initApi(currentProvider: string, eventListeners: Listeners, chainId?: string) {
+  /**
+   * `chainId` is the registry chainId of the SORA network: SORA signs only through a node of that genesis. `metadata` is
+   * the ApiPromise option the saved runtime is put in (SubstrateApiHandler.supplyCachedMetadata).
+   */
+  static initApi(currentProvider: string, eventListeners: Listeners, chainId?: string, metadata?: Record<string, HexString>) {
     const previous = this.current;
-    const connection = createConnection(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });
+    const connection = createConnection(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners, metadata });
     this.current = { connection, listeners: eventListeners };
     apiSora.api = connection.api;
     apiSora.chainId = chainId;

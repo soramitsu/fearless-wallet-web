@@ -7,12 +7,13 @@
 
         <div class="asset-info__content">
           <div class="asset__price">
-            <div class="asset__price-item asset__price-item-change">
+            <!-- Only a price the portfolio trusts for this asset: without one there is no change and no "1 X =" line. -->
+            <div v-if="hasPriceChange" class="asset__price-item asset__price-item-change" data-testid="assetPriceChange">
               <span :class="changePriceClasses">{{ priceChangeString }}</span>
               <span :class="changePriceClasses">{{ fiatPriceChangeString }}</span>
             </div>
 
-            <span class="asset__price-item">{{ assetPriceString }}</span>
+            <span v-if="hasPrice" class="asset__price-item" data-testid="assetUnitPrice">{{ assetPriceString }}</span>
 
             <div v-if="showSettingsPopup" @click="toggleDetailsPopup">
               <Icon icon="three-dots-vertical" className="asset__price-details" />
@@ -35,7 +36,13 @@
             {{ heldFiatBalanceString }} · {{ $t('portfolioPage.balanceStatus.failed') }}
           </span>
 
-          <span v-else-if="!balanceUnavailable" class="asset__balance asset__balance--fiat" data-testid="fiatAssetBalance">
+          <!-- Without a trusted price this says so, as the wallet's list does: never $0.00, which reads as worthless. -->
+          <span
+            v-else-if="!balanceUnavailable"
+            class="asset__balance asset__balance--fiat"
+            :class="{ 'asset__balance--unpriced': !hasPrice }"
+            data-testid="fiatAssetBalance"
+          >
             {{ heldFiatBalanceString }}
           </span>
 
@@ -73,7 +80,7 @@
     />
 </template>
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, type PropType } from 'vue';
 
 
 import { APIItemState } from '@extension-base/api/types/networks';
@@ -93,7 +100,14 @@ export default defineComponent({ name: 'AssetInfo',
     AccountSettingsPopup,
   },
   props: {
-    price: Object,
+    /**
+     * The price the portfolio trusts for the asset on screen (Asset.vue), its change as a fraction. `null` when there
+     * is none: the page then says the price is unavailable and shows no value, no unit price and no change.
+     */
+    price: {
+      type: Object as PropType<{ price: number; priceChange?: number | null } | null>,
+      default: null,
+    },
     currency: Object,
   },
   data() {
@@ -155,25 +169,37 @@ export default defineComponent({ name: 'AssetInfo',
 
           return this.selectedAssetNetwork !== '' && this.selectedAssetNetwork !== undefined;
     },
+    /** A price above 0: 0 is how a price nobody knows used to arrive, and it is not one. */
+    hasPrice(): boolean {
+      const price = Number(this.price?.price);
+
+      return Number.isFinite(price) && price > 0;
+    },
+    hasPriceChange(): boolean {
+      return this.hasPrice && Number.isFinite(this.priceChange);
+    },
+    priceChange(): number {
+      return Number(this.price?.priceChange ?? Number.NaN);
+    },
     priceChangeString() {
-      return this.$n(this.price.priceChange, 'percent');
+      return this.$n(this.priceChange, 'percent');
     },
     fiatPriceChangeString() {
       return `(${this.accountsStore.fiatSymbol}${this.$n(
-            Number(this.heldFiatBalance) * this.price.priceChange,
+            Number(this.heldFiatBalance) * this.priceChange,
             'price'
           )})`;
     },
     changePriceClasses() {
       const classes = ['price-change'];
 
-          if (this.price.priceChange > 0) classes.push('up-price');
-          else if (this.price.priceChange < 0) classes.push('down-price');
+          if (this.priceChange > 0) classes.push('up-price');
+          else if (this.priceChange < 0) classes.push('down-price');
 
           return classes;
     },
     assetPriceString() {
-      return `1 ${this.selectedAssetUpper} = ${this.accountsStore.fiatSymbol}${this.$n(this.price.price, 'price')}`;
+      return `1 ${this.selectedAssetUpper} = ${this.accountsStore.fiatSymbol}${this.$n(Number(this.price?.price), 'price')}`;
     },
     lockedBalanceString() {
       const lockedBalance = getSummaryLockedBalance(this.currency);
@@ -184,9 +210,10 @@ export default defineComponent({ name: 'AssetInfo',
     // included, rounded down to 4 decimals with a nonzero amount never shown as 0. They used to show the transferable
     // amount, rounded half up.
     heldFiatBalance() {
-      return new FPNumber(this.heldAssetBalance).mul(new FPNumber(this.price?.price ?? 0)).toString();
+      return new FPNumber(this.heldAssetBalance).mul(new FPNumber(this.hasPrice ? Number(this.price?.price) : 0)).toString();
     },
     heldFiatBalanceString() {
+      if (!this.hasPrice) return this.$t('portfolioPage.priceUnavailable');
       if (!this.currency) return `${this.accountsStore.fiatSymbol} 0`;
 
           return `${this.accountsStore.fiatSymbol} ${formatDecimalString(this.heldFiatBalance, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -287,14 +314,15 @@ export default defineComponent({ name: 'AssetInfo',
         color: $default-white;
       }
 
+      // The change, when there is one, is set off from the unit price that follows it.
       .asset__price-item-change {
         display: flex;
         flex-flow: row nowrap;
         gap: 4px;
+        border-right: solid 1px $gray-color;
       }
 
       > :first-child {
-        border-right: solid 1px $gray-color;
         line-height: 1px;
         padding-left: 0px;
       }
@@ -310,6 +338,13 @@ export default defineComponent({ name: 'AssetInfo',
 
       &--fiat {
         font-size: 1.125em;
+      }
+
+      // "Price unavailable" stands where the value would be, quieter than an amount.
+      &--unpriced {
+        color: $gray-color;
+        font-size: 0.875em;
+        font-weight: 600;
       }
 
       &--failed {

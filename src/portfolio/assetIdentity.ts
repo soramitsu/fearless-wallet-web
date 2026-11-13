@@ -128,6 +128,109 @@ export function getCanonicalAssetId(balance: BalanceItem): string {
   );
 }
 
+/**
+ * The key parts of a balance's row: its network's ecosystem (the relay chain of a network that names none), chain id
+ * and asset id.
+ */
+function balanceKeyParts(network: NetworkJson, balance: BalanceItem, group?: Pick<TokenGroup, 'relayChain'>): AssetKeyParts {
+  return {
+    ecosystem: String(network.ecosystem ?? balance.relayChain ?? group?.relayChain ?? 'unknown').toLowerCase(),
+    chainId: String(network.chainId || network.name),
+    assetId: getPortfolioAssetId(balance),
+  };
+}
+
+/** The price the portfolio trusts for one asset, as its row carries it (`PortfolioAsset`). */
+export interface AssetPriceDecision {
+  priceTrust: PriceTrust;
+  /** The price of one unit; `null` when no price is bound to this exact asset, or the bound price is unknown or 0. */
+  unitPrice: string | null;
+  /** The 24 h change of that price, in percent, when known. */
+  priceChangePercent: string | null;
+}
+
+interface AssetPriceInput {
+  network: NetworkJson;
+  balance: BalanceItem;
+  assetId: string;
+  key: string;
+  registryAsset: NetworkJson['assets'][number] | undefined;
+  prices: Record<string, number>;
+  priceChanges: Record<string, number>;
+  isUntrusted: UntrustedAssetCheck;
+}
+
+function decideAssetPrice({
+  network,
+  balance,
+  assetId,
+  key,
+  registryAsset,
+  prices,
+  priceChanges,
+  isUntrusted,
+}: AssetPriceInput): AssetPriceDecision {
+  // A price contributes to fiat totals only when it is bound to this exact
+  // canonical asset. Legacy group/symbol price ids are intentionally ignored.
+  // An asset on the shared untrusted list has no price, whatever the registry or an indexer says.
+  const untrusted = isUntrusted(network, registryAsset?.id ?? assetId);
+  const hasRegistryPriceBinding = !untrusted && Boolean(registryAsset?.priceId);
+  const hasExplicitAssetKeyPriceBinding =
+    !untrusted &&
+    balance.assetMetadataTrust === 'verified' &&
+    Boolean(balance.priceId) &&
+    balance.priceAssetKey === key;
+  const priceTrust: PriceTrust = hasRegistryPriceBinding || hasExplicitAssetKeyPriceBinding
+    ? 'canonicalAsset'
+    : 'unavailable';
+  const priceId = hasRegistryPriceBinding ? registryAsset?.priceId : hasExplicitAssetKeyPriceBinding ? balance.priceId : undefined;
+  const trustedPrice = priceTrust !== 'unavailable' && priceId ? prices[priceId] : undefined;
+  const unitPrice = Number.isFinite(trustedPrice) && Number(trustedPrice) > 0 ? String(trustedPrice) : null;
+  const priceChange = priceTrust !== 'unavailable' && priceId ? priceChanges[priceId] : undefined;
+  const priceChangePercent = Number.isFinite(priceChange) ? String(priceChange) : null;
+
+  return { priceTrust, unitPrice, priceChangePercent };
+}
+
+export interface BalancePriceInput {
+  network: NetworkJson;
+  balance: BalanceItem;
+  /** The balance's token group, whose relay chain names the ecosystem of a network that has none. */
+  group?: Pick<TokenGroup, 'relayChain'>;
+  prices: Record<string, number>;
+  priceChanges?: Record<string, number>;
+  /** Defaults to the shared `untrustedAssets` list, as in `buildPortfolioSections`. */
+  isUntrusted?: UntrustedAssetCheck;
+}
+
+/**
+ * The price the portfolio trusts for one balance: the decision behind its row's `unitPrice`, `hasPrice` and
+ * `priceTrust`, for a screen that shows one asset and must say what the wallet's list says. An unverified token (a
+ * TON jetton, an SPL token, an ERC-20 token found through the token lists), an asset on the untrusted list and a
+ * registry asset without a price have none, whatever price id their token group carries.
+ */
+export function getBalancePrice({
+  network,
+  balance,
+  group,
+  prices,
+  priceChanges = {},
+  isUntrusted = isUntrustedAsset,
+}: BalancePriceInput): AssetPriceDecision {
+  const keyParts = balanceKeyParts(network, balance, group);
+
+  return decideAssetPrice({
+    network,
+    balance,
+    assetId: keyParts.assetId,
+    key: createAssetKey(keyParts),
+    registryAsset: findRegistryAsset(network, balance),
+    prices,
+    priceChanges,
+    isUntrusted,
+  });
+}
+
 export function findRegistryAsset(network: NetworkJson, balance: BalanceItem): NetworkJson['assets'][number] | undefined {
   const ecosystem = String(network.ecosystem ?? balance.relayChain ?? '').toLowerCase();
   const normalizeId = (value: unknown): string => {
@@ -347,10 +450,8 @@ export function buildPortfolioSections({
       const testnet = isTestnet(network);
       if (testnet && !showTestnets) return;
 
-      const ecosystem = String(network.ecosystem ?? balance.relayChain ?? group.relayChain ?? 'unknown').toLowerCase();
-      const chainId = String(network.chainId || network.name);
-      const assetId = getPortfolioAssetId(balance);
-      const keyParts = { ecosystem, chainId, assetId };
+      const keyParts = balanceKeyParts(network, balance, group);
+      const { ecosystem, chainId, assetId } = keyParts;
       const key = createAssetKey(keyParts);
       const registryAsset = findRegistryAsset(network, balance);
       const verified = balance.assetMetadataTrust === 'verified' || Boolean(registryAsset);
@@ -363,25 +464,17 @@ export function buildPortfolioSections({
 
       const preference = preferences[key] ?? 'auto';
       const hidden = preference === 'hidden';
-      // A price contributes to fiat totals only when it is bound to this exact
-      // canonical asset. Legacy group/symbol price ids are intentionally ignored.
-      // An asset on the shared untrusted list has no price, whatever the registry or an indexer says.
-      const untrusted = isUntrusted(network, registryAsset?.id ?? assetId);
-      const hasRegistryPriceBinding = !untrusted && Boolean(registryAsset?.priceId);
-      const hasExplicitAssetKeyPriceBinding =
-        !untrusted &&
-        balance.assetMetadataTrust === 'verified' &&
-        Boolean(balance.priceId) &&
-        balance.priceAssetKey === key;
-      const priceTrust: PriceTrust = hasRegistryPriceBinding || hasExplicitAssetKeyPriceBinding
-        ? 'canonicalAsset'
-        : 'unavailable';
-      const priceId = hasRegistryPriceBinding ? registryAsset?.priceId : hasExplicitAssetKeyPriceBinding ? balance.priceId : undefined;
-      const trustedPrice = priceTrust !== 'unavailable' && priceId ? prices[priceId] : undefined;
-      const unitPrice = Number.isFinite(trustedPrice) && Number(trustedPrice) > 0 ? String(trustedPrice) : null;
+      const { priceTrust, unitPrice, priceChangePercent } = decideAssetPrice({
+        network,
+        balance,
+        assetId,
+        key,
+        registryAsset,
+        prices,
+        priceChanges,
+        isUntrusted,
+      });
       const fiatValue = unitPrice === null ? null : amount.mul(new FPNumber(unitPrice)).toString();
-      const priceChange = priceTrust !== 'unavailable' && priceId ? priceChanges[priceId] : undefined;
-      const priceChangePercent = Number.isFinite(priceChange) ? String(priceChange) : null;
       const asset: PortfolioAsset = {
         key,
         keyParts,

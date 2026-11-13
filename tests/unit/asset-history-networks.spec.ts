@@ -20,9 +20,9 @@ const deferred = <T,>() => { let resolve!: (value: T) => void; const promise = n
 let registry: Record<string, any>;
 beforeEach(() => {
   vi.useFakeTimers(); boundary.fetch.mockReset().mockResolvedValue(undefined); boundary.fetchEvm.mockReset(); boundary.push.mockReset();
-  registry = { polkadot: { name: 'polkadot', active: true, addressPrefix: 0, rank: 2, favorite: ['alice'] }, ethereum: { name: 'ethereum', active: true, rank: 1, favorite: [] }, kusama: { name: 'kusama', active: false, favorite: [] }, 'solana-devnet': { name: 'solana-devnet', chainId: 'devnet', active: true } };
+  registry = { polkadot: { name: 'polkadot', chainId: 'polkadot', ecosystem: 'substrate', active: true, addressPrefix: 0, rank: 2, favorite: ['alice'], assets: [{ id: 'dot-native', symbol: 'dot', priceId: 'dot' }] }, ethereum: { name: 'ethereum', chainId: '1', ecosystem: 'ethereum', active: true, rank: 1, favorite: [], assets: [] }, kusama: { name: 'kusama', active: false, favorite: [], assets: [] }, 'solana-devnet': { name: 'solana-devnet', chainId: 'devnet', active: true, assets: [] } };
   boundary.accounts = reactive({ selectedWallet: { address: 'alice', ethereumAddress: 'evm-address', solanaAddress: 'solana-address', isTon: false }, balances: [{ groupId: 'dot', balances: [{ name: 'polkadot', isUtility: true }] }], selectedNetwork: ALL_NETWORKS, fiatSymbol: '$' });
-  boundary.networks = reactive({ history: { timestamp: 0, nodes: [{ id: 'sent', transfer: {} }, { id: 'reward', reward: {} }, { id: 'call', extrinsic: {} }] }, getHistory: () => boundary.networks.history, getNetwork: (name: string) => registry[name], getAssetPrice: () => ({ price: 2 }), fetchHistory: boundary.fetch });
+  boundary.networks = reactive({ history: { timestamp: 0, nodes: [{ id: 'sent', transfer: {} }, { id: 'reward', reward: {} }, { id: 'call', extrinsic: {} }] }, getHistory: () => boundary.networks.history, getNetwork: (name: string) => registry[name], assetsPrice: { tokenPriceMap: { dot: 2 }, tokenPriceChange: {} }, fetchHistory: boundary.fetch });
   boundary.route = reactive({ params: { assetId: 'dot', selectedNetwork: 'polkadot' } });
 });
 afterEach(() => { wrappers.splice(0).forEach(wrapper => wrapper.unmount()); vi.clearAllTimers(); vi.useRealTimers(); });
@@ -88,7 +88,9 @@ describe('asset network holdings', () => {
     vm.filterValueUpdate('popularity'); expect(vm.sortedNetworks[0].name).toBe('ethereum'); vm.filterValueUpdate('name'); expect(vm.sortedNetworks[0].name).toBe('ethereum');
     boundary.accounts.selectedNetwork = FAVORITE_NETWORKS; expect(vm.filteredNetworks.map((item: { name: string }) => item.name)).toEqual(['polkadot']);
     boundary.accounts.selectedNetwork = POPULAR_NETWORKS; expect(vm.filteredNetworks).toHaveLength(2);
-    expect(vm.priceString).toBe('$ 2'); expect(vm.getBalanceInNetworkString('polkadot')).toBe('2 DOT'); expect(vm.getFiatInNetworkString('polkadot')).toBe('$ 4'); expect(vm.getBalanceInNetwork('missing')).toBe(0);
+    expect(vm.getBalanceInNetworkString('polkadot')).toBe('2 DOT'); expect(vm.getFiatInNetworkString('polkadot')).toBe('$ 4'); expect(vm.getBalanceInNetwork('missing')).toBe(0);
+    // Each network has its own trusted price: the group's price id is not one for the Ethereum balance, which has none.
+    expect(vm.getFiatInNetworkString('ethereum')).toBe('portfolioPage.priceUnavailable');
   });
   it('shows only funded holdings in My networks and navigates with exact asset/network identity', async () => {
     const { wrapper, vm, currency } = form('networks'); await wrapper.setProps({ currency: { ...currency, balances: [{ name: 'polkadot', transferable: '0', state: APIItemState.READY }, { name: 'ethereum', transferable: '2', state: APIItemState.READY }] } });

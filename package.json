@@ -121,7 +121,7 @@
     "bcryptjs": "3.0.3",
     "bignumber.js": "^11.1.4",
     "bip39": "3.1.0",
-    "bitcoinjs-lib": "6.1.7",
+    "bitcoinjs-lib": "6.1.8",
     "country-code-emoji": "^2.3.0",
     "date-fns": "^4.4.0",
     "element-plus": "^2.14.2",
@@ -203,6 +203,7 @@
     "pre-commit": "lint-staged"
   },
   "resolutions": {
+    "bitcoinjs-lib@npm:^6.1.5": "6.1.8",
     "@babel/core@npm:^7.20.12": "7.29.7",
     "@babel/helpers@npm:^7.22.10": "7.29.7",
     "@babel/runtime@npm:^7.20.1": "7.29.7",

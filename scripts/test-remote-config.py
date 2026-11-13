@@ -156,6 +156,121 @@ class ContentTests(unittest.TestCase):
             check.validate(self.root)
 
 
+UNI = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"
+LINK = "0x514910771AF9Ca656af840dff83E8264EcF986CA"
+USDT = "0xdac17f958d2ee523a2206206994597c13d831ec7"
+
+
+class TokenListTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.config = self.root / "remote-config"
+        self.folder = self.config / "production" / "tokens" / "evm" / "v1"
+        self.folder.mkdir(parents=True)
+        chains = self.config / "production" / "chains" / "v13" / "chains.json"
+        chains.parent.mkdir(parents=True)
+        ethereum = network("Ethereum", "1", ["https://eth.example"], ecosystem="ethereum")
+        ethereum["assets"] = [{"id": USDT, "symbol": "usdt"}]
+        sepolia = network("Sepolia", "11155111", ["https://sepolia.example"], ecosystem="ethereum")
+        sepolia["options"] = ["testnet"]
+        chains.write_text(json.dumps([ethereum, sepolia]))
+
+    def write(self, tokens, chain_id="1", name="Ethereum", index=None, sources=None, **overrides):
+        document = {"format": "fearless-evm-token-list", "version": 1, "chainId": chain_id, "network": name, "tokens": tokens}
+        document.update(overrides)
+        text = json.dumps(document)
+        (self.folder / (chain_id + ".json")).write_text(text)
+        entry = {"network": name, "tokens": len(tokens), "sha256": check.hashlib.sha256(text.encode()).hexdigest()}
+        index_document = index if index is not None else {
+            "format": "fearless-evm-token-lists",
+            "version": 1,
+            "multicall3": check.MULTICALL3,
+            "lists": {chain_id: entry},
+            "sources": sources if sources is not None else [{"id": "smoldapp", "license": "MIT", "url": "https://example/list.json"}],
+        }
+        (self.folder / "index.json").write_text(json.dumps(index_document))
+
+    def fails(self, pattern):
+        with self.assertRaisesRegex(ValueError, pattern):
+            check.validate(self.root)
+
+    def test_valid_lists_pass(self):
+        self.write([[UNI, "UNI", "Uniswap", 18], [LINK, "LINK", "ChainLink Token", 18]])
+        self.assertEqual(check.validate(self.root)["tokenLists"], 1)
+
+    def test_list_of_a_network_outside_the_production_chain_list_fails(self):
+        self.write([[UNI, "UNI", "Uniswap", 18]], chain_id="56", name="BNB Smart Chain")
+        self.fails("chain 56 is not a production EVM network")
+
+    def test_list_of_a_test_network_fails(self):
+        self.write([[UNI, "UNI", "Uniswap", 18]], chain_id="11155111", name="Sepolia")
+        self.fails("chain 11155111 is not a production EVM network")
+
+    def test_list_naming_another_chain_or_network_fails(self):
+        self.write([[UNI, "UNI", "Uniswap", 18]], chainId="10")
+        self.fails("names chain 10 instead of 1")
+        self.write([[UNI, "UNI", "Uniswap", 18]], name="Mainnet")
+        self.fails("names network Mainnet instead of Ethereum")
+
+    def test_other_format_fails(self):
+        self.write([], format="uniswap-token-list")
+        self.fails("not a fearless-evm-token-list version 1 document")
+
+    def test_registry_asset_fails(self):
+        self.write([[UNI, "UNI", "Uniswap", 18], [USDT.upper().replace("0X", "0x"), "USDT", "Tether", 6]])
+        self.fails("is a registry asset of Ethereum")
+
+    def test_malformed_tokens_fail(self):
+        for token, pattern in (
+            (["0x1234", "BAD", "Bad", 18], "no 20-byte hex address"),
+            ([UNI, "UN\u202eI", "Uniswap", 18], "printable symbol"),
+            ([UNI, "", "Uniswap", 18], "printable symbol"),
+            ([UNI, "UNI", "U" * 65, 18], "printable symbol"),
+            ([UNI, "UNI", "Uniswap", 37], "decimals outside 0-36"),
+            ([UNI, "UNI", "Uniswap", True], "decimals outside 0-36"),
+            ([UNI, "UNI", "Uniswap"], "is not \\[address, symbol, name, decimals\\]"),
+        ):
+            self.write([token])
+            self.fails(pattern)
+
+    def test_repeated_or_unsorted_addresses_fail(self):
+        self.write([[UNI, "UNI", "Uniswap", 18], [UNI.lower(), "UNI", "Uniswap", 18]])
+        self.fails("an address is listed twice")
+        self.write([[LINK, "LINK", "ChainLink Token", 18], [UNI, "UNI", "Uniswap", 18]])
+        self.fails("not in address order")
+
+    def test_index_must_match_the_lists(self):
+        self.write([[UNI, "UNI", "Uniswap", 18]])
+        index = json.loads((self.folder / "index.json").read_text())
+        index["lists"]["1"]["tokens"] = 2
+        (self.folder / "index.json").write_text(json.dumps(index))
+        self.fails("token count or sha256 differs")
+        index["lists"]["1"]["tokens"] = 1
+        index["lists"]["10"] = {"network": "OP Mainnet", "tokens": 0, "sha256": ""}
+        (self.folder / "index.json").write_text(json.dumps(index))
+        self.fails("chain 10 must have both a list file and an index entry")
+        del index["lists"]["10"]
+        index["multicall3"] = "0x0000000000000000000000000000000000000000"
+        (self.folder / "index.json").write_text(json.dumps(index))
+        self.fails("multicall3 must be")
+
+    def test_missing_index_or_stray_file_fails(self):
+        self.write([[UNI, "UNI", "Uniswap", 18]])
+        (self.folder / "index.json").unlink()
+        self.fails("index.json: missing or not JSON")
+        self.write([[UNI, "UNI", "Uniswap", 18]])
+        (self.folder / "notes.json").write_text("{}")
+        self.fails("only <chainId>.json lists and index.json belong here")
+
+    def test_non_mit_source_fails(self):
+        self.write([[UNI, "UNI", "Uniswap", 18]], sources=[{"id": "coingecko", "license": "proprietary"}])
+        self.fails("only MIT-licensed sources are used")
+        self.write([[UNI, "UNI", "Uniswap", 18]], sources=[])
+        self.fails("sources must name every list")
+
+
 class RepositoryConfigTests(unittest.TestCase):
     def test_repository_remote_config_passes(self):
         counts = check.validate(Path(__file__).resolve().parents[1])

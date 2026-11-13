@@ -1,0 +1,222 @@
+{
+  "format": "fearless-evm-token-lists",
+  "version": 1,
+  "multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11",
+  "lists": {
+    "1": {
+      "network": "Ethereum",
+      "tokens": 2396,
+      "sha256": "558823ec697951a17fd3f35a2fba66c793baddac7e7692f8bf90745575d4041c"
+    },
+    "10": {
+      "network": "OP Mainnet",
+      "tokens": 324,
+      "sha256": "c6f8237e8ec0bc17126f1f02fcbad08ddeaa4f2231dc38175fa22ddee3bff5e9"
+    },
+    "56": {
+      "network": "BNB Smart Chain",
+      "tokens": 495,
+      "sha256": "277186791534a74c24f7f743f179cb11c8df667eaed8c7fb8146a9cdaaffee95"
+    },
+    "137": {
+      "network": "Polygon",
+      "tokens": 966,
+      "sha256": "38d6e98a0a0b06e3e0a6fef3bfe731a208f3d4ea4a21e7afa0f019f580614615"
+    },
+    "196": {
+      "network": "X Layer Mainnet",
+      "tokens": 3,
+      "sha256": "67b5e5e23df9781a2701d950116086c0dc455b21a938b521a74bc6cf65306339"
+    },
+    "1101": {
+      "network": "Polygon zkEVM",
+      "tokens": 30,
+      "sha256": "77792d5943c8fa61326b200916549b03917309bc9176c3e02e4bc26cff91f267"
+    },
+    "7000": {
+      "network": "ZetaChain Mainnet",
+      "tokens": 8,
+      "sha256": "0a22e65a9d2d74ecd0d78e8bc5d391c8cb1997c5bdeb916445dcd5863c3d6470"
+    },
+    "42161": {
+      "network": "Arbitrum One",
+      "tokens": 532,
+      "sha256": "01a67c1830402e21dc518c847ec3466b74c23428317bcdd73a173fe48403d499"
+    },
+    "43114": {
+      "network": "Avalanche C-Chain",
+      "tokens": 294,
+      "sha256": "8c64fecaf0849cf0a8fee8da531e310fb148f3ddd325d7226cf04766d09ff0de"
+    }
+  },
+  "sources": [
+    {
+      "id": "smoldapp",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/SmolDapp/tokenLists/7b90414375de48d6d02b6e427d49913ae17cec6d/lists/1.json",
+      "sha256": "9ea1202e4349c64377464cad34d1a2bb56d02b4e5359655e8fcec45fcf2da3fe"
+    },
+    {
+      "id": "smoldapp",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/SmolDapp/tokenLists/7b90414375de48d6d02b6e427d49913ae17cec6d/lists/10.json",
+      "sha256": "c8da9d7ea6e8f12e9258af42174a3f3ad9d1e01565f73c7ac8b8babd76c70cbf"
+    },
+    {
+      "id": "smoldapp",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/SmolDapp/tokenLists/7b90414375de48d6d02b6e427d49913ae17cec6d/lists/56.json",
+      "sha256": "f6dcdbaec8828d8877e4bf519a86dda43cc6a38d88d76099f7cfa9317115b655"
+    },
+    {
+      "id": "smoldapp",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/SmolDapp/tokenLists/7b90414375de48d6d02b6e427d49913ae17cec6d/lists/137.json",
+      "sha256": "dc7604506abec8977d761c1a173855588bbd17c0a07190d65ec8ffa7899d5629"
+    },
+    {
+      "id": "smoldapp",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/SmolDapp/tokenLists/7b90414375de48d6d02b6e427d49913ae17cec6d/lists/1101.json",
+      "sha256": "ef1117d0351ab2a410a43c7a29d6ae3f661dafe81e07cfa1c1d4fc480efabac4"
+    },
+    {
+      "id": "smoldapp",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/SmolDapp/tokenLists/7b90414375de48d6d02b6e427d49913ae17cec6d/lists/42161.json",
+      "sha256": "9ba0be2c0126fcbe278f69fdf106c18929fea7c4adbff1d8df97dd8d97fdf43b"
+    },
+    {
+      "id": "smoldapp",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/SmolDapp/tokenLists/7b90414375de48d6d02b6e427d49913ae17cec6d/lists/43114.json",
+      "sha256": "9fa6791bc7fd1222f49c3d6efe69d47beb0c87af00654a3ae2bb2f14ec6a6f6a"
+    },
+    {
+      "id": "trustwallet",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/trustwallet/assets/e82fe457d6ef3a0e3c382261ebf3b6f5d9fa3766/blockchains/ethereum/tokenlist.json",
+      "sha256": "ef3e657ea25c8e3d52d74baab524ffa91cae4d351a192125661e8daba65f5794"
+    },
+    {
+      "id": "trustwallet",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/trustwallet/assets/e82fe457d6ef3a0e3c382261ebf3b6f5d9fa3766/blockchains/smartchain/tokenlist.json",
+      "sha256": "ba4bfee0e3fa806b533e6a3faf2e2e57077f6ef7e1c9c1f73b03c683b40cb6b3"
+    },
+    {
+      "id": "trustwallet",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/trustwallet/assets/e82fe457d6ef3a0e3c382261ebf3b6f5d9fa3766/blockchains/polygon/tokenlist.json",
+      "sha256": "808d03d6ea157e9cd5f1911773f74b49843ca2ccade3902b9f98931ae5ae0cb8"
+    },
+    {
+      "id": "trustwallet",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/trustwallet/assets/e82fe457d6ef3a0e3c382261ebf3b6f5d9fa3766/blockchains/arbitrum/tokenlist.json",
+      "sha256": "ed51d0596361db80710115c7e64eb2b5f4f126e01567d6409bbad66288707dad"
+    },
+    {
+      "id": "trustwallet",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/trustwallet/assets/e82fe457d6ef3a0e3c382261ebf3b6f5d9fa3766/blockchains/optimism/tokenlist.json",
+      "sha256": "a537eefdec1eccf0558279b6e0d611d2b76eebb362162f085c4669bd0b6039ee"
+    },
+    {
+      "id": "trustwallet",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/trustwallet/assets/e82fe457d6ef3a0e3c382261ebf3b6f5d9fa3766/blockchains/avalanchec/tokenlist.json",
+      "sha256": "06702445d639b389f821b1399b62c86299de912c8be7a64a11f1d457d8f969e3"
+    },
+    {
+      "id": "superchain",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/ethereum-optimism/ethereum-optimism.github.io/69f8dd4e2b8b785c3f493576a95b284cd6385f4e/optimism.tokenlist.json",
+      "sha256": "c01f91ac4bb76d47fea5ff79920e90f5bdd15b2baa88e5d3456775b2d326dfac"
+    },
+    {
+      "id": "balancer",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/balancer/tokenlists/bbe8e85bd1e5e552e8a013eade26cea5d362bd1d/generated/balancer.tokenlist.json",
+      "sha256": "0419ee81709e953b50d91a25b2baabb722a906f788eb74489837e8269f660f15"
+    },
+    {
+      "id": "sushiswap",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/sushiswap/list/088f54740a1b82882bdcc33e311988fdc8f2c8e1/lists/token-lists/default-token-list/tokens/ethereum.json",
+      "sha256": "f37547f731639ae02ef1a6e577789434f5bf41d3f9f96752dec248c42f3adf70"
+    },
+    {
+      "id": "sushiswap",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/sushiswap/list/088f54740a1b82882bdcc33e311988fdc8f2c8e1/lists/token-lists/default-token-list/tokens/bsc.json",
+      "sha256": "468815de961f7e41814c676c484371a84e8331ed642757ec7d396f75627c8aec"
+    },
+    {
+      "id": "sushiswap",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/sushiswap/list/088f54740a1b82882bdcc33e311988fdc8f2c8e1/lists/token-lists/default-token-list/tokens/polygon.json",
+      "sha256": "9ea7fb6126fa7cee7fc1c248724b01ba5c577a5ba262b133946e38632fa38aff"
+    },
+    {
+      "id": "sushiswap",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/sushiswap/list/088f54740a1b82882bdcc33e311988fdc8f2c8e1/lists/token-lists/default-token-list/tokens/arbitrum.json",
+      "sha256": "a17a728c5b24d11d397f19e143032e577bfd31cf8852085a30d9ca95fc9f7040"
+    },
+    {
+      "id": "sushiswap",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/sushiswap/list/088f54740a1b82882bdcc33e311988fdc8f2c8e1/lists/token-lists/default-token-list/tokens/optimism.json",
+      "sha256": "d0d2617309f6fe3060745fc823d7fb1b7125060709c6026fd8602a4927f9aaee"
+    },
+    {
+      "id": "sushiswap",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/sushiswap/list/088f54740a1b82882bdcc33e311988fdc8f2c8e1/lists/token-lists/default-token-list/tokens/avalanche.json",
+      "sha256": "a21815cbf39cd4608cac4bc00259f8c5b906b9b6f0176ef074fde0c6b86a2516"
+    },
+    {
+      "id": "sushiswap",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/sushiswap/list/088f54740a1b82882bdcc33e311988fdc8f2c8e1/lists/token-lists/default-token-list/tokens/polygon-zkevm.json",
+      "sha256": "2df68791341a5a847c2356b9a914bd35fe23f418c403c8e8d29647ed2a5e440b"
+    },
+    {
+      "id": "sushiswap",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/sushiswap/list/088f54740a1b82882bdcc33e311988fdc8f2c8e1/lists/token-lists/default-token-list/tokens/zetachain.json",
+      "sha256": "3638196df299eefde6ad3fb2b5364dba6d5278a1a04bf18c4b78d2737815d455"
+    },
+    {
+      "id": "pancakeswap",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/pancakeswap/token-list/1dd8633d75ea081a9fbf88b1a22f29f74c06b36d/lists/pancakeswap-extended.json",
+      "sha256": "a53df1241f87bb7e44232994b55024abe71278449391e0952378a533c479c46a"
+    },
+    {
+      "id": "pancakeswap",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/pancakeswap/token-list/1dd8633d75ea081a9fbf88b1a22f29f74c06b36d/lists/pancakeswap-default.json",
+      "sha256": "9c494f5ce246deb4f54f6928aa71f12425fce38369c77292fb63dcba5f58299e"
+    },
+    {
+      "id": "pancakeswap",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/pancakeswap/token-list/1dd8633d75ea081a9fbf88b1a22f29f74c06b36d/lists/pancakeswap-eth-default.json",
+      "sha256": "79eeb46fbe3d6f193ae50edb71ac4e7de33bdedbbc8b00bf7e001b29cf10ea1c"
+    },
+    {
+      "id": "pancakeswap",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/pancakeswap/token-list/1dd8633d75ea081a9fbf88b1a22f29f74c06b36d/lists/pancakeswap-arbitrum-default.json",
+      "sha256": "07ceffd9beda7317254f9b44ce0f46d7486d6a585de0fc915279a614da6811e0"
+    },
+    {
+      "id": "pancakeswap",
+      "license": "MIT",
+      "url": "https://raw.githubusercontent.com/pancakeswap/token-list/1dd8633d75ea081a9fbf88b1a22f29f74c06b36d/lists/pancakeswap-polygon-zkevm-default.json",
+      "sha256": "4865c781d2da255a626c6b61ef6c391962332a1a27ee0229e9d447c26f2b0829"
+    }
+  ]
+}

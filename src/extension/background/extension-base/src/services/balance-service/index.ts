@@ -149,6 +149,22 @@ export default class BalanceService {
     return this.balanceMap[address];
   }
 
+  /** Lower-case names of the networks where the wallet's balances hold something, saved ones included. */
+  fundedNetworks(address?: string): Set<string> {
+    const funded = new Set<string>();
+    const holds = (amount?: string) => typeof amount === 'string' && /[1-9]/.test(amount);
+
+    for (const { balances } of (address && this.balanceMap[address]) || []) {
+      for (const balance of balances) {
+        if ([balance.total, balance.transferable, balance.free, balance.reserved, balance.locked, balance.frozen].some(holds)) {
+          funded.add(balance.name.toLowerCase());
+        }
+      }
+    }
+
+    return funded;
+  }
+
   deleteBalance(address: string) {
     if (!this.balanceMap[address]) return;
 

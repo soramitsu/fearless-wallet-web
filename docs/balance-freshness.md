@@ -9,7 +9,7 @@ list says what it does not know yet, and how tokens off the wallet's own network
 | Moment | What is read |
 | --- | --- |
 | The worker starts or wakes | The selected wallet at once (`FIRST_SERVICE_INFO_DELAY_MS`, 20 ms). The other wallets 3 s later (`OTHER_WALLETS_START_DELAY_MS`), so they do not compete for the same nodes. EVM and Substrate are read together. |
-| A Substrate network connects | Its balances are subscribed as soon as the connection is ready. Every later change arrives by itself. |
+| A Substrate network connects | Its balances are subscribed as soon as the connection is ready. Every later change arrives by itself. Connections open six at a time, one batch every 250 ms (`SUBSTRATE_CONNECT_BATCH`, `SUBSTRATE_CONNECT_PACE_MS`). The networks where the selected wallet holds funds open first, then the ranked ones, then the rest in registry order. |
 | A wallet page opens on an awake wallet | Ecosystems read more than 20 s ago (`PAGE_OPEN_REFRESH_AGE_MS`). A quiet wallet reads everything as it reconnects. |
 | A wallet page stays open | EVM, TON and Solana every 60 s; Bitcoin and Iroha every 180 s (`BALANCE_POLL_MS`), because each of their reads walks addresses or pages assets on public indexers. Nothing is polled while no wallet page is open (`CronService.pollBalances`). |
 | Refresh (list toolbar, or Refresh in the balance status sheet) | `pri(balance.refresh)`: every polled ecosystem of the selected wallet, forcing the EVM read, and the Substrate subscriptions started again. The button stops spinning when they answer or after 15 s (`REFRESH_WAIT_MS`). It also starts the search below. |
@@ -36,6 +36,9 @@ next connection to the same chain. A worker that wakes up or restarts downloads 
   cannot read is deleted, and the node's own metadata is used. If a saved runtime passes those checks but the API still
   cannot set it up ("Unable to initialize the API"), it is deleted too, and the network connects again without it.
 - After each successful registry download, the records of chains that no network lists any more are deleted.
+- With saved runtimes, every connection reaches its runtime within one round trip. Opening all ~50 at once queued about
+  5 s of decoding in the worker ahead of the first balances and the pages' messages. That is why connections open a
+  few at a time (see the table above).
 - It is a cache of public chain data in a database of its own. The extension keeps its wallet records in
   `chrome.storage.local`. The web wallet keeps them in the `fw-wallet` database, which the cache never opens.
 
@@ -85,9 +88,10 @@ the list leaves them out and its footer says "N more tokens found, not verified 
 - Unit: `tests/unit/balance-responsiveness.spec.ts`, `balance-status-popup.spec.ts`, `asset-discovery-sweep.spec.ts`,
   `portfolio-loading.spec.ts`, `portfolio-dashboard-sync-state.spec.ts`, `timeout-service-reentrancy.spec.ts`,
   `evm-token-discovery.spec.ts`, `evm-token-balances.spec.ts`.
-- Runtime metadata: `tests/unit/substrate-metadata-cache.spec.ts`, `substrate-metadata-connection.spec.ts`,
-  `substrate-metadata-prune.spec.ts`. `substrate-metadata-polkadot-contract.spec.ts` runs the real `ApiPromise`
-  against a scripted node, to pin the `@polkadot/api` behaviour the cache relies on.
+- Runtime metadata and connection order: `tests/unit/substrate-metadata-cache.spec.ts`,
+  `substrate-metadata-connection.spec.ts`, `substrate-metadata-prune.spec.ts`, `substrate-connection-pacing.spec.ts`.
+  `substrate-metadata-polkadot-contract.spec.ts` runs the real `ApiPromise` against a scripted node, to pin the
+  `@polkadot/api` behaviour the cache relies on.
 - Timing against the live networks: a production build driven by a headless Chrome for Testing. It records when each
   network's balance arrives in a page at four moments: first open, reopen, reopen after the wallet went quiet, and
   after the extension restarted.

@@ -177,6 +177,8 @@ export default class State {
 
   constructor() {
     this.keyringService.setUniversalWalletFundsProbe(balanceServiceFundsProbe(this.balanceService));
+    // The networks where the selected wallet holds funds connect first, from its saved balances on a start.
+    this.networkService.connectFirst = () => this.balanceService.fundedNetworks(this.currentAccount?.address);
     // The extension worker opens no node connection until a wallet page or a site needs the wallet.
     if (this.workerSleepService.enabled) void this.networkService.suspend();
     this.injectFromStorage();

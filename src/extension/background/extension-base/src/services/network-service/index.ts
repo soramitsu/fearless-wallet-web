@@ -35,6 +35,13 @@ export type NetworkMap = Record<string, NetworkJson>;
 // The extension retries an unavailable registry when this alarm fires (backgroundRuntime.ts).
 export const REGISTRY_RETRY_ALARM = 'fearless-network-registry-retry';
 
+// Substrate connections are opened this many at a time, every SUBSTRATE_CONNECT_PACE_MS, the networks holding the
+// selected wallet's funds first, then the ranked ones. With saved runtimes (SubstrateMetadataCache) every connection
+// reaches its runtime within a round trip, and opening ~50 at once queued about 5 s of decoding in the worker ahead of
+// the first balances and of the pages' messages.
+export const SUBSTRATE_CONNECT_BATCH = 6;
+export const SUBSTRATE_CONNECT_PACE_MS = 250;
+
 // Connection statuses change many times while networks connect, and each write reads and replaces the whole stored
 // map (~217 KB; 24 writes in a worker's first 95 s). Status changes made within this delay are written once.
 export const NETWORK_STATUS_WRITE_DELAY_MS = 1000;
@@ -91,6 +98,10 @@ export class NetworkService {
   private preferenceRevision = 0;
   private selectedNetworksRead = false;
   private statusWrite?: ReturnType<typeof setTimeout>;
+  private substrateConnectQueue: NetworkJson[] = [];
+  private substrateConnectTimer?: ReturnType<typeof setTimeout>;
+  /** Lower-case names of the networks to connect first: State gives those where the selected wallet holds funds. */
+  connectFirst: () => ReadonlySet<string> = () => new Set();
   private readonly networkPreferenceRevision: Record<string, number> = {};
   private readonly logger = createLogger('Network_Service');
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
@@ -131,6 +142,9 @@ export class NetworkService {
   /** Closes every node connection, and keeps initNetworkApis from opening any until resume(). */
   async suspend(): Promise<void> {
     this.suspendedSubject.next(true);
+    clearTimeout(this.substrateConnectTimer);
+    this.substrateConnectTimer = undefined;
+    this.substrateConnectQueue = [];
     await Promise.allSettled([
       this.substrateApiHandler.destroyAll(),
       Promise.resolve().then(() => this.evmApiHandler.destroyAll()),
@@ -531,6 +545,8 @@ export class NetworkService {
       if (!this.tonApiHandler.api[network.name.toLowerCase()]) this.tonApiHandler.initApi(network);
     });
 
+    const unconnected: NetworkJson[] = [];
+
     this.activeNetworkByEcosystem.substrate.forEach((network) => {
       // The handler keys connections by lower-case name. A live connection is kept; one that fails is replaced once.
       const key = network.name.toLowerCase();
@@ -539,8 +555,43 @@ export class NetworkService {
       if (api) api.isReadyOrError.catch(() => {
         if (this.substrateApiHandler.api[key]?.api === api) this.substrateApiHandler.initApi(network);
       });
-      else this.substrateApiHandler.initApi(network);
+      else unconnected.push(network);
     });
+    this.queueSubstrateConnections(unconnected);
+  }
+
+  /**
+   * Adds networks to the Substrate connection queue, opening the first SUBSTRATE_CONNECT_BATCH now. A network queued
+   * twice opens once: its turn finds it connected.
+   */
+  private queueSubstrateConnections(networks: NetworkJson[]) {
+    const first = this.connectFirst();
+    const turn = ({ name, rank }: NetworkJson) => (first.has(name.toLowerCase()) ? 0 : rank ? 1 : 2);
+
+    this.substrateConnectQueue = [...this.substrateConnectQueue, ...networks]
+      .map((network, index) => ({ network, index }))
+      .sort((a, b) => turn(a.network) - turn(b.network) ||
+        (a.network.rank ?? Infinity) - (b.network.rank ?? Infinity) || a.index - b.index)
+      .map(({ network }) => network);
+    if (!this.substrateConnectTimer) this.connectSubstrateTurn();
+  }
+
+  private connectSubstrateTurn() {
+    this.substrateConnectTimer = undefined;
+    if (this.suspended) return;
+    let opened = 0;
+
+    while (opened < SUBSTRATE_CONNECT_BATCH && this.substrateConnectQueue.length) {
+      const network = this.networkMap[this.substrateConnectQueue.shift()!.name];
+
+      // A network removed or switched off meanwhile, or connected by a site's request or a node change, is left alone.
+      if (!network?.active || this.substrateApiHandler.api[network.name.toLowerCase()]?.api) continue;
+      this.substrateApiHandler.initApi(network);
+      opened += 1;
+    }
+    if (this.substrateConnectQueue.length) {
+      this.substrateConnectTimer = setTimeout(() => this.connectSubstrateTurn(), SUBSTRATE_CONNECT_PACE_MS);
+    }
   }
 
   /**

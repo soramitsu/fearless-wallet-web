@@ -13,7 +13,7 @@ export { createAssetKey, type AssetKeyParts };
 
 export type AssetPreference = 'auto' | 'shown' | 'hidden';
 export type AssetMetadataTrust = 'verified' | 'unverified' | 'missing';
-export type AssetMetadataSource = 'registry' | 'chain' | 'indexer';
+export type AssetMetadataSource = 'registry' | 'chain' | 'indexer' | 'tokenList';
 export type PriceTrust = 'canonicalAsset' | 'curatedGroup' | 'unavailable';
 export type NetworkScanCoverage = 'complete' | 'catalogOnly' | 'limited';
 export type PortfolioMode = 'view' | 'manage';

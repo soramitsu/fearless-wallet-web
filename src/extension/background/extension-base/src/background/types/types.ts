@@ -32,6 +32,7 @@ import type {
 } from '@/interfaces';
 import type { WarningValueName } from '@/consts/messages';
 import type { AssetDiscoveryProgress, AssetDiscoverySweepState } from '@extension-base/services/asset-discovery-service';
+import type { EvmTokenDiscoveryState } from '@extension-base/services/evm-token-discovery';
 import type { CrossChainRouteProviderId } from '@/cross-chain/reviewedRoutes';
 import type { CrossChainSendRecords } from '@/cross-chain/sendLedger';
 import type { ActionCapabilityConfig } from '@extension-base/services/action-capability-service';
@@ -994,6 +995,8 @@ export type IState = {
   assetBalances: Record<WalletAddress, Record<string, BalanceItem & { chain: NetworkName }>>;
   networkScanStates: Record<WalletAddress, Record<NetworkName, NetworkScanState>>;
   assetDiscoverySweep: AssetDiscoverySweepState;
+  /** When each wallet's ERC-20 token list was last read on each network (EvmTokenDiscoveryService). */
+  evmTokenDiscovery: EvmTokenDiscoveryState;
   actionCapabilities: ActionCapabilityConfig;
   sendKillSwitch: SendKillSwitchState;
   bitcoinPendingSends: BitcoinPendingSend[];

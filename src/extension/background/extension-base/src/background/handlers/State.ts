@@ -43,6 +43,7 @@ import {
 import { PAGE_OPEN_REFRESH_AGE_MS } from '@extension-base/services/subscription-service';
 import EvmContractService from '../../services/evm-contract-service';
 import { HistoryService } from '../../services/history-service';
+import { createEvmTokenListFetcher, EvmTokenDiscoveryService } from '../../services/evm-token-discovery';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   ServiceInfo,
@@ -71,6 +72,7 @@ import { getTabAuthorizationTarget, stripUrl, withErrorLog } from '@/extension/b
 import { isEthereumNetwork } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { walletEcosystemOf } from '@/extension/background/extension-base/src/background/helpers/walletEcosystem';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
+import { URLS } from '@/consts/urls';
 import { isSameString } from '@/helpers';
 import { encodeIrohaI105Address, resolveCanonicalIrohaAddressNetwork, type IrohaNetworkInput } from '@/util/iroha';
 import { IS_EXTENSION } from '@/consts/global';
@@ -124,6 +126,13 @@ export default class State {
     },
   });
   balanceService = new BalanceService(this);
+  // The ERC-20 token lists and when each wallet's list was last read (docs/evm-token-discovery.md).
+  evmTokenDiscoveryService = new EvmTokenDiscoveryService({
+    fetchListFile: createEvmTokenListFetcher(URLS.EVM_TOKEN_LISTS),
+    readState: async () => (await storage.get(['evmTokenDiscovery'])).evmTokenDiscovery,
+    writeState: async (evmTokenDiscovery) => storage.set({ evmTokenDiscovery }),
+    getWalletKeys: () => this.keyringService.getAllMainAccounts().map(({ address }) => address),
+  });
   assetDiscoverySweepService = new AssetDiscoverySweepService({
     getRegistryNetworks: () => this.networkService.authoritativeDiscoveryNetworks,
     scanNetwork: (network) => this.scanDiscoveryNetwork(network),

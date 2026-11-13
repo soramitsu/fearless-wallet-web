@@ -13,6 +13,7 @@ import BitcoinBalanceService from './BitcoinBalanceService';
 import IrohaBalanceService from './IrohaBalanceService';
 import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem, NetworkScanState } from '@extension-base/api/evm/types';
+import type { NetworkJson } from '@extension-base/types';
 import type {
   BalanceMap,
   BalanceJson,
@@ -102,7 +103,7 @@ export default class BalanceService {
         if (!cachedItem?.id || !cachedItem.chain || cachedItem.state !== APIItemState.READY) return;
         if (storedKey !== this.getStorageAssetKey(cachedItem.chain, cachedItem)) return;
 
-        const item = this.withRegistryPriceId(cachedItem);
+        const item = this.withRegistryPriceId(this.asRegistryBalanceIfListed(cachedItem));
         const group = this.balanceMap[address].find(({ balances }) =>
           balances.some(
             (balance) =>
@@ -138,7 +139,7 @@ export default class BalanceService {
           providers: [],
           relayChain: item.relayChain as RelayChainName,
           symbol: item.symbol,
-          tokenName: item.symbol,
+          tokenName: item.tokenName || item.symbol,
         });
       });
     });
@@ -368,6 +369,32 @@ export default class BalanceService {
   }
 
   /**
+   * A cached ERC-20 token found through the token lists that the registry lists today is restored as the registry's
+   * asset, under the registry's id: the registry path reads it from now on and finds it by that id.
+   */
+  private asRegistryBalanceIfListed<T extends BalanceItem & { chain: string }>(item: T): T {
+    if (item.assetMetadataSource !== 'tokenList') return item;
+
+    const registryAsset = this.findRegistryEvmAsset(item.chain, item.id);
+
+    if (!registryAsset) return item;
+
+    const restored: T = { ...item, id: registryAsset.id, assetMetadataTrust: 'verified', assetMetadataSource: 'registry' };
+
+    delete restored.tokenName;
+
+    return restored;
+  }
+
+  private findRegistryEvmAsset(networkKey: string, contract: string) {
+    const network = this.state.networkService?.networkValues?.find(({ name }) => isSameString(name, networkKey));
+
+    return network?.ecosystem === 'ethereum'
+      ? network.assets?.find(({ id }) => isSameString(id, contract))
+      : undefined;
+  }
+
+  /**
    * A cached balance of a registry asset takes the registry's price id of today, not the one it was cached with:
    * the registry may have corrected it since, and an asset on the untrusted list has none.
    */
@@ -542,6 +569,173 @@ export default class BalanceService {
     this.updateBalanceStore(networkKey, balance, accountAddress);
 
     this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
+  }
+
+  /** The ERC-20 tokens found outside the registry for this wallet on this network (docs/evm-token-discovery.md). */
+  public getEvmTokenBalances(address: string, networkKey: string): BalanceItem[] {
+    return (this.balanceMap[address] ?? []).flatMap(({ balances }) =>
+      balances.filter(({ assetMetadataSource, name }) => assetMetadataSource === 'tokenList' && isSameString(name, networkKey))
+    );
+  }
+
+  private findEvmTokenBalance(address: string, networkKey: string, contract: string) {
+    for (const group of this.balanceMap[address] ?? []) {
+      const index = group.balances.findIndex(
+        ({ assetMetadataSource, id, name }) =>
+          assetMetadataSource === 'tokenList' && isSameString(id, contract) && isSameString(name, networkKey)
+      );
+
+      if (index >= 0) return { group, index };
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Adds or updates an ERC-20 token found outside the registry. It is never verified: no price, never counted, listed
+   * under "Found, not verified" until the owner shows it. A token is added only with a balance above zero; a failed
+   * read keeps the amount last read, as for registry tokens.
+   */
+  public setEvmTokenBalanceItem(
+    networkKey: string,
+    item: Pick<BalanceItem, 'id' | 'symbol' | 'precision' | 'state'> & Pick<Partial<BalanceItem>, 'total' | 'tokenName'>,
+    address: string
+  ): void {
+    if (!this.state.keyringService.getAllMainAccounts().some((account) => account.address === address)) return;
+
+    const accountAddress = this.state.keyringService.getSubstrateAddress(address);
+    const existing = this.findEvmTokenBalance(accountAddress, networkKey, item.id);
+    const amount = item.total ?? '0';
+    let balance: BalanceItem;
+
+    if (existing) {
+      const current = existing.group.balances[existing.index];
+
+      balance =
+        item.state === APIItemState.ERROR
+          ? { ...current, state: APIItemState.ERROR }
+          : {
+              ...current,
+              state: APIItemState.READY,
+              free: amount,
+              total: amount,
+              transferable: amount,
+              timestamp: Date.now(),
+            };
+      existing.group.balances[existing.index] = balance;
+    } else {
+      if (item.state !== APIItemState.READY || !/[1-9]/u.test(amount)) return;
+
+      const network = this.state.networkService.networkValues.find(({ name }) => isSameString(name, networkKey));
+      const tokenName = item.tokenName || item.symbol;
+
+      balance = {
+        address: accountAddress,
+        assetIcon: '',
+        icon: network?.icon ?? '',
+        id: item.id,
+        name: networkKey,
+        mainNetwork: networkKey,
+        precision: item.precision,
+        relayChain: 'ethereum',
+        symbol: item.symbol,
+        tokenName,
+        type: 'erc20',
+        state: APIItemState.READY,
+        isNative: false,
+        isUtility: false,
+        free: amount,
+        total: amount,
+        transferable: amount,
+        reserved: '0',
+        frozen: '0',
+        locked: '0',
+        timestamp: Date.now(),
+        assetMetadataTrust: 'unverified',
+        assetMetadataSource: 'tokenList',
+        scanCoverage: 'catalogOnly',
+      };
+      (this.balanceMap[accountAddress] ??= []).push({
+        balances: [balance],
+        groupId: item.id,
+        // No logo: showing a found token never contacts another host.
+        icon: '',
+        mainNetwork: networkKey,
+        providers: [],
+        relayChain: 'ethereum',
+        symbol: item.symbol,
+        tokenName,
+      });
+    }
+
+    this.updateBalanceStore(networkKey, balance, accountAddress);
+    this.schedulePublish();
+  }
+
+  /**
+   * A found token that the registry lists now becomes the registry's asset. When the wallet already has the registry's
+   * row for it, the found row goes. Otherwise the found row becomes that row, under the registry's id and verified, so
+   * the registry path finds it and the holding stays on screen.
+   */
+  public adoptEvmTokenAsRegistryAsset(
+    networkKey: string,
+    registryAsset: Pick<NetworkJson['assets'][number], 'id' | 'symbol' | 'name' | 'priceId' | 'icon'>,
+    address: string
+  ): void {
+    const accountAddress = this.state.keyringService.getSubstrateAddress(address);
+    const existing = this.findEvmTokenBalance(accountAddress, networkKey, registryAsset.id);
+
+    if (!existing) return;
+
+    const hasRegistryRow = (this.balanceMap[accountAddress] ?? []).some(({ balances }) =>
+      balances.some(
+        ({ assetMetadataSource, id, name }) =>
+          assetMetadataSource !== 'tokenList' && id === registryAsset.id && isSameString(name, networkKey)
+      )
+    );
+
+    if (hasRegistryRow) {
+      this.removeEvmTokenBalanceItem(networkKey, registryAsset.id, address);
+      return;
+    }
+
+    const adopted: BalanceItem = {
+      ...existing.group.balances[existing.index],
+      id: registryAsset.id,
+      symbol: registryAsset.symbol,
+      priceId: registryAsset.priceId || undefined,
+      assetMetadataTrust: 'verified',
+      assetMetadataSource: 'registry',
+    };
+
+    delete adopted.tokenName;
+    existing.group.balances[existing.index] = adopted;
+    Object.assign(existing.group, {
+      groupId: registryAsset.id,
+      icon: registryAsset.icon || existing.group.icon,
+      priceId: registryAsset.priceId || undefined,
+      symbol: registryAsset.symbol,
+      tokenName: registryAsset.name || registryAsset.symbol,
+    });
+    this.updateBalanceStore(networkKey, adopted, accountAddress);
+    this.schedulePublish();
+  }
+
+  /** Removes a found token: the wallet no longer holds it, or the registry lists it now. */
+  public removeEvmTokenBalanceItem(networkKey: string, contract: string, address: string): void {
+    const accountAddress = this.state.keyringService.getSubstrateAddress(address);
+    const existing = this.findEvmTokenBalance(accountAddress, networkKey, contract);
+
+    if (!existing) return;
+
+    const [removed] = existing.group.balances.splice(existing.index, 1);
+
+    if (!existing.group.balances.length) {
+      this.balanceMap[accountAddress] = this.balanceMap[accountAddress].filter((group) => group !== existing.group);
+    }
+
+    void this.deleteBalanceStore(networkKey, removed, accountAddress).catch((error) => console.warn(error));
+    this.schedulePublish();
   }
 
   public async publishBalance() {

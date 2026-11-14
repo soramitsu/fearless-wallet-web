@@ -335,7 +335,8 @@ export const actions: Actions = {
 
   async signCancel({ id, kind }) {
     const queue = SIGNING_QUEUES[kind];
-    await cancelSignRequest(id, kind);
+    // The background keeps a request while an approval is submitting its transaction; it stays on screen.
+    if ((await cancelSignRequest(id, kind)) === false) throw new Error('Signing request was not cancelled');
 
     removeSigningRequest(this, queue, id);
     routeSigningRequests(this);

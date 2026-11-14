@@ -25,8 +25,8 @@ export function subscribeIrohaConnectState(
   const cb = subscriptionService.createSubscription<'pri(irohaConnect.subscribe)'>(id, port);
   const subscription = irohaConnectService.stateSubject.subscribe(cb);
 
-  subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe());
-  port?.onDisconnect.addListener(() => subscriptionService.cancelSubscription(id));
+  subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe(), port);
+  port?.onDisconnect.addListener(() => subscriptionService.cancelSubscription(id, port));
 
   return irohaConnectService.snapshot;
 }

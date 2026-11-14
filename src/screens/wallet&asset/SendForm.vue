@@ -239,7 +239,9 @@ export default defineComponent({
 </style>
 
 <style lang="scss" scoped>
+// Brand kit v3: the review's cards wear the lit rim.
 .network-review {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -248,6 +250,7 @@ export default defineComponent({
   text-align: left;
   background: $secondary-background-color;
   border-radius: 8px;
+  @include fw-lit-rim(8px);
 
   span {
     color: $default-white;
@@ -260,12 +263,14 @@ export default defineComponent({
   }
 }
 .recipient-review {
+  position: relative;
   display: grid;
   gap: 8px;
   padding: 16px;
   text-align: left;
   background: $secondary-background-color;
   border-radius: 8px;
+  @include fw-lit-rim(8px);
 }
 .recipient-review > span,
 .recipient-review > small {

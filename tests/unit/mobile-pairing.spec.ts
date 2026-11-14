@@ -1,5 +1,5 @@
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
-import Provider from '@walletconnect/universal-provider';
+import { WalletConnectClient as WalletConnect } from '@extension-base/services/wallet-connect-service/protocol/client';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Keyring } from '@polkadot/keyring';
 import { cryptoWaitReady, encodeAddress } from '@polkadot/util-crypto';
@@ -8,7 +8,7 @@ import { WalletConnectDAppService } from '@extension-base/services/wallet-connec
 import { sessionStorage } from '../helpers/session-storage';
 import type State from '@extension-base/background/handlers/State';
 import type { Port } from '@extension-base/background/types/types';
-import type { SessionTypes } from '@walletconnect/types';
+import type { WcSession } from '@extension-base/services/wallet-connect-service/protocol/types';
 
 vi.mock('@extension-base/utils/crossenv', async () => ({
   chrome: (await import('../helpers/session-storage')).sessionStorage.chrome,
@@ -23,12 +23,12 @@ const otherEvm = new Wallet(`0x${'22'.repeat(32)}`).address;
 const genesis = '11'.repeat(32),
   caip = `polkadot:${genesis.slice(0, 32)}`;
 let alice: string, bob: string;
-let service: WalletConnectDAppService, session: SessionTypes.Struct;
+let service: WalletConnectDAppService, session: WcSession;
 let state: State, client: { connect: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn> };
-let approval: ReturnType<typeof vi.fn>, approve: (s: SessionTypes.Struct) => void;
+let approval: ReturnType<typeof vi.fn>, approve: (s: WcSession) => void;
 let callbacks: Record<string, ReturnType<typeof vi.fn>>, unsubscribe: Record<string, () => void>;
 let existing: { address: string; meta: Record<string, unknown> }[];
-let sessions: SessionTypes.Struct[];
+let sessions: WcSession[];
 let records: { address: string; meta: Record<string, unknown> }[];
 let port: Port, disconnectPort: () => void;
 let init: (id: string, port?: Port) => Promise<string>;
@@ -66,9 +66,9 @@ beforeEach(async () => {
       },
       eip155: { methods: ['personal_sign', 'eth_sendTransaction'], accounts: [`eip155:10:${evm}`], events: [] },
     },
-  } as unknown as SessionTypes.Struct;
+  } as unknown as WcSession;
   sessions = [];
-  const promise = new Promise<SessionTypes.Struct>((resolve) => {
+  const promise = new Promise<WcSession>((resolve) => {
     approve = resolve;
   });
   approval = vi.fn(() => promise);
@@ -79,19 +79,16 @@ beforeEach(async () => {
     }),
     disconnect: vi.fn(async () => undefined),
   };
-  const app = {
-    client: {
-      ...client,
-      session: {
-        get values() {
-          return sessions;
-        },
+  const sdkClient = {
+    ...client,
+    session: {
+      get values() {
+        return sessions;
       },
-      on: vi.fn((event, callback) => { sessionListeners[event] = callback; }),
     },
-    abortPairingAttempt: vi.fn(),
+    on: vi.fn((event, callback) => { sessionListeners[event] = callback; }),
   };
-  vi.spyOn(Provider, 'init').mockResolvedValue(app as unknown as Provider);
+  vi.spyOn(WalletConnect, 'init').mockResolvedValue(sdkClient as unknown as WalletConnect);
   const networks = [
     { name: 'Optimism', ecosystem: 'ethereum', chainId: '10' },
     { name: 'Arbitrum', ecosystem: 'ethereum', chainId: '42161' },
@@ -157,7 +154,7 @@ describe('mobile pairing negotiation and approved identities', () => {
     expect(service.getSession(session.topic).topic).toBe(session.topic);
     expect(await new WalletConnectRetiredSessions().readPolicy()).toMatchObject({ generation: 1, approvedTopics: [session.topic] });
     const restarted = new WalletConnectDAppService({ ...state } as State);
-    await (restarted as unknown as { initApp(): Promise<void> }).initApp();
+    await (restarted as unknown as { initClient(): Promise<void> }).initClient();
     expect(restarted.getSession(session.topic).topic).toBe(session.topic);
   });
   it('retains complete decimal EVM chain IDs and advertises only implemented methods', async () => {
@@ -325,9 +322,9 @@ describe('pairing attempt ownership', () => {
 });
 
 describe('pairing boundary failures and isolation', () => {
-  it('cancels before provider initialization finishes without proposing a session', async () => {
-    let release!: (value: Provider) => void;
-    vi.mocked(Provider.init).mockImplementationOnce(
+  it('cancels before client initialization finishes without proposing a session', async () => {
+    let release!: (value: WalletConnect) => void;
+    vi.mocked(WalletConnect.init).mockImplementationOnce(
       () =>
         new Promise((resolve) => {
           release = resolve;
@@ -338,7 +335,7 @@ describe('pairing boundary failures and isolation', () => {
     const rejected = expect(pending).rejects.toThrow('cancelled');
     void delayed.abortPairingAttempt('before-init', port);
     await vi.waitFor(() => expect(release).toBeTypeOf('function'));
-    release({ client: { on: vi.fn() } } as unknown as Provider);
+    release({ on: vi.fn() } as unknown as WalletConnect);
     await rejected;
     expect(client.connect).not.toHaveBeenCalled();
     noImport();

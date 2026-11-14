@@ -43,7 +43,9 @@
         </template>
 
         <template v-if="extrinsicType !== 'nft'">
-          <div class="descriptions">
+          <div class="descriptions" :class="{ 'descriptions--ignite': showsIgnite }">
+            <!-- Brand kit v3: a sent transfer ignites the solar geometry around it, with the send sound. -->
+            <SolarIgnite v-if="showsIgnite" class="send-ignite" :size="IGNITE_SIZE" />
             <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" class="asset-icon" />
 
             <template v-if="secondIcon">
@@ -88,7 +90,8 @@
         </template>
 
         <template v-else>
-          <div class="icon-circle">
+          <div class="icon-circle" :class="{ 'icon-circle--ignite': showsIgnite }">
+            <SolarIgnite v-if="showsIgnite" class="send-ignite" :size="IGNITE_SIZE" />
             <Icon
               :icon="isFailed ? 'close' : 'check'"
               className="icon__lock-green"
@@ -165,6 +168,8 @@ import { type StakingOperation } from '@/interfaces';
 import { makeSwap, makeTransfer, makeCrossChain, makeStaking, makePool } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
+import SolarIgnite from '@/components/SolarIgnite.vue';
+import { playSound, prepareSounds } from '@/feel/sound';
 import { IS_EXTENSION } from '@/consts/global';
 import { sendNft } from '@/extension/messaging/nfts';
 import { isSameString, setClipboard } from '@/helpers';
@@ -182,11 +187,12 @@ import { getAccountAccessErrorLocaleKey } from '@/helpers/transferErrors';
 // Components.AssetHistory and Components.AccountAccessRecovery. The route table is not imported
 // here: it imports screens that embed this popup.
 const ASSET_HISTORY_ROUTE = 'AssetHistory';
+const SENDS = ['transfer', 'crossChain', 'nft'];
 const ACCOUNT_ACCESS_ROUTE = 'AccountAccessRecovery';
 
 export default defineComponent({
   name: 'ConfirmationPasswordPopup',
-  components: { SignMobile },
+  components: { SignMobile, SolarIgnite },
   props: {
     amount: { type: String, default: '0' },
     value: { type: String, default: '0' },
@@ -208,6 +214,8 @@ export default defineComponent({
       signedPayload: null,
       transactionState: null,
       transactionResponse: null as BasicTxResponse | ResponseNftTransfer | null,
+      // Small enough to stay inside the popup's scroll box around the success mark.
+      IGNITE_SIZE: 112,
     };
   },
   computed: {
@@ -332,6 +340,10 @@ export default defineComponent({
     isTransactionFinished() {
       return this.isSuccess || this.isFailed || this.isUnconfirmed;
     },
+    // Tokens left the wallet: a transfer, a cross-chain send or an NFT. A failure or an unconfirmed send gets no sound.
+    showsIgnite() {
+      return this.isSuccess && SENDS.includes(this.extrinsicType);
+    },
     isTon() {
       return this.accountsStore.selectedWallet.isTon;
     },
@@ -352,7 +364,13 @@ export default defineComponent({
       );
     },
   },
+  watch: {
+    showsIgnite(sent: boolean) {
+      if (sent) void playSound('send');
+    },
+  },
   async mounted() {
+    prepareSounds();
     this.resetTxStatus();
     this.sendExtrinsic();
   },
@@ -506,6 +524,7 @@ export default defineComponent({
   }
 
   .descriptions {
+    position: relative;
     display: flex;
     justify-content: space-between;
     background: $secondary-background-color;
@@ -555,9 +574,29 @@ export default defineComponent({
   }
 
   .icon-circle {
+    position: relative;
     background-color: #ffffff08;
     border-radius: 50%;
     padding: 21px;
+  }
+
+  .descriptions--ignite,
+  .icon-circle--ignite {
+    margin-top: 18px;
+  }
+
+  .send-ignite {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 0;
+    translate: -50% -50%;
+  }
+
+  .descriptions > :not(.send-ignite),
+  .icon-circle > :not(.send-ignite) {
+    position: relative;
+    z-index: 1;
   }
 }
 </style>

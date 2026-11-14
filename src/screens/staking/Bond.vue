@@ -162,12 +162,11 @@
           </template>
 
           <template v-if="step === 6">
-            <div class="descriptions-row" data-testid="descriptionRowStaked">
+            <div v-if="stakingNetwork.eraHours > 0" class="descriptions-row" data-testid="descriptionRowStaked">
               <Icon icon="gift" class="icon" />
 
-              <!-- TODO: staking Переделать, когда будут новые сети -->
               <div>
-                {{ $t('staking.stakedTokens', { value: 6 + 'hours' }) }}
+                {{ $t('staking.stakedTokens', { value: `${stakingNetwork.eraHours}h` }) }}
               </div>
             </div>
 
@@ -227,8 +226,9 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-
 import type { RequestBond, FWValidatorInfoFull } from '@extension-base/services/staking-service/types';
+import { recommendedValidatorAddresses } from '@/helpers/staking';
+
 import HistoryBook from '@/screens/wallet&asset/HistoryBook.vue';
 import SelectValidator from '@/screens/staking/myStake/validators/SelectValidator.vue';
 import FiltersPopup from '@/screens/staking/myStake/validators/FiltersPopup.vue';
@@ -272,6 +272,10 @@ export default defineComponent({ name: 'Bond',
       showEditAddressBook: false,
       fee: '',
       feeMax: '',
+      feeRequest: 0,
+      maxFeeRequest: 0,
+      feeRefreshQueued: false,
+      disposed: false,
       amount: '',
       newAddress: '',
     };
@@ -294,9 +298,7 @@ export default defineComponent({ name: 'Bond',
     stakingAssetId() {
       if (this.accountsStore.balances.length === 0) return '';
 
-          const { groupId } = getUtilityAsset(this.accountsStore.balances, this.network);
-
-          return groupId;
+      return getUtilityAsset(this.accountsStore.balances, this.network)?.groupId ?? '';
     },
     stakingCurrency() {
       return this.accountsStore.balances.find(({ groupId }) => groupId === this.stakingAssetId);
@@ -335,15 +337,15 @@ export default defineComponent({ name: 'Bond',
           return 'common.confirm';
     },
     isValidAmountAsset() {
-      return isValidAmountAsset(this.stakingCurrency, this.network, this.fee ?? '0', this.amount);
+      return isValidAmountAsset(this.stakingCurrency, this.network, this.step === 1 ? this.feeMax : this.fee, this.amount);
     },
     confirmBtnDisabled() {
-      if (this.step === 1)
-            return this.amount === '' || +this.amount === 0 || !this.isValidAmountAsset || !this.isValidPayoutAddress;
-
-          if (this.step === 4 || this.step === 5) return this.selectedValidatorsLength === 0;
-
-          return false;
+      const fee = this.step === 1 ? this.feeMax : this.fee;
+      if (!Number.isFinite(+this.amount) || +this.amount <= 0 || +this.amount < +this.stakingNetwork.minBond ||
+          fee === '' || !Number.isFinite(+fee) || +fee < 0 || !this.isValidAmountAsset || !this.isValidPayoutAddress) return true;
+      if (this.step === 4 || this.step === 5 || this.step === 6)
+        return this.selectedValidatorsLength === 0 || this.selectedValidatorsLength > this.maxNominations;
+      return false;
     },
     showAmountInput() {
       return this.step === 1;
@@ -444,41 +446,72 @@ export default defineComponent({ name: 'Bond',
     validators() {
       return Object.values(this.state);
     },
+    feeQuoteKey() {
+      return JSON.stringify({
+        tx: this.tx,
+        maximumValidators: this.validators.slice(0, this.maxNominations).map(({ address }) => address),
+      });
+    },
   },
   watch: {
-    "selectedValidators": 'srcWatcher',
+    feeQuoteKey: {
+      handler() { this.refreshFeeQuotes(); },
+      flush: 'sync',
+    },
   },
   mounted() {
-    // TODO staking
-        const isSlashed = false;
-        const limitValidatorsIdentity = false;
-
-        this.stakingNetwork.validators.forEach((info) => {
-          this.state[info.address] = {
-            ...info,
-            isSlashed,
-            limitValidatorsIdentity,
-            isSelect: false,
-          };
-        });
-
-        this.getSoraFees();
+    this.state = Object.fromEntries(this.stakingNetwork.validators.map((info) => [
+      info.address, { ...info, isSelect: false },
+    ]));
+    this.refreshFeeQuotes();
+  },
+  beforeUnmount() {
+    this.disposed = true;
   },
   methods: {
+    refreshFeeQuotes() {
+      // Invalidate synchronously; only the RPC work is batched.
+      this.feeRequest += 1;
+      this.maxFeeRequest += 1;
+      this.fee = '';
+      this.feeMax = '';
+      if (this.disposed || this.feeRefreshQueued) return;
+      this.feeRefreshQueued = true;
+      void this.$nextTick(() => {
+        this.feeRefreshQueued = false;
+        if (this.disposed) return;
+        void this.srcWatcher();
+        void this.getSoraFees();
+      });
+    },
     async srcWatcher() {
-      this.fee = await getBondAndNominateNetworkFee(this.tx);
+      const request = ++this.feeRequest;
+      this.fee = '';
+      try {
+        const fee = await getBondAndNominateNetworkFee(this.tx);
+        if (!this.disposed && request === this.feeRequest) this.fee = fee;
+      } catch {
+        if (!this.disposed && request === this.feeRequest) this.fee = '';
+      }
     },
     async getSoraFees() {
-      // TODO: staking в сетях кроме соры, контроллер устанавливается отдельным вызовом, по этому нужно прибавлять и комиссию за StakingSetController
-          this.feeMax = await getBondAndNominateNetworkFee({
-            ...this.tx,
-            validators: new Array(this.stakingNetwork.maxNominations),
-          });
+      const request = ++this.maxFeeRequest;
+      this.feeMax = '';
+      try {
+        const fee = await getBondAndNominateNetworkFee({
+          ...this.tx,
+          validators: this.validators.slice(0, this.maxNominations).map(({ address }) => address),
+        });
+        if (!this.disposed && request === this.maxFeeRequest) this.feeMax = fee;
+      } catch {
+        if (!this.disposed && request === this.maxFeeRequest) this.feeMax = '';
+      }
     },
     openValidatorList(isSuggested = false) {
-      this.validators.forEach(
-            (validator, index) => (this.state[validator.address].isSelect = isSuggested && index < this.maxNominations) // валидаторы возвращаются от "лучшего" к "худшему", по этому берем первых в нужном количестве
-          );
+      const recommended = isSuggested ? recommendedValidatorAddresses(this.validators, this.maxNominations) : new Set<string>();
+      this.validators.forEach((validator) => {
+        this.state[validator.address].isSelect = recommended.has(validator.address);
+      });
 
           this.isSuggested = isSuggested;
           this.step = isSuggested ? 3 : 5;
@@ -498,6 +531,7 @@ export default defineComponent({ name: 'Bond',
       this.showHistoryBook = !this.showHistoryBook;
     },
     updateSelectedValidators(value: boolean, address: string) {
+      if (!this.state[address] || (value && this.selectedValidatorsLength >= this.maxNominations)) return;
       this.state[address].isSelect = value;
     },
     handlerBack() {
@@ -524,6 +558,7 @@ export default defineComponent({ name: 'Bond',
       this.payoutAddress = getClipboard();
     },
     confirm() {
+      if (this.confirmBtnDisabled) return;
       if (this.step === 4) this.step += 1;
 
           if (this.step === 6) this.showConfirmationPasswordPopup = true;

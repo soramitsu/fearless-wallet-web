@@ -17,7 +17,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { computed } from 'vue';
 import { useAccountsStore } from '@/stores/accounts';
 
 const props = defineProps<{
@@ -27,7 +27,7 @@ const props = defineProps<{
 const emit = defineEmits(['onSelect', 'onClose']);
 
 const accountsStore = useAccountsStore();
-const wallets = ref(accountsStore.accounts.filter((el) => el.ethereumAddress && !el.isMobile));
+const wallets = computed(() => accountsStore.accounts.filter((el) => el.ethereumAddress && !el.isMobile));
 
 const close = () => emit('onClose');
 const isSelected = (address: string) => address === props.selectedAddress;

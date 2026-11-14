@@ -1,5 +1,4 @@
 type WarningValueName =
-  | 'mnemonicSequence'
   | 'mnemonic'
   | 'substrateDP'
   | 'ethereumDP'

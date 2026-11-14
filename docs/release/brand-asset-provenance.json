@@ -1,14 +1,28 @@
 {
   "provenance": {
-    "recordedAt": "2026-10-13T17:49:15.638Z",
-    "source": "Approved Figma exports in brand/sun-disc, unchanged",
-    "sources": {
-      "winged-sun-colour.svg": "93158e0284a01e6b682ce1c87a331d769722444cf6ade68e17188d08b50b47e8",
-      "winged-sun-silhouette.svg": "835903453ea6bc29ec57ea84b5f45f2417752f6acd0b95e68c52c0586d34a3cd",
-      "winged-sun-feather-lines.svg": "930d8fff6d2b19a4c277e98a98ef3e5d832cc0b9c1334613168564acc1042acc",
-      "winged-sun-badge.svg": "c46079a2baf438c13b6782c176f173aab70418a80bc2457c56ad8b797990bb8e",
-      "winged-sun-badge-lines.svg": "61695664e36233812e24676fd5d6d533f009e237279a95f9ae6ce5f3c0889a07"
+    "recordedAt": "2026-11-13T00:00:00.000Z",
+    "source": "2026-11-10 approved Yatagarasu brand: crest, wordmark and app icon masters copied verbatim from the Fearless brand kit; kit v3 (2026-11-13) adds the launch, the transfer sounds, the solar geometry and the sky card, also verbatim",
+    "kit": {
+      "manifestSha256": "e49da29bbf91dc96d2afe3772b5ec50acc23bc28ff4af500aff0ff7f631ddb84",
+      "designPackage": "design/yatagarasu-20261110 (package r3)"
     },
+    "masterDirectory": "scripts/brand/masters",
+    "masterSha256": {
+      "crest-badge-small.svg": "cc2bce14632d0d24eedcb578e47fadc4852478a01b67fa0d81c2d99b37bad004",
+      "crest-badge.svg": "7bb8f75f8df17f72b36fe783bf5f35f31f7d9e53b1025b7d8fe2ae42824e240c",
+      "fearless-app-icon-small.svg": "20458821ba5c3f15b44ed6691eaf52145742a3f75e93be934ed1bb6718f71853",
+      "fearless-app-icon.svg": "e0e36a01482cdedd0ac5c8cb4698caef2237885f431e692a686d5a0117985c32",
+      "fearless-crest-gold.svg": "aa899e4fc5cd315279354d1163c85c3a9ea6ae8313a78a72335d0041d4ec8784",
+      "fearless-crest-ink.svg": "c4fe23a568a1b1b1ef80ede26cd3dfb8e22b8c0a0dc6f65de2a425955c58d08f",
+      "fearless-crest-small.svg": "e5fdf61cbe6300ff4242c603d273b316b9866d770897cbf31cdc8aeec32a5910",
+      "fearless-crest.svg": "0dddb03fc97971d0c9226e6ed052565dfe52e75681b1df99f5b3c356f75bede5",
+      "fearless-lockup-horizontal.svg": "febd3cec4b40a681955dc5f77550e16b99730e0b216da643b0e161da7c314ca8",
+      "fearless-lockup-stacked.svg": "459285f612e3283fa4c8aefcd46fab37ff3a67c447b1ef76d96a5cca9aa2f119",
+      "fearless-wordmark-ink.svg": "48d08df86d712769a94479d1175a3c15cb13ae57a6641060787a4c8dad9e2222",
+      "fearless-wordmark.svg": "f38bc054643ffe94cb9b3bd325684e09b75e046e3bc9ef30f173fb2d461dc7ca"
+    },
+    "generator": "scripts/generate-brand-assets.mjs",
+    "rule": "Icons below 64 px use the small crest; all icons are opaque on ink #120A2E",
     "rasterizer": {
       "aom": "3.15.1",
       "archive": "3.8.9",
@@ -42,121 +56,135 @@
     },
     "outputs": {
       "logo-16.png": {
-        "sha256": "e3979de59fcb9d0ecd473a40c38ba0ecb6793795a6c6d225e971afdb78ad8c4c",
+        "sha256": "61c165f0f0ee77d304ddf8c7059c64614b8ad21c40cd001a264f2679632b388b",
         "size": 16,
-        "source": "winged-sun-badge.svg"
+        "source": "fearless-app-icon-small.svg"
       },
       "logo-32.png": {
-        "sha256": "8d1bdaac1b718904b3ea7b43d1f70025c9d80cc770c77b608d6444abfb6d70e0",
+        "sha256": "6a284db80248c2ff9eb4c8e3f4427b2aa1f81f304c6f7cf4358946dabc8a97f6",
         "size": 32,
-        "source": "winged-sun-badge.svg"
+        "source": "fearless-app-icon-small.svg"
       },
       "logo-48.png": {
-        "sha256": "f41ad202866d971b0b309477ab773cdc6c8ab377b3930cc7735abf2113ff7afa",
+        "sha256": "042dc7bea460ccb7191778a0f25eaaac198056b59b18801e0b6793498acfc1e9",
         "size": 48,
-        "source": "winged-sun-badge-lines.svg"
+        "source": "fearless-app-icon-small.svg"
       },
       "logo-64.png": {
-        "sha256": "dc02d4c0a1a7934d6616a996c21704da70f18bbe7683b9a20c48575519e969ea",
+        "sha256": "c3a1c48579a831bcd4e87a64d184a4b0cde1dde730b7f3675bf2162a62f4e595",
         "size": 64,
-        "source": "winged-sun-badge-lines.svg"
+        "source": "fearless-app-icon.svg"
       },
       "logo-128.png": {
-        "sha256": "8105f74579911377be7938a7a4737c017b1c81010473c6cfd2975a9f35ed232d",
+        "sha256": "77d75e580fa972bab319cb2addf9b3f899e792721f75771d29b38c5c0dabac28",
         "size": 128,
-        "source": "winged-sun-badge-lines.svg"
+        "source": "fearless-app-icon.svg"
       },
       "logo-256.png": {
-        "sha256": "8b0ba6956d4326d44027b078f8a3b468467e402201941980c1794c3adff62bcb",
+        "sha256": "451e34e181571a32524e39e506905dc21cf9ddee8bde9beda76e9830ea6ff9f1",
         "size": 256,
-        "source": "winged-sun-badge-lines.svg"
+        "source": "fearless-app-icon.svg"
       },
       "logo-512.png": {
-        "sha256": "59a40c79222e4a567f1bd727ff26673fc260abb034166ec983c8b02ce55726fe",
+        "sha256": "f95bc7c86406428db5f31c238aa791d2782e153f5bb499d2641dd50974ad1079",
         "size": 512,
-        "source": "winged-sun-badge-lines.svg"
+        "source": "fearless-app-icon.svg"
       },
       "logo-1024.png": {
-        "sha256": "a3d52b643166c818b361d03f044edf28c2c77217862578020d07f34c012eb1ae",
+        "sha256": "c33eb011c51c0fed33f1d7264b9bfe5c33c5d71433022a3cdd2603dcff04a31c",
         "size": 1024,
-        "source": "winged-sun-badge-lines.svg"
+        "source": "fearless-app-icon.svg"
       },
       "logo-1042.png": {
-        "sha256": "d27dc7af5f136cc2e4211c25c5c469e2c151156d50586b8e6efda7c222dfff88",
+        "sha256": "c76d5c2aa5c24d293b862a04dee4e6f215c02d03bf2895e1408866e9f3d67bab",
         "size": 1042,
-        "source": "winged-sun-badge-lines.svg"
+        "source": "fearless-app-icon.svg"
       },
       "favicon.ico": {
-        "sha256": "027972e60dd01ac4f7040ae80778314e1a2d6f6330f24ceec6a21d0d4428f23d",
-        "source": "logo-16.png and logo-32.png; Pillow ICO"
+        "sha256": "bd5924a7750c41fffe63691699f194aefba06c1a768e925b32f5f118ae0c0aca",
+        "source": "logo-16.png and logo-32.png; PNG-backed ICO"
       },
       "logo.icns": {
-        "sha256": "f7e4367e55769188a934e8fed727f5221982c22a15d1af503ed45f14f81e66c1",
-        "source": "logo-1024.png; Pillow ICNS"
+        "sha256": "0ed07bde92e5cc6e07bace449eac3a5882efae89c4b7046c03166f8d8accd752",
+        "source": "size-specific PNG representations; ICNS"
+      }
+    },
+    "kitCopies": {
+      "src/assets/brand/hero/popup-launch-ignite.webm": {
+        "kitPath": "hero/popup-launch-ignite.webm",
+        "sha256": "1af621f8722f34ee39162176d8dbb509b3a94df946296dd91be94a49fb466ea1"
+      },
+      "src/assets/brand/hero/launch-timeline.json": {
+        "kitPath": "hero/launch-timeline.json",
+        "sha256": "310a7a84148ede4bfcaeca479f5e46522d9e591299687cae3c2055ba101b2f4d"
+      },
+      "src/assets/brand/audio/send.m4a": {
+        "kitPath": "audio/send.m4a",
+        "sha256": "f1fb4969c2e4bdd8eeb93352ae10d6e39c884b297e44ffb7122c7f5ed4b8e8be"
+      },
+      "src/assets/brand/audio/receive.m4a": {
+        "kitPath": "audio/receive.m4a",
+        "sha256": "ac85389cbf68db5a1c4e75ae685c6b26e7dfefc132e38eb17215189924678811"
+      },
+      "src/assets/brand/solar-geometry.json": {
+        "kitPath": "tokens/solar-geometry.json",
+        "sha256": "0e544952f4cd25efc4483a3ef0e8b43c3e570aa7fb98b69ecee725c9aaa29648"
+      },
+      "src/assets/brand/sky/sky-card.webp": {
+        "kitPath": "png/sky/sky-card.webp",
+        "sha256": "4e8418b6c898579cdd2e105ec12caf6c20f7e71b6c4c328937a7139992323474"
       }
     }
   },
-  "motif": {
-    "text": "𒉡𒉎𒋼",
-    "codePoints": [
-      "U+12261",
-      "U+1224E",
-      "U+122FC"
-    ],
-    "font": "node_modules/@fontsource/noto-sans-cuneiform/files/noto-sans-cuneiform-cuneiform-400-normal.woff",
-    "fontSha256": "93ef76119c6300348e4abb64c29d1795604518290da229bf9f0f3eafa15cdc74",
-    "fontTools": "4.60.1",
-    "outputSha256": "e354a9cee974341d6ccb0c70f0404e8982f379b7c74e89cd311332e578dc74db",
-    "viewBox": [
-      0,
-      0,
-      3827,
-      1183
-    ],
-    "outlineOnly": true
-  },
   "sourceAssets": {
-    "src/assets/brand/NotoSansCuneiform-OFL.txt": "24df578fd9d4ffd24b5e835fd86e17bc1193822012612ff0746a4923ab2d61f0",
-    "src/assets/brand/README.md": "411c195ae347cb823dc91fdfe8d0403dc9e6be8376aa57f0207be837dbbb68c1",
-    "src/assets/brand/fearless-cuneiform.svg": "e354a9cee974341d6ccb0c70f0404e8982f379b7c74e89cd311332e578dc74db",
-    "src/assets/brand/winged-sun-badge-lines.svg": "61695664e36233812e24676fd5d6d533f009e237279a95f9ae6ce5f3c0889a07",
-    "src/assets/brand/winged-sun-badge.svg": "c46079a2baf438c13b6782c176f173aab70418a80bc2457c56ad8b797990bb8e",
-    "src/assets/brand/winged-sun-colour.svg": "93158e0284a01e6b682ce1c87a331d769722444cf6ade68e17188d08b50b47e8",
-    "src/assets/brand/winged-sun-feather-lines.svg": "930d8fff6d2b19a4c277e98a98ef3e5d832cc0b9c1334613168564acc1042acc",
-    "src/assets/brand/winged-sun-silhouette.svg": "835903453ea6bc29ec57ea84b5f45f2417752f6acd0b95e68c52c0586d34a3cd"
+    "src/assets/brand/crest-badge.svg": "7bb8f75f8df17f72b36fe783bf5f35f31f7d9e53b1025b7d8fe2ae42824e240c",
+    "src/assets/brand/crest-badge-small.svg": "cc2bce14632d0d24eedcb578e47fadc4852478a01b67fa0d81c2d99b37bad004",
+    "src/assets/brand/fearless-crest.svg": "0dddb03fc97971d0c9226e6ed052565dfe52e75681b1df99f5b3c356f75bede5",
+    "src/assets/brand/fearless-crest-small.svg": "e5fdf61cbe6300ff4242c603d273b316b9866d770897cbf31cdc8aeec32a5910",
+    "src/assets/brand/fearless-crest-ink.svg": "c4fe23a568a1b1b1ef80ede26cd3dfb8e22b8c0a0dc6f65de2a425955c58d08f",
+    "src/assets/brand/fearless-lockup-horizontal.svg": "febd3cec4b40a681955dc5f77550e16b99730e0b216da643b0e161da7c314ca8",
+    "src/assets/brand/fearless-lockup-stacked.svg": "459285f612e3283fa4c8aefcd46fab37ff3a67c447b1ef76d96a5cca9aa2f119",
+    "src/assets/brand/fearless-wordmark.svg": "f38bc054643ffe94cb9b3bd325684e09b75e046e3bc9ef30f173fb2d461dc7ca",
+    "src/assets/brand/README.md": "e27727ad5518a1f127950a0d49673a8b44deeca12c35c7062f289fd67ce49132",
+    "src/assets/brand/hero/launch-timeline.json": "310a7a84148ede4bfcaeca479f5e46522d9e591299687cae3c2055ba101b2f4d",
+    "src/assets/brand/hero/popup-caw.webm": "1110ef1b9c964360e12c74e09cf4f9ae5f48abefeee23decfa9978547ac9ab2a",
+    "src/assets/brand/hero/popup-idle.webm": "385b5fb589ab68b5e35fb86c95b3258fcc1400677e71c956ce7dd6331fa15b5a",
+    "src/assets/brand/hero/popup-launch-ignite.webm": "1af621f8722f34ee39162176d8dbb509b3a94df946296dd91be94a49fb466ea1",
+    "src/assets/brand/hero/popup-poster.webp": "37dcfbbce34301fb3d756af13957ca07605b2b0808792cf118707962672131b4",
+    "src/assets/brand/audio/send.m4a": "f1fb4969c2e4bdd8eeb93352ae10d6e39c884b297e44ffb7122c7f5ed4b8e8be",
+    "src/assets/brand/audio/receive.m4a": "ac85389cbf68db5a1c4e75ae685c6b26e7dfefc132e38eb17215189924678811",
+    "src/assets/brand/solar-geometry.json": "0e544952f4cd25efc4483a3ef0e8b43c3e570aa7fb98b69ecee725c9aaa29648",
+    "src/assets/brand/sky/sky-card.webp": "4e8418b6c898579cdd2e105ec12caf6c20f7e71b6c4c328937a7139992323474"
   },
   "generatedAssets": {
-    "public/icons/logo-1042.png": "d27dc7af5f136cc2e4211c25c5c469e2c151156d50586b8e6efda7c222dfff88",
-    "public/icons/logo-128.png": "8105f74579911377be7938a7a4737c017b1c81010473c6cfd2975a9f35ed232d",
-    "public/icons/logo-16.png": "e3979de59fcb9d0ecd473a40c38ba0ecb6793795a6c6d225e971afdb78ad8c4c",
-    "public/icons/logo-256.png": "8b0ba6956d4326d44027b078f8a3b468467e402201941980c1794c3adff62bcb",
-    "public/icons/logo-32.png": "8d1bdaac1b718904b3ea7b43d1f70025c9d80cc770c77b608d6444abfb6d70e0",
-    "public/icons/logo-48.png": "f41ad202866d971b0b309477ab773cdc6c8ab377b3930cc7735abf2113ff7afa",
-    "public/icons/logo-512.png": "59a40c79222e4a567f1bd727ff26673fc260abb034166ec983c8b02ce55726fe",
-    "public/icons/logo-64.png": "dc02d4c0a1a7934d6616a996c21704da70f18bbe7683b9a20c48575519e969ea",
-    "public/icons/logo.icns": "f7e4367e55769188a934e8fed727f5221982c22a15d1af503ed45f14f81e66c1",
-    "public/favicon.ico": "027972e60dd01ac4f7040ae80778314e1a2d6f6330f24ceec6a21d0d4428f23d"
+    "public/icons/logo-16.png": "61c165f0f0ee77d304ddf8c7059c64614b8ad21c40cd001a264f2679632b388b",
+    "public/icons/logo-32.png": "6a284db80248c2ff9eb4c8e3f4427b2aa1f81f304c6f7cf4358946dabc8a97f6",
+    "public/icons/logo-48.png": "042dc7bea460ccb7191778a0f25eaaac198056b59b18801e0b6793498acfc1e9",
+    "public/icons/logo-64.png": "c3a1c48579a831bcd4e87a64d184a4b0cde1dde730b7f3675bf2162a62f4e595",
+    "public/icons/logo-128.png": "77d75e580fa972bab319cb2addf9b3f899e792721f75771d29b38c5c0dabac28",
+    "public/icons/logo-256.png": "451e34e181571a32524e39e506905dc21cf9ddee8bde9beda76e9830ea6ff9f1",
+    "public/icons/logo-512.png": "f95bc7c86406428db5f31c238aa791d2782e153f5bb499d2641dd50974ad1079",
+    "public/icons/logo-1024.png": "c33eb011c51c0fed33f1d7264b9bfe5c33c5d71433022a3cdd2603dcff04a31c",
+    "public/icons/logo-1042.png": "c76d5c2aa5c24d293b862a04dee4e6f215c02d03bf2895e1408866e9f3d67bab",
+    "public/favicon.ico": "bd5924a7750c41fffe63691699f194aefba06c1a768e925b32f5f118ae0c0aca",
+    "public/icons/logo.icns": "0ed07bde92e5cc6e07bace449eac3a5882efae89c4b7046c03166f8d8accd752"
   },
   "aliases": {
     "src/assets/icons/fw-logo.svg": {
-      "master": "winged-sun-silhouette.svg",
-      "sha256": "835903453ea6bc29ec57ea84b5f45f2417752f6acd0b95e68c52c0586d34a3cd"
+      "master": "fearless-crest.svg",
+      "sha256": "0dddb03fc97971d0c9226e6ed052565dfe52e75681b1df99f5b3c356f75bede5"
     },
     "src/assets/icons/logo-qr.svg": {
-      "master": "winged-sun-silhouette.svg",
-      "sha256": "835903453ea6bc29ec57ea84b5f45f2417752f6acd0b95e68c52c0586d34a3cd"
+      "master": "crest-badge.svg",
+      "sha256": "7bb8f75f8df17f72b36fe783bf5f35f31f7d9e53b1025b7d8fe2ae42824e240c"
     },
     "src/assets/icons/wallet-logo.svg": {
-      "master": "winged-sun-badge.svg",
-      "sha256": "c46079a2baf438c13b6782c176f173aab70418a80bc2457c56ad8b797990bb8e"
+      "master": "crest-badge.svg",
+      "sha256": "7bb8f75f8df17f72b36fe783bf5f35f31f7d9e53b1025b7d8fe2ae42824e240c"
     },
     "src/assets/icons/wallet-logo-transaction.svg": {
-      "master": "winged-sun-badge.svg",
-      "sha256": "c46079a2baf438c13b6782c176f173aab70418a80bc2457c56ad8b797990bb8e"
-    },
-    "src/assets/icons/fearless-cuneiform.svg": {
-      "master": "fearless-cuneiform.svg",
-      "sha256": "e354a9cee974341d6ccb0c70f0404e8982f379b7c74e89cd311332e578dc74db"
+      "master": "crest-badge.svg",
+      "sha256": "7bb8f75f8df17f72b36fe783bf5f35f31f7d9e53b1025b7d8fe2ae42824e240c"
     }
   }
 }

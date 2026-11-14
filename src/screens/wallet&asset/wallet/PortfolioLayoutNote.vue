@@ -1,18 +1,14 @@
 <template>
   <aside class="layout-note" role="status" data-testid="portfolioLayoutNote">
-    <strong class="note-title">{{ t('portfolioPage.layoutNote.title') }}</strong>
-    <span class="note-description">{{ t('portfolioPage.layoutNote.description') }}</span>
-    <span class="note-description">{{ t('portfolioPage.layoutNote.networks') }}</span>
+    <strong class="note-title">{{ t('walletHome.layoutNote.title') }}</strong>
+    <span class="note-description">{{ t('walletHome.layoutNote.description') }}</span>
     <span v-if="customOrderKept" class="note-description" data-testid="customOrderKept">
       {{ t('portfolioPage.layoutNote.customOrderKept') }}
     </span>
 
     <div class="note-actions">
       <button type="button" class="note-action" data-testid="layoutNoteDismiss" @click="$emit('dismiss')">
-        {{ t('portfolioPage.layoutNote.gotIt') }}
-      </button>
-      <button type="button" class="note-action secondary" data-testid="layoutNoteByNetwork" @click="$emit('useNetworks')">
-        {{ t('portfolioPage.layoutNote.byNetwork') }}
+        {{ t('walletHome.layoutNote.gotIt') }}
       </button>
     </div>
   </aside>
@@ -23,7 +19,7 @@ import { useI18n } from '@/locales/useI18n';
 
 defineProps<{ customOrderKept?: boolean }>();
 
-defineEmits<{ (event: 'dismiss'): void; (event: 'useNetworks'): void }>();
+defineEmits<{ (event: 'dismiss'): void }>();
 
 const { t } = useI18n();
 </script>
@@ -70,11 +66,6 @@ const { t } = useI18n();
   font: inherit;
   font-size: 0.72rem;
   font-weight: 700;
-
-  &.secondary {
-    background: $default-background-color;
-    color: $grayish-white;
-  }
 
   &:focus-visible {
     outline: 2px solid palette($plain-white, var(--fw-focus));

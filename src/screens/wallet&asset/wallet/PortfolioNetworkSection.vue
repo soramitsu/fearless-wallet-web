@@ -19,14 +19,12 @@
     </button>
 
     <div v-if="expanded" class="network-assets">
-      <!-- In Manage the row only holds the switch: a button around it would hide the switch from keyboards. -->
-      <component
-        :is="manage ? 'div' : 'button'"
+      <button
         v-for="asset in section.assets"
         :key="asset.key"
         class="asset-row"
-        :class="{ 'asset-row--hidden': asset.hidden, 'asset-row--manage': manage }"
-        :type="manage ? undefined : 'button'"
+        :class="{ 'asset-row--hidden': asset.hidden }"
+        type="button"
         :data-asset-key="asset.key"
         @click="openAsset(asset)"
       >
@@ -37,7 +35,7 @@
             {{ asset.symbol }}
             <span v-if="asset.trust !== 'verified'" class="trust-badge">{{ t('portfolioPage.unverified') }}</span>
           </span>
-          <!-- The badges share the name's line, so a hidden asset in Manage stays two lines tall like the rest. -->
+          <!-- The badges share the name's line, so a hidden asset found by a search stays two lines tall like the rest. -->
           <span class="asset-meta">
             <span class="asset-name">{{ asset.name || t('portfolioPage.unknownAsset') }}</span>
             <span v-if="asset.hidden" class="asset-badges">
@@ -60,18 +58,10 @@
           </span>
         </span>
 
-        <Switcher
-          v-if="manage"
-          class="asset-switch"
-          :value="!asset.hidden"
-          :ariaLabel="t('portfolioPage.showAssetOnNetwork', { symbol: asset.symbol, network: section.name })"
-          @click.stop
-          @change="setPreference(asset, $event ? 'shown' : 'hidden')"
-        />
-        <Icon v-else icon="chevron-right" className="asset-chevron" :hover="false" />
-      </component>
+        <Icon icon="chevron-right" className="asset-chevron" :hover="false" />
+      </button>
 
-      <div v-if="section.detectedAssets.length && !manage" class="detected-assets">
+      <div v-if="section.detectedAssets.length" class="detected-assets">
         <button class="detected-header" type="button" @click="showDetected = !showDetected">
           <span>{{ tc('portfolioPage.detectedAssets', section.detectedAssets.length, { count: section.detectedAssets.length }) }}</span>
           <Icon :icon="showDetected ? 'down' : 'chevron-right'" :hover="false" />
@@ -108,7 +98,6 @@ import { useI18n } from '@/locales/useI18n';
 
 const props = defineProps<{
   section: PortfolioNetworkSection;
-  manage?: boolean;
   search?: string;
   /** Keeps a collapsed network open while a search shows its matching rows. */
   forceExpanded?: boolean;
@@ -195,7 +184,6 @@ function setPreference(asset: PortfolioAsset, preference: AssetPreference): void
 }
 
 function openAsset(asset: PortfolioAsset): void {
-  if (props.manage) return;
   // Opening a token found by search takes it out of hiding, so a deposit made from its page shows in the list.
   if (props.search?.trim() && asset.preference === 'hidden') setPreference(asset, 'auto');
   router.push({
@@ -214,7 +202,6 @@ function openAsset(asset: PortfolioAsset): void {
 .network-header,
 .asset-row,
 .detected-header {
-  // Buttons are border-box already; a row in Manage is a div.
   box-sizing: border-box;
   width: 100%;
   border: 0;
@@ -293,18 +280,12 @@ function openAsset(asset: PortfolioAsset): void {
   text-align: left;
 }
 
-// In Manage the switch takes the chevron's place, and is wider than it.
-.asset-row--manage {
-  grid-template-columns: 42px minmax(0, 1fr) auto auto;
-  cursor: default;
-}
-
 .asset-icon,
 .network-icon {
   border-radius: 50%;
 }
 
-// Hidden rows are listed in Manage so they can be shown again; dimmed, with the badges at full contrast.
+// A hidden row a search found: dimmed, with the badges at full contrast.
 .asset-row--hidden {
   .asset-icon,
   .asset-symbol,
@@ -439,7 +420,6 @@ function openAsset(asset: PortfolioAsset): void {
     grid-template-columns: 32px minmax(0, 1fr) 20px;
     gap: 6px 10px;
   }
-  .asset-row--manage { grid-template-columns: 32px minmax(0, 1fr) auto; }
   .network-value,
   .asset-balance {
     grid-column: 2;
@@ -448,8 +428,7 @@ function openAsset(asset: PortfolioAsset): void {
     text-align: left;
   }
   .chevron,
-  .asset-chevron,
-  .asset-switch { grid-column: 3; grid-row: 1 / 3; }
+  .asset-chevron { grid-column: 3; grid-row: 1 / 3; }
   .network-icon,
   .asset-icon { grid-row: 1 / 3; }
   .asset-name,

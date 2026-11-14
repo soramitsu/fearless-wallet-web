@@ -2,6 +2,7 @@ import { Address, type Cell } from '@ton/core';
 import {
   TonProviderError,
   type TonAccountBalance,
+  type TonAccountStatus,
   type TonDataProvider,
   type TonHistoryAction,
   type TonHistoryEvent,
@@ -82,6 +83,7 @@ class TiTonProvider implements TonDataProvider {
   readonly source = 'ti' as const;
   readonly baseUrl: string;
   private serviceInfo?: TiServiceInfo;
+  private readonly balanceRequests = new Map<string, Promise<TiBalanceResponse>>();
 
   constructor(
     baseUrl: string,
@@ -187,6 +189,16 @@ class TiTonProvider implements TonDataProvider {
     }
   }
 
+  async getAccountStatus(address: Address): Promise<TonAccountStatus> {
+    const { account_state: accountState } = await this.requestForNetwork<TiStateResponse>(`${accountPath(address)}/state`);
+
+    // TI reports an address it has never seen as uninitialized.
+    if (accountState == null) return 'nonexist';
+    if (accountState === 'active' || accountState === 'uninitialized' || accountState === 'frozen') return accountState;
+
+    throw new TonProviderError('ton_provider_invalid_response', `account_state ${String(accountState)}`);
+  }
+
   async sendMessage(boc: Cell): Promise<void> {
     this.assertVerified();
 
@@ -223,7 +235,16 @@ class TiTonProvider implements TonDataProvider {
   }
 
   private getBalanceResponse(address: Address): Promise<TiBalanceResponse> {
-    return this.requestForNetwork<TiBalanceResponse>(`${accountPath(address)}/balance`);
+    const path = `${accountPath(address)}/balance`;
+    // The TON and jetton reads of one refresh share the request in flight; a later read asks again.
+    let response = this.balanceRequests.get(path);
+
+    if (!response) {
+      response = this.requestForNetwork<TiBalanceResponse>(path).finally(() => this.balanceRequests.delete(path));
+      this.balanceRequests.set(path, response);
+    }
+
+    return response;
   }
 
   private async requestForNetwork<T extends { network: string }>(path: string): Promise<T> {

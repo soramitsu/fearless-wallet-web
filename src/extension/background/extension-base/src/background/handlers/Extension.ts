@@ -10,7 +10,7 @@ import {
   validateSubstrateSigningAccount,
 } from '@extension-base/services/request-service/handlers/substrateSigningAccount';
 import { ethers, formatUnits, VoidSigner, Wallet } from 'ethers';
-import { makeEVMTransfer, quoteEVMTransfer } from '@extension-base/api/evm/transfer';
+import { makeEVMTransfer, quoteEVMTransfer, sendDappEvmTransaction } from '@extension-base/api/evm/transfer';
 import {
   isBitcoinTransferNetwork,
   makeBitcoinTransfer,
@@ -34,7 +34,7 @@ import {
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { createSwap, prepareSwapExecution } from '@extension-base/api/substrate/sora';
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
-import { getInternalError } from '@walletconnect/utils';
+import { getInternalError, type SdkErrorKey } from '@extension-base/services/wallet-connect-service/protocol/errors';
 import {
   makeCrossChain,
   estimateCrossChainQuote,
@@ -54,6 +54,7 @@ import {
   type RequestApproveConnectWalletSession,
   type ResultApproveWalletConnectSession,
   type RequestRejectConnectWalletSession,
+  type RequestWalletConnectSession,
   type RequestDisconnectWalletConnectSession,
   type WalletConnectTransactionRequest,
   type RequestApproveWalletConnect,
@@ -72,6 +73,7 @@ import {
   resolveSolanaSignAndSendTransaction,
   resolveSolanaSigning,
 } from '@extension-base/services/request-service/handlers/solanaSigning';
+import { siteApprovalsInProgress, siteTransactionsBeingSent } from '@extension-base/services/request-service/siteApprovals';
 import { createClusterBoundSolanaRpcClient } from '@extension-base/services/solana-rpc-service';
 import { assertSendCapability } from '@extension-base/services/send-kill-switch-service';
 import { IrohaTransactionStatusUnknownError } from '@extension-base/services/iroha-torii-service';
@@ -85,21 +87,27 @@ import {
   createSubstrateSigningRegistry,
   validateSubstrateSigningContext,
 } from '@extension-base/services/request-service/handlers/substrateSigningContext';
+import { CrossChainDestinationRetiredError } from '@extension-base/services/request-service/handlers/substrateCallReview';
 import {
   assertEvmExternalSignature,
   assertSubstrateExternalSignature,
 } from '@extension-base/services/request-service/handlers/externalSignature';
 import { filterNetworksByEcosystem } from '@extension-base/background/helpers/balance';
-import { pickDefaultCurrentAccount, toCurrentAccountInfo } from '@extension-base/background/helpers/currentAccount';
+import { pickDefaultCurrentAccount } from '@extension-base/background/helpers/currentAccount';
 import { PolkamarktService } from '@extension-base/services/polkamarkt-service';
 import { createPolkamarktFinalAuthorizationGuard } from '@extension-base/services/polkamarkt-service/finalAuthorization';
 import {
   requireEnabledIrohaConnect,
   subscribeIrohaConnectState,
 } from '@extension-base/services/iroha-connect-service/releaseGate';
+import {
+  balanceServiceFundsProbe,
+  exportUniversalWalletSecret,
+  probeUniversalWalletLegacyAccounts,
+} from '@extension-base/services/keyring-service/UniversalWalletPassword';
 import { type MakeCrossChainProps } from '../../api/substrate/types';
 import { EXTENSION_URL } from '../../const';
-import { makeTonTransfer, MAX_TON_FEE } from '../../api/ton/transfer';
+import { makeTonTransfer, maxTonTransferFee } from '../../api/ton/transfer';
 import type { NetworkMapEdit } from '@extension-base/services/network-service/preferences';
 import type { SigningRequestKind } from '@extension-base/services/request-service/signingRequestId';
 import type {
@@ -175,6 +183,12 @@ import type {
   RequestGenerateMnemonic,
   RequestValidateMnemonic,
   RequestTonImportCandidates,
+  RequestUniversalWalletPasswordAccount,
+  RequestUniversalWalletPasswordDiscovery,
+  RequestUniversalWalletPasswordPath,
+  UniversalWalletPasswordDiscoveryItem,
+  UniversalWalletPasswordStatus,
+  UniversalWalletPasswordSwitchResult,
   TonImportCandidateInfo,
   RequestUpdateCurrentAccount,
   ResponseBalanceRequest,
@@ -206,9 +220,9 @@ import type {
   NftTx,
 } from '@extension-base/services/nft-service/types';
 import type { RequestUpdateLegacyExposure } from '@extension-base/services/legacy-exposure-service';
-import type { NetworkJson } from '@extension-base/types';
+import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
 import type State from '@extension-base/background/handlers/State';
-import type { ProposalTypes, SessionTypes } from '@walletconnect/types';
+import type { WcProposalNamespaces, WcSession, WcSessionNamespaces } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type { HexString } from '@polkadot/util/types';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
 import type { PolkamarktMutationRequest, PolkamarktQuoteRequest } from '@/defi/polkamarkt/types';
@@ -236,7 +250,7 @@ import {
   assertWalletAllowsRecoveryAction, isRecoveryStakingAction, isRecoveryPoolAction,
   isRecoveryDemeterAction, isRecoveryPolkamarktAction,
 } from '@/util/walletRecoveryActions';
-import { ALL_NETWORKS, NATIVE_ETHEREUM_NETWORKS } from '@/consts/networks';
+import { ALL_NETWORKS } from '@/consts/networks';
 import { SORA_NETWORK_NAME } from '@/consts/sora';
 import { XOR } from '@/sora/runtime';
 import { validateReviewedCrossChainRequest, type ValidatedCrossChainRoute } from '@/cross-chain/requestValidation';
@@ -267,6 +281,19 @@ function formatSoraAddress(address: string): string {
   return apiSora.formatAddress(address);
 }
 
+/** How long a wallet page's non-forced lock waits for an unlock or password change that is still starting the session. */
+export const SESSION_START_LOCK_WAIT_MS = 30_000;
+
+// Whether `work` settles within `ms`. Never rejects.
+function settlesWithin(work: Promise<unknown>, ms: number): Promise<boolean> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  return Promise.race([
+    work.then(() => true, () => true),
+    new Promise<boolean>((resolve) => { timer = setTimeout(() => resolve(false), ms); }),
+  ]).finally(() => clearTimeout(timer));
+}
+
 export default class Extension extends FWExtensionBase {
   private assertConnectionAllowed(address: string, authType: AccountAuthType, url: string): void {
     if (!IS_EXTENSION) return;
@@ -288,7 +315,11 @@ export default class Extension extends FWExtensionBase {
     ], address, recoveryAction);
   }
 
-  private readonly pendingSiteApprovals = new WeakSet<object>();
+  private readonly pendingSiteApprovals = siteApprovalsInProgress;
+
+  // An unlock or password change that has accepted a password and not yet started its session (armed the deadline) or
+  // failed. Meanwhile the keyring holds the password without a deadline.
+  private sessionStart?: Promise<void>;
 
   private assertSigningRequestCurrent(request: { id: string }): void {
     this.state.keyringLockService?.lockIfExpired();
@@ -333,8 +364,8 @@ export default class Extension extends FWExtensionBase {
     super(state);
   }
 
-  private cancelSubscription(id: string): boolean {
-    return this.state.subscriptionService.cancelSubscription(id);
+  private cancelSubscription(id: string, port?: Port): boolean {
+    return this.state.subscriptionService.cancelSubscription(id, port);
   }
 
   async accountsForget({ address, type }: RequestAccountForget): Promise<boolean> {
@@ -345,13 +376,18 @@ export default class Extension extends FWExtensionBase {
     const solanaAddress = meta?.solanaAddress as string | undefined;
     const irohaAddress = meta?.irohaAddress as string | undefined;
     const topic = mobileAccount?.meta.wcTopic;
+    // An EVM account that another wallet also links keeps its key, site grants and sessions.
+    const linkedElsewhere = () => !!ethereumAddress &&
+      this.state.keyringService.isEthereumAccountLinkedElsewhere(ethereumAddress, address);
+    const keepsEthereum = linkedElsewhere();
+    const removedEthereumAddress = keepsEthereum ? undefined : ethereumAddress;
     const assertCurrent = () => {
       const currentPair = this.state.keyringService.getPair(address);
       const currentMobile = type === 'mobile' ? this.state.keyringService.getAddress(address) : undefined;
       const currentMeta = currentPair?.meta ?? currentMobile?.meta;
       if (currentPair !== pair || currentMeta?.ethereumAddress !== ethereumAddress ||
         currentMeta?.solanaAddress !== solanaAddress || currentMeta?.irohaAddress !== irohaAddress ||
-        currentMobile?.meta.wcTopic !== topic)
+        currentMobile?.meta.wcTopic !== topic || linkedElsewhere() !== keepsEthereum)
         throw new Error('Wallet changed during removal. Retry with the current wallet.');
     };
 
@@ -359,7 +395,7 @@ export default class Extension extends FWExtensionBase {
       for (const auth of Object.values(authUrls)) {
         auth.authorizedAccounts = auth.authorizedAccounts.filter((candidate) => walletAddressIdentity(candidate) !== walletAddressIdentity(address));
         if (auth.evmAuthorizedAccount && ((isEthereumAddress(address) && isSameString(auth.evmAuthorizedAccount, address)) ||
-          (ethereumAddress && isSameString(auth.evmAuthorizedAccount, ethereumAddress)))) auth.evmAuthorizedAccount = '';
+          (removedEthereumAddress && isSameString(auth.evmAuthorizedAccount, removedEthereumAddress)))) auth.evmAuthorizedAccount = '';
         if (auth.solanaAuthorizedAccount === address || (solanaAddress && auth.solanaAuthorizedAccount === solanaAddress))
           auth.solanaAuthorizedAccount = '';
         if (auth.irohaAuthorizedAccount === address || (irohaAddress && auth.irohaAuthorizedAccount === irohaAddress))
@@ -373,14 +409,14 @@ export default class Extension extends FWExtensionBase {
       assertCurrent();
       const selected = this.state.currentAccount?.address;
       if (!selected || (walletAddressIdentity(selected) !== walletAddressIdentity(address) &&
-        (!ethereumAddress || walletAddressIdentity(selected) !== walletAddressIdentity(ethereumAddress)))) return;
+        (!removedEthereumAddress || walletAddressIdentity(selected) !== walletAddressIdentity(removedEthereumAddress)))) return;
       await this.state.setCurrentAccount(null, undefined, assertCurrent);
       clearedSelection = true;
       clearedRevision = this.state.keyringService.currentAccountRevision;
     };
 
     if (type === 'native') {
-      await this.state.walletConnectService.removeSessions(address, ethereumAddress);
+      await this.state.walletConnectService.removeSessions(address, removedEthereumAddress);
 
       try { await this.state.keyringService.forgetAccount(address, beforeRemoval, assertCurrent); }
       catch (error) { console.error(error); return false; }
@@ -393,13 +429,11 @@ export default class Extension extends FWExtensionBase {
     const isWasCurrentAccount = clearedSelection && !this.state.currentAccount &&
       this.state.keyringService.currentAccountRevision === clearedRevision;
 
-    // Never leave the removed account selected: updateCurrentAccount refuses EVM addresses,
-    // so a remaining standalone EVM account is stored directly, and no account means none.
+    // Never leave the removed account selected; no account means none.
     if (isWasCurrentAccount) {
       const nextAccount = pickDefaultCurrentAccount(this.state.keyringService.getAllMainAccounts());
 
-      if (nextAccount && isEthereumAddress(nextAccount.address)) await this.state.setCurrentAccount(toCurrentAccountInfo(nextAccount));
-      else if (nextAccount)
+      if (nextAccount)
         await this.state.updateCurrentAccount({
           address: nextAccount.address,
           walletEcosystem: nextAccount.meta.walletEcosystem,
@@ -463,6 +497,29 @@ export default class Extension extends FWExtensionBase {
       ...candidate,
       ...(activity[candidate.address] ?? { activity: 'unknown' }),
     }));
+  }
+
+  // A password import keeps each no-password address that holds funds, or that could not be checked, as the
+  // TON chooser does; the rest open only with the password. Nothing is looked up for wallets without one.
+  async universalWalletPasswordDiscovery({
+    mnemonic,
+  }: RequestUniversalWalletPasswordDiscovery): Promise<UniversalWalletPasswordDiscoveryItem[]> {
+    return probeUniversalWalletLegacyAccounts(balanceServiceFundsProbe(this.state.balanceService), mnemonic);
+  }
+
+  universalWalletPasswordStatus({ address }: RequestUniversalWalletPasswordAccount): UniversalWalletPasswordStatus {
+    try {
+      return this.state.keyringService.universalWalletPasswordStatus(address);
+    } catch (error) {
+      // An account waiting for its password, or one the phrase cannot open, has nothing to offer here yet.
+      console.warn('Universal Wallet password status unavailable', error);
+
+      return { state: 'none' };
+    }
+  }
+
+  universalWalletPasswordSwitch({ address }: RequestUniversalWalletPasswordAccount): Promise<UniversalWalletPasswordSwitchResult[]> {
+    return this.state.keyringService.switchUniversalWalletAccounts(address, balanceServiceFundsProbe(this.state.balanceService));
   }
 
   accountsValidatePassword({ password }: RequestAccountValidate): boolean {
@@ -552,9 +609,9 @@ export default class Extension extends FWExtensionBase {
       substrateAccountsSubscription.unsubscribe();
       tonSubscription.unsubscribe();
       currentAccountSubscription.unsubscribe();
-    });
+    }, port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return [...substrateTransformedAddresses, ...substrateTransformedAccounts, ...tonTransformedAccounts];
   }
@@ -613,7 +670,7 @@ export default class Extension extends FWExtensionBase {
     const isAuthorize = auth?.isAllowed === true;
     return {
       isAuthorize,
-      authorizeAccountsCount: isAuthorize ? auth.authorizedAccounts.length : 0,
+      authorizeAccountsCount: isAuthorize ? auth.authorizedAccounts?.length ?? 0 : 0,
       dAppName: tabHostName,
     };
   }
@@ -623,9 +680,9 @@ export default class Extension extends FWExtensionBase {
 
     const authSubscription = this.state.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, authSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => authSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.authSubject.value;
   }
@@ -663,9 +720,9 @@ export default class Extension extends FWExtensionBase {
       cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, metaSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => metaSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.requestService.metaSubject.value;
   }
@@ -788,13 +845,15 @@ export default class Extension extends FWExtensionBase {
       if (request.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
         const signed = await signer.signTransaction(populated!);
         assertProviderCurrent();
+        handler.markEvmSubmitting(request);
         try {
-          const { hash } = await provider!.broadcastTransaction(signed);
+          // Only the node's refusal fails the request. The site gets the hash of a transaction the network may
+          // have: told it failed, it could send the amount again with a fresh nonce.
+          const hash = await sendDappEvmTransaction(provider!, signed);
           request.resolve({ id: request.id, payload: hash as HexString });
         } catch (error) {
-          // A transport failure can occur after broadcast. Settle this intent;
-          // retrying it with a fresh nonce could transfer the amount twice.
-          request.reject(error instanceof Error ? error : new Error('EVM submission outcome is unavailable'));
+          // The node refused the transaction, so nothing was sent. Settle this intent.
+          request.reject(error instanceof Error ? error : new Error('EVM submission was refused'));
           return false;
         }
       } else {
@@ -814,21 +873,22 @@ export default class Extension extends FWExtensionBase {
     const request = this.state.requestService.getSignRequest(id, 'solana') as SolanaRequestsSubjectPayload | undefined;
 
     assert(request, 'Unable to find request');
+    // Checked before the request is marked as under approval: a refusal here must not leave it marked, which would
+    // keep Reject and a closed page from ending it.
+    this.assertNormalWalletUse(request.account.publicKey);
     if (this.pendingSiteApprovals.has(request)) throw new Error('Signing approval already pending');
     this.pendingSiteApprovals.add(request);
-
-    this.assertNormalWalletUse(request.account.publicKey);
 
     try {
       await this.assertSigningSiteAllowed(request);
       this.assertNonEvmSigningAuthorization(request);
       const exportMnemonic = ({ address, walletEcosystem }: { address: string; walletEcosystem: string }) => {
         this.assertNonEvmSigningAuthorization(request);
-        return this.state.keyringService.exportMnemonic({
+        return exportUniversalWalletSecret(this.state.keyringService, {
           address,
           password: this.state.keyringService.getPassword(),
           walletEcosystem: walletEcosystem as WalletEcosystem,
-        });
+        }, 'solana', this.state.keyringService.getPair(address)?.meta as FWKeyringMeta | undefined);
       };
       // A dApp's sign-and-send moves funds too, so the Solana send kill switch
       // covers it; sign-only requests are unaffected.
@@ -842,6 +902,11 @@ export default class Extension extends FWExtensionBase {
               accounts,
               broadcastTransaction: (transactionBase64, options) => {
                 this.assertNonEvmSigningAuthorization(request);
+                // Locking or resetting the wallet cancels a request before it is sent, and only then.
+                if (this.state.requestService.getSignRequest(id, 'solana') !== request) {
+                  throw new Error('Solana signing request was cancelled');
+                }
+                siteTransactionsBeingSent.add(request);
                 return createClusterBoundSolanaRpcClient({ network: 'mainnet' }).sendRawTransaction(transactionBase64, options);
               },
               exportMnemonic,
@@ -916,6 +981,8 @@ export default class Extension extends FWExtensionBase {
     } catch (error) {
       if (this.state.requestService.getSignRequest(id, 'substrate') === queued)
         queued.reject(error instanceof Error ? error : new Error('Unable to sign Substrate request'));
+      // The popup names this refusal: the request sends funds to a destination that cannot deliver them.
+      if (error instanceof CrossChainDestinationRetiredError) throw error;
       return false;
     } finally {
       this.pendingSiteApprovals.delete(queued);
@@ -970,6 +1037,21 @@ export default class Extension extends FWExtensionBase {
 
     assert(queued, 'Unable to find request');
 
+    // An approval that submits the transaction may already have sent it. The dApp then gets that outcome, not
+    // Cancelled, which it could answer by asking the user to pay again.
+    if (isSolanaSignRequest(queued)) {
+      if (queued.method === 'signAndSendTransaction' && this.pendingSiteApprovals.has(queued)) return false;
+    } else if (isEvmSignRequest(queued) && queued.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
+      const handler = this.state.requestService.evmRequestHandler;
+
+      // An approval in progress holds the request, so it cannot be claimed.
+      try {
+        handler.releaseEvmSignRequest(handler.claimEvmSignRequest(id));
+      } catch {
+        return false;
+      }
+    }
+
     queued.reject(new Error('Cancelled'));
 
     return true;
@@ -982,9 +1064,9 @@ export default class Extension extends FWExtensionBase {
       cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, signSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => signSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.requestService.signSubject.value;
   }
@@ -996,9 +1078,9 @@ export default class Extension extends FWExtensionBase {
       cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, signEvmSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => signEvmSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.requestService.signEvmSubject.value;
   }
@@ -1010,9 +1092,9 @@ export default class Extension extends FWExtensionBase {
       (requests: SolanaRequests): void => cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, signSolanaSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => signSolanaSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.requestService.signSolanaSubject.value;
   }
@@ -1055,8 +1137,9 @@ export default class Extension extends FWExtensionBase {
   private async fetchEvmBalance({ assetId, ethereumAddress }: FetchBalancePayload) {
     if (!this.state.isReady()) return;
 
+    // Every active EVM network, as at start-up; a fixed list left out networks such as Kaia and ZetaChain.
     this.state.balanceService.evmBalanceService.fetchBalance({
-      networks: NATIVE_ETHEREUM_NETWORKS,
+      networks: this.state.networkService.activeNetworkByEcosystem.evmList,
       assetId,
       ethereumAddress,
     });
@@ -1067,9 +1150,9 @@ export default class Extension extends FWExtensionBase {
 
     const balanceSubscription = this.state.balanceService.balanceSubject.subscribe({ next: (rs) => cb(rs) });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, balanceSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => balanceSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.balanceService.getBalance();
   }
@@ -1094,9 +1177,9 @@ export default class Extension extends FWExtensionBase {
       },
     });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, priceSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => priceSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.getPrice();
   }
@@ -1108,9 +1191,9 @@ export default class Extension extends FWExtensionBase {
       next: (rs) => cb(rs),
     });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, soraFeesSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => soraFeesSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
   }
 
   private async checkSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
@@ -1557,7 +1640,8 @@ export default class Extension extends FWExtensionBase {
         });
       }
     } else if (isTonNetwork(networkKey)) {
-      fee = MAX_TON_FEE;
+      // A jetton send also gives its jetton wallet TON to pay for the transfer, so the TON balance must cover both.
+      fee = maxTonTransferFee(balance);
     } else {
       // Estimate with DotSama API
       fee = await estimateFee(networkKey, to, amount, tokenBalance, this.state);
@@ -1697,11 +1781,11 @@ export default class Extension extends FWExtensionBase {
       };
       callback(response);
 
-      setTimeout(() => this.cancelSubscription(id), 500);
+      setTimeout(() => this.cancelSubscription(id, port), 500);
       return response;
     }
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return { status: true };
   }
@@ -1870,7 +1954,7 @@ export default class Extension extends FWExtensionBase {
     const closeSubscription = () => {
       if (!subscribed) return;
       subscribed = false;
-      this.cancelSubscription(id);
+      this.cancelSubscription(id, port);
     };
     // Closing the popup stops the updates, not the send: the outcome is still tracked and recorded.
     port?.onDisconnect.addListener(closeSubscription);
@@ -1964,9 +2048,9 @@ export default class Extension extends FWExtensionBase {
       .getSubject()
       .subscribe({ next: (rs) => cb(rs) });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, networkMapSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => networkMapSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.networkService.networkMap;
   }
@@ -1982,9 +2066,9 @@ export default class Extension extends FWExtensionBase {
       },
     });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, selectedNetworksSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => selectedNetworksSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
   }
 
   async checkController(params: CheckControllerRequest): Promise<boolean> {
@@ -2200,9 +2284,9 @@ export default class Extension extends FWExtensionBase {
       (requests: WalletConnectSessionRequest[]): void => cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, subscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.requestService.allConnectWCRequests;
   }
@@ -2227,9 +2311,9 @@ export default class Extension extends FWExtensionBase {
     const { id: wcId, params } = request.request;
     const { requiredNamespaces, optionalNamespaces } = params;
 
-    const availableNamespaces: ProposalTypes.RequiredNamespaces = {};
+    const availableNamespaces: WcProposalNamespaces = {};
 
-    const namespaces: SessionTypes.Namespaces = {};
+    const namespaces: WcSessionNamespaces = {};
     const chainInfoMap = this.state.networkService.networkMap;
     const requiredEntries = Object.entries(requiredNamespaces);
     const optionalEntries = Object.entries(optionalNamespaces);
@@ -2239,26 +2323,12 @@ export default class Extension extends FWExtensionBase {
         if (namespace.chains) {
           const unSupportChains = namespace.chains.filter((chain) => !isSupportWalletConnectChain(chain, chainInfoMap));
 
-          if (unSupportChains.length) {
-            request.reject(new Error('Unsupported chain'));
-
-            return {
-              message: 'walletConnect.notifications.unsupportedProposal.message',
-              title: 'walletConnect.notifications.unsupportedProposal.title',
-              status: false,
-            };
-          }
+          if (unSupportChains.length) return this.refuseWalletConnectProposal(request, 'UNSUPPORTED_CHAINS');
 
           availableNamespaces[key] = namespace;
         }
       } else {
-        request.reject(new Error('Unsupported chain'));
-
-        return {
-          message: 'walletConnect.notifications.unsupportedProposal.message',
-          title: 'walletConnect.notifications.unsupportedProposal.title',
-          status: false,
-        };
+        return this.refuseWalletConnectProposal(request, 'UNSUPPORTED_NAMESPACE_KEY');
       }
     }
 
@@ -2289,7 +2359,10 @@ export default class Extension extends FWExtensionBase {
       }
     }
 
+    // Current dApp SDKs send every namespace as optional, so a proposal can get here without a chain the wallet supports.
     const availableEntries = Object.entries(availableNamespaces);
+
+    if (!availableEntries.length) return this.refuseWalletConnectProposal(request, 'UNSUPPORTED_CHAINS');
 
     for (const [key, namespace] of availableEntries) {
       if (!namespace.chains) continue;
@@ -2335,6 +2408,23 @@ export default class Extension extends FWExtensionBase {
     };
   }
 
+  // Tells the dApp, which would otherwise wait for its proposal to expire. An expired proposal is only dropped: the SDK
+  // no longer answers it.
+  private async refuseWalletConnectProposal(
+    request: RequestWalletConnectSession,
+    reason: SdkErrorKey
+  ): Promise<NotificationResponse> {
+    if (!isProposalExpired(request.request.params))
+      await this.state.walletConnectService.rejectSession(request.request.id, reason).catch(console.error);
+    request.reject(new Error('Unsupported chain'));
+
+    return {
+      message: 'walletConnect.notifications.unsupportedProposal.message',
+      title: 'walletConnect.notifications.unsupportedProposal.title',
+      status: false,
+    };
+  }
+
   private async rejectWalletConnectSession({ id }: RequestRejectConnectWalletSession): Promise<boolean> {
     const request = this.state.requestService.getConnectWCRequest(id);
 
@@ -2352,16 +2442,16 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  private subscribeWalletConnectSessions(id: string, port?: chrome.runtime.Port): SessionTypes.Struct[] {
+  private subscribeWalletConnectSessions(id: string, port?: chrome.runtime.Port): WcSession[] {
     const cb = this.state.subscriptionService.createSubscription<'pri(walletConnect.session.subscribe)'>(id, port);
 
     const subscription = this.state.walletConnectService.sessionSubject.subscribe((rs) => {
       cb(rs);
     });
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, subscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.walletConnectService.sessions ?? [];
   }
@@ -2382,9 +2472,9 @@ export default class Extension extends FWExtensionBase {
       (requests: WalletConnectTransactionRequest[]): void => cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, requestSubscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => requestSubscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.requestService.signWcSubject.value;
   }
@@ -2449,13 +2539,15 @@ export default class Extension extends FWExtensionBase {
       if (method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
         const signed = await signer.signTransaction(populated!);
         assertProviderCurrent();
+        handler.markWCSubmitting(request);
         try {
-          const { hash } = await provider!.broadcastTransaction(signed);
+          // Only the node's refusal fails the request. The dApp gets the hash of a transaction the network may
+          // have: told it failed, it could send the amount again with a fresh nonce.
+          const hash = await sendDappEvmTransaction(provider!, signed);
           request.resolve({ id: request.request.topic, payload: hash as HexString });
         } catch (error) {
-          // A transport failure may follow a successful broadcast. Consume this
-          // intent instead of retrying it with a fresh nonce from the same screen.
-          request.reject(error instanceof Error ? error : new Error('WalletConnect submission outcome is unavailable'));
+          // The node refused the transaction, so nothing was sent. Consume this intent.
+          request.reject(error instanceof Error ? error : new Error('WalletConnect submission was refused'));
           return false;
         }
       } else {
@@ -2497,9 +2589,9 @@ export default class Extension extends FWExtensionBase {
       (requests: WalletConnectNotSupportRequest[]): void => cb(requests)
     );
 
-    this.state.subscriptionService.setUnsubscriptionHandle(id, subscription.unsubscribe);
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe(), port);
 
-    port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
 
     return this.state.requestService.allNotSupportWCRequests;
   }
@@ -2537,12 +2629,16 @@ export default class Extension extends FWExtensionBase {
   }
 
   async changeMasterPassword(request: RequestChangePassword): Promise<boolean> {
-    const success = await this.state.keyringService.changeMasterPassword(request);
-    if (success) this.state.keyringLockService.setExtensionAutoLockTimeout();
-    return success;
+    return this.startingSession(async () => {
+      const success = await this.state.keyringService.changeMasterPassword(request);
+      if (success) this.state.keyringLockService.setExtensionAutoLockTimeout();
+      return success;
+    });
   }
 
-  lockKeyring(skipCheck: boolean): boolean {
+  lockKeyring(skipCheck: boolean): boolean | Promise<boolean> {
+    const starting = skipCheck ? undefined : this.sessionStart;
+    if (starting) return this.lockAfterSessionStart(starting);
     if (!skipCheck && this.state.keyringLockService.lockTimerIsExist()) return false;
 
     this.state.keyringLockService.clearLockTimer();
@@ -2550,11 +2646,41 @@ export default class Extension extends FWExtensionBase {
     return this.state.keyringService.lockKeyring();
   }
 
+  // Every wallet page asks for the non-forced lock when it opens (App.vue), to end a session that has no deadline. An
+  // unlock or password change still starting its session has none yet, and the page must not end it: the lock applies
+  // to what the start leaves, a session with its deadline or a locked wallet. A forced lock (Lock) ends it at once.
+  private async lockAfterSessionStart(starting: Promise<void>): Promise<boolean> {
+    // A start stuck that long is ended, as every start was before the lock waited for it.
+    if (!(await settlesWithin(starting, SESSION_START_LOCK_WAIT_MS)) && this.sessionStart === starting) {
+      this.sessionStart = undefined;
+    }
+
+    return this.lockKeyring(false);
+  }
+
+  // Runs an unlock's or password change's work from the accepted password to the session's deadline (or its failure).
+  private async startingSession<T>(start: () => Promise<T>): Promise<T> {
+    let settle!: () => void;
+    const starting = new Promise<void>((resolve) => { settle = resolve; });
+
+    this.sessionStart = starting;
+    try {
+      return await start();
+    } finally {
+      // Before the locks that wait for it resume: they see the session this start left, not the start.
+      if (this.sessionStart === starting) this.sessionStart = undefined;
+      settle();
+    }
+  }
+
   async unlockKeyring(request: RequestUnlockExtension): Promise<boolean | 'ton-recovery-required' | 'ton-storage-unavailable'> {
     const isSuccess = this.state.keyringService.unlockKeyring(request as RequestUnlockExtension);
     if (isSuccess) {
-      await this.state.keyringService.waitForPasswordVerifierUpgrade();
-      this.state.keyringLockService.setExtensionAutoLockTimeout();
+      // The deadline starts only once the stronger verifier is stored; a failed upgrade locks instead and extends nothing.
+      await this.startingSession(async () => {
+        await this.state.keyringService.waitForPasswordVerifierUpgrade();
+        this.state.keyringLockService.setExtensionAutoLockTimeout();
+      });
     }
 
     return isSuccess && this.state.keyringService.tonKeyring.hasStorageIssues
@@ -2604,8 +2730,8 @@ export default class Extension extends FWExtensionBase {
       case 'pri(keyring.subscribeLock)': {
         const notify = this.state.subscriptionService.createSubscription<'pri(keyring.subscribeLock)'>(id, port);
         const subscription = this.state.keyringService.lockSubject.subscribe(() => notify(true));
-        this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe());
-        port?.onDisconnect.addListener(() => this.cancelSubscription(id));
+        this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe(), port);
+        port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
         return this.state.keyringService.keyringIsLocked;
       }
 
@@ -2618,9 +2744,7 @@ export default class Extension extends FWExtensionBase {
       case 'pri(keyring.lock)':
         return this.lockKeyring(request as boolean);
 
-      case 'pri(keyring.getPassword)':
-        return this.state.keyringService.getPassword();
-
+      // There is no message that returns the master password: it stays in the background.
       case 'pri(keyring.reset)':
         return this.state.keyringService.resetWallet(async () => {
           await this.state.requestService.resetWallet();
@@ -2659,6 +2783,9 @@ export default class Extension extends FWExtensionBase {
       case 'pri(keyring.export.rowSeed)':
         return this.state.keyringService.accountExportRawSeed(request as RequestExportSeed);
 
+      case 'pri(keyring.export.rawSeedAvailable)':
+        return this.state.keyringService.accountRawSeedAvailable(request as RequestTypes['pri(keyring.export.rawSeedAvailable)']);
+
       case 'pri(keyring.generateMnemonic)':
         return this.state.keyringService.mnemonicGenerate(request as RequestGenerateMnemonic);
 
@@ -2667,6 +2794,19 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(keyring.tonImportCandidates)':
         return this.tonImportCandidates(request as RequestTonImportCandidates);
+      case 'pri(keyring.universalWalletPasswordDiscovery)':
+        return this.universalWalletPasswordDiscovery(request as RequestUniversalWalletPasswordDiscovery);
+      case 'pri(accounts.universalWalletPassword.status)':
+        return this.universalWalletPasswordStatus(request as RequestUniversalWalletPasswordAccount);
+      case 'pri(accounts.universalWalletPassword.addPath)':
+        return this.state.keyringService.addUniversalWalletPasswordPath(request as RequestUniversalWalletPasswordPath);
+      case 'pri(accounts.universalWalletPassword.switch)':
+        return this.universalWalletPasswordSwitch(request as RequestUniversalWalletPasswordAccount);
+      case 'pri(accounts.universalWalletPassword.checkWatched)':
+        return this.state.keyringService.checkWatchedUniversalWalletAccounts(
+          (request as RequestUniversalWalletPasswordAccount).address,
+          balanceServiceFundsProbe(this.state.balanceService)
+        );
 
       case 'pri(networkMap.getSubscription)':
         return this.subscribeNetworkMap(id, port);
@@ -2717,6 +2857,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(accounts.export.json)':
         return this.exportJSON(request as RequestAccountExport);
+
+      case 'pri(accounts.export.backup)':
+        return this.exportBackupJSON(request as string);
 
       case 'pri(migrate.export.json)':
         return this.migrateExportJSON(request as string);
@@ -2929,6 +3072,9 @@ export default class Extension extends FWExtensionBase {
       // balance
       case 'pri(balance)':
         return this.state.balanceService.getBalance();
+
+      case 'pri(balance.refresh)':
+        return this.state.subscriptionService.refreshCurrentWallet({ force: true });
 
       case 'pri(fetch.evm.balance)':
         return this.fetchEvmBalance(request as FetchBalancePayload);

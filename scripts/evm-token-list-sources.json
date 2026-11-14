@@ -1,0 +1,85 @@
+{
+  "format": "fearless-evm-token-list-sources",
+  "version": 1,
+  "description": "Public token lists that scripts/generate-evm-token-lists.mjs merges into remote-config/production/tokens/evm/v1 (docs/evm-token-discovery.md). Every source is MIT-licensed; CoinGecko and CoinMarketCap lists are not used because their terms are not an open licence. Each URL is pinned to a commit, so the same sources always give the same files. Earlier sources win when two sources name a token differently; decimals always come from the chain.",
+  "sources": [
+    {
+      "id": "smoldapp",
+      "name": "SmolDapp token lists",
+      "license": "MIT",
+      "repository": "https://github.com/SmolDapp/tokenLists",
+      "commit": "7b90414375de48d6d02b6e427d49913ae17cec6d",
+      "lists": [
+        { "path": "lists/1.json" },
+        { "path": "lists/10.json" },
+        { "path": "lists/56.json" },
+        { "path": "lists/137.json" },
+        { "path": "lists/1101.json" },
+        { "path": "lists/42161.json" },
+        { "path": "lists/43114.json" }
+      ]
+    },
+    {
+      "id": "trustwallet",
+      "name": "Trust Wallet assets",
+      "license": "MIT",
+      "repository": "https://github.com/trustwallet/assets",
+      "commit": "e82fe457d6ef3a0e3c382261ebf3b6f5d9fa3766",
+      "lists": [
+        { "path": "blockchains/ethereum/tokenlist.json", "chainId": "1" },
+        { "path": "blockchains/smartchain/tokenlist.json", "chainId": "56" },
+        { "path": "blockchains/polygon/tokenlist.json", "chainId": "137" },
+        { "path": "blockchains/arbitrum/tokenlist.json", "chainId": "42161" },
+        { "path": "blockchains/optimism/tokenlist.json", "chainId": "10" },
+        { "path": "blockchains/avalanchec/tokenlist.json", "chainId": "43114" }
+      ]
+    },
+    {
+      "id": "superchain",
+      "name": "Superchain token list",
+      "license": "MIT",
+      "repository": "https://github.com/ethereum-optimism/ethereum-optimism.github.io",
+      "commit": "69f8dd4e2b8b785c3f493576a95b284cd6385f4e",
+      "lists": [{ "path": "optimism.tokenlist.json" }]
+    },
+    {
+      "id": "balancer",
+      "name": "Balancer token lists",
+      "license": "MIT",
+      "repository": "https://github.com/balancer/tokenlists",
+      "commit": "bbe8e85bd1e5e552e8a013eade26cea5d362bd1d",
+      "lists": [{ "path": "generated/balancer.tokenlist.json" }]
+    },
+    {
+      "id": "sushiswap",
+      "name": "SushiSwap default token list",
+      "license": "MIT",
+      "repository": "https://github.com/sushiswap/list",
+      "commit": "088f54740a1b82882bdcc33e311988fdc8f2c8e1",
+      "lists": [
+        { "path": "lists/token-lists/default-token-list/tokens/ethereum.json" },
+        { "path": "lists/token-lists/default-token-list/tokens/bsc.json" },
+        { "path": "lists/token-lists/default-token-list/tokens/polygon.json" },
+        { "path": "lists/token-lists/default-token-list/tokens/arbitrum.json" },
+        { "path": "lists/token-lists/default-token-list/tokens/optimism.json" },
+        { "path": "lists/token-lists/default-token-list/tokens/avalanche.json" },
+        { "path": "lists/token-lists/default-token-list/tokens/polygon-zkevm.json" },
+        { "path": "lists/token-lists/default-token-list/tokens/zetachain.json" }
+      ]
+    },
+    {
+      "id": "pancakeswap",
+      "name": "PancakeSwap token lists",
+      "license": "MIT",
+      "repository": "https://github.com/pancakeswap/token-list",
+      "commit": "1dd8633d75ea081a9fbf88b1a22f29f74c06b36d",
+      "lists": [
+        { "path": "lists/pancakeswap-extended.json" },
+        { "path": "lists/pancakeswap-default.json" },
+        { "path": "lists/pancakeswap-eth-default.json" },
+        { "path": "lists/pancakeswap-arbitrum-default.json" },
+        { "path": "lists/pancakeswap-polygon-zkevm-default.json" }
+      ]
+    }
+  ]
+}

@@ -7,7 +7,7 @@ import EvmRequestHandler from '@extension-base/services/request-service/handlers
 import { Eip155RequestHandler } from '@extension-base/services/wallet-connect-service/requestHandlers/Eip155Handler';
 import Extension from '@extension-base/background/handlers/Extension';
 import { sessionStorage } from '../helpers/session-storage';
-import type { SessionTypes, SignClientTypes } from '@walletconnect/types';
+import type { WcSession, WcSessionRequestEvent } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type State from '@extension-base/background/handlers/State';
 import type { RequestService } from '@extension-base/services/request-service';
 import { CURRENT_WALLET_SECURITY_GENERATION } from '@/util/walletSecurity';
@@ -24,7 +24,7 @@ vi.mock('@extension-base/utils/crossenv', async () => ({
 const wallet = new Wallet(`0x${'11'.repeat(32)}`);
 const address = wallet.address;
 let state: State, queue: EvmRequestHandler, extension: Extension, incoming: Eip155RequestHandler;
-let session: SessionTypes.Struct;
+let session: WcSession;
 let revision: number;
 let network: {
   name: string;
@@ -42,7 +42,7 @@ const event = (method = 'personal_sign', params: unknown[] = ['0x1234', address]
     topic: 'public-topic',
     params: { chainId: 'eip155:1', request: { method, params } },
     verifyContext: { verified: { origin: 'https://public.example', validation: 'VALID', verifyUrl: '' } },
-  }) as SignClientTypes.EventArguments['session_request'];
+  }) as WcSessionRequestEvent;
 beforeEach(async () => {
   await new WalletConnectRetiredSessions().readTopics();
   sessionStorage.data = {};
@@ -68,7 +68,7 @@ beforeEach(async () => {
       eip155: { chains: ['eip155:1', 'eip155:2'], methods: ['personal_sign', 'eth_sendTransaction'], events: [] },
     },
     optionalNamespaces: {},
-  } as unknown as SessionTypes.Struct;
+  } as unknown as WcSession;
   network = {
     name: 'Ethereum',
     chainId: '1',
@@ -120,7 +120,8 @@ const providerFixture = () => ({
   getTransactionCount: vi.fn(async () => 0),
   estimateGas: vi.fn(async () => 21000n),
   getFeeData: vi.fn(async () => ({ gasPrice: 1n, maxFeePerGas: null, maxPriorityFeePerGas: null })),
-  broadcastTransaction: vi.fn(async (_signed: string) => ({ hash: '0xpublic' })),
+  // A node that takes the transaction answers eth_sendRawTransaction with its hash.
+  send: vi.fn(async (_method: string, [signed]: string[]) => Transaction.from(signed).hash),
 });
 
 describe('WalletConnect uses the approved session grant at admission', () => {
@@ -291,7 +292,7 @@ describe('WalletConnect captures and revalidates asynchronous boundaries', () =>
       done({ gasPrice: 1n, maxFeePerGas: null, maxPriorityFeePerGas: null });
       await expect(approving).rejects.toThrow();
       expect(state.keyringService.accountExportPrivateKey).not.toHaveBeenCalled();
-      expect(provider.broadcastTransaction).not.toHaveBeenCalled();
+      expect(provider.send).not.toHaveBeenCalled();
     }
   );
   it('does not broadcast if the session changes while a transaction signature is pending', async () => {
@@ -309,7 +310,7 @@ describe('WalletConnect captures and revalidates asynchronous boundaries', () =>
     revision += 1;
     done('0xpublic');
     await expect(approving).rejects.toThrow();
-    expect(provider.broadcastTransaction).not.toHaveBeenCalled();
+    expect(provider.send).not.toHaveBeenCalled();
   });
   it('does not release a message signature if the session changes while signing is pending', async () => {
     const approvalId = await admit();
@@ -412,8 +413,9 @@ describe('WalletConnect captures and revalidates asynchronous boundaries', () =>
     const provider = providerFixture();
     vi.mocked(state.getEvmApi).mockReturnValue({ api: provider } as never);
     await expect(extension.wcRequestApprove({ address, approvalId })).resolves.toBe(true);
-    expect(provider.broadcastTransaction).toHaveBeenCalledOnce();
-    const signed = Transaction.from(provider.broadcastTransaction.mock.calls[0][0]);
+    expect(provider.send).toHaveBeenCalledOnce();
+    expect(provider.send.mock.calls[0][0]).toBe('eth_sendRawTransaction');
+    const signed = Transaction.from(provider.send.mock.calls[0][1][0]);
     expect(signed.chainId).toBe(1n);
     expect(signed.from).toBe(address);
     expect(signed.value).toBe(1n);
@@ -421,7 +423,7 @@ describe('WalletConnect captures and revalidates asynchronous boundaries', () =>
   it('copies the request before delayed network activation', async () => {
     network.active = false;
     let done!: () => void;
-    state.setActiveNetworks = vi.fn(
+    state.activateDappNetwork = vi.fn(
       () =>
         new Promise<void>((resolve) => {
           done = resolve;
@@ -438,7 +440,7 @@ describe('WalletConnect captures and revalidates asynchronous boundaries', () =>
   it('does not queue a request revoked during network activation', async () => {
     network.active = false;
     let done!: () => void;
-    state.setActiveNetworks = vi.fn(
+    state.activateDappNetwork = vi.fn(
       () =>
         new Promise<void>((resolve) => {
           done = resolve;

@@ -79,6 +79,32 @@ const setup = () => {
 };
 
 describe('wallet-owned staking adapter', () => {
+  it('loads slash evidence and stable identity ownership without treating unknown data as safe', async () => {
+    const { adapter, staking, api } = setup();
+    staking.validators.entries.mockResolvedValue(['slashed', 'safe', 'unknown'].map(address => [key(address), { commission: 0, blocked: false }]));
+    staking.slashingSpans.mockImplementation(async (address: string) => {
+      if (address === 'unknown') throw new Error('RPC unavailable');
+      return option(address === 'slashed' ? { lastNonzeroSlash: 1 } : null);
+    });
+    api.derive.accounts.info.mockResolvedValue({ identity: { display: 'Child', parent: 'operator', judgements: [[0, { isKnownGood: true }]] } });
+    const validators = await adapter.getValidatorsInfo();
+    expect(validators.map(value => value.isSlashed)).toEqual([true, false, undefined]);
+    expect(validators.map(value => value.identityKey)).toEqual(['operator', 'operator', 'operator']);
+    staking.slashingSpans.mockResolvedValue(option({ lastNonzeroSlash: 0 }));
+    expect((await adapter.getValidatorsInfo()).every(value => value.isSlashed === undefined)).toBe(true);
+    delete staking.slashingSpans;
+    expect((await adapter.getValidatorsInfo()).every(value => value.isSlashed === undefined)).toBe(true);
+  });
+
+  it('derives era timing from current runtime constants', () => {
+    const { adapter, api } = setup();
+    expect(adapter.getEraHours()).toBe(6);
+    api.consts.staking.sessionsPerEra = 12;
+    expect(adapter.getEraHours()).toBe(12);
+    api.consts.babe.epochDuration = 0;
+    expect(() => adapter.getEraHours()).toThrow('Staking era duration is unavailable');
+  });
+
   it('encodes precise bond amounts and uses the same atomic calls for fee and submission', async () => {
     const { adapter, tx, client } = setup();
     const request = {

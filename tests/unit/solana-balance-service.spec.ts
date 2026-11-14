@@ -204,16 +204,17 @@ describe('SolanaBalanceService', () => {
         solanaAddress: WALLET,
         networks: ['Solana'],
       })
-    ).resolves.toEqual([{ assetId: 'SOL', balance: '0', network: 'Solana' }]);
+    ).resolves.toEqual([]);
 
     expect(client.getBalances).not.toHaveBeenCalled();
+    // Nothing was loaded before: the balance is unknown, not 0.
     expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).toMatchObject({
       state: APIItemState.ERROR,
-      total: '0',
+      total: undefined,
     });
     expect(updateBalanceStore).toHaveBeenCalledWith(
       'Solana',
-      expect.objectContaining({ state: APIItemState.ERROR, total: '0' }),
+      expect.objectContaining({ state: APIItemState.ERROR, total: undefined }),
       SUBSTRATE_ADDRESS
     );
 
@@ -392,7 +393,7 @@ describe('SolanaBalanceService', () => {
         solanaAddress: WALLET,
         networks: ['Solana'],
       })
-    ).resolves.toEqual([{ assetId: 'SOL', balance: '0', network: 'Solana' }]);
+    ).resolves.toEqual([]);
 
     expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS]).toHaveLength(1);
   });
@@ -493,12 +494,12 @@ describe('SolanaBalanceService', () => {
         solanaAddress: WALLET,
         networks: ['Solana'],
       })
-    ).resolves.toEqual([{ assetId: 'SOL', balance: '0', network: 'Solana' }]);
+    ).resolves.toEqual([]);
 
     expect(state.balanceService.balanceMap[SUBSTRATE_ADDRESS][0].balances[0]).toMatchObject({
       state: APIItemState.ERROR,
       symbol: 'SOL',
-      total: '0',
+      total: undefined,
     });
   });
 
@@ -600,5 +601,26 @@ describe('SolanaBalanceService', () => {
       expect.objectContaining({ id: SPL_MINT, state: APIItemState.READY, total: '0' }),
       SUBSTRATE_ADDRESS
     );
+  });
+});
+
+describe('SolanaBalanceService funds probe (Universal Wallet password)', () => {
+  it('counts SOL or any token as funded, and an unread token list or failure as unchecked', async () => {
+    const { state, updateBalanceStore } = createState();
+    const client = { getBalances: vi.fn(), verifyServiceInfo: vi.fn().mockResolvedValue({ schemaVersion: 1, serviceId: 'si.soramitsu.io' }) };
+    const service = new SolanaBalanceService(state, client);
+
+    client.getBalances.mockResolvedValueOnce(balancesResponse('1', '0.000000001'));
+    await expect(service.probeAddressFunds(WALLET)).resolves.toBe('funded');
+    client.getBalances.mockResolvedValueOnce(balancesResponse('0', '0', [tokenBalance('Mint1111111111111111111111111111111111111111', '5', 0, 'spl-token')]));
+    await expect(service.probeAddressFunds(WALLET)).resolves.toBe('funded');
+    client.getBalances.mockResolvedValueOnce(balancesResponse('0', '0'));
+    await expect(service.probeAddressFunds(WALLET)).resolves.toBe('empty');
+    client.getBalances.mockResolvedValueOnce({ ...balancesResponse('0', '0'), tokensUnavailable: true });
+    await expect(service.probeAddressFunds(WALLET)).resolves.toBe('unknown');
+    client.getBalances.mockRejectedValueOnce(new Error('rpc unavailable'));
+    await expect(service.probeAddressFunds(WALLET)).resolves.toBe('unknown');
+    expect(client.getBalances).toHaveBeenCalledWith(WALLET);
+    expect(updateBalanceStore).not.toHaveBeenCalled();
   });
 });

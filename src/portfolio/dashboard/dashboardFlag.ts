@@ -1,5 +1,5 @@
 /**
- * The portfolio dashboard (winged-sun sky, allocation fan, All wallets scope, Where it lives) is behind a build-time flag.
+ * The portfolio dashboard (sun-crow sky, allocation fan, All wallets scope, Where it lives) is behind a build-time flag.
  *
  * It ships: a release pins it on through `PRODUCTION_RELEASE_FLAGS` (scripts/build-extension.mjs), the Chrome release
  * audit checks that it did, and every other build carries it too. `VUE_APP_PORTFOLIO_DASHBOARD=false` leaves it out of a

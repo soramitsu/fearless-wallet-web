@@ -89,9 +89,12 @@ function open(item: MenuDefinition): void {
   margin: 0 -16px -16px;
   padding: 6px 8px 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  // The dock is chrome; without blur it takes the solid chrome tint (design-system 3.2).
+  // The dock is chrome; without blur it takes the solid chrome tint (design-system 3.2). No blur here either: the list
+  // scrolls under it. Brand kit v3 gives it the lit rim.
+  position: relative;
   background: $fw-chrome-surface;
   user-select: none;
   z-index: 199;
+  @include fw-lit-rim(0, -1);
 }
 </style>

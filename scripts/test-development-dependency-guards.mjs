@@ -16,14 +16,14 @@ function check(name, action) {
 }
 
 // Verify executable installed sources, including direct lib entrypoints.
-for (const name of ['braces', 'node-forge']) {
+for (const name of ['braces', 'node-forge', 'minimatch']) {
   const installed = path.dirname(require.resolve(`${name}/package.json`));
   const vendored = path.join(root, 'vendor', name);
   function compare(directory = '') {
     for (const entry of readdirSync(path.join(vendored, directory), { withFileTypes: true })) {
       const relative = path.join(directory, entry.name);
       if (entry.isDirectory()) compare(relative);
-      else if (/\.(?:c?js|json)$/.test(entry.name)) {
+      else if (/\.(?:[cm]?js|json|d\.ts)$/.test(entry.name)) {
         check(`${name} installed source ${relative}`, () => assert.deepEqual(
           readFileSync(path.join(installed, relative)), readFileSync(path.join(vendored, relative)),
         ));
@@ -169,5 +169,22 @@ check('real ADB public key parser cannot reach RSA verification', () => {
   struct.writeUInt32LE(65537, 520);
   assert.throws(() => require('@devicefarmer/adbkit/dist/src/adb/auth').default.readPublicKeyFromStruct(struct, 'test'), disabled);
 });
+
+// minimatch resolves to vendor/minimatch: the patched upstream 11.0.3, with the removed makeRe kept as a refusing stub.
+const minimatchModule = require('minimatch');
+const minimatchEsm = await import('minimatch');
+check('minimatch wraps the patched upstream 11.0.3', () => assert.equal(require('minimatch-upstream/package.json').version, '11.0.3'));
+check('minimatch matches through its CommonJS and ES module entries', () => {
+  assert.equal(minimatchModule.minimatch('src/a/b.ts', 'src/**/*.ts'), true);
+  assert.equal(new minimatchModule.Minimatch('*.js').match('a.ts'), false);
+  assert.equal(minimatchEsm.minimatch('src/a.ts', 'src/*.ts'), true);
+});
+for (const [name, makeRe] of Object.entries({ commonjs: minimatchModule.makeRe, esm: minimatchEsm.makeRe })) {
+  check(`minimatch ${name} makeRe fails closed`, () => assert.throws(() => makeRe('*.js'), /no longer builds regular expressions/));
+}
+const { default: multimatch } = await import('multimatch');
+check('multimatch consumer', () => assert.deepEqual(multimatch(['a.js', 'b.map', 'c/d.js'], ['**/*.js']), ['a.js', 'c/d.js']));
+const importX = await import('eslint-plugin-import-x');
+check('eslint-plugin-import-x loads with minimatch 11', () => assert.equal(typeof importX.default.rules.order.create, 'function'));
 
 console.log(`Development dependency guards passed (${checks} checks).`);

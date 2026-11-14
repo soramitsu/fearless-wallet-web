@@ -22,6 +22,48 @@ import type { ResponseTotalBalances } from '@extension-base/background/types/typ
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import { fetchWalletTotals, walletBalanceCaption } from '@/screens/main/walletTotals';
 
+type TotalsRow = { address: () => string; update: (totals: ResponseTotalBalances[]) => void };
+
+// Each request builds every wallet's total in the background, so all mounted rows share one request
+// every 5 s instead of sending one each.
+const TOTALS_REFRESH_MS = 5000;
+const totalsRows = new Set<TotalsRow>();
+let totalsTimer: ReturnType<typeof setInterval> | undefined;
+let totalsRequest: Promise<void> | undefined;
+let totalsStale = false;
+
+function refreshWalletTotals() {
+  // A slow answer is not stacked with more requests.
+  if (totalsRequest) return;
+  const rows = [...totalsRows];
+  const addresses = [...new Set(rows.map(({ address }) => address()))];
+  totalsStale = false;
+  totalsRequest = Promise.resolve()
+    .then(() => fetchWalletTotals(addresses))
+    .then((totals) => rows.forEach((row) => totalsRows.has(row) && row.update(totals)))
+    // The rows keep their last totals until the next refresh.
+    .catch(() => undefined)
+    .finally(() => {
+      totalsRequest = undefined;
+      // Rows that opened meanwhile also need their hidden assets counted.
+      if (totalsStale && totalsRows.size) refreshWalletTotals();
+    });
+}
+
+function watchWalletTotals(row: TotalsRow): () => void {
+  totalsRows.add(row);
+  totalsTimer ??= setInterval(refreshWalletTotals, TOTALS_REFRESH_MS);
+  if (totalsRequest) totalsStale = true;
+  else refreshWalletTotals();
+
+  return () => {
+    totalsRows.delete(row);
+    if (totalsRows.size) return;
+    clearInterval(totalsTimer);
+    totalsTimer = undefined;
+  };
+}
+
 export default defineComponent({ name: 'WalletInfo',
   components: { WalletBalance },
   props: {
@@ -36,7 +78,7 @@ export default defineComponent({ name: 'WalletInfo',
       dotsHorizontalRef: 'dotsHorizontal',
       showWalletMenu: false,
       totalBalances: [] as ResponseTotalBalances[],
-      interval: undefined as ReturnType<typeof setInterval> | undefined,
+      stopTotals: undefined as (() => void) | undefined,
     };
   },
   computed: {
@@ -61,18 +103,13 @@ export default defineComponent({ name: 'WalletInfo',
           ];
     },
   },
-  async created() {
-    this.totalBalances = await this.fetchTotalBalances();
-
-        this.interval = setInterval(async () => (this.totalBalances = await this.fetchTotalBalances()), 5000);
+  created() {
+    this.stopTotals = watchWalletTotals({ address: () => this.address, update: (totals) => (this.totalBalances = totals) });
   },
   beforeUnmount() {
-    clearInterval(this.interval);
+    this.stopTotals?.();
   },
   methods: {
-    fetchTotalBalances(): Promise<ResponseTotalBalances[]> {
-      return fetchWalletTotals(this.address);
-    },
     showWalletDetails() {
       const buttonTop = (this.$refs[this.dotsHorizontalRef] as HTMLButtonElement).getBoundingClientRect().top;
       this.$emit('setShowWalletDetailsPopupVisible', buttonTop);

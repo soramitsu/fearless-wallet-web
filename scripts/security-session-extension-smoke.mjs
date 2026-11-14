@@ -34,6 +34,7 @@ const report = {
   checks: [],
 };
 let browser, sw, popup, originalId;
+const profilesStarted = new Set();
 const check = (name, value) => { report.checks.push({ name, passed: !!value }); assert(value, name); };
 const shutdown = async () => {
   popup?.close(); sw?.close();
@@ -50,10 +51,16 @@ const start = async (zip, profile = profileDir) => {
   report.browser = (await (await devtools(port, '/json/version')).json()).Browser;
   // A restart alone can reuse a cached worker (especially with same-version
   // candidates). Explicitly reload so the installed bytes actually run.
-  if (originalId) {
+  // A new profile has no earlier build to replace. Reloading the wallet it has
+  // just installed makes Chrome start another worker a few seconds later while
+  // the DevTools session below keeps the first one running; both then answer
+  // every request, and two password changes race on fw:keyring
+  // ("Password changed during preparation.").
+  if (originalId && profilesStarted.has(profile)) {
     const reloaded = await reloadExtension(port, originalId);
     assert.equal(reloaded.reload, 'ok', 'Candidate extension reload failed');
   }
+  profilesStarted.add(profile);
   const worker = await serviceWorker(port);
   const id = new URL(worker.url).hostname;
   if (originalId) assert.equal(id, originalId, 'Package identity must remain unchanged');
@@ -62,6 +69,23 @@ const start = async (zip, profile = profileDir) => {
   await sw.ready;
   popup = await openPopup(port, id);
   await call('pri(app.isReady)');
+  // A page's port reaches every running wallet worker. A second one (a replaced worker kept running) would answer
+  // every request again, and the checks below would test two sessions at once.
+  const answers = await popup.eval(`new Promise((resolve) => {
+    const id = 'security-smoke.workers';
+    let count = 0;
+    const finish = () => { window.__p.onMessage.removeListener(listener); resolve(count); };
+    const listener = (data) => {
+      if (!data || data.id !== id) return;
+      count += 1;
+      // Another worker answers at about the same time as the first.
+      if (count === 1) setTimeout(finish, 1000);
+    };
+    window.__p.onMessage.addListener(listener);
+    window.__p.postMessage({ id, message: 'pri(app.port.ping)', request: null });
+    setTimeout(finish, 30000);
+  })`);
+  assert.equal(answers, 1, `${answers} wallet workers answered one request`);
 };
 const call = async (message, request) => {
   const result = await popup.call(message, request);
@@ -84,11 +108,21 @@ const captureTimer = () => sw.eval(`(() => {
     return original(callback, delay, ...args);
   }; return true;
 })()`);
-const awaitLockedReload = async () => {
+const awaitLockedReload = async (address) => {
   await waitFor(async () => await popup.eval('typeof window.__send === "function" && window.__securitySecret === undefined && /^#\\/unlock/.test(location.hash)'),
     30000, 'wallet document discarded on lock');
+  // The bridge is in the new document from its first line, but the wallet in it watches for the next lock only once
+  // its code has loaded (App.vue subscribes, then asks for the page-start lock). Its Unlock screen appears after the
+  // router has asked the background over that same port, so both are handled by then. Unlocking or expiring the
+  // session earlier races the page's start-up: the lock event can come before the page subscribes (it then never
+  // reloads), or the page-start lock can land in the unlock.
+  await waitFor(async () => await popup.eval(
+    '!!document.querySelector(\'[data-testid="forgotPassword"]\') && !document.querySelector(\'[data-testid="walletStartup"]\')'
+  ), 30000, 'reloaded wallet showing its Unlock screen');
   check('locked background reports locked', await call('pri(keyring.keyringIsLocked)') === true);
-  check('background password cleared', await call('pri(keyring.getPassword)') === '');
+  // The session password is gone: even the right password exports nothing until the wallet is unlocked again.
+  const locked = await popup.call('pri(keyring.export.mnemonic)', { address, password, walletEcosystem: 'substrate' });
+  check('locked background refuses export with the right password', !!locked.err || locked.ok?.seed === '');
 };
 try {
   await start(legacyZip);
@@ -106,11 +140,22 @@ try {
   check('incorrect password rejected', wrong.ok !== true);
   check('incorrect password leaves verifier unchanged', (await storage())['fw:keyring'].passwordHash === before['fw:keyring'].passwordHash);
   await captureTimer();
-  check('legacy password unlocks', await call('pri(keyring.unlock)', { password }) === true);
+  // A wallet page that opens while this unlock stores the stronger verifier sends the non-forced lock that every page
+  // start sends (App.vue). Until 4.2.7 it ended the unlock: "Wallet authentication changed during verifier upgrade."
+  const [unlocked, pageStartLock] = await popup.eval(`Promise.all([
+    window.__send('pri(keyring.unlock)', ${JSON.stringify({ password })}),
+    window.__send('pri(keyring.lock)', false),
+  ]).catch((error) => [String(error && error.message || error)])`);
+  check('legacy password unlocks', unlocked === true);
+  check('a wallet page opening during the unlock keeps its session', pageStartLock === false);
+  check('wallet stays unlocked after that page start', await call('pri(keyring.keyringIsLocked)') === false);
   const migrated = await storage();
   check('unlock durably migrates verifier to cost 12', getRounds(migrated['fw:keyring'].passwordHash) === 12);
   check('verifier migration preserves account ciphertext', JSON.stringify(keys(migrated)) === JSON.stringify(keys(before)));
-  check('unlocked phrase still exports', (await call('pri(keyring.export.mnemonic)', { address, walletEcosystem: 'substrate' })).seed === phrase);
+  check('unlocked phrase still exports', (await call('pri(keyring.export.mnemonic)', { address, password, walletEcosystem: 'substrate' })).seed === phrase);
+  const untyped = await popup.call('pri(keyring.export.mnemonic)', { address, walletEcosystem: 'substrate' });
+  check('unlocked session refuses export without the password', !!untyped.err);
+  check('no message returns the master password', !!(await popup.call('pri(keyring.getPassword)', null)).err);
   await popup.eval(`window.__securitySecret = ${JSON.stringify(phrase)}; true`);
   const count = await sw.eval(`(() => {
     const callbacks = globalThis.__securityCallbacks.splice(0);
@@ -118,8 +163,8 @@ try {
     callbacks.forEach(callback => callback()); return callbacks.length;
   })()`);
   check('exactly one real 30 minute deadline callback ran', count === 1);
-  await awaitLockedReload();
-  const expiredExport = await popup.call('pri(keyring.export.mnemonic)', { address, walletEcosystem: 'substrate' });
+  await awaitLockedReload(address);
+  const expiredExport = await popup.call('pri(keyring.export.mnemonic)', { address, password, walletEcosystem: 'substrate' });
   check('expired session cannot export recovery phrase', !!expiredExport.err || expiredExport.ok?.seed === '');
 
   check('password still unlocks after expiry', await call('pri(keyring.unlock)', { password }) === true);
@@ -128,13 +173,13 @@ try {
   await sw.eval('globalThis.__securityOriginalNow = Date.now; Date.now = () => globalThis.__securityOriginalNow() + 1800001; true');
   // Dispatch the read without awaiting a response in a document being discarded.
   await popup.eval("window.__send('pri(keyring.keyringIsLocked)', null).catch(() => {}); true");
-  await awaitLockedReload();
+  await awaitLockedReload(address);
   await sw.eval('Date.now = globalThis.__securityOriginalNow; true');
   check('delayed timer expiry leaves stored keys unchanged', JSON.stringify(keys(await storage())) === JSON.stringify(keys(before)));
 
   await start(legacyZip);
   check('previous 4.2.0 package accepts stronger verifier after rollback', await call('pri(keyring.unlock)', { password }) === true);
-  check('rollback exports original recovery phrase', (await call('pri(keyring.export.mnemonic)', { address, walletEcosystem: 'substrate' })).seed === phrase);
+  check('rollback exports original recovery phrase', (await call('pri(keyring.export.mnemonic)', { address, password, walletEcosystem: 'substrate' })).seed === phrase);
   await start(candidateZip, path.join(work, 'fresh-profile'));
   check('new candidate wallet password created', await call('pri(keyring.changePassword)', { oldPassword: '', newPassword: password }) === true);
   check('new wallet verifier uses cost 12', getRounds((await storage())['fw:keyring'].passwordHash) === 12);

@@ -161,6 +161,15 @@ describe('approval completion owns an exact queued request', () => {
     expect(store.signSolanaRequests).toEqual({});
     expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'Wallet' });
   });
+
+  it('keeps the request on screen when the background refuses to cancel it', async () => {
+    const store = setup();
+    store.signEvmRequests = { first: evm('first') };
+    mocks.cancelSignRequest.mockResolvedValueOnce(false);
+    await expect(store.signCancel({ id: 'first', kind: 'evm' })).rejects.toThrow('not cancelled');
+    expect(Object.keys(store.signEvmRequests)).toEqual(['first']);
+    expect(mocks.push).not.toHaveBeenCalled();
+  });
 });
 
 describe('signing subscriptions share one combined queue', () => {

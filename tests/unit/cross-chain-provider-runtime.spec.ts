@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 
 import type State from '@extension-base/background/handlers/State';
 import { createCrossChainQuoteFingerprint } from '@/cross-chain/quoteFingerprint';
+import { expectedReviewedCall } from '@/cross-chain/reviewedCallLayout';
 import {
   createReviewedCrossChainExtrinsic,
   resolveReviewedRuntimeCall,
@@ -14,6 +15,7 @@ import {
   type ReviewedCrossChainExecution,
   type ReviewedRuntimeCall,
 } from '@/cross-chain/reviewedRoutes';
+import { REVIEWED_RPC_HOSTS } from '@/cross-chain/reviewedEndpoints';
 import { REVIEWED_RUNTIMES } from '@/cross-chain/reviewedRuntimes';
 import { VALID_SUBSTRATE_ADDRESS } from '@/consts/networks';
 
@@ -110,15 +112,18 @@ const authorityApi = (
   chainId: string,
   query: BridgeRuntimeApi['query'] = {},
   consts: BridgeRuntimeApi['consts'] = {}
-): BridgeRuntimeApi => ({
-  consts,
-  createType: vi.fn((_type: string, value: unknown) => ({ toHex: () => String(value) })),
-  genesisHash: { toHex: () => `0x${chainId}` },
-  isConnected: true,
-  isReadyOrError: Promise.resolve(),
-  query,
-  tx: {},
-});
+): BridgeRuntimeApi =>
+  ({
+    consts,
+    createType: vi.fn((_type: string, value: unknown) => ({ toHex: () => String(value) })),
+    genesisHash: { toHex: () => `0x${chainId}` },
+    isConnected: true,
+    isReadyOrError: Promise.resolve(),
+    query,
+    tx: {},
+    // Connected to the first reviewed host of the chain, as polkadot-js records it.
+    _rpcCore: { provider: { endpoint: `wss://${REVIEWED_RPC_HOSTS[chainId]?.[0] ?? 'unreviewed.invalid'}` } },
+  }) as BridgeRuntimeApi;
 
 const authorityState = (entries: Array<{ chainId: string; name: string; api: BridgeRuntimeApi }>) =>
   ({
@@ -266,7 +271,13 @@ describe('reviewed cross-chain providers and runtime authority', () => {
 
     for (const execution of [sora, liberland]) {
       const { api, method } = executionRuntime(execution);
-      await createReviewedCrossChainExtrinsic({
+      if (execution.kind === 'liberland-to-sora-burn') {
+        method.mockReturnValueOnce({
+          paymentInfo: vi.fn(),
+          method: { toHex: () => expectedReviewedCall(execution, VALID_SUBSTRATE_ADDRESS, '123') },
+        } as never);
+      }
+      const built = createReviewedCrossChainExtrinsic({
         api,
         destinationChainId: execution.destinationChainId,
         execution,
@@ -275,6 +286,13 @@ describe('reviewed cross-chain providers and runtime authority', () => {
         to: VALID_SUBSTRATE_ADDRESS,
         xcmAssetId: execution.assetXcmId,
       });
+
+      if (execution.kind === 'sora-bridge-proxy-burn-v3') {
+        // The retained SORA builder still runs, but no bytes are reviewed for it, so nothing can be signed.
+        await expect(built).rejects.toThrow('cross_chain_call_layout_not_reviewed');
+      } else {
+        await expect(built).resolves.toBeTruthy();
+      }
 
       expect(method).toHaveBeenCalledOnce();
       const [call] = method.mock.calls as unknown as unknown[][];

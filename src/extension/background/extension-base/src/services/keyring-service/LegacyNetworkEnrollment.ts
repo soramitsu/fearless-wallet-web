@@ -2,38 +2,33 @@ import AccountsStore from '@extension-base/stores/Accounts';
 import { accountStorageKey, isCurrentAccountPair, updateAccountMetadata } from './AccountMetadata';
 import type { KeyringPair } from '@subwallet/keyring/types';
 import type { FWKeyringMeta } from '@extension-base/types';
+import type { UniversalWalletFundsProbe } from './UniversalWalletPassword';
 import { WalletEcosystem } from '@/interfaces';
 import { decodeMnemonicFromJsonBackup } from '@/util/keyringJson';
-import { deriveBitcoinReceiveAddress } from '@/util/bitcoinKeyring';
-import { deriveSolanaAddress } from '@/util/solanaKeyring';
-import { deriveTonAccount } from '@/util/tonKeyring';
-import { deriveIrohaAddress } from '@/util/irohaKeyring';
+import { deriveUniversalWalletNetworkFields, universalWalletNetworkKeys } from '@/util/universalWalletKeyringFields';
 import { buildUniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMeta';
+import { universalWalletLegacyNetworks, type UniversalWalletPasswordNetwork } from '@/util/universalWalletPassphrase';
 
 type Network = {
+  id: UniversalWalletPasswordNetwork;
   keys: (keyof FWKeyringMeta)[];
   ecosystem: WalletEcosystem;
   chainId?: string;
-  derive: (mnemonic: string) => Partial<FWKeyringMeta>;
+};
+
+type EnrollmentOptions = {
+  /** The wallet password ('' when it has none), asked when a network is about to be added. */
+  passphrase?: () => string;
+  probe?: UniversalWalletFundsProbe;
 };
 
 const networks: Network[] = [
-  { keys: ['bitcoinAddress'], ecosystem: WalletEcosystem.Bitcoin, chainId: 'bitcoin:mainnet',
-    derive: (mnemonic) => ({ bitcoinAddress: deriveBitcoinReceiveAddress({ mnemonicOrSeed: mnemonic }) }) },
-  { keys: ['bitcoinTestnetAddress'], ecosystem: WalletEcosystem.Bitcoin, chainId: 'bitcoin:testnet',
-    derive: (mnemonic) => ({ bitcoinTestnetAddress: deriveBitcoinReceiveAddress({ mnemonicOrSeed: mnemonic, network: 'testnet' }) }) },
-  { keys: ['solanaAddress'], ecosystem: WalletEcosystem.Solana,
-    derive: (mnemonic) => ({ solanaAddress: deriveSolanaAddress({ mnemonic }) }) },
-  { keys: ['tonAddress', 'tonPublicKeyHex'], ecosystem: WalletEcosystem.Ton,
-    derive: (mnemonic) => {
-      const ton = deriveTonAccount({ mnemonic });
-      return { tonAddress: ton.addressNonBounceable, tonPublicKeyHex: ton.publicKeyHex };
-    } },
-  { keys: ['irohaAddress', 'irohaPublicKeyHex'], ecosystem: WalletEcosystem.Iroha,
-    derive: (mnemonic) => {
-      const iroha = deriveIrohaAddress({ mnemonic, network: 'taira' });
-      return { irohaAddress: iroha.address, irohaPublicKeyHex: iroha.publicKeyHex };
-    } },
+  { id: 'bitcoin', keys: universalWalletNetworkKeys('bitcoin'), ecosystem: WalletEcosystem.Bitcoin, chainId: 'bitcoin:mainnet' },
+  { id: 'bitcoinTestnet', keys: universalWalletNetworkKeys('bitcoinTestnet'), ecosystem: WalletEcosystem.Bitcoin,
+    chainId: 'bitcoin:testnet' },
+  { id: 'solana', keys: universalWalletNetworkKeys('solana'), ecosystem: WalletEcosystem.Solana },
+  { id: 'ton', keys: universalWalletNetworkKeys('ton'), ecosystem: WalletEcosystem.Ton },
+  { id: 'iroha', keys: universalWalletNetworkKeys('iroha'), ecosystem: WalletEcosystem.Iroha },
 ];
 
 function hasNetwork(meta: FWKeyringMeta, network: Network): boolean {
@@ -58,7 +53,8 @@ export async function enrollLegacyAccountNetworks(
   pair: KeyringPair,
   password: string,
   isCurrent: () => boolean,
-  yieldToWallet: () => Promise<void> = () => new Promise((resolve) => setTimeout(resolve, 0))
+  yieldToWallet: () => Promise<void> = () => new Promise((resolve) => setTimeout(resolve, 0)),
+  { passphrase: walletPassphrase = () => '', probe }: EnrollmentOptions = {}
 ): Promise<void> {
   if (!needsLegacyNetworkEnrollment(pair) || !isCurrent() || !isCurrentAccountPair(pair)) return;
   const store = new AccountsStore();
@@ -72,12 +68,26 @@ export async function enrollLegacyAccountNetworks(
     if (!isCurrent() || !isCurrentAccountPair(pair)) return;
     if (hasNetwork(pair.meta as FWKeyringMeta, network)) continue;
     try {
-      const additions = network.derive(mnemonic);
+      // A password wallet gains the protected account, unless the address its words alone open holds funds or
+      // cannot be checked: that one stays visible (and listed as legacy) until it is moved.
+      const passphrase = walletPassphrase();
+      const legacy = !!passphrase &&
+        (await probe?.(network.id, mnemonic, deriveUniversalWalletNetworkFields(network.id, mnemonic, '')) ?? 'unknown') !== 'empty';
+      if (!isCurrent() || !isCurrentAccountPair(pair)) return;
+      const additions = deriveUniversalWalletNetworkFields(network.id, mnemonic, legacy ? '' : passphrase);
       await updateAccountMetadata(pair, (current, json) => {
         // Password changes, deletion/reimport and another enrollment invalidate
         // this snapshot; a later unlock can retry from the authoritative record.
         if (json.encoded !== snapshot.encoded || hasNetwork(current, network)) return;
-        const meta = { ...current, ...additions };
+        const meta: FWKeyringMeta = { ...current, ...additions };
+        const legacyNetworks = universalWalletLegacyNetworks(current.universalWalletLegacyNetworks);
+        if (legacy) meta.universalWalletLegacyNetworks = [...legacyNetworks, network.id];
+        // An old address found empty is watched: funds can still reach it after the protected account shows.
+        else if (passphrase) {
+          meta.universalWalletWatchedNetworks = [
+            ...universalWalletLegacyNetworks(current.universalWalletWatchedNetworks), network.id,
+          ];
+        }
         const walletEcosystem = meta.walletEcosystem ??
           (pair.type === 'ethereum' ? WalletEcosystem.Evm : WalletEcosystem.Substrate);
         return { ...meta, walletEcosystem, universalWallet: buildUniversalWalletKeyringMeta({

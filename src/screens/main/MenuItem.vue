@@ -32,6 +32,7 @@ const menuItemClasses = computed(() => ['menu-item', { active: props.isActive, e
 <style lang="scss" scoped>
 .menu-item {
   appearance: none;
+  position: relative;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -118,6 +119,42 @@ const menuItemClasses = computed(() => ['menu-item', { active: props.isActive, e
 
   &.emphasized .menu-icon {
     color: $fw-on-accent;
+  }
+}
+
+// Brand kit v3: the active tab glows pink, with a small gold dot under its name.
+.active:not(.emphasized) {
+  color: palette($plain-white, var(--fw-brand-text));
+
+  .menu-icon {
+    color: palette($plain-white, var(--fw-brand-text));
+  }
+
+  .icon-shell {
+    background: radial-gradient(circle, $fw-tab-glow 0%, $fw-tab-glow-clear 72%);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: $fw-brand-gold;
+    translate: -50% 0;
+  }
+}
+
+html[data-fw-effects='reduced'] .active:not(.emphasized) .icon-shell,
+.fw-calm .active:not(.emphasized) .icon-shell {
+  background: none;
+}
+
+@media (forced-colors: active) {
+  .active:not(.emphasized)::after {
+    background: CanvasText;
   }
 }
 </style>

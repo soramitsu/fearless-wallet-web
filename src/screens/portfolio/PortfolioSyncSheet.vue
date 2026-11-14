@@ -7,6 +7,15 @@
 
     <p class="explain" data-testid="syncExplain">{{ explanation }}</p>
 
+    <section v-if="state.pendingNetworks.length" class="block" aria-labelledby="sync-pending">
+      <h3 id="sync-pending" class="block-title">
+        {{ t(state.kind === 'updating' ? 'portfolioDashboard.sync.pendingNetworks' : 'portfolioDashboard.sync.notResponding') }}
+      </h3>
+      <ul class="block-list" data-testid="syncPendingNetworks">
+        <li v-for="network in state.pendingNetworks" :key="network">{{ network }}</li>
+      </ul>
+    </section>
+
     <section v-if="state.staleNetworks.length" class="block" aria-labelledby="sync-networks">
       <h3 id="sync-networks" class="block-title">{{ t('portfolioDashboard.sync.networks') }}</h3>
       <ul class="block-list" data-testid="syncNetworks">

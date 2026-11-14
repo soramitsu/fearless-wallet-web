@@ -2,7 +2,7 @@ import type { RecoveryRecordSummary } from '@extension-base/stores/WalletRecover
 import type { NetworkMapEdit } from '@extension-base/services/network-service/preferences';
 import type { EvmRequests, SolanaRequests } from '@extension-base/services/request-service/types';
 import type { AccountLiquidity } from '@/sora/types';
-import type { RequestArguments } from '@walletconnect/jsonrpc-types';
+import type { RequestArguments } from '@extension-base/utils/jsonRpc';
 import type {
   RequestEvmEvents,
   EvmEvent,
@@ -75,7 +75,7 @@ import type {
   RequestBond,
 } from '@extension-base/services/staking-service/types';
 import type { SignerPayloadRaw, SignerPayloadJSON } from '@polkadot/types/types';
-import type { SessionTypes } from '@walletconnect/types';
+import type { WcSession } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type {
   BasicTxResponse,
   NotificationResponse,
@@ -136,6 +136,7 @@ import type {
   ResponseCheckScam,
   RequestExportSeed,
   ResponseExportSeed,
+  RequestRawSeedAvailable,
   RequestChangePassword,
   RequestUnlockExtension,
   RequestMigratePassword,
@@ -145,6 +146,14 @@ import type {
   ResponseRecoverAccountWithPassword,
   RequestRecoverAccountWithPhrase,
   ResponseRecoverAccountWithPhrase,
+  RequestUniversalWalletPasswordAccount,
+  RequestUniversalWalletPasswordDiscovery,
+  RequestUniversalWalletPasswordPath,
+  ResponseUniversalWalletPasswordPath,
+  ResponseUniversalWalletWatchedCheck,
+  UniversalWalletPasswordDiscoveryItem,
+  UniversalWalletPasswordStatus,
+  UniversalWalletPasswordSwitchResult,
   DeletedWalletSummary,
   RequestRestoreDeletedWallet,
   ResponseRestoreDeletedWallet,
@@ -203,7 +212,6 @@ export interface RequestSignatures {
   'pri(keyring.changePassword)': [RequestChangePassword, boolean];
   'pri(keyring.unlock)': [RequestUnlockExtension, boolean | 'ton-recovery-required' | 'ton-storage-unavailable'];
   'pri(keyring.lock)': [boolean, boolean];
-  'pri(keyring.getPassword)': [null, string];
   'pri(keyring.reset)': [null, boolean];
   'pri(keyring.getAccessStatus)': [null, AccountAccessStatus];
   'pri(keyring.getMigrationAccounts)': [null, LegacyPasswordAccountSummary[]];
@@ -221,12 +229,19 @@ export interface RequestSignatures {
   'pri(addresses.create)': [RequestAddressCreate, boolean];
   'pri(accounts.update.meta)': [RequestUpdateMeta, boolean];
   'pri(accounts.export.json)': [RequestAccountExport, ResponseAccountExport];
+  'pri(accounts.export.backup)': [string, ResponseAccountExport];
   'pri(migrate.export.json)': [string, ResponseAccountExport];
   'pri(keyring.export.mnemonic)': [RequestExportSeed, ResponseExportSeed];
   'pri(keyring.export.rowSeed)': [RequestExportSeed, ResponseExportSeed];
+  'pri(keyring.export.rawSeedAvailable)': [RequestRawSeedAvailable, boolean];
   'pri(keyring.generateMnemonic)': [RequestGenerateMnemonic, string];
   'pri(keyring.mnemonicValidate)': [RequestValidateMnemonic, boolean];
   'pri(keyring.tonImportCandidates)': [RequestTonImportCandidates, TonImportCandidateInfo[]];
+  'pri(keyring.universalWalletPasswordDiscovery)': [RequestUniversalWalletPasswordDiscovery, UniversalWalletPasswordDiscoveryItem[]];
+  'pri(accounts.universalWalletPassword.status)': [RequestUniversalWalletPasswordAccount, UniversalWalletPasswordStatus];
+  'pri(accounts.universalWalletPassword.addPath)': [RequestUniversalWalletPasswordPath, ResponseUniversalWalletPasswordPath];
+  'pri(accounts.universalWalletPassword.switch)': [RequestUniversalWalletPasswordAccount, UniversalWalletPasswordSwitchResult[]];
+  'pri(accounts.universalWalletPassword.checkWatched)': [RequestUniversalWalletPasswordAccount, ResponseUniversalWalletWatchedCheck];
   'pri(accounts.forget)': [RequestAccountForget, boolean];
   'pri(accounts.recovery.list)': [null, RecoveryRecordSummary[]];
   'pri(accounts.recovery.export)': [null, { json: string }];
@@ -327,6 +342,7 @@ export interface RequestSignatures {
 
   // Ether
   'pri(balance)': [null, BalanceJson];
+  'pri(balance.refresh)': [null, boolean];
   'pri(fetch.evm.balance)': [FetchBalancePayload, void];
   'pri(balance.subscription)': [null, BalanceJson, BalanceJson];
   'pri(fetch.balance)': [FetchBalanceRequest, ResponseBalanceRequest[]];
@@ -389,7 +405,7 @@ export interface RequestSignatures {
   'pri(walletConnect.session.approve)': [RequestApproveConnectWalletSession, NotificationResponse];
   'pri(walletConnect.session.reject)': [RequestRejectConnectWalletSession, boolean];
   'pri(walletConnect.session.reconnect)': [RequestReconnectConnectWalletSession, boolean];
-  'pri(walletConnect.session.subscribe)': [null, SessionTypes.Struct[], SessionTypes.Struct[]];
+  'pri(walletConnect.session.subscribe)': [null, WcSession[], WcSession[]];
   'pri(walletConnect.session.disconnect)': [RequestDisconnectWalletConnectSession, boolean];
   'pri(walletConnect.requests.notSupport.subscribe)': [
     null,

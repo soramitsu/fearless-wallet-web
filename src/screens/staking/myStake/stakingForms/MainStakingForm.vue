@@ -206,7 +206,9 @@ export default defineComponent({ name: 'MainStakingForm',
       isSuggested: false,
       showHistoryBook: false,
       showMyWallets: false,
-      isValidController: true,
+      isValidController: false,
+      controllerCheckId: 0,
+      formDisposed: false,
       showEditAddressBook: false,
       amount: '',
       stashBalance: '0',
@@ -318,21 +320,12 @@ export default defineComponent({ name: 'MainStakingForm',
           return BaseApi.validateAddress(this.payoutAddress, this.network);
     },
     confirmBtnDisabled() {
-      if (this.isControllerAccount) {
-            if (this.step === 2) return !this.isValidController || !this.isValidControllerAddress || !this.isValidAmountAsset;
-
-            return false;
-          }
-
-          if (this.isPayee) {
-            if (this.step === 1) return false;
-
-            return !this.isValidPayoutAddress;
-          }
-
-          if (this.amount === '' || +this.amount === 0) return true;
-
-          return !this.isValidAmountAsset;
+      if ((this.isControllerAccount || this.isPayee) && this.step === 1) return false;
+      if (this.fee === '' || this.fee === undefined || this.fee === null) return true;
+      if (this.isControllerAccount) return !this.isValidController || !this.isValidControllerAddress || !this.isValidAmountAsset;
+      if (this.isPayee) return !this.isValidPayoutAddress || !this.isValidAmountAsset;
+      if (!Number.isFinite(Number(this.amount)) || Number(this.amount) <= 0) return true;
+      return !this.isValidAmountAsset;
     },
     isValidAmountAsset() {
       // для isRebond подменяем на сумму unbond`ов
@@ -423,29 +416,44 @@ export default defineComponent({ name: 'MainStakingForm',
     },
   },
   watch: {
-    "controllerAddress": 'checkController',
+    controllerAddress: { handler: 'checkController', flush: 'sync' },
+  },
+  beforeUnmount() {
+    this.formDisposed = true;
+    this.controllerCheckId += 1;
   },
   async mounted() {
     if (this.isRebond) {
           const unlocking = this.stakingNetwork.unbond.unlocking;
-          const lastUnbond = unlocking[unlocking.length - 1].value;
+          const lastUnbond = unlocking[unlocking.length - 1]?.value ?? '';
 
           this.amount = lastUnbond;
         } else if (this.isRedeem) this.amount = this.stakingNetwork.redeemAmount;
 
         if (this.stakingNetwork.isController) {
-          const balances = await fetchBalance({
-            address: this.stakingNetwork.stashAddress,
-            networks: [this.stakingNetwork.network],
-            walletEcosystem: WalletEcosystem.Substrate,
-          });
-
-          this.stashBalance = balances[0].balance;
+          const address = this.stakingNetwork.stashAddress;
+          const network = this.stakingNetwork.network;
+          try {
+            const balances = await fetchBalance({ address, networks: [network], walletEcosystem: WalletEcosystem.Substrate });
+            if (!this.formDisposed && address === this.stakingNetwork.stashAddress && network === this.stakingNetwork.network) {
+              this.stashBalance = balances[0]?.balance ?? '0';
+            }
+          } catch {
+            // Leave fee funding unavailable when the balance cannot be fetched.
+          }
         }
   },
   methods: {
     async checkController(value: string) {
-      this.isValidController = await checkController({ address: value });
+      const requestId = ++this.controllerCheckId;
+      this.isValidController = false;
+      if (!this.isValidControllerAddress) return;
+      try {
+        const valid = await checkController({ address: value });
+        if (!this.formDisposed && requestId === this.controllerCheckId && value === this.controllerAddress) this.isValidController = valid;
+      } catch {
+        // A failed lookup must not authorize a controller change.
+      }
     },
     toggleEditBook(address: string = '') {
       this.showEditAddressBook = !this.showEditAddressBook;
@@ -464,6 +472,7 @@ export default defineComponent({ name: 'MainStakingForm',
       this.$emit('closeForm');
     },
     confirm() {
+      if (this.confirmBtnDisabled) return;
       if (this.isControllerAccount && this.step === 1) this.step += 1;
           else if (this.isPayee && this.step === 1) this.step += 1;
           else this.showConfirmationPasswordPopup = true;

@@ -161,6 +161,35 @@ describe('TI adapter (TONSWAP indexer routes)', () => {
     await expect(brokenActive.provider.getWalletState(ADDRESS)).rejects.toMatchObject({ code: 'ton_provider_request_failed' });
   });
 
+  it('reads the state of any account, such as a transfer recipient, without asking it for a seqno', async () => {
+    const state = (accountState: string | null): Route => ({
+      status: 200,
+      body: { address: tiResponses.address, account_state: accountState, network: 'mainnet' },
+    });
+
+    for (const [accountState, status] of [
+      ['active', 'active'],
+      ['frozen', 'frozen'],
+      ['uninitialized', 'uninitialized'],
+      [null, 'nonexist'],
+    ] as const) {
+      const { fetchFn, provider } = ti({ [`GET ${ACCOUNT}/state`]: state(accountState) });
+      await provider.verify();
+      await expect(provider.getAccountStatus(ADDRESS)).resolves.toBe(status);
+      expect(fetchFn).toHaveBeenCalledTimes(2);
+    }
+
+    const unknown = ti({ [`GET ${ACCOUNT}/state`]: state('deleted') });
+    await unknown.provider.verify();
+    await expect(unknown.provider.getAccountStatus(ADDRESS)).rejects.toMatchObject({ code: 'ton_provider_invalid_response' });
+
+    const otherNetwork = ti({
+      [`GET ${ACCOUNT}/state`]: { status: 200, body: { address: tiResponses.address, account_state: 'active', network: 'testnet' } },
+    });
+    await otherNetwork.provider.verify();
+    await expect(otherNetwork.provider.getAccountStatus(ADDRESS)).rejects.toMatchObject({ code: 'ton_provider_network_mismatch' });
+  });
+
   it('does not send through a read-only TI', async () => {
     const { fetchFn, provider } = ti({});
     await provider.verify();

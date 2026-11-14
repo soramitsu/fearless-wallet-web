@@ -161,8 +161,11 @@ export default defineComponent({ name: 'Nodes',
   },
   beforeUnmount() { this.viewActive = false; },
   methods: {
+    // In automatic mode the saved provider is whichever node was first when the wallet was installed, maybe a retired
+    // host, not the one in use. Turning it off pins the first node, which automatic selection starts with and the
+    // screen then shows as selected.
     async toggleAutoSelectNode(value: boolean) {
-      const provider = value ? this.defaultNodes[0]?.url : this.networkJson.currentProvider;
+      const provider = this.defaultNodes[0]?.url;
       if (provider) await this.saveSelection(!value, provider);
     },
     async saveSelection(isManual: boolean, currentProvider: string) {

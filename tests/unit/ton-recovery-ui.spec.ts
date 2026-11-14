@@ -2,11 +2,11 @@ import { flushPromises, shallowMount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-  exportMnemonic: vi.fn(), getPassword: vi.fn(), validatePassword: vi.fn(), unlock: vi.fn(), push: vi.fn(),
+  exportMnemonic: vi.fn(), validatePassword: vi.fn(), unlock: vi.fn(), push: vi.fn(),
   accounts: { selectedWallet: { address: 'public-ton-fixture', walletEcosystem: 'ton', isTon: true, isMobile: false, ethereumAddress: '' } },
 }));
 vi.mock('@/extension/messaging', () => ({
-  exportMnemonic: mocks.exportMnemonic, getExtensionPassword: mocks.getPassword,
+  exportMnemonic: mocks.exportMnemonic,
   validatePassword: mocks.validatePassword, unlockExtension: mocks.unlock, windowOpen: vi.fn(),
 }));
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => mocks.accounts }));
@@ -27,31 +27,31 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.accounts.selectedWallet.address = 'public-ton-fixture';
   mocks.exportMnemonic.mockResolvedValue({ seed: 'public test phrase' });
-  mocks.getPassword.mockResolvedValue('public-current-password');
 });
 
 describe('published TON earlier-password recovery UI', () => {
-  it('uses the earlier password to repair the account before advancing export with the current password', async () => {
+  it('advances export with the password the background accepted, without reading a password back', async () => {
     const wrapper = shallowMount(Export, { global });
-    wrapper.findComponent({ name: 'ValidatedInput' }).vm.$emit('change', 'public-earlier-password');
+    wrapper.findComponent({ name: 'ValidatedInput' }).vm.$emit('change', 'public-typed-password');
     await wrapper.get('button').trigger('click');
     await flushPromises();
-    expect(mocks.exportMnemonic).toHaveBeenCalledWith('public-ton-fixture', 'public-earlier-password', 'ton');
+    expect(mocks.exportMnemonic).toHaveBeenCalledWith('public-ton-fixture', 'public-typed-password', 'ton');
     expect(mocks.validatePassword).not.toHaveBeenCalled();
-    expect(wrapper.emitted('setPassword')).toEqual([['public-current-password']]);
+    expect(wrapper.emitted('setPassword')).toEqual([['public-typed-password']]);
     wrapper.unmount();
   });
 
   it('keeps the account available for retry when password recovery fails', async () => {
     mocks.exportMnemonic.mockRejectedValueOnce(new Error('Wrong earlier password'));
     const wrapper = shallowMount(Export, { global });
+    wrapper.findComponent({ name: 'ValidatedInput' }).vm.$emit('change', 'public-typed-password');
     await wrapper.get('button').trigger('click');
     await flushPromises();
     expect(wrapper.emitted('setPassword')).toBeUndefined();
     expect(wrapper.findComponent({ name: 'ValidatedInput' }).attributes('iserror')).toBe('true');
     await wrapper.get('button').trigger('click');
     await flushPromises();
-    expect(wrapper.emitted('setPassword')).toEqual([['public-current-password']]);
+    expect(wrapper.emitted('setPassword')).toEqual([['public-typed-password']]);
     wrapper.unmount();
   });
 

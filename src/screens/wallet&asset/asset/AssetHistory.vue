@@ -1,5 +1,4 @@
 <template>
-  <Fragment>
     <AssetActionButtons
       :showBuyButton="showBuyButton"
       :currency="currency"
@@ -27,7 +26,6 @@
         />
       </div>
     </Blur>
-  </Fragment>
 </template>
 
 <script lang="ts">

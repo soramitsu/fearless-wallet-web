@@ -5,25 +5,26 @@
     :step="step"
     :completionConfirmed="isFinished"
     :isLoading="isLoading"
+    :backDisabled="isSaving"
     :header="header"
     :showFullScreenIcon="false"
     @back="back"
   >
     <p v-if="generationExpired" data-testid="generationExpired" :lang="$i18n.locale" role="alert" class="backup-error">{{ generationExpiredMessage }}</p>
     <p v-else-if="creationError" role="alert" class="backup-error">{{ $t('addWallet.google.somethingWrong') }}</p>
-    <p v-if="confirmMnemonicStep" class="backup-consent">{{ $t('addWallet.google.dataWillStoreOnGDrive') }}</p>
     <p v-if="isFinished" role="status">{{ $t('addWallet.google.saved') }}</p>
     <NickNameForm v-if="nickNameStep" :nickname="nickname" @update:nickname="setNickname" />
 
-    <CreateWallet
-      v-if="createWalletStep"
-      :step="step"
-      :mnemonic="mnemonic"
-      :mnemonicLength="mnemonicLength"
-      :selectedMnemonicElements="selectedMnemonicElements"
-      @update:selectedMnemonicElements="updateSelectedMnemonicElements"
-      @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
-    />
+    <div v-if="createWalletStep" class="phrase-step">
+      <CreateWallet
+        :step="step"
+        :mnemonic="mnemonic"
+        :mnemonicLength="mnemonicLength"
+        @update:mnemonicConfirmed="mnemonicConfirmed = $event"
+        @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
+      />
+      <p v-if="confirmMnemonicStep" class="backup-consent">{{ $t('addWallet.google.dataWillStoreOnGDrive') }}</p>
+    </div>
 
     <AdvancedForm
       v-if="showAdvancedForm"
@@ -34,17 +35,6 @@
 
     <template v-slot:control>
       <div class="controls">
-        <FButton
-          v-if="confirmMnemonicStep"
-          size="big"
-          fontSize="big"
-          width="64px"
-          type="secondary"
-          :border="false"
-          iconName="reload"
-          @click="resetAll"
-        />
-
         <FButton
           v-if="confirmMnemonicStep"
           size="big"
@@ -70,14 +60,6 @@
         />
       </div>
     </template>
-
-    <NotificationPopup
-      v-if="showNotificationPopup"
-      :headers="invalidMessages"
-      acceptButtonText="common.accept"
-      @handlerClose="handlerCloseNotificationPopup"
-      @handlerAccept="handlerAcceptAddWallet"
-    />
   </FlowStepLayout>
 </template>
 
@@ -89,7 +71,7 @@ import type { FWKeyringMeta } from '@extension-base/types';
 import { Components } from '@/router/routes';
 import { isWalletGenerationExpired } from '@/util/walletSecurity';
 import { walletGenerationExpiredMessage } from '@/locales/walletSecurity';
-import { type DerivationPaths, WalletEcosystem, type MnemonicConfirmation } from '@/interfaces';
+import { type DerivationPaths, WalletEcosystem } from '@/interfaces';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 import NickNameForm from '@/screens/addWallet/NicknameForm.vue';
@@ -99,13 +81,12 @@ import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH, INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import { UNIVERSAL_WALLET_DEFAULT_WORD_COUNT } from '@/consts/universalWallet';
 import { deriveUniversalWalletKeyringFields } from '@/util/universalWalletKeyringFields';
-import BaseApi from '@/util/BaseApi';
+import { resolveUniversalWalletPassphrase } from '@/util/universalWalletPassphrase';
 import {
   addAccount,
   createGoogleFile,
-  exportJSON,
+  exportBackupJSON,
   updateCurrentAccount,
-  getExtensionPassword,
   generateMnemonic,
 } from '@/extension/messaging';
 
@@ -127,14 +108,12 @@ export default defineComponent({ name: 'CreateGoogle',
         3: 'addWallet.ConfirmSecretData',
         4: 'common.finish',
       },
-      selectedMnemonicElements: [],
+      mnemonicConfirmed: false,
       step: 1,
       nickname: '',
       mnemonic: '',
       showAdvancedForm: false,
       derivationPaths: structuredClone(INITIAL_DERIVATION_PATHS),
-      showNotificationPopup: false,
-      warningValueName: '',
       isLoading: false,
       isActive: true,
       revision: 0,
@@ -149,16 +128,6 @@ export default defineComponent({ name: 'CreateGoogle',
   computed: {
     generationExpiredMessage() {
       return walletGenerationExpiredMessage(this.$i18n.locale);
-    },
-    invalidMessages() {
-      if (!this.warningValueName) return {};
-
-          const mainPath = `addWallet.warningMessages.${this.warningValueName}`;
-
-          return {
-            text: `${mainPath}.text`,
-            subtext: `${mainPath}.subtext`,
-          };
     },
     nickNameStep() {
       return this.step === 1;
@@ -188,12 +157,16 @@ export default defineComponent({ name: 'CreateGoogle',
       if (this.creationError && !this.mnemonic) return false;
       if (this.nickNameStep) return !this.nickname.trim() || !this.mnemonic;
 
-          if (this.step === 3) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
+          if (this.step === 3) return !this.mnemonicConfirmed;
 
           return false;
     },
     confirmMnemonicStep() {
       return this.step === 3;
+    },
+    // Leaving now would not stop the wallet from being created, only its Drive backup.
+    isSaving() {
+      return this.step === 4 && this.isLoading;
     },
     mnemonicLength() {
       return UNIVERSAL_WALLET_DEFAULT_WORD_COUNT;
@@ -232,7 +205,7 @@ export default defineComponent({ name: 'CreateGoogle',
       this.isActive = false;
       this.revision++;
       this.mnemonic = '';
-      this.selectedMnemonicElements = [];
+      this.mnemonicConfirmed = false;
       this.backup = null;
     },
     async prepareMnemonic() {
@@ -250,6 +223,7 @@ export default defineComponent({ name: 'CreateGoogle',
       finally { if (this.isActive && this.revision === revision) this.isLoading = false; }
     },
     async watchStep() {
+      if (this.step !== 3) this.mnemonicConfirmed = false;
       if (!this.isActive || this.step !== 4 || this.isLoading || this.isFinished) return;
       const revision = ++this.revision;
       const token = this.$route.params.access_token;
@@ -268,7 +242,6 @@ export default defineComponent({ name: 'CreateGoogle',
           if (isWalletGenerationExpired(error)) {
             this.generationExpired = true;
             this.mnemonic = '';
-            this.selectedMnemonicElements = [];
             this.createdAddress = '';
             this.createdEthereumAddress = '';
             this.backup = null;
@@ -283,22 +256,8 @@ export default defineComponent({ name: 'CreateGoogle',
       if (!this.isActive || this.isLoading || this.step === 4) return;
       this.derivationPaths = derivationPaths;
     },
-    resetAll() {
-      this.selectedMnemonicElements = [];
-    },
     skipStep() {
       if (!this.isActive || this.isLoading || this.step !== 3) return;
-      this.step = 4;
-    },
-    async handlerCloseNotificationPopup() {
-      this.warningValueName = '';
-          this.selectedMnemonicElements = [];
-          this.showNotificationPopup = false;
-    },
-    async handlerAcceptAddWallet() {
-      if (!this.isActive || this.isLoading || this.step !== 3) return;
-      this.warningValueName = '';
-      this.showNotificationPopup = false;
       this.step = 4;
     },
     goBack() {
@@ -306,11 +265,12 @@ export default defineComponent({ name: 'CreateGoogle',
       this.$router.replace({ name: Components.Wallet, params: { access_token: '' } }).catch((e) => e);
     },
     back() {
+      if (this.isSaving) return;
       if (this.step === 1 || this.step === 4) this.goBack();
       else if (!this.isLoading) this.step -= 1;
     },
     async proceed() {
-      if (!this.isActive || this.isLoading) return;
+      if (!this.isActive || this.isLoading || (this.confirmMnemonicStep && !this.mnemonicConfirmed)) return;
       if (!this.mnemonic) {
         await this.prepareMnemonic();
         if (!this.isActive || !this.mnemonic) return;
@@ -321,28 +281,11 @@ export default defineComponent({ name: 'CreateGoogle',
         return;
       }
 
-          if (this.step === 3) {
-            const isValidSequenceMnemonic = BaseApi.isValidSequenceMnemonic(
-              this.mnemonic,
-              this.selectedMnemonicElements.map(({ word }) => word.trim())
-            );
-
-            if (!isValidSequenceMnemonic) {
-              this.warningValueName = 'mnemonicSequence';
-              this.showNotificationPopup = true;
-
-              return;
-            }
-          }
-
-          this.step += 1;
+      this.step += 1;
     },
     setNickname(name: string) {
       if (!this.isActive || this.isLoading || this.step === 4) return;
       this.nickname = name;
-    },
-    updateSelectedMnemonicElements(value: MnemonicConfirmation[]) {
-      this.selectedMnemonicElements = value;
     },
     setValue(value: string) {
       this.nickname = value;
@@ -353,15 +296,13 @@ export default defineComponent({ name: 'CreateGoogle',
     async backupWallet(address: string, ownsRequest = () => this.isActive) {
       const token = this.$route.params.access_token;
       if (!this.backup) {
-        const password = await getExtensionPassword();
-        if (!ownsRequest()) return;
-        if (!password) throw new Error('Wallet is locked');
-        const { json } = await exportJSON(address, password);
+        // Encrypted under the master password in the background; the password never reaches this page.
+        const { json } = await exportBackupJSON(address);
         if (!ownsRequest()) return;
         const ethAddress = json.meta.ethereumAddress as string | undefined;
         let child: KeyringPair$Json | undefined;
         if (ethAddress && ethAddress.toLowerCase() !== address.toLowerCase()) {
-          child = (await exportJSON(ethAddress, password)).json;
+          child = (await exportBackupJSON(ethAddress)).json;
           if (!ownsRequest()) return;
         }
         this.backup = { primary: json, primaryAddress: address, child, childAddress: ethAddress };
@@ -396,7 +337,14 @@ export default defineComponent({ name: 'CreateGoogle',
           };
 
           if (this.mnemonic) {
-            Object.assign(meta, deriveUniversalWalletKeyringFields(this.mnemonic));
+            // Fresh words: no earlier address exists, so a password protects every Universal Wallet account.
+            Object.assign(
+              meta,
+              deriveUniversalWalletKeyringFields(
+                this.mnemonic,
+                resolveUniversalWalletPassphrase(this.suriSubstrate, this.suriEthereum)
+              )
+            );
           }
 
           const {
@@ -462,5 +410,7 @@ export default defineComponent({ name: 'CreateGoogle',
 </style>
 
 <style lang="scss" scoped>
+.phrase-step { width: 100%; }
+.backup-consent { margin: 16px 0 0; }
 .backup-error { color: var(--fw-danger); overflow-wrap: anywhere; }
 </style>

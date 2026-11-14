@@ -1,7 +1,7 @@
-import { formatJsonRpcError, formatJsonRpcResult } from '@walletconnect/jsonrpc-utils';
-import { getSdkError } from '@walletconnect/utils';
+import { formatJsonRpcError, formatJsonRpcResult } from '@extension-base/utils/jsonRpc';
+import { getSdkError } from '@extension-base/services/wallet-connect-service/protocol/errors';
 import { captureWalletConnectSigningContext } from '../signingContext';
-import type { SignClientTypes } from '@walletconnect/types';
+import type { WcSessionRequestEvent } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type { WalletConnectService } from '@extension-base/services/wallet-connect-service';
 import type State from '@extension-base/background/handlers/State';
 
@@ -26,7 +26,7 @@ export class Eip155RequestHandler {
       .catch(console.error);
   }
 
-  public handleRequest(requestEvent: SignClientTypes.EventArguments['session_request']) {
+  public handleRequest(requestEvent: WcSessionRequestEvent) {
     const snapshot = structuredClone(requestEvent);
     const context = captureWalletConnectSigningContext(this.state, snapshot);
     const { topic, id } = snapshot;
@@ -47,7 +47,7 @@ export class Eip155RequestHandler {
     const network = this.state.networkService.networkMap[context.network.name];
     if (snapshot.params.request.method === 'eth_sendTransaction' && !network.active) {
       this.state
-        .setActiveNetworks(context.network.name)
+        .activateDappNetwork(context.network.name)
         .then(createRequest)
         .catch((error) => this.handleError(topic, id, error));
     } else {

@@ -30,7 +30,7 @@
       </div>
     </div>
 
-    <div class="content-wrapper">
+    <div class="content-wrapper" :class="{ 'phrase-step': showCreateForm }">
       <div class="content">
         <div class="content-header" data-testid="header">{{ header }}</div>
 
@@ -47,9 +47,8 @@
           :mnemonic="mnemonic"
           :mnemonicLength="mnemonicLength"
           :isSubstrate="isSubstrate"
-          :selectedMnemonicElements="selectedMnemonicElements"
           @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
-          @update:selectedMnemonicElements="updateSelectedMnemonicElements"
+          @update:mnemonicConfirmed="mnemonicConfirmed = $event"
         />
 
         <ImportWallet
@@ -87,18 +86,6 @@
       </div>
 
       <div class="controls">
-        <FButton
-          v-if="confirmMnemonicStep"
-          size="big"
-          fontSize="big"
-          width="64px"
-          type="secondary"
-          :border="false"
-          :iconName="'reload'"
-          data-testid="resetAllBtn"
-          @click="resetAll"
-        />
-
         <FButton
           v-if="confirmMnemonicStep"
           size="big"
@@ -148,7 +135,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import type { DerivationPaths, ValidateJsonResult, MnemonicConfirmation } from '@/interfaces';
+import type { DerivationPaths, ValidateJsonResult } from '@/interfaces';
 import type { TonImportCandidateInfo } from '@extension-base/background/types/types';
 import type { KeyringPair$Json } from '@subwallet/keyring/types';
 import { isWalletGenerationExpired } from '@/util/walletSecurity';
@@ -168,6 +155,11 @@ import { Components } from '@/router/routes';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import { UNIVERSAL_WALLET_DEFAULT_WORD_COUNT } from '@/consts/universalWallet';
 import { deriveUniversalWalletKeyringFields } from '@/util/universalWalletKeyringFields';
+import {
+  resolveUniversalWalletPassphrase,
+  UNIVERSAL_WALLET_PASSWORD_NETWORKS,
+  type UniversalWalletPasswordNetwork,
+} from '@/util/universalWalletPassphrase';
 import { normalizeTonImportPhrase, type TonImportChoice, type TonImportDerivation } from '@/util/tonKeyring';
 import {
   forgetAccount,
@@ -180,6 +172,7 @@ import {
   generateMnemonic,
   mnemonicValidate,
   tonImportCandidates,
+  universalWalletPasswordDiscovery,
 } from '@/extension/messaging';
 import { IS_POPUP, IS_SIDE_PANEL } from '@/consts/globalClient';
 import { useAccountsStore } from '@/stores/accounts';
@@ -213,7 +206,7 @@ export default defineComponent({ name: 'AddWallet',
       substrateRawSeed: '',
       showAdvancedForm: false,
       showAddEthereumAccountPopup: false,
-      selectedMnemonicElements: [],
+      mnemonicConfirmed: false,
       warningValueName: '',
       typeImport: 'mnemonic',
       derivationPaths: INITIAL_DERIVATION_PATHS,
@@ -237,7 +230,7 @@ export default defineComponent({ name: 'AddWallet',
       return this.step === 3 && this.isCreateWallet;
     },
     isOnlyEthereumAccount() {
-      return this.$route.params.onlyEthereumAccount !== undefined;
+      return this.$route.query?.onlyEthereumAccount !== undefined;
     },
     walletType() {
       return this.$route.params.type;
@@ -358,8 +351,13 @@ export default defineComponent({ name: 'AddWallet',
             if (this.step === 1) {
               if (this.showTonAddressChoice) return !this.tonImportChoice;
 
+              // A phrase, a raw seed, or a JSON file with its password.
               if (this.isOnlyEthereumAccount)
-                return !this.ethereumRawSeed && this.isLengthZero(this.ethereumJson) && !this.passwordEthereumJson;
+                return (
+                  !this.mnemonic &&
+                  !this.ethereumRawSeed &&
+                  (this.isLengthZero(this.ethereumJson) || !this.passwordEthereumJson)
+                );
 
               if (
                 !this.mnemonic &&
@@ -387,7 +385,7 @@ export default defineComponent({ name: 'AddWallet',
           // isCreateWallet
           if (this.step === 1) return !this.nickname;
 
-          if (this.step === 3) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
+          if (this.step === 3) return !this.mnemonicConfirmed;
 
           return false;
     },
@@ -444,8 +442,8 @@ export default defineComponent({ name: 'AddWallet',
     async changedCurrentStep(step: number) {
       if (step === 0) this.$router.push({ name: Components.Welcome });
 
-          if (step === 2) this.selectedMnemonicElements = [];
-          else if (step === 5) this.$router.push({ name: Components.Wallet });
+          if (step !== 3) this.mnemonicConfirmed = false;
+          if (step === 5) this.$router.push({ name: Components.Wallet });
           else if (step === 4) await this.completeSave();
     },
     isLengthZero(value: string | KeyringPair$Json) {
@@ -528,7 +526,6 @@ export default defineComponent({ name: 'AddWallet',
           if (this.warningValueName === 'duplicateMobileWallet') this.reset();
 
           this.warningValueName = '';
-          this.selectedMnemonicElements = [];
     },
     async handlerAcceptAddWallet() {
       if (this.address) await forgetAccount(this.address, 'mobile');
@@ -539,11 +536,12 @@ export default defineComponent({ name: 'AddWallet',
     },
     closeAddEthereumAccountPopup() {
       this.showAddEthereumAccountPopup = false;
+      // An Ethereum seed or JSON entered before going Back must not be imported after "Don't need".
+      this.ethereumRawSeed = '';
+      this.ethereumJson = '';
+      this.passwordEthereumJson = '';
 
           this.step += 2;
-    },
-    resetAll() {
-      this.selectedMnemonicElements = [];
     },
     skipStep() {
       this.step += 1;
@@ -564,7 +562,6 @@ export default defineComponent({ name: 'AddWallet',
         if (isWalletGenerationExpired(error)) {
           this.generationExpired = true;
           this.mnemonic = '';
-          this.selectedMnemonicElements = [];
           this.step = 1;
         } else this.flowError = true;
       } finally {
@@ -572,7 +569,7 @@ export default defineComponent({ name: 'AddWallet',
       }
     },
     async proceed() {
-      if (this.isLoading) return;
+      if (this.isLoading || (this.confirmMnemonicStep && !this.mnemonicConfirmed)) return;
       if (this.step === 4 && !this.savedSuccessfully) return this.completeSave();
       this.isLoading = true;
       this.flowError = false;
@@ -593,7 +590,6 @@ export default defineComponent({ name: 'AddWallet',
             this.mnemonic = await generateMnemonic(WalletEcosystem.Substrate, this.mnemonicLength);
             this.generationExpired = false;
           } else if (this.step === 2) await this.validateSuri();
-          else if (this.step === 3) this.validateSequenceMnemonic();
     },
     async importFlow() {
       if (this.step === 1) {
@@ -659,16 +655,6 @@ export default defineComponent({ name: 'AddWallet',
 
           return true;
     },
-    validateSequenceMnemonic() {
-      const isValidSequenceMnemonic = this.isCreateWallet
-            ? BaseApi.isValidSequenceMnemonic(
-                this.mnemonic,
-                this.selectedMnemonicElements.map(({ word }) => word.trim())
-              )
-            : true;
-
-          if (!isValidSequenceMnemonic) this.warningValueName = 'mnemonicSequence';
-    },
     async validateSuri() {
       const {
             ethereum: { value: ethereumDerivationPath },
@@ -708,6 +694,10 @@ export default defineComponent({ name: 'AddWallet',
             this.validateMobileDubs();
     },
     saveKeypair() {
+      // The Ethereum-only flow links an account to a wallet that has none; it never replaces one.
+      if (this.isOnlyEthereumAccount && this.accountsStore.selectedWallet.ethereumAddress)
+        return Promise.reject(new Error('The wallet already has an Ethereum account'));
+
       if (this.substrateJson || this.ethereumJson) return this.saveKeypairFromJson();
 
           return this.saveKeypairFromSeed();
@@ -722,7 +712,17 @@ export default defineComponent({ name: 'AddWallet',
           if (this.isTonImport) return this.saveTonImport(meta);
 
           if (this.mnemonic) {
-            Object.assign(meta, deriveUniversalWalletKeyringFields(this.mnemonic));
+            const passphrase = resolveUniversalWalletPassphrase(this.suriSubstrate, this.suriEthereum);
+            // Imported words may already hold funds at the addresses they open without the password: those stay.
+            const legacyNetworks = passphrase && !this.isCreateWallet ? await this.universalWalletLegacyNetworks() : [];
+
+            Object.assign(meta, deriveUniversalWalletKeyringFields(this.mnemonic, passphrase, legacyNetworks));
+            if (legacyNetworks.length) meta.universalWalletLegacyNetworks = legacyNetworks;
+            // Old addresses found empty stay watched: funds can still reach them after the protected ones show.
+            const watched = passphrase && !this.isCreateWallet
+              ? UNIVERSAL_WALLET_PASSWORD_NETWORKS.filter((network) => !legacyNetworks.includes(network))
+              : [];
+            if (watched.length) meta.universalWalletWatchedNetworks = watched;
           }
 
           const {
@@ -736,7 +736,8 @@ export default defineComponent({ name: 'AddWallet',
             const ethereumAddress = await addAccount(this.suriEthereum, ethereumKeypairType, meta, WalletEcosystem.Substrate, this.isCreateWallet);
 
             if (this.isOnlyEthereumAccount) {
-              updatePairMeta(this.accountsStore.selectedWallet.address, { ethereumAddress });
+              // Until it is linked, the new account shows up as a wallet of its own.
+              await updatePairMeta(this.accountsStore.selectedWallet.address, { ethereumAddress });
 
               return '';
             }
@@ -747,6 +748,19 @@ export default defineComponent({ name: 'AddWallet',
           const address = await addAccount(this.suriSubstrate, substrateKeypairType, meta, this.walletEcosystem, this.isCreateWallet);
 
           return address;
+    },
+    // A no-password address that holds funds, or that could not be checked, keeps its network; as with the
+    // TON chooser, nothing is guessed when the network cannot answer.
+    async universalWalletLegacyNetworks(): Promise<UniversalWalletPasswordNetwork[]> {
+      try {
+        const found = await universalWalletPasswordDiscovery(this.mnemonic);
+
+        return UNIVERSAL_WALLET_PASSWORD_NETWORKS.filter(
+          (network) => found.find((item) => item.network === network)?.funds !== 'empty'
+        );
+      } catch {
+        return [...UNIVERSAL_WALLET_PASSWORD_NETWORKS];
+      }
     },
     // Saves the address picked on the import screen; the background refuses any other.
     async saveTonImport(meta: FWKeyringMeta) {
@@ -768,7 +782,7 @@ export default defineComponent({ name: 'AddWallet',
             const ethereumAddress = await jsonRestore(this.ethereumJSON, this.passwordEthereumJson);
 
             if (this.isOnlyEthereumAccount) {
-              updatePairMeta(this.accountsStore.selectedWallet.address, {
+              await updatePairMeta(this.accountsStore.selectedWallet.address, {
                 ethereumAddress,
                 walletEcosystem: WalletEcosystem.Substrate,
               });
@@ -783,9 +797,6 @@ export default defineComponent({ name: 'AddWallet',
 
           return address;
     },
-    updateSelectedMnemonicElements(value: MnemonicConfirmation[]) {
-      this.selectedMnemonicElements = value;
-    },
     openFullScreen() {
       windowOpen('/');
           // The side panel stays beside the new tab.
@@ -793,6 +804,11 @@ export default defineComponent({ name: 'AddWallet',
     },
     backIsImportWallet() {
       if (this.step === 3 && this.ethereumRawSeed === '' && this.ethereumJson === '') this.step -= 1;
+    },
+    // The Ethereum-only flow has no nickname step, and its import has no Ethereum step either.
+    backIsOnlyEthereumAccount() {
+      if (this.isCreateWallet && this.step === 2) this.step -= 1;
+      else if (this.isImportWallet && this.step === 4) this.step -= 2;
     },
     back() {
       if (this.isLoading) return;
@@ -803,7 +819,7 @@ export default defineComponent({ name: 'AddWallet',
 
         return;
       }
-      if (this.isOnlyEthereumAccount) this.step -= 1;
+      if (this.isOnlyEthereumAccount) this.backIsOnlyEthereumAccount();
           else if (this.isImportWallet) this.backIsImportWallet();
           else if (this.step === 2) {
             this.ethereumRawSeed = '';
@@ -867,6 +883,21 @@ export default defineComponent({ name: 'AddWallet',
 
       .selected-network {
         margin-bottom: 16px;
+      }
+    }
+
+    &.phrase-step {
+      flex: 1;
+      min-height: 0;
+      gap: 16px;
+
+      .content {
+        min-height: 0;
+        overflow-y: auto;
+      }
+
+      .controls {
+        flex-shrink: 0;
       }
     }
 

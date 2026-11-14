@@ -72,11 +72,13 @@ const recoveryRoutes = new Set([
   // on the requested signer, independently of the portfolio's selected recovery-only wallet.
   'Authorize', 'Transaction',
   'Wallet', 'Currencies', 'Nfts', 'Asset', 'AssetHistory', 'AssetNetworks',
+  // Shows and hides assets only; a recovery-only wallet uses it to find hidden funds to move.
+  'ManageAssets',
   'NftCollection', 'NftDetails', 'NftSendForm', 'SendForm',
   'Defi', 'Staking', 'MyStake', 'Pools', 'PoolDetails', 'Farming', 'Polkamarkt',
   'AccountsLayout', 'ChainAccounts', 'AccountSetting', 'Export',
   'Settings', 'SettingsNetworksAssets', 'SettingsChangePassword', 'Nodes',
-  'ManageAuths', 'DAppDetails', 'DAppsAuths', 'WcAuths', 'WalletConnectSessionDetails',
+  'ManageAuths', 'DAppDetails', 'DAppsAuths', 'WcAuths', 'WalletConnectAuthDetails',
   'AddWallet', 'AddFromGoogle', 'CreateGoogle', 'MobileWalletAuth',
   'ChangePassword', 'Unlock', 'Welcome', 'Onboarding', 'ResetWallet',
   'MigrationDescription', 'MigrationAccounts', 'UniversalWalletMigration',

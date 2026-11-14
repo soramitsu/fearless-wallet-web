@@ -36,7 +36,10 @@ export interface BalanceItem {
   chainHash?: string;
   address?: string;
   assetMetadataTrust?: 'verified' | 'unverified' | 'missing';
-  assetMetadataSource?: 'registry' | 'chain' | 'indexer';
+  /** `tokenList`: an ERC-20 token found outside the registry through the wallet's token lists (EvmBalanceService). */
+  assetMetadataSource?: 'registry' | 'chain' | 'indexer' | 'tokenList';
+  /** The token's name, kept so a balance restored from the cache shows it rather than its symbol. */
+  tokenName?: string;
   priceId?: string;
   /** Explicit proof that priceId was resolved for this canonical AssetKey. */
   priceAssetKey?: string;

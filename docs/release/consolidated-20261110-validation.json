@@ -1,0 +1,59 @@
+{
+  "date": "2026-11-10",
+  "task": "Fold every open web PR into one branch for master (owner request: merge all code into master branches; owner chose one PR per repo so one code-owner approval covers it)",
+  "claudeSession": "6fd17e54-549d-4911-9043-346c25eb095c",
+  "baseCommit": "c654a637024ee710bb99d8eebed5201528990458",
+  "applicationSourceCommit": "9e63a77d63d2144862fda733197d997382f36a6e",
+  "reviewedHead": "9e63a77d63d2144862fda733197d997382f36a6e",
+  "branch": "claude/consolidated-20261110",
+  "folded": {
+    "#1115": "0cefbaa65a75a084a255f7f5f0c0f40091bcf433 (carries #1103, #1105, #1106, #1107, #1108, #1109, #1110, #1112, #1114 and #1116)",
+    "#1099": "00a9a7fd6932e9e34fd11d04c4e22bb806e8c9fe",
+    "#1104": "ce76e9b686001ad2a7fe66ae3ce5b74b5da94d36"
+  },
+  "closedWithNote": {
+    "#1100": "every commit already in the 4.2.x release line (59e81358, 1b881ae3; hosts moved by 92552e71); merging it changes no file",
+    "#1102": "the same change is in the release line as 4f5caa1a",
+    "#1111": "the release line already resolves vue-i18n to 11.4.16",
+    "#1101": "replaced: the Yatagarasu crest removed the winged sun's wings; the cursor parallax is not carried over"
+  },
+  "changes": [
+    "Merge #1115 (4.2.4-4.2.7, the one-list wallet, imported Ethereum wallet access and the Yatagarasu brand) and #1099 (EVM authorization responses, cached swap quotes) without conflicts",
+    "Merge #1104 (universal accounts protected by the wallet password), keeping both sides of three conflicts: the worker-sleep suspend beside the funds probe in State, the Solana message refusal with the password passphrase, and the export screen's derived-wallet note, selected-wallet guard and clipboard clearing beside the password note",
+    "Stub the new password notice in the Main keep-alive spec and give the Solana cancel specs a keyring pair",
+    "Re-pin both Firefox warning baselines without weakening policy (docs/release/consolidated-20261110-firefox-warning-review.json)"
+  ],
+  "checks": {
+    "typecheck": "pass",
+    "eslint": "pass; 0 errors, 37 existing warnings",
+    "rawColourAudit": "pass",
+    "brandAssets": "7 tests pass",
+    "fullUnitCoverage": "558 files pass, 2 skipped; 6274 tests pass, 19 skipped, 0 failed (includes the 688-result contrast contract); 2 workers, 120 s timeouts",
+    "coverageGate": "pass; all 785 production source files represented; 27918 of 33589 authored executable lines covered (83.12%)",
+    "repositoryAudits": "pass: key exfiltration (and its self-test), package manager, GitHub Actions, vendored Iroha SDK, SORA removal, bundle-host and Chrome release audit self-tests",
+    "chromeProductionBuild": "pass (NODE_ENV=production, Node 24.19.0)",
+    "chromeReleaseAudit": "pass",
+    "chromeBundleAudit": "pass",
+    "firefoxProductionBuilds": "pass: keyless (CI recipe) and store (release provider configuration through env-cmd, not printed)",
+    "firefoxExactWarningAudit": "pass: keyless --ci and store, 36 warnings each, after the reviewed re-pin",
+    "firefoxPolicy": "build-warning and webext-warning policy self-tests pass",
+    "firefoxBundleAudit": "pass",
+    "popupSmoke": "pass (Chrome for Testing, test build)",
+    "dashboardSmoke": "pass; 27 captures and 53 checks",
+    "historicalUpgradeE2E": "pass; 12 scenarios (S1-S8, S7b, R1, ECDSA-2.6.3, ECDSA-3.0.6), 572 checks; released builds 1.3.1 to 3.0.6 write profiles that this tree's production build replaces in place; report sha256 fae4740cff813d5d344ed56a7ad771f6e447cc09e75efd70b1c3d17e2df67e3c",
+    "chromeZipIntegrity": "sha256 9681122ccbeccf6d97ac6627e60cf7f8e0c3a1cf18f52681a22e9cbc7bc20080, 8,907,425 bytes, 326 files",
+    "firefoxZipIntegrity": "keyless build, sha256 ea347acb17ef9aa0278dc2cc8e0972935157fba84b58cb369737888a9d485677, 8,936,295 bytes, 324 files",
+    "checkoutIntegrity": "HEAD 9e63a77d and an empty git status at the start and the end of the run"
+  },
+  "earlierRun": {
+    "applicationSourceCommit": "25ce274c98f4596401b9d4dbe55466bcc8475f83",
+    "result": "every step above passed except unit coverage (3 failures, all in signing-cancel-during-submission: its keyring mock lacked getPair) and the two Firefox warning audits (renamed vendor chunks). 9e63a77d fixes both; its Chrome zip differs from 25ce274c's only in extension-build-metadata.json's sourceCommit, and its Firefox zip is byte-identical."
+  },
+  "notRun": [
+    "Firefox runtime smoke: headless Firefox does not start on this Mac",
+    "Store submission, signing or upload",
+    "Hosted CI: not a merge prerequisite for this project"
+  ],
+  "environment": "Shared 16-core Mac running the iOS and Android consolidation builds at the same time (load average up to about 900)",
+  "evidenceDirectory": "../output/consolidated-20261110/web/validation-9e63a77d"
+}

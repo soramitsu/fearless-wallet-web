@@ -1,4 +1,5 @@
 import { APIItemState } from '@extension-base/api/types/networks';
+import { BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS } from '@extension-base/services/balance-service/publishTiming';
 import {
   type SolanaIndexerClient,
   type SolanaNativeBalance,
@@ -14,7 +15,9 @@ import type { ResponseBalanceRequest, TokenGroup } from '@extension-base/backgro
 import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { FetchBalancePayload } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
+import type { UniversalWalletFunds } from '@/util/universalWalletPassphrase';
 import { isSameString } from '@/helpers';
+import { withTimeout } from '@/util/endpointFailover';
 
 type SolanaBalanceClient = Pick<SolanaIndexerClient, 'getBalances'> &
   Partial<Pick<SolanaIndexerClient, 'getTokenMetadataBatch' | 'verifyServiceInfo'>>;
@@ -23,6 +26,7 @@ type SolanaTokenMetadataByMint = Record<string, SolanaTokenMetadata | undefined>
 const SOLANA_FALLBACK_NETWORK = 'Solana';
 const SOLANA_FALLBACK_ASSET_ID = 'SOL';
 const SOLANA_FALLBACK_ICON = 'solana';
+const SOLANA_FUNDS_PROBE_TIMEOUT_MS = 6_000;
 
 export default class SolanaBalanceService {
   private serviceInfoVerified = false;
@@ -44,6 +48,44 @@ export default class SolanaBalanceService {
         createClusterBoundSolanaRpcClient({ network: getSolanaNetworkKind(network), rpcUrls: getSolanaRpcUrls(network) })
       )
     );
+  }
+
+  /** Whether the address holds SOL or tokens now (the Universal Wallet password checks). Read-only: nothing is
+   * cached, and a failed, slow or partial read (token accounts unread) is `unknown`. */
+  async probeAddressFunds(address: string): Promise<UniversalWalletFunds> {
+    const network = [
+      ...(this.state.networkService.activeNetworkByEcosystem.solana ?? []),
+      ...Object.values(this.state.networkService.networkMap),
+    ].find((candidate) => {
+      try {
+        return candidate?.ecosystem === 'solana' && getSolanaNetworkKind(candidate) === 'mainnet';
+      } catch {
+        return false;
+      }
+    });
+
+    if (!network) return 'unknown';
+
+    try {
+      const client = this.clientFor(network);
+
+      return await withTimeout(
+        (async (): Promise<UniversalWalletFunds> => {
+          await this.ensureServiceInfoVerified(client);
+          const { native, tokens, tokensUnavailable } = await client.getBalances(address);
+
+          if (BigInt(native.lamports) > 0n || tokens.some(({ amount }) => amount !== '0')) return 'funded';
+
+          return tokensUnavailable ? 'unknown' : 'empty';
+        })(),
+        SOLANA_FUNDS_PROBE_TIMEOUT_MS,
+        () => new Error('solana_funds_probe_timeout')
+      );
+    } catch (error) {
+      console.warn('Solana funds probe failed', error);
+
+      return 'unknown';
+    }
   }
 
   async fetchBalance({
@@ -111,7 +153,7 @@ export default class SolanaBalanceService {
 
       console.warn('Failed to fetch Solana balance', error);
 
-      return [{ balance: '0', network: network.name, assetId: this.getNativeAsset(network).id }];
+      return [];
     }
   }
 
@@ -159,7 +201,8 @@ export default class SolanaBalanceService {
     scanCoverage: BalanceItem['scanCoverage'] = /test|dev/i.test(`${network.name} ${network.chainId}`) ? 'limited' : 'complete'
   ): void {
     const { id, icon, precision, symbol, priceId } = this.getNativeAsset(network);
-    const balance = native?.uiAmountString ?? '0';
+    // A failed read with nothing loaded before has no amount and no load time: the balance is unknown, not 0.
+    const balance = native?.uiAmountString;
     const tokenGroup = this.getOrCreateTokenGroup(address, network, id, icon, symbol, symbol, priceId);
     const balanceItem: BalanceItem = {
       address,
@@ -180,7 +223,7 @@ export default class SolanaBalanceService {
       state,
       symbol,
       type: 'solana',
-      timestamp: Date.now(),
+      timestamp: native ? Date.now() : undefined,
       assetMetadataTrust: 'verified',
       assetMetadataSource: 'registry',
       priceId,
@@ -192,7 +235,7 @@ export default class SolanaBalanceService {
     else tokenGroup.balances[existingIndex] = { ...tokenGroup.balances[existingIndex], ...balanceItem };
 
     this.state.balanceService.updateBalanceStore(network.name, balanceItem, address);
-    this.state.timeoutService.lazyNext('setSolanaBalanceItem', () => this.state.balanceService.publishBalance(), 500);
+    this.state.timeoutService.lazyNext('setSolanaBalanceItem', () => this.state.balanceService.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
   }
 
   private markCachedBalancesErrored(
@@ -225,7 +268,7 @@ export default class SolanaBalanceService {
     });
 
     if (balances.length) {
-      this.state.timeoutService.lazyNext('setSolanaBalanceItem', () => this.state.balanceService.publishBalance(), 500);
+      this.state.timeoutService.lazyNext('setSolanaBalanceItem', () => this.state.balanceService.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
     }
 
     return balances;
@@ -391,7 +434,7 @@ export default class SolanaBalanceService {
     else tokenGroup.balances[existingIndex] = { ...tokenGroup.balances[existingIndex], ...balanceItem };
 
     this.state.balanceService.updateBalanceStore(network.name, balanceItem, address);
-    this.state.timeoutService.lazyNext('setSolanaBalanceItem', () => this.state.balanceService.publishBalance(), 500);
+    this.state.timeoutService.lazyNext('setSolanaBalanceItem', () => this.state.balanceService.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
   }
 
   private getOrCreateTokenGroup(

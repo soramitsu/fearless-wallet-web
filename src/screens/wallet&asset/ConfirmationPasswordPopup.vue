@@ -3,7 +3,7 @@
     <div class="popup-content">
       <SignMobile v-if="!transactionState" @onSign="onSignMobile" @onCancel="close" />
 
-      <!-- A send shows its seal while it is on its way (brand kit v4); everything else waits behind the loader. -->
+      <!-- Every operation shows its seal while it is on its way (brand kit v4); the loader stays for anything else. -->
       <Loader v-if="isTransactionPending && !showsSeal" />
 
       <template v-else-if="isTransactionFinished || showsSeal">
@@ -44,12 +44,12 @@
         </template>
 
         <template v-if="extrinsicType !== 'nft'">
-          <div class="descriptions" :class="{ 'descriptions--ignite': showsSeal }">
+          <div class="descriptions" :class="{ 'descriptions--ignite': showsSeal, 'descriptions--ignite-wide': showsSeal && secondIcon }">
             <!--
-              Brand kit v4: the seal draws round the transfer while it is on its way; when the network accepts it the
-              seal closes and ignites (kit v3), with the send sound. A failure breaks it.
+              Brand kit v4: the seal draws round the operation while it is on its way; when the network accepts it the
+              seal closes and ignites (kit v3), with the send sound for a send. A failure breaks it.
             -->
-            <SealFigure v-if="showsSeal" class="send-ignite" :size="IGNITE_SIZE" :stage="sealStage" :failed="isFailed" />
+            <SealFigure v-if="showsSeal" class="send-ignite" :size="sealSize" :stage="sealStage" :failed="isFailed" />
             <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" class="asset-icon" />
 
             <template v-if="secondIcon">
@@ -227,6 +227,9 @@ export default defineComponent({
       transactionResponse: null as BasicTxResponse | ResponseNftTransfer | null,
       // Small enough to stay inside the popup's scroll box around the success mark.
       IGNITE_SIZE: 112,
+      // Two tokens (a swap, a pool, a cross-chain send) make a pill as wide as that figure: a larger one keeps them
+      // inside its inner ring.
+      IGNITE_SIZE_WIDE: 156,
     };
   },
   computed: {
@@ -355,10 +358,14 @@ export default defineComponent({
     showsIgnite() {
       return this.isSuccess && SENDS.includes(this.extrinsicType);
     },
-    // The same sends show their seal from the moment they are on their way. The popup learns only the outcome, so the
-    // seal is ready, with its comet, until then; an outcome the wallet cannot tell (unconfirmed) shows no seal.
+    // Every operation here (a send, a swap, staking, a pool) shows its seal from the moment it is on its way. The popup
+    // learns only the outcome, so the seal is ready, with its comet, until then; an outcome the wallet cannot tell
+    // (unconfirmed) shows no seal. Only a send has a sound (showsIgnite).
     showsSeal() {
-      return SENDS.includes(this.extrinsicType) && (this.isTransactionPending || this.isSuccess || this.isFailed);
+      return this.isTransactionPending || this.isSuccess || this.isFailed;
+    },
+    sealSize() {
+      return this.secondIcon ? this.IGNITE_SIZE_WIDE : this.IGNITE_SIZE;
     },
     sealStage() {
       return this.isSuccess ? 'accepted' : 'ready';
@@ -606,6 +613,12 @@ export default defineComponent({
   .descriptions--ignite,
   .icon-circle--ignite {
     margin-top: 18px;
+  }
+
+  // The larger figure and its stars' glow reach about 56 px above and below the pill.
+  .descriptions--ignite-wide {
+    margin-top: 40px;
+    margin-bottom: 56px;
   }
 
   .send-ignite {

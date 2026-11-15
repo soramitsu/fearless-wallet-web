@@ -78,8 +78,9 @@ formulas are `src/feel/shikiban.ts`, held to the kit's sampled keyframes by `tes
 - The sync dial (`SyncDial.vue`, in the balance card's status): eight segments lit to the share of the wallet's networks
   that have answered, ember for those that gave up, a cyan comet and the count ("9 / 14") while any are outstanding.
   The card's tick ring turns 14 times faster meanwhile.
-- The seal (`SealFigure.vue`, in `ConfirmationPasswordPopup.vue`): a send draws the solar geometry by its stages. The
-  popup learns only the outcome, so it shows the rings and the comet, then closes and ignites on acceptance, or breaks.
+- The seal (`SealFigure.vue`, in `ConfirmationPasswordPopup.vue`): every operation there (sends, swaps, staking, pools)
+  draws the solar geometry by its stages. The popup learns only the outcome, so it shows the rings and the comet, then
+  closes and ignites on acceptance, or breaks. Two tokens get a larger figure; only a send plays the send sound.
 - The loader (`MirrorLoader.vue`, behind `Loader` and `Loading`): three comets on the mirror's rim, or the rim filling to
   a known share.
 - The value tick (`valueTick.ts`): a row's fiat value or the total that changes on screen draws a line under itself in

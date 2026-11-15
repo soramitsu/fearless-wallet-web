@@ -1,6 +1,8 @@
 <template>
   <div class="main">
+    <!-- data-fw-depth: how deep each part of the screen lies when the wallet flies up at launch (src/feel/launchOverlay.ts). -->
     <Header
+      data-fw-depth="2"
       :showSelectWalletPopup="showSelectWalletPopup"
       :highlightSettingsIcon="highlightSettingsIcon"
       :showSettingsButton="!showMenu"
@@ -53,7 +55,7 @@
       </router-view>
     </main>
 
-    <Menu v-if="showMenu" />
+    <Menu v-if="showMenu" data-fw-depth="2" />
   </div>
 </template>
 

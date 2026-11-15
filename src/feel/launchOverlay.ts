@@ -1,13 +1,17 @@
-// The launch (brand kit v3, SPEC "Launch, feel and sound" part 1, adapted to an extension). The first wallet view of a
-// browser session (the toolbar popup, the side panel or a full tab) plays the Yatagarasu's Ignite, holds on its open
-// wings until the wallet underneath is ready, then dives into the solar disc while the wallet zooms in from behind it.
-// Every later view of the session gets only a short landing. Request windows (site approvals) get neither.
+// The launch (brand kit v3, SPEC "Launch, feel and sound" part 1, and kit v4, "Shikiban" part 1, adapted to an
+// extension). The first wallet view of a browser session (the toolbar popup, the side panel or a full tab) plays the
+// Yatagarasu's Ignite and holds on its open wings until the wallet underneath is ready. Then the flight: the clip's
+// dive runs on into a tunnel of gates, the mirror opens on the wallet at the end of it, and the wallet flies up and
+// settles, its parts at their own depths. Every later view of the session gets only a short arrival from a little
+// depth. Request windows (site approvals) get neither.
 //
 // The overlay only covers and reveals: the wallet's start, lock, unlock and routing run underneath exactly as before,
 // and a key press always reaches the page (a password field under the overlay takes the typing).
 import timeline from '@/assets/brand/hero/launch-timeline.json';
 import clipUrl from '@/assets/brand/hero/popup-launch-ignite.webm';
 import { LAUNCH_REVEAL_EVENT } from '@/feel/motion';
+import { FLIGHT, MAX_TIER, cssEasing, irisRadius, landingFrom } from '@/feel/shikiban';
+import { drawFlight } from '@/feel/shikibanDraw';
 
 /** storage.session key: set when a session's launch starts, so a reload mid-clip lands instead of replaying. */
 export const LAUNCH_SESSION_KEY = 'fearless:launch-ignite';
@@ -17,32 +21,32 @@ export const LAUNCH_FORCE_PARAM = 'fw-launch';
 /** The kit's popup framing: 561x600 at 1.5x. */
 export const LAUNCH_CLIP = { width: 842, height: 900 } as const;
 export const LAUNCH_FOCUS = timeline.focus.popup;
-/** Seconds into the clip. */
+/** Seconds into the clip: where an unready wallet holds it, and where the flight starts. */
 export const LAUNCH_TIMES = {
   hold: timeline.holdSeconds,
-  handOff: 2.55,
-  overlayOut: 2.7,
+  flight: timeline.zoomStartSeconds,
   end: timeline.durationSeconds,
 } as const;
-/** Milliseconds. */
+/** Milliseconds. The flight's own times are the kit's (FLIGHT in src/feel/shikiban.ts). */
 export const LAUNCH_DURATIONS = {
-  appIn: 550,
-  overlayOut: 450,
-  skip: 300,
   drop: 250,
-  landing: 250,
   still: 200,
   stall: 1000,
   holdCap: 8000,
 } as const;
-const DECELERATE = 'cubic-bezier(0.05, 0.7, 0.1, 1)';
+/** How much faster the rest of the flight plays after a click or a key. */
+export const LAUNCH_SKIP_RATE = FLIGHT.durationMs / FLIGHT.skipMs;
+/**
+ * A part of the first screen says how deep it lies with this attribute: 0 is nearest (the balance), then the actions,
+ * the header and the tab bar, the tabs, the list. A screen that marks nothing arrives as one piece.
+ */
+export const DEPTH_ATTRIBUTE = 'data-fw-depth';
 // Where the clip does not fill the view, its edges melt into the ink behind it.
 const FEATHER: Record<LaunchFraming['mode'], string> = {
   cover: '',
   contain: 'linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent)',
   band: 'linear-gradient(180deg, #000 0%, #000 78%, transparent 100%)',
 };
-const ACCELERATE = 'cubic-bezier(0.3, 0, 1, 1)';
 
 export type LaunchMode = 'ignite' | 'landing' | 'still' | 'none';
 
@@ -175,7 +179,7 @@ const appRoot = (): HTMLElement | null => document.getElementById('app');
 export interface LaunchState {
   mode: LaunchMode;
   /** For checks and screenshots: what the overlay did last. */
-  phase: 'deciding' | 'playing' | 'holding' | 'handing-off' | 'dropped' | 'done';
+  phase: 'deciding' | 'playing' | 'holding' | 'flying' | 'dropped' | 'done';
   reason?: string;
   /** The wallet underneath has started to show: the balance may count now (src/feel/countUp.ts). */
   revealed: boolean;
@@ -215,7 +219,7 @@ export function startLaunch({ api, ready, harnessBuild }: StartLaunchOptions): L
     state.mode = decideLaunch({ reducedMotion, reducedEffects, harnessBuild, forced, requestWindow: false, playedThisSession: true });
     state.phase = 'done';
     reveal(state);
-    if (state.mode === 'still') void ready.then(() => revealApp('still'), () => undefined);
+    if (state.mode === 'still') void ready.then(() => revealStill(), () => undefined);
     return state;
   }
 
@@ -239,7 +243,7 @@ export function startLaunch({ api, ready, harnessBuild }: StartLaunchOptions): L
         cover.remove();
         state.phase = 'done';
         reveal(state);
-        if (state.mode === 'landing') void ready.then(() => revealApp('landing'), () => undefined);
+        if (state.mode === 'landing') void ready.then(() => land(), () => undefined);
         return;
       }
       void api.storage?.session?.set({ [LAUNCH_SESSION_KEY]: Date.now() })?.catch?.(() => undefined);
@@ -249,27 +253,59 @@ export function startLaunch({ api, ready, harnessBuild }: StartLaunchOptions): L
   return state;
 }
 
-// Scaling the document root outward adds scrollable width to Chrome's fixed-width side panel.
-function walletStartScale(outset: number): string {
-  const scale = document.documentElement.dataset.fwSurface === 'side-panel' ? 1 / outset : outset;
-  return `scale(${scale})`;
+export interface Tier {
+  element: HTMLElement;
+  /** 0 is nearest; the kit samples MAX_TIER + 1 of them. */
+  depth: number;
 }
 
-/** Later views settle to their normal size and fade in. Reduced motion uses the fade alone. */
-function revealApp(kind: 'landing' | 'still'): void {
-  const app = appRoot();
-  if (!app?.animate) return;
-  const keyframes: Keyframe[] =
-    kind === 'landing'
-      ? [
-          { transform: walletStartScale(1.04), opacity: 0 },
-          { transform: 'scale(1)', opacity: 1 },
-        ]
-      : [{ opacity: 0 }, { opacity: 1 }];
-  app.animate(keyframes, {
-    duration: kind === 'landing' ? LAUNCH_DURATIONS.landing : LAUNCH_DURATIONS.still,
-    easing: DECELERATE,
+/**
+ * The parts of the screen that fly at their own depth. Marked parts inside marked parts move with their parent, and a
+ * part with no box is not on screen. With nothing marked the whole wallet is one tier.
+ */
+export function collectTiers(root: HTMLElement | null = appRoot()): Tier[] {
+  if (!root) return [];
+  const marked = Array.from(root.querySelectorAll<HTMLElement>(`[${DEPTH_ATTRIBUTE}]`)).filter((element) => {
+    if (element.parentElement?.closest(`[${DEPTH_ATTRIBUTE}]`)) return false;
+    const box = element.getBoundingClientRect();
+    return box.width > 0 && box.height > 0;
   });
+  if (!marked.length) return [{ element: root, depth: 0 }];
+
+  return marked.map((element) => {
+    const depth = Number(element.getAttribute(DEPTH_ATTRIBUTE));
+    return { element, depth: Number.isFinite(depth) ? Math.min(MAX_TIER, Math.max(0, Math.round(depth))) : 0 };
+  });
+}
+
+/** Depth is a scale about the focus (SPEC v4 rule 2): the tier's own origin is the focus, in its own box. */
+function aimAt(tier: Tier, focus: { x: number; y: number }): void {
+  const box = tier.element.getBoundingClientRect();
+  tier.element.style.transformOrigin = `${focus.x - box.left}px ${focus.y - box.top}px`;
+}
+
+/** Later views arrive from a little depth: every tier comes up to its place about the focus, the nearest first. */
+function land(): void {
+  const tiers = collectTiers();
+  if (!tiers.length || !tiers[0].element.animate) return;
+  const { focus } = launchFraming({ width: innerWidth, height: innerHeight });
+  for (const tier of tiers) {
+    aimAt(tier, focus);
+    const delay = tier.depth * FLIGHT.tierStaggerMs;
+    const arrive = tier.element.animate([{ transform: `scale(${landingFrom(tier.depth).toFixed(4)})` }, { transform: 'scale(1)' }], {
+      duration: FLIGHT.landingMs,
+      delay,
+      easing: cssEasing('settle'),
+      fill: 'backwards',
+    });
+    tier.element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FLIGHT.landingMs * 0.45, delay, fill: 'backwards' });
+    arrive.onfinish = () => tier.element.style.removeProperty('transform-origin');
+  }
+}
+
+/** Reduced motion: the wallet only fades in. */
+function revealStill(): void {
+  appRoot()?.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: LAUNCH_DURATIONS.still, easing: cssEasing('settle') });
 }
 
 function ignite(cover: HTMLElement, state: LaunchState, ready: () => boolean): void {
@@ -303,21 +339,43 @@ function ignite(cover: HTMLElement, state: LaunchState, ready: () => boolean): v
   place();
   cover.appendChild(video);
   cover.style.cursor = 'pointer';
-  addEventListener('resize', place);
 
   let raf = 0;
-  let handedOff = false;
+  let flying = false;
+  let dropped = false;
   let finished = false;
   let holdStartedAt = 0;
   let lastTime = -1;
   let lastProgressAt = performance.now();
   const startedAt = performance.now();
 
+  // The flight keeps its own clock, so a click or a key can run the rest of it faster.
+  let flightMs = 0;
+  let flightRate = 1;
+  let flightFrameAt = 0;
+  let canvas: HTMLCanvasElement | undefined;
+  let context: CanvasRenderingContext2D | null = null;
+  const tierMotion: Animation[] = [];
+  let mirrorOpen = false;
+
+  const sizeCanvas = (): void => {
+    if (!canvas) return;
+    const ratio = Math.min(2, devicePixelRatio || 1);
+    canvas.width = Math.round(innerWidth * ratio);
+    canvas.height = Math.round(innerHeight * ratio);
+    context?.setTransform(ratio, 0, 0, ratio, 0, 0);
+  };
+  const onResize = (): void => {
+    place();
+    sizeCanvas();
+  };
+  addEventListener('resize', onResize);
+
   const finish = (): void => {
     if (finished) return;
     finished = true;
     cancelAnimationFrame(raf);
-    removeEventListener('resize', place);
+    removeEventListener('resize', onResize);
     removeEventListener('keydown', onKey, true);
     cover.removeEventListener('click', onClick);
     video.pause();
@@ -330,8 +388,8 @@ function ignite(cover: HTMLElement, state: LaunchState, ready: () => boolean): v
 
   // The clip cannot load or has stopped moving: the overlay fades away and the wallet is simply there.
   const drop = (reason: string): void => {
-    if (handedOff || finished) return;
-    handedOff = true;
+    if (flying || dropped || finished) return;
+    dropped = true;
     state.phase = 'dropped';
     state.reason = reason;
     reveal(state);
@@ -341,68 +399,115 @@ function ignite(cover: HTMLElement, state: LaunchState, ready: () => boolean): v
     else finish();
   };
 
-  const handOff = (fast: boolean): void => {
-    if (handedOff || finished) return;
-    handedOff = true;
-    state.phase = 'handing-off';
-    if (fast) state.reason = 'skipped';
+  // The mirror opens: the wallet shows through it, far off, and each of its tiers flies up about the focus. The
+  // browser runs these on its own clock, so they stay smooth while the wallet is still drawing its first screen.
+  const openMirror = (): void => {
+    mirrorOpen = true;
     reveal(state);
-    cover.style.pointerEvents = 'none';
-    const { focus } = framing;
-    const app = appRoot();
-    if (app?.animate) {
-      const rect = app.getBoundingClientRect();
-      app.style.transformOrigin = `${focus.x - rect.left}px ${focus.y - rect.top}px`;
-      const zoom = app.animate(
-        [
-          { transform: walletStartScale(1.18), opacity: 0 },
-          { transform: 'scale(1)', opacity: 1 },
-        ],
-        { duration: fast ? LAUNCH_DURATIONS.skip : LAUNCH_DURATIONS.appIn, easing: DECELERATE }
+    const tiers = collectTiers();
+    if (!tiers.length || !tiers[0].element.animate) return;
+    const samples = FLIGHT.samples.tiers;
+    for (const tier of tiers) {
+      aimAt(tier, framing.focus);
+      const scales = samples[tier.depth];
+      const fly = tier.element.animate(
+        scales.map((scale, index) => ({ transform: `scale(${scale})`, offset: index / (scales.length - 1) })),
+        { duration: FLIGHT.durationMs, easing: 'linear' }
       );
-      zoom.onfinish = () => app.style.removeProperty('transform-origin');
-    }
-    cover.style.transformOrigin = `${focus.x}px ${focus.y}px`;
-    const out = cover.animate?.(
-      [
-        { transform: 'scale(1)', opacity: 1 },
-        { transform: 'scale(1.6)', opacity: 0 },
-      ],
-      {
-        duration: fast ? LAUNCH_DURATIONS.skip : LAUNCH_DURATIONS.overlayOut,
-        delay: fast ? 0 : (LAUNCH_TIMES.overlayOut - LAUNCH_TIMES.handOff) * 1000,
-        easing: ACCELERATE,
-        fill: 'forwards',
+      const show = tier.element.animate([{ opacity: 0 }, { opacity: 1 }], {
+        duration: FLIGHT.tierFadeMs,
+        delay: FLIGHT.irisAtMs + tier.depth * FLIGHT.tierStaggerMs,
+        fill: 'backwards',
+      });
+      for (const motion of [fly, show]) {
+        motion.currentTime = flightMs;
+        motion.playbackRate = flightRate;
+        tierMotion.push(motion);
       }
-    );
-    if (out) out.onfinish = finish;
-    else finish();
+      fly.onfinish = () => tier.element.style.removeProperty('transform-origin');
+    }
   };
 
-  // A click skips straight to the zoom. It is the click, not the press, so the release cannot land on the wallet.
+  const fly = (now: number): void => {
+    raf = 0;
+    if (finished) return;
+    flightMs += (now - flightFrameAt) * flightRate;
+    flightFrameAt = now;
+    const { focus } = framing;
+    const side = Math.min(innerWidth, innerHeight);
+    const iris = irisRadius(flightMs, side);
+    if (context) drawFlight(context, { flightMs, cx: focus.x, cy: focus.y, side, width: innerWidth, height: innerHeight, iris });
+    if (iris > 0) {
+      if (!mirrorOpen) openMirror();
+      // The opening through the overlay: the wallet is seen inside the mirror's rim.
+      const mask = `radial-gradient(circle ${iris.toFixed(1)}px at ${focus.x.toFixed(1)}px ${focus.y.toFixed(1)}px, transparent 0, transparent calc(100% - 1.5px), #000 100%)`;
+      cover.style.maskImage = mask;
+      cover.style.setProperty('-webkit-mask-image', mask);
+    }
+    const farthest = Math.hypot(Math.max(focus.x, innerWidth - focus.x), Math.max(focus.y, innerHeight - focus.y));
+    // The opening has cleared the view (or the flight is over): nothing of the overlay is left to see.
+    if (flightMs >= FLIGHT.durationMs || iris > farthest + 2) {
+      if (!mirrorOpen) openMirror();
+      finish();
+      return;
+    }
+    raf = requestAnimationFrame(fly);
+  };
+
+  const startFlight = (fast: boolean): void => {
+    if (flying || dropped || finished) return;
+    flying = true;
+    state.phase = 'flying';
+    if (fast) hurry();
+    cancelAnimationFrame(raf);
+    canvas = document.createElement('canvas');
+    Object.assign(canvas.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', pointerEvents: 'none' });
+    context = canvas.getContext('2d');
+    sizeCanvas();
+    cover.appendChild(canvas);
+    // The clip runs on under the gates to its last frame, the glow, and stays there.
+    if (video.paused && !video.ended) void video.play().catch(() => undefined);
+    flightFrameAt = performance.now();
+    raf = requestAnimationFrame(fly);
+  };
+
+  // A click or a key plays the rest of the flight faster; before the flight, it starts at once.
+  const hurry = (): void => {
+    flightRate = LAUNCH_SKIP_RATE;
+    state.reason = 'skipped';
+    for (const motion of tierMotion) motion.playbackRate = flightRate;
+  };
+  const skip = (): void => {
+    if (dropped || finished) return;
+    if (flying) hurry();
+    else startFlight(true);
+  };
+  // It is the click, not the press, so the release cannot land on the wallet; the overlay takes clicks to its end.
   const onClick = (event: Event): void => {
     event.preventDefault();
     event.stopPropagation();
-    handOff(true);
+    skip();
   };
   // A key skips as well and still reaches the page: a password field under the overlay gets the typing.
-  const onKey = (): void => handOff(true);
+  const onKey = (): void => skip();
   cover.addEventListener('click', onClick);
   addEventListener('keydown', onKey, true);
-  // A hidden side panel stops the frames; coming back is not a stall.
-  document.addEventListener('visibilitychange', () => (lastProgressAt = performance.now()));
+  // A hidden side panel stops the frames; coming back is not a stall, and the flight does not jump ahead.
+  document.addEventListener('visibilitychange', () => {
+    lastProgressAt = performance.now();
+    flightFrameAt = performance.now();
+  });
 
   const tick = (): void => {
     raf = 0;
-    if (finished || handedOff) return;
+    if (finished || flying || dropped) return;
     const now = performance.now();
     const time = video.currentTime;
     if (time !== lastTime) {
       lastTime = time;
       lastProgressAt = now;
     }
-    const wait = ready();
-    if (time >= LAUNCH_TIMES.hold && !wait) {
+    if (time >= LAUNCH_TIMES.hold && !ready()) {
       // Hold on the open wings until the wallet underneath can be shown; a wallet that never says so is shown anyway.
       if (!holdStartedAt) holdStartedAt = now;
       if (now - holdStartedAt < LAUNCH_DURATIONS.holdCap) {
@@ -413,12 +518,8 @@ function ignite(cover: HTMLElement, state: LaunchState, ready: () => boolean): v
         return;
       }
     }
-    if (video.paused && !video.ended && state.phase === 'holding') {
-      state.phase = 'playing';
-      void video.play().catch(() => drop('resume refused'));
-    }
-    if (time >= LAUNCH_TIMES.handOff || video.ended) {
-      handOff(false);
+    if (time >= LAUNCH_TIMES.flight || video.ended) {
+      startFlight(false);
       return;
     }
     if (now - lastProgressAt > LAUNCH_DURATIONS.stall && !video.paused) {
@@ -433,11 +534,11 @@ function ignite(cover: HTMLElement, state: LaunchState, ready: () => boolean): v
   };
 
   video.addEventListener('error', () => drop('could not load'));
-  video.addEventListener('ended', () => handOff(false));
+  video.addEventListener('ended', () => startFlight(false));
   state.phase = 'playing';
   void video.play().then(
     () => {
-      if (!raf && !handedOff) raf = requestAnimationFrame(tick);
+      if (!raf && !flying) raf = requestAnimationFrame(tick);
     },
     () => drop('play refused')
   );

@@ -1,7 +1,7 @@
 <template>
   <div class="welcome-page">
     <div>
-      <div class="back-wallet-container">
+      <div class="back-wallet-container" data-fw-depth="2">
         <CircleButton
           v-if="showBackWalletIcon"
           backgroundColor="light-black"
@@ -11,7 +11,7 @@
         />
       </div>
 
-      <div class="welcome-brand" data-testid="headerText">
+      <div class="welcome-brand" data-testid="headerText" data-fw-depth="0">
         <div class="welcome-mark" role="img" :aria-label="$t('common.fearlessLogo')">
           <img :src="lockup" class="welcome-lockup" alt="" />
         </div>
@@ -21,7 +21,7 @@
     </div>
 
     <div>
-      <div class="welcome-task">
+      <div class="welcome-task" data-fw-depth="1">
         <h1>{{ $t(showChoiceEcosystem ? 'ux.chooseNetworks' : 'ux.walletTaskTitle') }}</h1>
         <p>{{ $t(showChoiceEcosystem ? 'ux.chooseNetworksDescription' : 'ux.walletTaskDescription') }}</p>
         <ChoiceEcosystem v-if="showChoiceEcosystem" @setEcosystem="setEcosystem" />

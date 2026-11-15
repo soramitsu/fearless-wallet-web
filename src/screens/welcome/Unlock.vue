@@ -1,7 +1,8 @@
 <template>
   <div class="unlock">
     <div>
-      <div class="header">
+      <!-- data-fw-depth: the mark is nearest, then the password, when this screen flies up at launch (src/feel). -->
+      <div class="header" data-fw-depth="2">
         <CircleButton
           v-if="isPopup"
           iconName="expand"
@@ -13,7 +14,7 @@
         />
       </div>
 
-      <div class="logo-container">
+      <div class="logo-container" data-fw-depth="0">
         <div class="logo-mark" role="img" :aria-label="t('common.fearlessLogo')">
           <img :src="lockup" class="unlock-logo" alt="" />
         </div>
@@ -22,7 +23,7 @@
       </div>
     </div>
 
-    <div class="pass-block">
+    <div class="pass-block" data-fw-depth="1">
       <ValidatedInput
         v-if="!unlockNotice"
         size="big"

@@ -17,6 +17,7 @@
       <template #toolbar="{ allWallets }">
         <WalletSettings
           class="home-toolbar"
+          data-fw-depth="3"
           :activeTabName="activeTabName"
           :refreshSlotId="refreshSlotId"
           :showPortfolioTab="true"
@@ -28,7 +29,7 @@
     </PortfolioDashboard>
 
     <!-- The selected view; All wallets lists its own holdings above (PortfolioDashboard), so its Assets view is there. -->
-    <div v-if="dashboardEnabled && !(allWalletsScope && activeTabName === assetsTab)" class="home-content">
+    <div v-if="dashboardEnabled && !(allWalletsScope && activeTabName === assetsTab)" class="home-content" data-fw-depth="4">
       <router-view
         :route="ownRoute"
         :showAssetsManagementForm="showAssetsManagementForm"

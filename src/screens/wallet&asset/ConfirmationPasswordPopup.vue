@@ -3,9 +3,10 @@
     <div class="popup-content">
       <SignMobile v-if="!transactionState" @onSign="onSignMobile" @onCancel="close" />
 
-      <Loader v-if="isTransactionPending" />
+      <!-- A send shows its seal while it is on its way (brand kit v4); everything else waits behind the loader. -->
+      <Loader v-if="isTransactionPending && !showsSeal" />
 
-      <template v-else-if="isTransactionFinished">
+      <template v-else-if="isTransactionFinished || showsSeal">
         <p v-if="isFailed" class="transaction-error-message" data-testid="transactionErrorMessage">
           {{ transactionErrorText }}
         </p>
@@ -43,9 +44,12 @@
         </template>
 
         <template v-if="extrinsicType !== 'nft'">
-          <div class="descriptions" :class="{ 'descriptions--ignite': showsIgnite }">
-            <!-- Brand kit v3: a sent transfer ignites the solar geometry around it, with the send sound. -->
-            <SolarIgnite v-if="showsIgnite" class="send-ignite" :size="IGNITE_SIZE" />
+          <div class="descriptions" :class="{ 'descriptions--ignite': showsSeal }">
+            <!--
+              Brand kit v4: the seal draws round the transfer while it is on its way; when the network accepts it the
+              seal closes and ignites (kit v3), with the send sound. A failure breaks it.
+            -->
+            <SealFigure v-if="showsSeal" class="send-ignite" :size="IGNITE_SIZE" :stage="sealStage" :failed="isFailed" />
             <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" class="asset-icon" />
 
             <template v-if="secondIcon">
@@ -55,10 +59,16 @@
             </template>
           </div>
 
-          <template v-if="showsAmount">
+          <template v-if="showsAmount && isTransactionFinished">
             <div class="transfer-amount" data-testid="confirmedTransferAmount">{{ transferAmountString }}</div>
 
             <div class="transfer-value" data-testid="confirmedTransferValue">{{ transferValueString }}</div>
+          </template>
+          <!-- While the seal waits, the amount's lines keep their room, so the figure does not move when they arrive. -->
+          <template v-else-if="showsSeal && isTransactionPending">
+            <div class="transfer-amount transfer-room" aria-hidden="true">&nbsp;</div>
+
+            <div class="transfer-value transfer-room" aria-hidden="true">&nbsp;</div>
           </template>
 
           <FButton
@@ -90,9 +100,10 @@
         </template>
 
         <template v-else>
-          <div class="icon-circle" :class="{ 'icon-circle--ignite': showsIgnite }">
-            <SolarIgnite v-if="showsIgnite" class="send-ignite" :size="IGNITE_SIZE" />
+          <div class="icon-circle" :class="{ 'icon-circle--ignite': showsSeal }">
+            <SealFigure v-if="showsSeal" class="send-ignite" :size="IGNITE_SIZE" :stage="sealStage" :failed="isFailed" />
             <Icon
+              v-if="isTransactionFinished"
               :icon="isFailed ? 'close' : 'check'"
               className="icon__lock-green"
               :iconColor="isFailed ? 'error' : 'success'"
@@ -168,7 +179,7 @@ import { type StakingOperation } from '@/interfaces';
 import { makeSwap, makeTransfer, makeCrossChain, makeStaking, makePool } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
-import SolarIgnite from '@/components/SolarIgnite.vue';
+import SealFigure from '@/components/SealFigure.vue';
 import { playSound, prepareSounds } from '@/feel/sound';
 import { IS_EXTENSION } from '@/consts/global';
 import { sendNft } from '@/extension/messaging/nfts';
@@ -192,7 +203,7 @@ const ACCOUNT_ACCESS_ROUTE = 'AccountAccessRecovery';
 
 export default defineComponent({
   name: 'ConfirmationPasswordPopup',
-  components: { SignMobile, SolarIgnite },
+  components: { SignMobile, SealFigure },
   props: {
     amount: { type: String, default: '0' },
     value: { type: String, default: '0' },
@@ -343,6 +354,14 @@ export default defineComponent({
     // Tokens left the wallet: a transfer, a cross-chain send or an NFT. A failure or an unconfirmed send gets no sound.
     showsIgnite() {
       return this.isSuccess && SENDS.includes(this.extrinsicType);
+    },
+    // The same sends show their seal from the moment they are on their way. The popup learns only the outcome, so the
+    // seal is ready, with its comet, until then; an outcome the wallet cannot tell (unconfirmed) shows no seal.
+    showsSeal() {
+      return SENDS.includes(this.extrinsicType) && (this.isTransactionPending || this.isSuccess || this.isFailed);
+    },
+    sealStage() {
+      return this.isSuccess ? 'accepted' : 'ready';
     },
     isTon() {
       return this.accountsStore.selectedWallet.isTon;
@@ -552,6 +571,10 @@ export default defineComponent({
   .transfer-value {
     font-size: 1em;
     color: $gray-color;
+  }
+
+  .transfer-room {
+    visibility: hidden;
   }
 
   .nft-img {

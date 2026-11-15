@@ -50,5 +50,32 @@
     "The sync counts came from a fixture pushed into the page stores, not from live networks",
     "The flight was not watched in Firefox; the Firefox builds were built and linted",
     "Frame pacing was not measured"
+  ],
+  "updates": [
+    {
+      "date": "2026-11-15",
+      "applicationSourceCommit": "f3f23f88e4e4557a7feb11de3b5b9984e225ebab",
+      "change": "The seal on swaps, staking and pools (only a send keeps the send sound); a 156 px figure with room for two-token operations, including cross-chain sends",
+      "unit": {
+        "files": {
+          "passed": 578,
+          "skipped": 3
+        },
+        "tests": {
+          "passed": 6524,
+          "skipped": 20,
+          "failed": 0
+        },
+        "coverage": "83.23 % (29283/35184 lines, 809 files)"
+      },
+      "typecheck": "clean",
+      "lint": "0 errors, the base 37 warnings",
+      "brand": "provenance regenerated for the brand notes; --check and 8/8 brand tests pass",
+      "chromeZip": {
+        "bytes": 9957975,
+        "sha256": "f4d66f05c9d8665a06196d236c502fc33e27d4494c2a6ab4c8adf6ccbb68e8b3"
+      },
+      "realExtension": "swap seal waiting, accepted, at rest and failed in the test build: 7 of 7 checks; request kept in the page"
+    }
   ]
 }

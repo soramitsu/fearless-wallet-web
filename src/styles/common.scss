@@ -77,6 +77,20 @@ $fw-sky-geometry-glow: rgb(255 138 66 / 0.55);
 // Tokens arriving: a gold pulse on the balance card.
 $fw-arrival-gold: rgb(255 194 74 / 0.7);
 $fw-arrival-gold-clear: rgb(255 194 74 / 0);
+// Brand kit v4 (SPEC "Shikiban"): the instrument's colours of meaning, the same in both palettes. Gold is final, cyan
+// is in flight, ember is failure; the balance card's composition marks and its lattice.
+$fw-shikiban-core: #ffd58a;
+$fw-shikiban-glow: rgb(255 138 66 / 0.55);
+$fw-shikiban-rest: #ffc24a;
+$fw-shikiban-unlit: rgb(255 194 74 / 0.2);
+$fw-shikiban-flight: #38e8e0;
+$fw-shikiban-failure: #ff5a4d;
+$fw-shikiban-mark: rgb(255 194 74 / 0.7);
+$fw-shikiban-mark-soft: rgb(255 194 74 / 0.45);
+$fw-shikiban-lattice: rgb(255 194 74 / 0.05);
+$fw-shikiban-lattice-lit: rgb(255 213 138 / 0.32);
+// The opaque stop of a mask (masks read alpha only).
+$fw-mask-opaque: #000;
 // The wallet home's aurora: two very soft drifting glows, pink and ember, each under 18 %.
 $fw-aurora-pink: rgb(230 0 111 / 0.16);
 $fw-aurora-ember: rgb(255 122 26 / 0.12);

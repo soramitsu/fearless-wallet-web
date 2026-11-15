@@ -54,7 +54,15 @@
         </span>
         <span v-else class="token-balance">
           <template v-if="row.fiatValue !== null">
-            <span class="token-fiat" data-testid="tokenFiat">{{ formatFiat(row.fiatValue) }}</span>
+            <!-- Brand kit v4: a value that changes while it is on screen ticks in, with a line the colour of its direction. -->
+            <span
+              :key="fiatTick?.key ?? 0"
+              class="token-fiat"
+              :class="fiatTick && `token-fiat--tick token-fiat--tick-${fiatTick.direction}`"
+              data-testid="tokenFiat"
+            >
+              {{ formatFiat(row.fiatValue) }}
+            </span>
             <span class="token-amount" data-testid="tokenAmount">{{ formatAmount(row.balanceText) }} {{ row.symbol }}</span>
           </template>
           <template v-else>
@@ -86,6 +94,7 @@ import { Components } from '@/router/routes';
 import { useAccountsStore } from '@/stores/accounts';
 import { useI18n } from '@/locales/useI18n';
 import { claimListEntrance } from '@/feel/motion';
+import { useValueTick } from '@/feel/valueTick';
 
 const props = defineProps<{
   row: PortfolioTokenRow;
@@ -99,6 +108,12 @@ const { formatAmount, formatFiat, formatPrice } = usePortfolioFormatting();
 
 // Brand kit v3: the rows of the page's first list rise in one after another, once; rows that come later just appear.
 const entering = claimListEntrance();
+
+const fiatTick = useValueTick(
+  () => (props.row.fiatValue === null ? null : Number(props.row.fiatValue)),
+  () => (props.row.fiatValue === null ? '' : formatFiat(props.row.fiatValue)),
+  () => !props.row.hidden
+);
 
 const isGroup = computed(() => props.row.children.length + props.row.zeroChildren.length > 1);
 const single = computed<PortfolioTokenChild>(() => props.row.children[0] ?? props.row.zeroChildren[0]);
@@ -350,6 +365,70 @@ html[data-fw-effects='reduced'] .token-row--enter,
   font-size: 0.95rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+// The value tick: the new text comes 6 px from below when it grew, from above when it shrank, and a line the colour of
+// its direction sweeps under it and fades.
+.token-fiat--tick {
+  position: relative;
+  animation: value-tick-in 180ms var(--fw-ease) both;
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    height: 1px;
+    background: var(--tick-colour);
+    transform-origin: left center;
+    animation: value-tick-line 510ms var(--fw-ease) both;
+  }
+}
+
+.token-fiat--tick-up {
+  --tick-from: 6px;
+  --tick-colour: var(--fw-up);
+}
+
+.token-fiat--tick-down {
+  --tick-from: -6px;
+  --tick-colour: var(--fw-down);
+}
+
+@keyframes value-tick-in {
+  from {
+    translate: 0 var(--tick-from);
+    opacity: 0;
+  }
+}
+
+@keyframes value-tick-line {
+  0% {
+    scale: 0 1;
+    opacity: 1;
+  }
+
+  60% {
+    scale: 1 1;
+    opacity: 1;
+  }
+
+  100% {
+    scale: 1 1;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .token-fiat--tick,
+  .token-fiat--tick::after {
+    animation: none;
+  }
+
+  .token-fiat--tick::after {
+    display: none;
+  }
 }
 
 .token-amount {

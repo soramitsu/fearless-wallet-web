@@ -1,15 +1,32 @@
 <template>
   <section class="hero" :aria-label="t('portfolioDashboard.totalBalance')" data-testid="portfolioHero">
-    <!-- Brand kit v3: the balance on the sunset sky, the solar rings turning slowly at its sides, a lit rim. -->
-    <div ref="card" class="hero-card" data-testid="heroCard">
+    <!--
+      Brand kit v3: the balance on the sunset sky, the solar rings turning slowly at its sides, a lit rim. Kit v4
+      ("Shikiban" parts 2 and 6): the card shows the composition it is built on (corner marks, the yamato divisions, a
+      lattice a band of light crosses), and its tick ring is the heaven plate: it turns fast while networks answer.
+    -->
+    <div ref="card" class="hero-card" :class="{ 'hero-card--syncing': syncing }" data-testid="heroCard" data-fw-depth="0">
       <div class="hero-sky" aria-hidden="true">
         <img ref="skyImage" class="hero-sky-image" :src="skyCard" alt="" draggable="false" />
+        <svg class="hero-asanoha" focusable="false" data-testid="heroLattice">
+          <defs>
+            <pattern id="fw-asanoha" patternUnits="userSpaceOnUse" :width="ASANOHA.width" :height="ASANOHA.height">
+              <path :d="ASANOHA.path" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#fw-asanoha)" />
+        </svg>
+        <!-- The band of light: a window that crosses the card, showing the same lattice brighter where it passes. -->
+        <div class="hero-band" data-testid="heroBand">
+          <svg class="hero-asanoha hero-asanoha--lit" focusable="false"><rect width="100%" height="100%" fill="url(#fw-asanoha)" /></svg>
+        </div>
         <svg class="hero-lattice" viewBox="-1 -1 2 2" focusable="false"><path :d="latticePath" /></svg>
-        <svg class="hero-rings" viewBox="-1 -1 2 2" focusable="false">
+        <svg ref="rings" class="hero-rings" viewBox="-1 -1 2 2" focusable="false" @animationstart="applyRingRate">
           <path :d="ringsPath" />
           <circle v-for="(tick, index) in ticks" :key="index" :cx="tick.x" :cy="tick.y" :r="tick.r" />
         </svg>
       </div>
+      <span class="hero-marks" aria-hidden="true" data-testid="heroMarks"></span>
       <span v-if="pulseKey" :key="pulseKey" class="hero-pulse" aria-hidden="true" data-testid="heroArrivalPulse"></span>
 
       <p class="overline" data-testid="heroOverline">{{ t('portfolioDashboard.totalBalance') }}</p>
@@ -23,7 +40,7 @@
         <button
         type="button"
         class="total"
-        :class="totalSize && `total--${totalSize}`"
+        :class="[totalSize && `total--${totalSize}`, totalTick && `total--tick-${totalTick.direction}`]"
         :aria-label="totalLabel"
         data-testid="heroTotal"
         @click="$emit('openFiats')"
@@ -31,6 +48,8 @@
           <span class="total-symbol">{{ fiatSymbol }}</span>
           <span class="total-whole">{{ shownAmount.whole }}</span>
           <span class="total-fraction">.{{ shownAmount.fraction }}</span>
+          <!-- Kit v4: the total keeps its count; a change also draws a line under it in the colour of its direction. -->
+          <span v-if="totalTick" :key="totalTick.key" class="total-line" aria-hidden="true" data-testid="heroTotalLine"></span>
         </button>
 
         <p class="change" :class="`change--${change.direction}`" data-testid="heroChange">
@@ -44,11 +63,14 @@
           type="button"
           class="sync-chip"
           :class="`sync-chip--${sync.kind}`"
-          :aria-label="t('portfolioDashboard.sync.open', { state: syncText })"
+          :aria-label="t('portfolioDashboard.sync.open', { state: syncCount ? `${syncText} ${syncCount}` : syncText })"
           data-testid="heroSync"
           @click="$emit('openSync')"
         >
-          <span class="sync-dot" aria-hidden="true"></span>{{ syncText }}
+          <SyncDial :kind="sync.kind" :done="syncProgress?.done" :failed="syncProgress?.failed" :total="syncProgress?.total" />
+          <!-- While networks answer, the count takes the word's place: how many have, of how many. -->
+          <span v-if="syncCount" class="sync-count" data-testid="heroSyncCount">{{ syncCount }}</span>
+          <template v-else>{{ syncText }}</template>
         </button>
 
         <span class="meta-dot" aria-hidden="true">·</span>
@@ -62,7 +84,7 @@
     </div>
 
     <!-- What a wallet is for, one press away. -->
-    <RoundActions v-if="actions.length" class="actions" :actions="actions" data-testid="heroActions" @action="onAction" />
+    <RoundActions v-if="actions.length" class="actions" :actions="actions" data-testid="heroActions" data-fw-depth="1" @action="onAction" />
   </section>
 </template>
 
@@ -70,9 +92,12 @@
 import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue';
 import type { SyncState } from '@/portfolio/dashboard/syncState';
 import skyCard from '@/assets/brand/sky/sky-card.webp';
+import SyncDial from '@/components/SyncDial.vue';
 import { arrivalPulse } from '@/feel/arrivalPulse';
 import { useCountUp } from '@/feel/countUp';
 import { motionAllowed } from '@/feel/motion';
+import { SHIKIBAN } from '@/feel/shikiban';
+import { useValueTick } from '@/feel/valueTick';
 import { solarPath, solarTicks } from '@/feel/solarGeometry';
 import RoundActions, { type RoundAction } from '@/screens/portfolio/RoundActions.vue';
 import { formatChange, splitTotal } from '@/portfolio/dashboard/format';
@@ -94,13 +119,18 @@ const props = withDefaults(
     poolStakesExcluded: boolean;
     loading: boolean;
     sync: SyncState;
+    /**
+     * The selected wallet's networks by what they have done since it opened: how many have answered, how many gave up,
+     * of how many. Absent when only the state is known (All wallets).
+     */
+    syncProgress?: { done: number; failed: number; total: number };
     /** A single wallet can swap; All wallets asks for a wallet first. */
     showSwap: boolean;
     showSend?: boolean;
     /** False for a recovery-only wallet: nothing new should be sent to it. */
     showReceive?: boolean;
   }>(),
-  { showSend: false, showReceive: false }
+  { showSend: false, showReceive: false, syncProgress: undefined }
 );
 
 const emit = defineEmits<{
@@ -120,6 +150,10 @@ const amount = computed(() => splitTotal(props.total));
 // The digits count to a new total (src/feel/countUp.ts); the label above and anything copied read the final value.
 const shownTotal = useCountUp(() => props.total, () => !props.loading);
 const shownAmount = computed(() => splitTotal(shownTotal.value));
+const totalTick = useValueTick(
+  () => (props.loading ? null : Number(props.total)),
+  () => props.total
+);
 // A long total steps its digits down, so it stays on one line inside the sky card's ink, even in the side panel. It
 // follows the final value, so the size never changes while the digits count.
 const totalSize = computed(() => {
@@ -130,6 +164,27 @@ const totalSize = computed(() => {
 const ringsPath = solarPath(['ring']);
 const latticePath = solarPath(['lattice', 'hexagram']);
 const ticks = solarTicks();
+
+// Asanoha, the hemp-leaf lattice, as one repeating tile 26 px wide (kit v4 `asanoha`).
+const ASANOHA_CELL = 26;
+const ASANOHA = {
+  width: ASANOHA_CELL,
+  height: Number((SHIKIBAN.asanoha.height * ASANOHA_CELL).toFixed(3)),
+  path: SHIKIBAN.asanoha.lines
+    .map(([x1, y1, x2, y2]) => `M${(x1 * ASANOHA_CELL).toFixed(2)} ${(y1 * ASANOHA_CELL).toFixed(2)}L${(x2 * ASANOHA_CELL).toFixed(2)} ${(y2 * ASANOHA_CELL).toFixed(2)}`)
+    .join(''),
+};
+
+// The heaven plate: while the wallet's networks are answering, the tick ring turns 14 times faster and the geometry
+// brightens; both ease back when the sync settles. The rate changes in place, so the ring never jumps. A card that
+// mounts while they are answering gets the rate when its ring starts to turn (the template's animationstart).
+const HEAVEN_RATE = 14;
+const rings = ref<SVGSVGElement>();
+const syncing = computed(() => props.sync.kind === 'updating');
+const applyRingRate = (): void => {
+  for (const animation of rings.value?.getAnimations?.() ?? []) animation.updatePlaybackRate(syncing.value ? HEAVEN_RATE : 1);
+};
+watch(syncing, applyRingRate);
 
 // Tokens arriving pulse the card gold (src/feel/useArrivalFeedback.ts).
 const pulseKey = ref(0);
@@ -224,6 +279,12 @@ const syncText = computed(() => {
   return t(`portfolioDashboard.sync.${kind}`);
 });
 
+// "9 / 14": only while networks are answering, and only when the wallet knows both numbers.
+const syncCount = computed(() => {
+  const progress = props.syncProgress;
+  return syncing.value && progress && progress.total > 0 ? `${Math.min(progress.done, progress.total)} / ${progress.total}` : '';
+});
+
 const actions = computed<RoundAction[]>(() =>
   ([] as (RoundAction | false)[]).concat(
     props.showSend && { id: 'send', icon: 'send', testId: 'heroSend', label: t('walletHome.send'), aria: t('walletHome.sendAria'), primary: true },
@@ -274,7 +335,7 @@ function onAction(id: string): void {
   container-type: inline-size;
   @include fw-lit-rim(20px);
 
-  > :not(.hero-sky, .hero-pulse) {
+  > :not(.hero-sky, .hero-pulse, .hero-marks) {
     position: relative;
     z-index: 1;
   }
@@ -333,6 +394,104 @@ function onAction(id: string): void {
   will-change: transform;
 }
 
+// Kit v4: asanoha across the card at 5 %, under the ink, drawn once. A band of light 220 px wide crosses the card every
+// 9 s and shows the same lattice at 32 % where it passes: the band is a window that slides one way while the lattice
+// inside it slides back, so only transforms move.
+.hero-asanoha {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+
+  path {
+    fill: none;
+    stroke: $fw-shikiban-rest;
+    stroke-width: 0.75px;
+  }
+
+  rect {
+    opacity: 0.05;
+  }
+}
+
+.hero-band {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 220px;
+  height: 100%;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, $fw-mask-opaque 50%, transparent);
+  translate: -220px 0;
+  animation: hero-band 9s linear infinite;
+  will-change: translate;
+}
+
+.hero-asanoha--lit {
+  inset: auto;
+  left: 0;
+  top: 0;
+  width: 100cqw;
+  translate: 220px 0;
+  animation: hero-band-back 9s linear infinite;
+  will-change: translate;
+
+  rect {
+    opacity: 0.32;
+  }
+}
+
+// The band crosses in the first 2.4 s of every 9, then waits out of sight.
+@keyframes hero-band {
+  0% {
+    translate: -220px 0;
+  }
+
+  27%,
+  100% {
+    translate: 100cqw 0;
+  }
+}
+
+@keyframes hero-band-back {
+  0% {
+    translate: 220px 0;
+  }
+
+  27%,
+  100% {
+    translate: -100cqw 0;
+  }
+}
+
+// Registration marks: a bracket in each corner 9 px in, and short ticks at the top and bottom edges at 1 - 1/sqrt(2),
+// 1/2 and 1/sqrt(2) of the width: the yamato divisions the card is laid out on. The ticks stay within 8 px of the
+// edge, clear of every line of text on the card.
+.hero-marks {
+  $corner: linear-gradient($fw-shikiban-mark, $fw-shikiban-mark);
+  $tick: linear-gradient($fw-shikiban-mark-soft, $fw-shikiban-mark-soft);
+
+  position: absolute;
+  inset: 4px;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    $corner left 5px top 5px / 10px 1px no-repeat,
+    $corner left 5px top 5px / 1px 10px no-repeat,
+    $corner right 5px top 5px / 10px 1px no-repeat,
+    $corner right 5px top 5px / 1px 10px no-repeat,
+    $corner left 5px bottom 5px / 10px 1px no-repeat,
+    $corner left 5px bottom 5px / 1px 10px no-repeat,
+    $corner right 5px bottom 5px / 10px 1px no-repeat,
+    $corner right 5px bottom 5px / 1px 10px no-repeat,
+    $tick calc(29.289cqw - 4px) 0 / 1px 4px no-repeat,
+    $tick calc(50cqw - 4px) 0 / 1px 4px no-repeat,
+    $tick calc(70.711cqw - 4px) 0 / 1px 4px no-repeat,
+    $tick calc(29.289cqw - 4px) 100% / 1px 4px no-repeat,
+    $tick calc(50cqw - 4px) 100% / 1px 4px no-repeat,
+    $tick calc(70.711cqw - 4px) 100% / 1px 4px no-repeat;
+}
+
 // The solar geometry, centred on the card: its rings and ticks turn once in about six minutes at the card's sides, the
 // lattice and the hexagram rest behind the text under the ink.
 .hero-rings,
@@ -378,6 +537,24 @@ function onAction(id: string): void {
   }
 }
 
+// The heaven plate at work: brighter while the networks answer, easing back over 720 ms.
+.hero-rings,
+.hero-lattice {
+  transition:
+    opacity 720ms var(--fw-ease),
+    filter 720ms var(--fw-ease);
+}
+
+.hero-card--syncing {
+  .hero-rings {
+    filter: drop-shadow(0 0 5px $fw-sky-geometry-glow) brightness(1.3);
+  }
+
+  .hero-lattice {
+    opacity: 0.52;
+  }
+}
+
 // Tokens arrived: a gold ring runs out from the card's edge and fades.
 .hero-pulse {
   position: absolute;
@@ -413,13 +590,20 @@ html[data-fw-effects='lite'] .hero-rings {
   animation: none;
 }
 
+html[data-fw-effects='lite'] .hero-band {
+  display: none;
+}
+
 html[data-fw-effects='reduced'] .hero-sky,
-.fw-calm .hero-sky {
+html[data-fw-effects='reduced'] .hero-marks,
+.fw-calm .hero-sky,
+.fw-calm .hero-marks {
   display: none;
 }
 
 @media (forced-colors: active) {
-  .hero-sky {
+  .hero-sky,
+  .hero-marks {
     display: none;
   }
 }
@@ -427,6 +611,10 @@ html[data-fw-effects='reduced'] .hero-sky,
 @media (prefers-reduced-motion: reduce) {
   .hero-rings {
     animation: none;
+  }
+
+  .hero-band {
+    display: none;
   }
 
   .hero-pulse {
@@ -453,6 +641,7 @@ html[data-fw-effects='reduced'] .hero-sky,
 }
 
 .total {
+  position: relative;
   display: flex;
   align-items: baseline;
   justify-content: center;
@@ -470,6 +659,48 @@ html[data-fw-effects='reduced'] .hero-sky,
   &:focus-visible {
     outline: 2px solid var(--fw-focus);
     outline-offset: 4px;
+  }
+}
+
+.total--tick-up {
+  --tick-colour: var(--fw-up);
+}
+
+.total--tick-down {
+  --tick-colour: var(--fw-down);
+}
+
+.total-line {
+  position: absolute;
+  right: 4px;
+  bottom: -1px;
+  left: 4px;
+  height: 1px;
+  background: var(--tick-colour);
+  transform-origin: left center;
+  animation: total-line 510ms var(--fw-ease) both;
+}
+
+@keyframes total-line {
+  0% {
+    scale: 0 1;
+    opacity: 1;
+  }
+
+  60% {
+    scale: 1 1;
+    opacity: 1;
+  }
+
+  100% {
+    scale: 1 1;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .total-line {
+    display: none;
   }
 }
 
@@ -555,42 +786,15 @@ html[data-fw-effects='reduced'] .hero-sky,
   font-weight: 600;
 }
 
-.sync-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--fw-text-3);
-}
-
-.sync-chip--live .sync-dot {
-  background: var(--fw-success);
-}
-
-// Networks are still answering: the dot breathes until they have.
-.sync-chip--updating .sync-dot {
-  background: var(--fw-text-2);
-  animation: sync-breathe 1.4s ease-in-out infinite;
-}
-
-@keyframes sync-breathe {
-  50% {
-    opacity: 0.3;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sync-chip--updating .sync-dot {
-    animation: none;
-  }
+// While networks answer, the count is in the colour of things in flight.
+.sync-count {
+  color: $fw-shikiban-flight;
+  font-variant-numeric: tabular-nums;
 }
 
 .sync-chip--saved,
 .sync-chip--partial {
   color: var(--fw-warning);
-
-  .sync-dot {
-    background: var(--fw-warning);
-  }
 }
 
 .caption {

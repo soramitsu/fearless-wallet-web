@@ -25,6 +25,11 @@ export interface PortfolioLoadStatus {
   /** Their names, in the registry's order. */
   pendingNetworks: string[];
   /**
+   * Networks of this wallet that have answered at least once, now or in an earlier visit. With `pendingCount` it is
+   * how many networks the wallet reads: the sync dial's lit share (brand kit v4).
+   */
+  answeredCount: number;
+  /**
    * Whether the first-load wait is still running. Within it a network that has not answered is still being checked;
    * after it, one that has not answered is not responding.
    */
@@ -104,9 +109,10 @@ export function getPortfolioLoadStatus({
 
   const pendingNetworks = networks.map(({ name }) => name).filter((name) => waiting.has(name) && !answered.has(name));
   const pendingCount = pendingNetworks.length;
+  const answeredCount = networks.filter((network) => answered.has(network.name) && walletScope(network) && network.active !== false).length;
   // Before the first balance message, or before the network list, nothing is known either way.
   const unknown = groups.length === 0 || networks.length === 0;
-  const status = { pendingCount, pendingNetworks, waiting: !timedOut };
+  const status = { pendingCount, pendingNetworks, answeredCount, waiting: !timedOut };
 
   if (!hasHoldings && !hasSavedPicture && !timedOut && (unknown || pendingCount > 0)) return { state: 'loading', ...status };
 

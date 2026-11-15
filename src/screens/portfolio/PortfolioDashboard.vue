@@ -11,6 +11,7 @@
       :poolStakesExcluded="exclusions.poolStakes"
       :loading="heroLoading"
       :sync="heroSync"
+      :syncProgress="heroSyncProgress"
       :showSend="true"
       :showReceive="singleWallet ? receiveAvailable : anyWalletTakesFunds"
       :showSwap="singleWallet ? swapAvailable : anyWalletTakesFunds"
@@ -25,7 +26,7 @@
     <!-- The wallet screen's views (Assets, Portfolio, NFTs) sit right under the balance. -->
     <slot name="toolbar" :allWallets="!singleWallet" />
 
-    <div v-if="!singleWallet && showAllWalletsList" class="all-panel" data-testid="allWalletsPanel">
+    <div v-if="!singleWallet && showAllWalletsList" class="all-panel" data-testid="allWalletsPanel" data-fw-depth="4">
       <PortfolioAllWallets
         :tokenRows="dashboard.tokenRows.value"
         :networkSections="dashboard.networkSections.value"
@@ -160,6 +161,16 @@ const heroLoading = computed(() => props.loading || dashboard.pending.value);
 const heroSync = computed(() =>
   singleWallet.value ? withSelectedWalletLoad(dashboard.syncState.value, props.loadStatus) : dashboard.syncState.value
 );
+// The sync dial's numbers, for one wallet: its networks that have answered, and those that failed or went stale, of
+// all it reads. All wallets knows only the state.
+const heroSyncProgress = computed(() => {
+  const load = props.loadStatus;
+  if (!singleWallet.value || !load) return undefined;
+  const total = load.answeredCount + load.pendingCount;
+  const failed = Math.min(total, heroSync.value.staleNetworks.length);
+
+  return { done: Math.max(0, load.answeredCount - failed), failed, total };
+});
 const exclusions = computed(() => {
   const source = singleWallet.value ? props.summary : dashboard.aggregate.value;
 

@@ -125,6 +125,18 @@ describe('portfolio load status', () => {
     expect(status.pendingNetworks).not.toContain('Polkadot');
   });
 
+  it('counts the networks that have answered: with those still pending, how many the wallet reads (the sync dial)', () => {
+    const groups = placeholders();
+    expect(getPortfolioLoadStatus({ groups, networks }).answeredCount).toBe(0);
+
+    answer(groups, 'Polkadot', 'dot', '12.5');
+    answerNetwork(groups, 'Kusama');
+    const status = getPortfolioLoadStatus({ groups, networks });
+
+    expect(status.answeredCount).toBe(2);
+    expect(status.answeredCount + status.pendingCount).toBe(substrateNetworkCount);
+  });
+
   it('settles once every network has answered or failed', () => {
     const groups = placeholders();
     groups.forEach(({ balances }) =>

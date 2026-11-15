@@ -278,7 +278,10 @@ export function collectTiers(root: HTMLElement | null = appRoot()): Tier[] {
   });
 }
 
-/** Depth is a scale about the focus (SPEC v4 rule 2): the tier's own origin is the focus, in its own box. */
+/**
+ * Depth is a scale about the focus (SPEC v4 rule 2): the tier's own origin is the focus, in its own box. The flight
+ * animates the `scale` property, never `transform`, so a part that places itself with a transform keeps its place.
+ */
 function aimAt(tier: Tier, focus: { x: number; y: number }): void {
   const box = tier.element.getBoundingClientRect();
   tier.element.style.transformOrigin = `${focus.x - box.left}px ${focus.y - box.top}px`;
@@ -292,7 +295,7 @@ function land(): void {
   for (const tier of tiers) {
     aimAt(tier, focus);
     const delay = tier.depth * FLIGHT.tierStaggerMs;
-    const arrive = tier.element.animate([{ transform: `scale(${landingFrom(tier.depth).toFixed(4)})` }, { transform: 'scale(1)' }], {
+    const arrive = tier.element.animate([{ scale: landingFrom(tier.depth).toFixed(4) }, { scale: '1' }], {
       duration: FLIGHT.landingMs,
       delay,
       easing: cssEasing('settle'),
@@ -411,7 +414,7 @@ function ignite(cover: HTMLElement, state: LaunchState, ready: () => boolean): v
       aimAt(tier, framing.focus);
       const scales = samples[tier.depth];
       const fly = tier.element.animate(
-        scales.map((scale, index) => ({ transform: `scale(${scale})`, offset: index / (scales.length - 1) })),
+        scales.map((scale, index) => ({ scale: String(scale), offset: index / (scales.length - 1) })),
         { duration: FLIGHT.durationMs, easing: 'linear' }
       );
       const show = tier.element.animate([{ opacity: 0 }, { opacity: 1 }], {

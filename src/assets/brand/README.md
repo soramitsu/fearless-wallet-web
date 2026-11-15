@@ -19,6 +19,7 @@ recorded in `docs/release/brand-asset-provenance.json`.
 | `audio/send.m4a`, `audio/receive.m4a` | The send and receive sounds (kit v3) |
 | `solar-geometry.json` | The solar geometry as strokes and their draw order: the send ignite and the wallet home's rings (kit v3) |
 | `sky/sky-card.webp` | The sunset sky behind the wallet home's balance (kit v3) |
+| `shikiban.json` | The instrument's numbers: the launch flight, the mirror, the sync dial, the seal, the loader, the lattice (kit v4) |
 
 Rules:
 - Use the primary crest at 64 px and above and the small crest below.
@@ -38,9 +39,9 @@ sizes, containers and provenance.
 Kit v3 (2026-11-13, "Launch, feel and sound") adds the files above, copied verbatim and pinned in
 `scripts/generate-brand-assets.mjs` (`KIT_COPIES`). The code is in `src/feel`:
 - The launch (`launchOverlay.ts`, started by the popup entry) plays the Ignite over the first wallet view of a browser
-  session, holds on the open wings until the wallet is ready, then dives into the solar disc while the wallet zooms in.
-  Later views get a short landing; site request windows get neither; reduced motion and Reduced paint get a fade. A click
-  or a key skips it, and a key still reaches the page. Harness builds leave it off unless the page is opened with
+  session, holds on the open wings until the wallet is ready, then flies into the wallet (kit v4, below). Later views
+  get a short arrival; site request windows get neither; reduced motion and Reduced paint get a fade. A click or a key
+  hurries it, and a key still reaches the page. Harness builds leave it off unless the page is opened with
   `?fw-launch=force`.
 - The send sound and the solar ignite play when a transfer, a cross-chain send or an NFT is sent
   (`ConfirmationPasswordPopup.vue`). Tokens arriving (`arrivals.ts`: a known balance of the selected wallet grows, never a
@@ -65,3 +66,25 @@ Yatagarasu pinks. Surfaces and text use the brand's ink palette, as the iOS and 
 - Links and the focus ring stay cyan, because the brand pink reads only 3.8:1 on the aurora's brightest point.
 
 `src/styles/fw-tokens.scss` is generated from the token file (`gen-fw-tokens.mjs --web`, sha256 in its header).
+
+Kit v4 (2026-11-15, "Shikiban: depth, instruments and sacred geometry") makes the wallet read as an instrument: a round
+heaven plate over a square earth plate. Sizes and durations step by 1/√2; depth is a scale of `p / (p + z)` about a
+point; motion reports state (gold is final, cyan is in flight, ember is failure). The numbers are `shikiban.json`; the
+formulas are `src/feel/shikiban.ts`, held to the kit's sampled keyframes by `tests/unit/feel-shikiban.spec.ts`.
+- The launch flight (`launchOverlay.ts`, `shikibanDraw.ts`): from the clip's dive, six gates (circle over square, each
+  1/√2 of the last, then the eight-lobed mirror) rush out of the focus, the mirror opens on the wallet far off, and the
+  wallet flies up and settles. Parts of the screen marked `data-fw-depth` (0 nearest: the balance, then the actions, the
+  header and tab bar, the tabs, the list) fly at their own depths; a screen that marks nothing flies as one piece.
+- The sync dial (`SyncDial.vue`, in the balance card's status): eight segments lit to the share of the wallet's networks
+  that have answered, ember for those that gave up, a cyan comet and the count ("9 / 14") while any are outstanding.
+  The card's tick ring turns 14 times faster meanwhile.
+- The seal (`SealFigure.vue`, in `ConfirmationPasswordPopup.vue`): a send draws the solar geometry by its stages. The
+  popup learns only the outcome, so it shows the rings and the comet, then closes and ignites on acceptance, or breaks.
+- The loader (`MirrorLoader.vue`, behind `Loader` and `Loading`): three comets on the mirror's rim, or the rim filling to
+  a known share.
+- The value tick (`valueTick.ts`): a row's fiat value or the total that changes on screen draws a line under itself in
+  the colour of its direction.
+- The balance card's marks (`PortfolioHero.vue`): corner brackets, ticks at the yamato divisions, an asanoha lattice a
+  band of light crosses every 9 s.
+- Dialogs (`Popup.vue`) arrive from a little depth.
+Reduced motion and Reduced paint show every state without moving; Lite drops the band of light.

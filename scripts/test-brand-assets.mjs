@@ -83,7 +83,7 @@ test('the welcome hero media are recorded in provenance', async () => {
   for (const name of hero) assert.equal(p.sourceAssets[`src/assets/brand/hero/${name}`], sha256(await read(`src/assets/brand/hero/${name}`)));
 });
 
-test('the kit v3 copies are the kit manifest\'s files and are recorded in provenance', async () => {
+test('the kit copies are the kit manifest\'s files and are recorded in provenance', async () => {
   const p = JSON.parse(await read('docs/release/brand-asset-provenance.json'));
   assert.deepEqual(p.provenance.kitCopies, KIT_COPIES);
   assert.deepEqual(Object.keys(KIT_COPIES).sort(), [
@@ -91,6 +91,7 @@ test('the kit v3 copies are the kit manifest\'s files and are recorded in proven
     'src/assets/brand/audio/send.m4a',
     'src/assets/brand/hero/launch-timeline.json',
     'src/assets/brand/hero/popup-launch-ignite.webm',
+    'src/assets/brand/shikiban.json',
     'src/assets/brand/sky/sky-card.webp',
     'src/assets/brand/solar-geometry.json',
   ]);

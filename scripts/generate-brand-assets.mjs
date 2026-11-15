@@ -13,9 +13,10 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 export const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
 // Kit v3 (2026-11-13) adds the launch clip, the transfer sounds, the solar geometry and the sky card; every v2 file,
-// the masters included, is byte-identical to v2.
+// the masters included, is byte-identical to v2. Kit v4 (2026-11-15) adds the shikiban tokens (the launch flight, the
+// sync dial, the seal, the loader and the lattice); every v3 file is byte-identical to v3.
 export const KIT = {
-  manifestSha256: 'e49da29bbf91dc96d2afe3772b5ec50acc23bc28ff4af500aff0ff7f631ddb84',
+  manifestSha256: '19675ac743881b28bcae83a24f3ee15702c5a8af2b7a5d901c858848c4d74cd7',
   designPackage: 'design/yatagarasu-20261110 (package r3)',
 };
 // Kit files the interface ships as they are, each pinned to its entry in the kit manifest: the launch (src/feel), the
@@ -45,6 +46,10 @@ export const KIT_COPIES = {
   'src/assets/brand/sky/sky-card.webp': {
     kitPath: 'png/sky/sky-card.webp',
     sha256: '4e8418b6c898579cdd2e105ec12caf6c20f7e71b6c4c328937a7139992323474',
+  },
+  'src/assets/brand/shikiban.json': {
+    kitPath: 'tokens/shikiban.json',
+    sha256: '6949daff2d3d4deef0a77712b3830ceaf0487560613ba2c5b623ca873f97a455',
   },
 };
 export const masterHashes = {
@@ -169,10 +174,11 @@ async function main() {
   const provenanceFile = 'docs/release/brand-asset-provenance.json';
   const provenance = {
     provenance: {
-      recordedAt: '2026-11-13T00:00:00.000Z',
+      recordedAt: '2026-11-15T00:00:00.000Z',
       source:
         '2026-11-10 approved Yatagarasu brand: crest, wordmark and app icon masters copied verbatim from the Fearless brand kit; ' +
-        'kit v3 (2026-11-13) adds the launch, the transfer sounds, the solar geometry and the sky card, also verbatim',
+        'kit v3 (2026-11-13) adds the launch, the transfer sounds, the solar geometry and the sky card, and kit v4 ' +
+        '(2026-11-15) the shikiban tokens, also verbatim',
       kit: KIT,
       masterDirectory: 'scripts/brand/masters',
       masterSha256: masterHashes,

@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-15",
+  "applicationSourceCommit": "3c866dc3611e31be7f400ce30d3b084ffce8fa4b",
+  "baselineBuildSourceCommit": "3c866dc3611e31be7f400ce30d3b084ffce8fa4b",
+  "referenceSourceCommit": "8dce94281169d19720f200d6abf52af6ebde5824",
+  "toolchain": {
+    "node": "24.19.0",
+    "webExt": "10.6.0"
+  },
+  "summary": "Review and refresh both exact Firefox warning baselines after the brand kit v4 (Shikiban) work. The same 36 warnings remain: 35 DANGEROUS_EVAL and one UNSAFE_VAR_ASSIGNMENT, at the same sites (code, file, message) in the reference and the head builds of both configurations; zero errors or notices.",
+  "referenceState": "The committed baselines no longer passed on the reference commit itself: the keyless build failed on the artifact digest of chunks/mountApp.js with its warning set unchanged, and the store build on its warning set. They were last re-pinned at 25d0cd2b; the commits since then changed those bundles without a re-pin.",
+  "comparison": {
+    "method": "Both builds of both commits linted with web-ext, compared by code, file (content hash removed) and message, then by 60 characters of minified code each side of every warning.",
+    "keyless": {
+      "reference": 36,
+      "head": 36,
+      "siteDifferences": 0,
+      "contextDifferences": 2
+    },
+    "store": {
+      "reference": 36,
+      "head": 36,
+      "siteDifferences": 0,
+      "contextDifferences": 2
+    },
+    "contextDifferences": [
+      {
+        "code": "UNSAFE_VAR_ASSIGNMENT",
+        "file": "chunks/SendForm.js",
+        "message": "Unsafe assignment to innerHTML",
+        "finding": "Vue runtime-dom static-content insert; only minified names changed (keyless Tt/xt to jt/Dt, store yt/ht to Tt/xt). SendForm.js is the shared chunk that carries the send popup, which now holds the seal."
+      },
+      {
+        "code": "DANGEROUS_EVAL",
+        "file": "chunks/mountApp.js",
+        "message": "The Function constructor is eval.",
+        "finding": "lodash root lookup (Function(`return this`)()); only minified names changed (keyless ax/rx/ix to fx/ux/dx, store Ob/Eb/Db to Fb/Nb/Pb)."
+      }
+    ]
+  },
+  "configurations": {
+    "keyless": {
+      "baseline": "config/firefox-webext-warning-baseline-ci.json",
+      "previousBaselineSha256": "ce1cda0f744aee77f17296928b72ce3baeb106a365a43c25328955cc0b7f91a2",
+      "baselineSha256": "d3b3ed1f7697ab6261af39bb9099ed347fb65349961309e70acb7171edaefa8a",
+      "summary": {
+        "errors": 0,
+        "notices": 0,
+        "warnings": 36
+      },
+      "warningSetSha256": "4283a5c83f33679bf164707bdbfc20c862715eb6df0e240ad20ffb9e83f7e2b0"
+    },
+    "store": {
+      "baseline": "config/firefox-webext-warning-baseline.json",
+      "previousBaselineSha256": "0c25212ff32169ed56581cb3e2ceeabca315b329c972960787525e3328e2de20",
+      "baselineSha256": "abecf0f817553077c21a06b00c8461d5f0ffa8f29ee43ac1518d033524a9b8a2",
+      "summary": {
+        "errors": 0,
+        "notices": 0,
+        "warnings": 36
+      },
+      "warningSetSha256": "ddecd04503eb47691b0cebe5fc7c38853e713447cad94cf892d630d3bc90be22"
+    }
+  }
+}

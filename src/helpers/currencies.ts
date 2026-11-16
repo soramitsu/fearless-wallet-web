@@ -13,7 +13,7 @@ import { isSameString, isSora } from '@/helpers';
 import { getSummaryTransferableBalance, isNetworkGroup } from '@/helpers/common';
 import { matchesNetworkSelection } from '@/helpers/networkSelection';
 import { formatDecimalString } from '@/helpers/numbers';
-import { getCanonicalAssetId } from '@/portfolio/assetIdentity';
+import { getBalancePrice, getCanonicalAssetId } from '@/portfolio/assetIdentity';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
@@ -132,7 +132,7 @@ type TransferAssetOption = {
 };
 
 type TransferAssetOptionsParams = {
-  getPrice?: (priceId: string) => number;
+  prices?: Record<string, number>;
   isNetworkAvailable?: (network: NetworkJson) => boolean;
 };
 
@@ -160,7 +160,7 @@ function toPositiveNumber(value: unknown) {
 function getTransferAssetOptions(
   groups: TokenGroup[],
   getNetwork: (name: string) => NetworkJson | undefined,
-  { getPrice = () => 0, isNetworkAvailable = () => true }: TransferAssetOptionsParams = {}
+  { prices = {}, isNetworkAvailable = () => true }: TransferAssetOptionsParams = {}
 ): TransferAssetOption[] {
   const values = new Set<string>();
 
@@ -189,7 +189,7 @@ function getTransferAssetOptions(
             icon: group.icon,
           },
           // Only orders the list; no fiat value is shown in the picker.
-          fiat: total * toPositiveNumber(getPrice(balance.priceId ?? group.priceId ?? '')),
+          fiat: total * toPositiveNumber(getBalancePrice({ network, balance, group, prices }).unitPrice),
           total,
           symbol,
           rank: network.rank ?? Number.POSITIVE_INFINITY,
@@ -254,6 +254,28 @@ function getUtilityAsset(balances: TokenGroup[], _network: NetworkName) {
   return balances.find(({ balances }) =>
     balances.some(({ name, isUtility }) => isSameString(name, _network) && isUtility)
   )!;
+}
+
+/**
+ * The price the portfolio trusts (`getBalancePrice`) for the group's balance on this network that `matches`, by
+ * default the first one there (the balance a send moves), or `null` when there is none. A token group's price id is
+ * never lent to its balance, so a token without a trusted price has no fiat value rather than $0.
+ */
+export function getTransferAssetPrice(
+  group: TokenGroup | undefined,
+  network: NetworkJson | undefined,
+  prices: Record<string, number>,
+  matches: (balance: BalanceItem) => boolean = () => true
+): number | null {
+  const balance = network
+    ? group?.balances?.find((item) => isSameString(item.name, network.name) && matches(item))
+    : undefined;
+
+  if (!network || !balance) return null;
+
+  const { unitPrice } = getBalancePrice({ network, balance, group, prices });
+
+  return unitPrice === null ? null : Number(unitPrice);
 }
 
 const getXORCurrency = (balances: TokenGroup[]) => {

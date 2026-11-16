@@ -60,7 +60,7 @@ import { defineComponent } from 'vue';
 
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { addNumbers } from '@/helpers/numbers';
-import { findTransferAssetGroup, getUtilityAsset } from '@/helpers/currencies';
+import { findTransferAssetGroup, getTransferAssetPrice, getUtilityAsset } from '@/helpers/currencies';
 import { getOwnWalletRecipient } from '@/helpers/transfers';
 import { isSameString } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
@@ -102,27 +102,32 @@ export default defineComponent({
     showValue() {
       return this.value !== '0';
     },
+    // The portfolio's trusted price for exactly the asset being sent, or `null`: "Price unavailable", never $0.
     assetPrice() {
-      return this.networksStore.getAssetPrice(this.currency?.priceId ?? '')?.price ?? 0;
+      return getTransferAssetPrice(this.currency, this.originNet, this.networksStore.assetsPrice?.tokenPriceMap ?? {});
     },
     originNet() {
       return this.networksStore.getNetwork(this.selectedNetwork);
     },
-    originalUtilityId() {
-      return this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
-    },
+    // The fee is paid in the network's utility asset, priced by its own decision.
     feeAssetPrice() {
-      const currency = this.accountsStore.balances.find(({ balances }) =>
-        balances.some(({ id }) => id === this.originalUtilityId)
-      );
-      const priceId = currency?.priceId ?? '';
+      const utility = getUtilityAsset(this.accountsStore.balances, this.selectedNetwork);
 
-      return this.networksStore.getAssetPrice(priceId).price;
+      return getTransferAssetPrice(
+        utility,
+        this.originNet,
+        this.networksStore.assetsPrice?.tokenPriceMap ?? {},
+        ({ isUtility }) => Boolean(isUtility)
+      );
     },
     fiatFeeString() {
+      if (this.feeAssetPrice === null) return this.$t('portfolioPage.priceUnavailable');
+
       return `${this.accountsStore.fiatSymbol}${this.$n(+this.partialFee * this.feeAssetPrice, 'price')}`;
     },
     valueString() {
+      if (this.assetPrice === null) return this.$t('portfolioPage.priceUnavailable');
+
       return `${this.accountsStore.fiatSymbol}${this.$n(+this.value, 'price')}`;
     },
     amountString() {
@@ -146,7 +151,10 @@ export default defineComponent({
     totalString() {
       return `${this.$n(this.total, 'decimalPrecise')} ${this.selectedAssetUpper}`;
     },
+    // The amount and the fee: without a price for either, a fiat total would leave part of it out.
     fiatTotalString() {
+      if (this.assetPrice === null || this.feeAssetPrice === null) return this.$t('portfolioPage.priceUnavailable');
+
       return `${this.accountsStore.fiatSymbol}${this.$n(this.total * this.assetPrice, 'price')}`;
     },
   },

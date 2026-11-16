@@ -207,6 +207,7 @@ export default defineComponent({
   props: {
     amount: { type: String, default: '0' },
     value: { type: String, default: '0' },
+    priceUnavailable: { type: Boolean, default: false },
     fee: { type: String, default: '0' },
     feeValue: { type: String, default: '0' },
     firstIcon: String,
@@ -340,6 +341,8 @@ export default defineComponent({
       return `-${this.$n(value, 'decimal')} ${symbol}`;
     },
     transferValueString() {
+      if (this.priceUnavailable) return this.$t('portfolioPage.priceUnavailable');
+
       const sumValue = +this.value + +this.feeValue;
       const value = this.isSuccess || this.isUnconfirmed ? sumValue : +this.feeValue;
 

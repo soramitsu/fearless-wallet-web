@@ -94,11 +94,16 @@ const groups: TokenGroup[] = [
 ];
 
 const prices: Record<string, number> = { tether: 1, dai: 1, polkadot: 5 };
-const getPrice = (priceId: string) => prices[priceId] ?? 0;
+// Bind each test price in the registry, as the portfolio requires.
+for (const item of networks) {
+  item.assets = groups.flatMap((group) => group.balances
+    .filter((balance) => balance.name === item.name.toLowerCase())
+    .map((balance) => ({ id: balance.id, symbol: balance.symbol, priceId: balance.priceId }) as NetworkJson['assets'][number]));
+}
 
 describe('transfer asset options', () => {
   it('labels every option "SYMBOL · Network" and never by relay chain', () => {
-    const options = getTransferAssetOptions(groups, getNetwork, { getPrice });
+    const options = getTransferAssetOptions(groups, getNetwork, { prices });
     const names = options.map(({ name }) => name);
 
     expect(new Set(names).size).toBe(names.length);
@@ -121,7 +126,7 @@ describe('transfer asset options', () => {
   });
 
   it('gives each (asset, network) a unique value that round-trips to the registry id and network', () => {
-    const options = getTransferAssetOptions(groups, getNetwork, { getPrice });
+    const options = getTransferAssetOptions(groups, getNetwork, { prices });
     const values = options.map(({ value }) => value);
 
     expect(new Set(values).size).toBe(values.length);
@@ -143,7 +148,7 @@ describe('transfer asset options', () => {
   });
 
   it('orders by fiat value, then balance, then symbol and network rank', () => {
-    const names = getTransferAssetOptions(groups, getNetwork, { getPrice }).map(({ name }) => name);
+    const names = getTransferAssetOptions(groups, getNetwork, { prices }).map(({ name }) => name);
 
     expect(names).toEqual([
       'USDT · Polygon', // $300
@@ -162,7 +167,7 @@ describe('transfer asset options', () => {
   });
 
   it('shows the token name with the total balance and the asset icon', () => {
-    const option = getTransferAssetOptions(groups, getNetwork, { getPrice }).find(
+    const option = getTransferAssetOptions(groups, getNetwork, { prices }).find(
       ({ name }) => name === 'USDT · Polygon'
     )!;
 

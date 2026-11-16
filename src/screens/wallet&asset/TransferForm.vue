@@ -76,6 +76,7 @@
                 :totalAmount="transferableAmount"
                 :balanceUnavailable="balanceUnavailable"
                 :value="syncedValue"
+                :priceUnavailable="assetPrice === null"
                 :asset="sendAssetName"
                 :assetId="transferAssetId"
                 :amount="syncedAmount"
@@ -245,6 +246,7 @@
       :currency="currency"
       :amount="syncedAmount"
       :value="syncedValue"
+      :priceUnavailable="assetPrice === null"
       :firstIcon="firstIcon"
       :secondIcon="syncedDestNet"
       :extrinsicType="extrinsicType"
@@ -291,6 +293,7 @@ import {
   calcTransferableSendMinusFee,
   findTransferAssetGroup,
   getTransferAssetOptions,
+  getTransferAssetPrice,
   getTransferAssetOptionValue,
   isValidAmountAsset,
   getUtilityAsset,
@@ -448,23 +451,17 @@ export default defineComponent({
     isCrossChain() {
       return this.extrinsicType === 'crossChain';
     },
-    originalUtilityId() {
-      return this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
-    },
     originalNetworkUtilityAsset() {
-      const currency = this.accountsStore.balances.find(({ balances }) =>
-        balances.some(({ id }) => id === this.originalUtilityId)
-      );
-
-      return currency?.symbol ?? '';
+      return this.utilityAsset?.symbol ?? '';
     },
+    // The fee is paid in the network's utility asset: its own trusted price, or `null`.
     originalAssetPrice() {
-      const currency = this.accountsStore.balances.find(({ balances }) =>
-        balances.some(({ id }) => id === this.originalUtilityId)
+      return getTransferAssetPrice(
+        this.utilityAsset,
+        this.originNet,
+        this.networksStore.assetsPrice?.tokenPriceMap ?? {},
+        ({ isUtility }) => Boolean(isUtility)
       );
-      const priceId = currency?.priceId ?? '';
-
-      return this.networksStore.getAssetPrice(priceId).price;
     },
     syncedFeeCut() {
       const text = this.isTonNetwork ? `< ` : '';
@@ -472,12 +469,16 @@ export default defineComponent({
       return `${text}${this.$n(+this.syncedFee, 'decimalPrecise')} ${this.originalNetworkUtilityAsset.toUpperCase()}`;
     },
     fiatFeeCut() {
+      if (this.originalAssetPrice === null) return this.$t('portfolioPage.priceUnavailable');
+
       return `${this.accountsStore.fiatSymbol}${this.$n(+this.syncedFee * this.originalAssetPrice, 'price')}`;
     },
     destNetFeeCut() {
       return `${this.$n(+this.syncedDestNetFee, 'decimalPrecise')} ${this.sendAssetName?.toUpperCase()}`;
     },
     destNetFiatFeeCut() {
+      if (this.assetPrice === null) return this.$t('portfolioPage.priceUnavailable');
+
       return `${this.accountsStore.fiatSymbol}${this.$n(+this.syncedDestNetFee * this.assetPrice, 'price')}`;
     },
     firstIcon() {
@@ -506,10 +507,13 @@ export default defineComponent({
     placeholderSelectPopup() {
       return this.showSelectedAssetPopup ? 'common.searchAmongAssets' : 'common.searchNetwork';
     },
+    // The trusted price of exactly the asset being sent (the portfolio's decision), or `null`: it then has no fiat value.
     assetPrice() {
-      const priceId = this.currency?.priceId ?? '';
-
-      return this.networksStore.getAssetPrice(priceId).price;
+      return getTransferAssetPrice(this.currency, this.originNet, this.networksStore.assetsPrice?.tokenPriceMap ?? {});
+    },
+    // What the amount's fiat value depends on. A new asset is left out: `updateSelectedNetwork` clears its amount.
+    amountPricing(): [string | undefined, number | null] {
+      return [this.syncedAssetId, this.assetPrice];
     },
     placeholderNetwork() {
       return this.isTransfer ? 'assets.network' : 'assets.originNet';
@@ -754,11 +758,11 @@ export default defineComponent({
           : [];
       }
 
-      const getPrice = (priceId: string) => this.networksStore.getAssetPrice(priceId).price;
+      const prices = this.networksStore.assetsPrice?.tokenPriceMap ?? {};
 
       if (this.isTransfer) {
         return getTransferAssetOptions(this.accountsStore.balances, this.networksStore.getNetwork, {
-          getPrice,
+          prices,
           isNetworkAvailable: (network) => network.active && this.isTransferEnabled(network),
         });
       }
@@ -780,7 +784,7 @@ export default defineComponent({
 
       // The origin network is chosen separately, so a cross-chain asset option never switches it.
       return getTransferAssetOptions(balances, this.networksStore.getNetwork, {
-        getPrice,
+        prices,
         isNetworkAvailable: ({ name }) => isSameString(name, this.syncedNetwork),
       });
     },
@@ -1021,6 +1025,16 @@ export default defineComponent({
     },
   },
   watch: {
+    // A price that arrives, changes or goes (or another network's price for the same asset) re-prices the amount, so
+    // a value is never left at $0 or at a price the asset no longer has.
+    amountPricing(
+      [assetId, price]: [string | undefined, number | null],
+      [previousAssetId, previousPrice]: [string | undefined, number | null]
+    ) {
+      if (assetId !== previousAssetId || price === previousPrice) return;
+
+      this.syncedValue = price === null || !this.syncedAmount ? '' : getCostOfAssets(this.syncedAmount, price).toString();
+    },
     transactionAddress: 'calculateFee',
     syncedRecipient: ['checkScam', 'calculateFee'],
     showSelectedAssetPopup: 'resetAssetPopupVisible',
@@ -1131,7 +1145,7 @@ export default defineComponent({
 
       this.pricedMaxAmount = priced ? amount : '';
       this.syncedAmount = amount;
-      this.syncedValue = getCostOfAssets(amount, this.assetPrice).toString();
+      this.syncedValue = this.assetPrice === null ? '' : getCostOfAssets(amount, this.assetPrice).toString();
     },
     clearMaxAmount() {
       this.isMaxAmount = false;
@@ -1248,7 +1262,7 @@ export default defineComponent({
       }
     },
     updateAmount(amount: string) {
-      const value = getCostOfAssets(+amount, this.assetPrice).toString() ?? '';
+      const value = this.assetPrice === null ? '' : getCostOfAssets(+amount, this.assetPrice).toString();
 
       this.clearMaxAmount();
       this.syncedAmount = amount;
@@ -1341,7 +1355,7 @@ export default defineComponent({
             }
           : null;
         this.syncedAmount = transferable.toString();
-        this.syncedValue = getCostOfAssets(transferable, this.assetPrice).toString();
+        this.syncedValue = this.assetPrice === null ? '' : getCostOfAssets(transferable, this.assetPrice).toString();
       } catch {
         if (revision === this.feeQuoteRevision) {
           this.clearMaxAmount();

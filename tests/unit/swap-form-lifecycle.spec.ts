@@ -25,7 +25,8 @@ const deferred = () => { let resolve!: (value: ReturnType<typeof quote>) => void
 beforeEach(() => {
   vi.useFakeTimers(); boundary.quote.mockReset().mockResolvedValue(quote());
   boundary.accounts = reactive({ accounts: [{ address: 'alice' }], selectedWallet: { address: 'alice' }, fiatSymbol: '$', showPolkaswapAlert: false, balances: [balance(SORA_XOR_ASSET_ID, 'xor', '10'), balance(SORA_VAL_ASSET_ID, 'val', '20')] });
-  boundary.networks = reactive({ allNetworks: [{ name: SORA_NETWORK_NAME, active: true, disabled: false, networkStatus: NETWORK_STATUS.CONNECTED }], soraFees: { Swap: '0.01' }, getAssetPrice: () => ({ price: 2 }) });
+  // Both assets have a trusted registry price (priced as the portfolio prices them; tests/unit/swap-pool-price.spec.ts).
+  boundary.networks = reactive({ allNetworks: [{ name: SORA_NETWORK_NAME, active: true, disabled: false, networkStatus: NETWORK_STATUS.CONNECTED, assets: [{ id: SORA_XOR_ASSET_ID, priceId: 'sora', isUtility: true }, { id: SORA_VAL_ASSET_ID, priceId: 'sora-validator-token' }] }], soraFees: { Swap: '0.01' }, assetsPrice: { tokenPriceMap: { sora: 2, 'sora-validator-token': 2 } } });
   boundary.extension = reactive({ features: { actions: { polkaswap: true } } });
 });
 afterEach(() => { wrappers.splice(0).forEach(wrapper => wrapper.unmount()); vi.clearAllTimers(); vi.useRealTimers(); });

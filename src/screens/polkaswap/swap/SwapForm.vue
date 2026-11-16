@@ -43,6 +43,7 @@
               text="assets.sendButtonText"
               :totalAmount="transferableSendAmount"
               :value="sendValue"
+              :priceUnavailable="sendAssetPrice === null"
               :asset="sendAssetName"
               :assetId="sendAssetId"
               :amount="sendAmount"
@@ -58,6 +59,7 @@
               text="assets.receiveButtonText"
               :totalAmount="transferableReceiveAmount"
               :value="receiveValue"
+              :priceUnavailable="receiveAssetPrice === null"
               :asset="receiveAssetName"
               :assetId="receiveAssetId"
               :amount="receiveAmount"
@@ -118,6 +120,8 @@
             :receiveAmount="receiveAmount"
             :sendValue="sendValue"
             :receiveValue="receiveValue"
+            :sendPriceUnavailable="sendAssetPrice === null"
+            :receivePriceUnavailable="receiveAssetPrice === null"
             :minMaxAmount="minMaxAmountCut"
             :minMaxAmountPrice="minMaxAmountPrice"
             :fee="fee"
@@ -182,6 +186,7 @@
       :currency="sendCurrency"
       :amount="sendAmount"
       :value="sendValue"
+      :priceUnavailable="sendAssetPrice === null"
       :firstIcon="sendAssetId"
       :secondIcon="receiveAssetId"
       :tx="tx"
@@ -208,6 +213,7 @@ import PoolsBanner from '@/screens/pools/PoolsBanner.vue';
 import { checkSwap } from '@/extension/messaging';
 import {
   getCurrencyOptions,
+  getTransferAssetPrice,
   getXORCurrency,
   calcTransferableSendMinusFee,
   isValidAmountAsset,
@@ -349,15 +355,21 @@ export default defineComponent({ name: 'SwapForm',
 
           return this.step !== 1;
     },
-    sendAssetPrice() {
-      const priceId = this.sendCurrency?.priceId ?? '';
-
-          return this.networksStore.getAssetPrice(priceId).price;
+    tokenPrices(): Record<string, number> {
+      return this.networksStore.assetsPrice?.tokenPriceMap ?? {};
     },
-    receiveAssetPrice() {
-      const priceId = this.receiveCurrency?.priceId ?? '';
-
-          return this.networksStore.getAssetPrice(priceId).price;
+    // The portfolio's trusted price (getTransferAssetPrice) of each asset on SORA, or `null`: it then has no fiat value
+    // and the screen says "Price unavailable". A token group's price id is never lent to an asset the portfolio does not
+    // trust, so an unpriced token never shows $ 0.00 or another asset's value.
+    sendAssetPrice(): number | null {
+      return getTransferAssetPrice(this.sendCurrency, this.soraNetwork, this.tokenPrices);
+    },
+    receiveAssetPrice(): number | null {
+      return getTransferAssetPrice(this.receiveCurrency, this.soraNetwork, this.tokenPrices);
+    },
+    // The network fee is paid in XOR, priced by its own decision.
+    feeAssetPrice(): number | null {
+      return getTransferAssetPrice(this.currencyXOR, this.soraNetwork, this.tokenPrices);
     },
     classesSwapIcon() {
       return ['swap-icon', { 'swap-icon-disable': this.receiveAssetId === '' }];
@@ -366,22 +378,24 @@ export default defineComponent({ name: 'SwapForm',
       return getXORCurrency(this.accountsStore.balances);
     },
     feePrice() {
-      const fee = this.fee ?? 0;
-          const balance = this.networksStore.getAssetPrice(this.currencyXOR?.priceId ?? '').price * +fee;
+      if (this.feeAssetPrice === null) return this.$t('portfolioPage.priceUnavailable');
 
-          return this.$n(+balance, 'price');
+      const balance = getCostOfAssets(this.fee ?? 0, this.feeAssetPrice) as number;
+
+      return `${this.accountsStore.fiatSymbol} ${this.$n(balance, 'price')}`;
     },
     soraMainAssetUpper() {
       return SORA_UTILITY_ASSET.toUpperCase();
     },
+    // The most sold (exact receive) or the least received (exact send), priced like that asset.
     minMaxAmountPrice() {
-      const price = (
-            this.isExchangeB
-              ? getCostOfAssets(+this.minMaxAmount, this.networksStore.getAssetPrice(this.sendAssetId).price)
-              : getCostOfAssets(+this.minMaxAmount, this.networksStore.getAssetPrice(this.receiveAssetId).price)
-          ) as number;
+      const assetPrice = this.isExchangeB ? this.sendAssetPrice : this.receiveAssetPrice;
 
-          return `${this.accountsStore.fiatSymbol} ${this.$n(price ?? 0, 'price')}`;
+      if (assetPrice === null) return this.$t('portfolioPage.priceUnavailable');
+
+      const price = getCostOfAssets(+this.minMaxAmount, assetPrice) as number;
+
+      return `${this.accountsStore.fiatSymbol} ${this.$n(price ?? 0, 'price')}`;
     },
     minMaxAmountCut() {
       return `${this.$n(+this.minMaxAmount, 'decimal')} ${this.minMaxAssetName}`;
@@ -400,12 +414,16 @@ export default defineComponent({ name: 'SwapForm',
           return `${value} ${this.sendAssetUP}`;
     },
     AToBValueCut() {
+      if (this.sendAssetPrice === null) return this.$t('portfolioPage.priceUnavailable');
+
       const cost = (getCostOfAssets(this.transferableSendAmount, this.sendAssetPrice) as number) ?? 0;
           const value = this.$n(cost, 'price') || '0';
 
           return `${this.accountsStore.fiatSymbol} ${value}`;
     },
     BToAValueCut() {
+      if (this.receiveAssetPrice === null) return this.$t('portfolioPage.priceUnavailable');
+
       const cost = (getCostOfAssets(+this.transferableReceiveAmount, this.receiveAssetPrice) as number) ?? 0;
           const value = this.$n(cost, 'price') || '0';
 
@@ -554,11 +572,16 @@ export default defineComponent({ name: 'SwapForm',
             )?.transferable ?? 0
           );
     },
+    // '' without a trusted price: the inputs, the preview and the confirmation then say "Price unavailable".
     sendValue() {
-      return getCostOfAssets(+(this.sendAmount ?? 0), this.sendAssetPrice, 'string');
+      if (this.sendAssetPrice === null) return '';
+
+      return getCostOfAssets(+(this.sendAmount ?? 0), this.sendAssetPrice, 'string') as string;
     },
     receiveValue() {
-      return getCostOfAssets(+(this.receiveAmount ?? 0), this.receiveAssetPrice, 'string');
+      if (this.receiveAssetPrice === null) return '';
+
+      return getCostOfAssets(+(this.receiveAmount ?? 0), this.receiveAssetPrice, 'string') as string;
     },
   },
   watch: {

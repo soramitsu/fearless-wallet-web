@@ -25,9 +25,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import { useI18n } from '@/locales/useI18n';
-import { getCostOfAssets } from '@/helpers/transfers';
 import { useAccountsStore } from '@/stores/accounts';
-import { useNetworksStore } from '@/stores/networks';
 
 interface Props {
   isExchangeB?: boolean;
@@ -35,10 +33,12 @@ interface Props {
   asset2: string;
   amount1: string;
   amount2: string;
-  value1?: string;
-  value2?: string;
-  priceId1?: string;
-  priceId2?: string;
+  /**
+   * The fiat value of each amount, worked out by the screen from the portfolio's trusted price of that asset
+   * (getTransferAssetPrice). `null`, the default, means the asset has no trusted price: "Price unavailable", never $ 0.00.
+   */
+  value1?: string | null;
+  value2?: string | null;
   icon?: string;
 }
 
@@ -48,16 +48,13 @@ const props = withDefaults(defineProps<Props>(), {
   asset2: '',
   amount1: '',
   amount2: '',
-  value1: '',
-  value2: '',
-  priceId1: '',
-  priceId2: '',
+  value1: null,
+  value2: null,
   icon: 'chevron-right',
 });
 
-const { n } = useI18n();
+const { n, t } = useI18n();
 const accountsStore = useAccountsStore();
-const networksStore = useNetworksStore();
 
 const directionIcons = computed(() => [
   'img',
@@ -71,14 +68,11 @@ const amount2Cut = computed(() => `${n(+props.amount2, 'decimal')} ${props.asset
 
 const fiatSymbol = computed<string>(() => accountsStore.fiatSymbol);
 
-const assetPrice1 = computed(() => networksStore.getAssetPrice(props.priceId1).price);
-const assetPrice2 = computed(() => networksStore.getAssetPrice(props.priceId2).price);
+const valueCut = (value: string | null) =>
+  value === null ? t('portfolioPage.priceUnavailable') : `${fiatSymbol.value} ${n(+value, 'price')}`;
 
-const _value1 = computed(() => props.value1 ?? getCostOfAssets(+(props.amount1 ?? 0), assetPrice1.value));
-const _value2 = computed(() => props.value2 ?? getCostOfAssets(+(props.amount2 ?? 0), assetPrice2.value));
-
-const value1Cut = computed(() => `${fiatSymbol.value} ${n(+_value1.value, 'price')}`);
-const value2Cut = computed(() => `${fiatSymbol.value} ${n(+_value2.value, 'price')}`);
+const value1Cut = computed(() => valueCut(props.value1));
+const value2Cut = computed(() => valueCut(props.value2));
 </script>
 
 <style lang="scss" scoped>

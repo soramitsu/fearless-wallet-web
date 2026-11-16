@@ -3,14 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import InputsForm from '@/screens/pools/InputsForm.vue';
 const boundary = vi.hoisted(() => ({ quote: vi.fn() }));
 vi.mock('@/extension/messaging', () => ({ getAmountPoolValue: boundary.quote }));
-vi.mock('@/stores/networks', () => ({ useNetworksStore: () => ({ getAssetPrice: (id: string) => ({ price: id === 'xor' ? 2 : 3 }) }) }));
+// XOR and VAL have trusted registry prices of 2 and 3 (priced as the portfolio prices them; swap-pool-price.spec.ts).
+const sora = vi.hoisted(() => ({ name: 'sora', ecosystem: 'substrate', assets: [{ id: 'xor', priceId: 'xor' }, { id: 'val', priceId: 'val' }] }));
+vi.mock('@/stores/networks', () => ({ useNetworksStore: () => ({ getNetwork: () => sora, assetsPrice: { tokenPriceMap: { xor: 2, val: 3 } } }) }));
 const wrappers: VueWrapper[] = [];
 const deferred = <T,>() => { let resolve!: (value: T) => void; const promise = new Promise<T>(done => { resolve = done; }); return { promise, resolve }; };
 beforeEach(() => { boundary.quote.mockReset().mockImplementation(async ({ amount1, amount2, isExchangeB }) => String(isExchangeB ? +amount2 / 2 : +amount1 * 2)); });
 afterEach(() => wrappers.splice(0).forEach(wrapper => wrapper.unmount()));
 function form(type = 'addLiquidity', extra = {}) {
   const poolParams = { network: 'sora', asset1: { id: 'xor', name: 'XOR', priceId: 'xor', reserve: '100', transferableAmount: '10', tokenBalance: '8' }, asset2: { id: 'val', name: 'VAL', priceId: 'val', reserve: '200', transferableAmount: '20', tokenBalance: '16' } };
-  const wrapper: VueWrapper<InstanceType<typeof InputsForm>> = shallowMount(InputsForm, { props: { poolParams, extrinsicType: type, amount1: '', amount2: '', isExchangeB: false, fee: '0.1', currency1: { balances: [{ name: 'sora', transferable: '10', isUtility: true, precision: 18 }] }, currency2: { balances: [{ name: 'sora', transferable: '20', isUtility: false, precision: 18 }] },
+  const wrapper: VueWrapper<InstanceType<typeof InputsForm>> = shallowMount(InputsForm, { props: { poolParams, extrinsicType: type, amount1: '', amount2: '', isExchangeB: false, fee: '0.1', currency1: { balances: [{ id: 'xor', name: 'sora', transferable: '10', isUtility: true, precision: 18 }] }, currency2: { balances: [{ id: 'val', name: 'sora', transferable: '20', isUtility: false, precision: 18 }] },
     'onUpdate:amount1': value => { void wrapper.setProps({ amount1: value }); }, 'onUpdate:amount2': value => { void wrapper.setProps({ amount2: value }); }, 'onUpdate:isExchangeB': value => { void wrapper.setProps({ isExchangeB: value }); }, ...extra,
   }, global: { stubs: { SelectInput: { name: 'SelectInput', props: ['amount', 'asset', 'totalAmount', 'value'], template: `<input :value="amount" @input="$emit('update:amount', $event.target.value)" />` }, Icon: true, EllipseButton: { template: '<button>Max</button>' }, Slider: true } } });
   wrappers.push(wrapper); return { wrapper, vm: wrapper.vm as any, poolParams };

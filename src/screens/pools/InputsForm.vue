@@ -4,6 +4,7 @@
       text="assets.sendButtonText"
       :totalAmount="transferableAmount1"
       :value="value1"
+      :priceUnavailable="assetPrice1 === null"
       :asset="asset1"
       :assetId="assetId1"
       :amount="syncedAmount1"
@@ -19,6 +20,7 @@
       text="assets.receiveButtonText"
       :totalAmount="transferableAmount2"
       :value="value2"
+      :priceUnavailable="assetPrice2 === null"
       :asset="asset2"
       :assetId="assetId2"
       :amount="syncedAmount2"
@@ -49,7 +51,7 @@
 import { defineComponent } from 'vue';
 
 import { FPNumber } from '@/sora/number';
-import { calcTransferableSendMinusFee } from '@/helpers/currencies';
+import { calcTransferableSendMinusFee, getTransferAssetPrice } from '@/helpers/currencies';
 
 import { getCostOfAssets } from '@/helpers/transfers';
 import { getAmountPoolValue } from '@/extension/messaging';
@@ -104,20 +106,25 @@ export default defineComponent({ name: 'InputsForm' ,
     asset2() {
       return this.poolParams.asset2.name;
     },
-    assetPrice1() {
-      const priceId = this.poolParams.asset1.priceId;
-
-          return this.networksStore.getAssetPrice(priceId).price;
+    poolNetwork() {
+      return this.networksStore.getNetwork(this.poolParams.network);
     },
-    assetPrice2() {
-      const priceId = this.poolParams.asset2.priceId;
-
-          return this.networksStore.getAssetPrice(priceId).price;
+    // The portfolio's trusted price of each pool asset on the pool's network (getTransferAssetPrice), or `null`: the
+    // input then says "Price unavailable". A token group's price id is never lent to an asset the portfolio does not trust.
+    assetPrice1(): number | null {
+      return getTransferAssetPrice(this.currency1, this.poolNetwork, this.networksStore.assetsPrice?.tokenPriceMap ?? {});
+    },
+    assetPrice2(): number | null {
+      return getTransferAssetPrice(this.currency2, this.poolNetwork, this.networksStore.assetsPrice?.tokenPriceMap ?? {});
     },
     value1() {
+      if (this.assetPrice1 === null) return '';
+
       return getCostOfAssets(+(this.syncedAmount1 ?? 0), this.assetPrice1);
     },
     value2() {
+      if (this.assetPrice2 === null) return '';
+
       return getCostOfAssets(+(this.syncedAmount2 ?? 0), this.assetPrice2);
     },
     percentIsMax() {

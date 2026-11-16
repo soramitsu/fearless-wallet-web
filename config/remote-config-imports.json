@@ -3264,7 +3264,7 @@
       "commit": "ca1c2655ff541ae5942d820423962d34fd29d7f9",
       "sourcePath": "chains/v13/chains.json",
       "upstreamSha256": "79a583f08f71139a31e00c825c746891cef50c04aa81318aaa492807757b9cec",
-      "ownedSha256": "23cb9eb06be43c39088b8e5f481ef189512002d485f32458ca920c72660bb7c2"
+      "ownedSha256": "dd42c1d3129661d81599799635f1418e57d581ae22463188f5f2e27fc628b75f"
     },
     {
       "path": "production/fiat/fiats.json",
@@ -7452,6 +7452,14 @@
       "changes": [
         "Drop the remaining Blast API nodes (BNB Smart Chain, Polygon zkEVM, ZetaChain, Shiden, Astar, Avail): every Blast endpoint answers HTTP 403 \"Blast API is no longer available\".",
         "Move Dwellir nodes from the retired api-<chain>.dwellir.com hosts (NXDOMAIN on 2026-10-29) to the n.dwellir.com host that returned the network's genesis hash for block 0 with the bundled key; drop Dwellir nodes with no such host. A network whose only node is dead keeps it, so the registry never drops the network and hides its balances."
+      ]
+    },
+    {
+      "files": [
+        "remote-config/production/chains/v13/chains.json"
+      ],
+      "changes": [
+        "Add Dwellir's wss://liberland-rpc.n.dwellir.com as Liberland's second node, after wss://mainnet.liberland.org. On 2026-11-16 it returned Liberland's genesis hash for block 0, reported 10 peers and not syncing, and upgraded to WebSocket. Only Liberland's node list changes."
       ]
     }
   ]

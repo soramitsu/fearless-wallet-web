@@ -5,7 +5,7 @@ const chain = REVIEWED_CHAIN_IDS;
 /**
  * RPC hosts a cross-chain quote may use, per chain: the chains of the reviewed runtime table and the destinations of
  * the bundled routes, each with the hosts of its production registry `nodes` as of 4.2.3 (Dwellir's `n.dwellir.com`
- * hosts, no Blast API).
+ * hosts, no Blast API), and Liberland's Dwellir node, added to the registry on 2026-11-16.
  *
  * The remote registry chooses which node the wallet connects to, and that node supplies the metadata that encodes the
  * call, the balances and nonce, the dry run, the destination's existential deposit and the transaction status. A
@@ -38,7 +38,7 @@ export const REVIEWED_RPC_HOSTS: Readonly<Record<string, readonly string[]>> = O
     'rpc-asset-hub-kusama.luckyfriday.io',
     'ksm-rpc.stakeworld.io',
   ]),
-  [chain.liberland]: Object.freeze(['mainnet.liberland.org']),
+  [chain.liberland]: Object.freeze(['mainnet.liberland.org', 'liberland-rpc.n.dwellir.com']),
   [chain.sora]: Object.freeze(['ws.mof.sora.org', 'mof2.sora.org', 'mof3.sora.org']),
   [chain.acala]: Object.freeze([
     'acala-rpc.n.dwellir.com',

@@ -11,11 +11,11 @@
     "chunks/background-vendor/assert-CYQ49uO2.js": 8,
     "chunks/background-vendor/bcryptjs-R9iWXEb1.js": 9,
     "chunks/background-vendor/core-js-pure-CPQEBsNf.js": 1,
-    "chunks/background-vendor/subwallet-keyring-BDV_5sZ2.js": 1,
+    "chunks/background-vendor/subwallet-keyring-DqCYaCGD.js": 1,
     "chunks/mountApp.js": 1,
     "chunks/SendForm.js": 16
   },
-  "warningSetSha256": "4283a5c83f33679bf164707bdbfc20c862715eb6df0e240ad20ffb9e83f7e2b0",
+  "warningSetSha256": "2250b8f6e5745be9b93e795e023c73c8d52c991b54533b38682a20dd88083d41",
   "artifacts": [
     {
       "file": "chunks/background-vendor/assert-CYQ49uO2.js",
@@ -30,16 +30,16 @@
       "sha256": "9a03815812d43f280c6678a7c27a6f65dc90e598b389e04ffc0d520eb16934bf"
     },
     {
-      "file": "chunks/background-vendor/subwallet-keyring-BDV_5sZ2.js",
-      "sha256": "f6213c5476dac8ad32789ccfc69fa7983bd1a7907becb1bb1ca9c3464a39467b"
+      "file": "chunks/background-vendor/subwallet-keyring-DqCYaCGD.js",
+      "sha256": "4a43812f77d3989ff89726b6de3a4c634dab6bba2b5113de1372f7e8615aaca5"
     },
     {
       "file": "chunks/mountApp.js",
-      "sha256": "8442b0307bd74921d5034d1d5e94d421d9cffb50451b828833f372cf05b87f42"
+      "sha256": "605fc02dd81753d97ae06d0fd4b3223c07757b60e58dddaae85803d011df160d"
     },
     {
       "file": "chunks/SendForm.js",
-      "sha256": "e20e27ef691642a7b031857be8b7cb17ef90ac7386ea87d08b69e3ae981387b7"
+      "sha256": "ad4b9199dda6c835b62a7c3edcda3a7e5bc7a6bfb085b6f9c905f3d4dec550f1"
     }
   ]
 }

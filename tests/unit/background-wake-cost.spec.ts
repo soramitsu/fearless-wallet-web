@@ -82,6 +82,7 @@ describe('scam address list per worker start', () => {
       networkService: { initNetworkMap: vi.fn().mockResolvedValue(undefined), initNetworkApis: vi.fn(), networkMap: {}, getApiMap: {} },
       actionCapabilityService: { init: vi.fn().mockResolvedValue(undefined) },
       sendKillSwitchService: { init: vi.fn().mockResolvedValue(undefined) },
+      dappSigningKillSwitchService: { init: vi.fn().mockResolvedValue(undefined) },
       soraDisclaimerService: { init: vi.fn().mockResolvedValue(undefined) },
       keyringService: { getAllMainAccounts: () => [], currentAccountSubject: { value: null } },
       balanceService: { generateDefaultBalance: vi.fn(), hydrateBalanceStorage: vi.fn().mockResolvedValue(undefined), publishBalance: vi.fn() },

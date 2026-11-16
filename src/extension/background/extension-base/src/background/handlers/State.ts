@@ -26,6 +26,7 @@ import {
   resolveAssetDiscoveryEvmAddress,
   ActionCapabilityService,
   SendKillSwitchService,
+  DappSigningKillSwitchService,
   SoraDisclaimerService,
   LegacyExposureService,
   IrohaConnectService,
@@ -149,6 +150,10 @@ export default class State {
   sendKillSwitchService = new SendKillSwitchService({
     read: async () => (await storage.get(['sendKillSwitch'])).sendKillSwitch,
     write: async (sendKillSwitch) => storage.set({ sendKillSwitch }),
+  });
+  dappSigningKillSwitchService = new DappSigningKillSwitchService({
+    read: async () => (await storage.get(['dappSigningKillSwitch'])).dappSigningKillSwitch,
+    write: async (dappSigningKillSwitch) => storage.set({ dappSigningKillSwitch }),
   });
   soraDisclaimerService = new SoraDisclaimerService({
     read: async () => (await storage.get(['soraDisclaimerAcceptance'])).soraDisclaimerAcceptance,
@@ -532,6 +537,7 @@ export default class State {
       this.networkService.initNetworkMap(),
       this.actionCapabilityService.init(),
       this.sendKillSwitchService.init(),
+      this.dappSigningKillSwitchService.init(),
       this.soraDisclaimerService.init(),
     ]);
 

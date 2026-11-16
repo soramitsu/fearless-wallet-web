@@ -146,7 +146,10 @@
               }}
             </dd>
           </dl>
-          <p v-if="review.refused" role="alert" class="signing-warning signing-warning--danger">
+          <p v-if="pausedFamily" role="alert" class="signing-warning signing-warning--danger">
+            {{ pausedMessage(pausedFamily) }}
+          </p>
+          <p v-else-if="review.refused" role="alert" class="signing-warning signing-warning--danger">
             {{ t('signingReview.crossChainRefused') }}
           </p>
           <p v-else-if="review.blocked" role="alert" class="signing-warning">{{ t('signingReview.invalidRequest') }}</p>
@@ -159,14 +162,14 @@
             <pre v-if="rawExpanded" dir="ltr">{{ review.raw }}</pre>
           </details>
           <Checkbox
-            v-if="review.blind && !review.blocked"
+            v-if="review.blind && !review.blocked && !pausedFamily"
             :label="t('signingReview.acknowledge')"
             :value="acknowledged"
             :disabled="!!pending"
             @change="onAcknowledge"
           />
           <Checkbox
-            v-if="review.highRisk && !review.blocked"
+            v-if="review.highRisk && !review.blocked && !pausedFamily"
             data-testid="crossChainHighRiskAcknowledge"
             :label="t('signingReview.crossChainHighRiskAcknowledge')"
             :value="highRiskAcknowledged"
@@ -182,7 +185,7 @@
           <FButton
             :data-testid="rejectTestId"
             :text="siteStatus === 'flagged' ? 'common.close' : 'common.reject'"
-            :type="review.blind || siteStatus === 'flagged' ? 'primary' : 'secondary'"
+            :type="review.blind || siteStatus === 'flagged' || pausedFamily ? 'primary' : 'secondary'"
             size="big"
             fontSize="big"
             :disabled="!!pending"
@@ -190,7 +193,7 @@
             @click="onReject"
           />
           <FButton
-            v-if="siteStatus !== 'flagged' && !review.blocked"
+            v-if="siteStatus !== 'flagged' && !review.blocked && !pausedFamily"
             :data-testid="approveTestId"
             :text="review.blind ? 'signingReview.signAnyway' : 'common.approve'"
             :type="review.blind ? 'secondary' : 'primary'"
@@ -229,6 +232,14 @@ import { useNotify } from '@/plugins/soramitsuUI';
 import { Components } from '@/router/routes';
 import { useExtensionStore } from '@/stores/extension';
 import { useNetworksStore } from '@/stores/networks';
+import { useDappSigningKillSwitchStore } from '@/stores/dappSigningKillSwitch';
+import {
+  DAPP_SIGNING_FAMILY_NAMES,
+  dappSigningFamilyOfQueue,
+  isDappSigningPaused,
+  pausedDappSigningFamily,
+  type DappSigningFamily,
+} from '@/util/dappSigningKillSwitch';
 
 const props = defineProps<{
   walletConnect?: boolean;
@@ -237,6 +248,7 @@ const props = defineProps<{
 }>();
 const extensionStore = useExtensionStore();
 const networksStore = useNetworksStore();
+const dappSigningKillSwitch = useDappSigningKillSwitchStore();
 const router = useRouter();
 const notify = useNotify();
 const { t } = useI18n();
@@ -260,6 +272,15 @@ const requestKey = computed(() =>
   request.value ? JSON.stringify([wcRequest.value, request.value, review.value]) : ''
 );
 const requester = computed(() => signingRequester(request.value?.url ?? ''));
+// The remote kill switch has paused signing for the request's network family. The WalletConnect queue holds only
+// `eip155` requests; the Substrate queue holds polkadot-js and WalletConnect `polkadot_*` ones.
+const pausedFamily = computed<DappSigningFamily | undefined>(() => {
+  if (!request.value) return undefined;
+  const family = props.walletConnect ? 'evm' : dappSigningFamilyOfQueue(signingRequestKind(request.value));
+  return isDappSigningPaused(family, dappSigningKillSwitch.vetoes) ? family : undefined;
+});
+const pausedMessage = (family: DappSigningFamily) =>
+  t('signingReview.dappSigningPaused', { family: DAPP_SIGNING_FAMILY_NAMES[family] });
 const origin = computed(() => requester.value.origin);
 const faviconUrl = computed(() => {
   try {
@@ -302,6 +323,7 @@ let checkGeneration = 0;
 const cannotApprove = computed(
   () =>
     !!pending.value ||
+    !!pausedFamily.value ||
     siteStatus.value !== 'unverified' ||
     !review.value ||
     review.value.blocked ||
@@ -384,7 +406,10 @@ const act = async (action: 'approve' | 'reject') => {
     // The background refused a transfer to a destination that cannot deliver it, and the request is gone: say why.
     if (error instanceof Error && error.message.startsWith(CROSS_CHAIN_DESTINATION_RETIRED))
       notify({ title: t('signingReview.crossChainRefused'), message: '', type: 'error' });
-    if (active && key === requestKey.value) {
+    // The kill switch paused signing for this family; the background ended the request as a Reject.
+    const paused = pausedDappSigningFamily(error);
+    if (paused) notify({ title: pausedMessage(paused), message: '', type: 'error' });
+    else if (active && key === requestKey.value) {
       actionError.value = true;
       await nextTick();
       if (active && key === requestKey.value) actionErrorElement.value?.scrollIntoView?.({ block: 'nearest' });

@@ -76,6 +76,7 @@ import {
 import { siteApprovalsInProgress, siteTransactionsBeingSent } from '@extension-base/services/request-service/siteApprovals';
 import { createClusterBoundSolanaRpcClient } from '@extension-base/services/solana-rpc-service';
 import { assertSendCapability } from '@extension-base/services/send-kill-switch-service';
+import { isDappSigningAllowed } from '@extension-base/services/dapp-signing-kill-switch-service';
 import { IrohaTransactionStatusUnknownError } from '@extension-base/services/iroha-torii-service';
 import { validateWalletConnectSigningContext } from '@extension-base/services/wallet-connect-service/signingContext';
 import { validateEvmSigningContext } from '@extension-base/services/request-service/handlers/evmSigningContext';
@@ -229,6 +230,7 @@ import type { HexString } from '@polkadot/util/types';
 import type { SubjectInfo } from '@subwallet/ui-keyring/observable/types';
 import type { PolkamarktMutationRequest, PolkamarktQuoteRequest } from '@/defi/polkamarkt/types';
 import type { DerivationPath, GoogleAuthTypes, ICreateFile, RequestGoogleToken } from '@/interfaces';
+import { DappSigningPausedError, type DappSigningFamily } from '@/util/dappSigningKillSwitch';
 import { api as apiSora, FPNumber, Operation } from '@/sora';
 import { soraSubmissionUnknownResponse } from '@/sora/submission';
 import { crossChainQuoteTokens } from '@/cross-chain/quoteTokens';
@@ -360,6 +362,21 @@ export default class Extension extends FWExtensionBase {
       request.reject(error);
       throw error;
     }
+  }
+
+  /**
+   * The remote dApp-signing kill switch, checked once the phishing lookup has answered and before an approval touches a
+   * key, asks a mobile wallet or delivers an external signature. A paused family ends the request as the person's
+   * Reject would (`rejection`), so the dApp gets the usual rejection, and the popup gets the reason.
+   */
+  private async assertDappSigningAllowed(
+    family: DappSigningFamily,
+    request: { reject(error: Error): void },
+    rejection = 'Cancelled'
+  ): Promise<void> {
+    if (await isDappSigningAllowed(this.state, family)) return;
+    request.reject(new Error(rejection));
+    throw new DappSigningPausedError(family);
   }
 
   constructor(state: State) {
@@ -778,6 +795,7 @@ export default class Extension extends FWExtensionBase {
     };
     try {
       await this.assertSigningSiteAllowed(request);
+      await this.assertDappSigningAllowed('evm', request);
       assertCurrent();
       const address = request.account.address;
       this.assertNormalWalletUse(address);
@@ -890,6 +908,7 @@ export default class Extension extends FWExtensionBase {
 
     try {
       await this.assertSigningSiteAllowed(request);
+      await this.assertDappSigningAllowed('solana', request);
       this.assertNonEvmSigningAuthorization(request);
       const exportMnemonic = ({ address, walletEcosystem }: { address: string; walletEcosystem: string }) => {
         this.assertNonEvmSigningAuthorization(request);
@@ -934,6 +953,8 @@ export default class Extension extends FWExtensionBase {
     } catch (error) {
       if (this.state.requestService.getSignRequest(id, 'solana') === request)
         request.reject(error instanceof Error ? error : new Error('Unable to sign Solana request'));
+      // The popup says signing is paused; the request already ended as a Reject.
+      if (error instanceof DappSigningPausedError) throw error;
 
       return false;
     } finally {
@@ -955,6 +976,8 @@ export default class Extension extends FWExtensionBase {
     this.pendingSiteApprovals.add(queued);
     try {
       await this.assertSigningSiteAllowed(queued);
+      // The Substrate queue holds polkadot-js and WalletConnect `polkadot_*` requests.
+      await this.assertDappSigningAllowed('polkadot', queued);
       this.assertNonEvmSigningAuthorization(queued);
       const { request, resolve } = queued;
 
@@ -992,6 +1015,8 @@ export default class Extension extends FWExtensionBase {
         queued.reject(error instanceof Error ? error : new Error('Unable to sign Substrate request'));
       // The popup names this refusal: the request sends funds to a destination that cannot deliver them.
       if (error instanceof CrossChainDestinationRetiredError) throw error;
+      // The popup says signing is paused; the request already ended as a Reject.
+      if (error instanceof DappSigningPausedError) throw error;
       return false;
     } finally {
       this.pendingSiteApprovals.delete(queued);
@@ -1022,6 +1047,7 @@ export default class Extension extends FWExtensionBase {
     }
     try {
       await this.assertSigningSiteAllowed(queued);
+      await this.assertDappSigningAllowed(isEvmSignRequest(queued) ? 'evm' : 'polkadot', queued);
       if (isEvmSignRequest(queued)) {
         validateEvmSigningContext(this.state, queued);
         assertEvmExternalSignature(queued, signature);
@@ -2513,6 +2539,8 @@ export default class Extension extends FWExtensionBase {
         request.reject(new Error('WalletConnect requester is blocked'));
         throw new Error('WalletConnect requester is blocked');
       }
+      // This queue holds only `eip155` requests, signed with the Ethereum key; Reject answers USER_REJECTED.
+      await this.assertDappSigningAllowed('evm', request, 'USER_REJECTED');
       assertCurrent();
       const method = request.request.params.request.method;
       const params = request.request.params.request.params;

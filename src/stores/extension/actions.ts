@@ -50,6 +50,7 @@ import { Components } from '@/router/routes';
 import { URLS } from '@/consts/urls';
 import { LocalStorage } from '@/controllers/localStorageController';
 import { useSendKillSwitchStore } from '@/stores/sendKillSwitch';
+import { useDappSigningKillSwitchStore } from '@/stores/dappSigningKillSwitch';
 
 const featureStorage = new LocalStorage('feature_');
 // Holds the remote config itself (fiat, remembered explicit capability values,
@@ -370,13 +371,17 @@ export const actions: Actions = {
     this.setFeatures(toFeatures(cached));
     // The Bitcoin and Solana send kill switch is veto-only and sticky.
     const sendKillSwitch = useSendKillSwitchStore();
+    // So is the dApp signing kill switch: the signing screen says a paused family is paused.
+    const dappSigningKillSwitch = useDappSigningKillSwitchStore();
 
     sendKillSwitch.restoreRemembered();
+    dappSigningKillSwitch.restoreRemembered();
 
     try {
       const { data } = await axios.get<unknown>(URLS.FEATURES);
 
       sendKillSwitch.applyRemoteConfig(data);
+      dappSigningKillSwitch.applyRemoteConfig(data);
 
       const capabilities = resolveActionCapabilities(data, Date.now(), cached?.actions);
       const remote: CachedFeatures = {

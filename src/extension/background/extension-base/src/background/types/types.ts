@@ -38,6 +38,7 @@ import type { CrossChainRouteProviderId } from '@/cross-chain/reviewedRoutes';
 import type { CrossChainSendRecords } from '@/cross-chain/sendLedger';
 import type { ActionCapabilityConfig } from '@extension-base/services/action-capability-service';
 import type { SendKillSwitchState } from '@/util/sendKillSwitch';
+import type { DappSigningKillSwitchState } from '@/util/dappSigningKillSwitch';
 import type { TonImportChoice } from '@/util/tonKeyring';
 import type { UniversalWalletFunds, UniversalWalletPasswordNetwork } from '@/util/universalWalletPassphrase';
 import type { BitcoinPendingSend } from '@extension-base/api/bitcoin/pendingSends';
@@ -1017,6 +1018,7 @@ export type IState = {
   evmTokenDiscovery: EvmTokenDiscoveryState;
   actionCapabilities: ActionCapabilityConfig;
   sendKillSwitch: SendKillSwitchState;
+  dappSigningKillSwitch: DappSigningKillSwitchState;
   bitcoinPendingSends: BitcoinPendingSend[];
   solanaPendingSends: SolanaPendingSend[];
   crossChainSendsInDoubt: CrossChainSendRecords;

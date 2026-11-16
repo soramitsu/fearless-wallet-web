@@ -47,6 +47,7 @@ function fixture() {
     networkService,
     actionCapabilityService: { init: vi.fn().mockResolvedValue(undefined) },
     sendKillSwitchService: { init: vi.fn().mockResolvedValue(undefined) },
+    dappSigningKillSwitchService: { init: vi.fn().mockResolvedValue(undefined) },
     soraDisclaimerService: { init: vi.fn().mockResolvedValue(undefined) },
     eventService: { waitCryptoReady: Promise.resolve(true) },
     balanceService: { generateDefaultBalance: vi.fn(), hydrateBalanceStorage: vi.fn().mockResolvedValue(undefined), publishBalance: vi.fn() },

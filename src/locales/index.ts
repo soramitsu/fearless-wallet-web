@@ -9,6 +9,7 @@ import { walletHomeMessages } from './walletHomeMessages';
 import { balanceStatusMessages } from './balanceStatusMessages';
 import { walletUpgradeMessages } from './walletUpgradeMessages';
 import { feelMessages } from './feelMessages';
+import { dappSigningMessages } from './dappSigningMessages';
 import { accountController } from '@/controllers';
 
 const messages = {
@@ -145,7 +146,14 @@ export const i18n = createI18n({
   },
 });
 
-[walletUpgradeMessages, sidePanelMessages, walletHomeMessages, feelMessages, balanceStatusMessages].forEach((bundle) => {
+[
+  walletUpgradeMessages,
+  sidePanelMessages,
+  walletHomeMessages,
+  feelMessages,
+  balanceStatusMessages,
+  dappSigningMessages,
+].forEach((bundle) => {
   Object.entries(bundle).forEach(([locale, supplementalMessages]) => {
     i18n.global.mergeLocaleMessage(locale, supplementalMessages);
   });

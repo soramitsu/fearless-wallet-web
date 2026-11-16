@@ -70,6 +70,28 @@ check('the 3.0.x upload path fails the build, wherever the host came from', () =
   );
 });
 
+check('a bundle built without NODE_ENV=production fails: it reads the development configuration', () => {
+  const base = 'https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config';
+  // As the popup of a bare `--mode production` build compiled src/consts/urls.ts, with its worker on production.
+  const mixed = files({
+    'background-runtime.js': `const c=\`\${b}/production/chains/v13/chains.json\`,f=\`\${b}/production/appConfigs/web_config.json\``,
+    'chunks/accounts.js': `const b="${base}",c=\`\${b}/development/chains/v13/chains_dev.json\`,f=\`\${b}/development/appConfigs/web_config.json\``,
+  });
+
+  assert.throws(
+    () => auditBundleHosts(mixed, allowed),
+    /built without NODE_ENV=production: chunks\/accounts\.js: \/development\/chains\/v13\/chains_dev\.json; chunks\/accounts\.js: \/development\/appConfigs\/web_config\.json/u
+  );
+  assert.throws(
+    () => auditBundleHosts(files({ 'popup.html': `<a href="${base}/development/appConfigs/web_config.json">` }), allowed),
+    /popup\.html: \/development\/appConfigs\/web_config\.json/u
+  );
+  // The development onboarding artwork is shared by every build and is not configuration.
+  assert.doesNotThrow(() =>
+    auditBundleHosts(files({ 'background-runtime.js': `"${base}/development/appConfigs/onboarding/screensWeb/1.svg"` }), allowed)
+  );
+});
+
 check('a host outside the list fails the build and names the file', () => {
   assert.throws(
     () =>
@@ -139,6 +161,14 @@ try {
   check('the command fails a bundle with the upload path', () => {
     assert.notEqual(dirty.status, 0);
     assert.match(dirty.stderr, /whitelist\?address/u);
+  });
+
+  await fs.rm(path.join(tempRoot, 'chunks/b.js'));
+  await fs.writeFile(path.join(tempRoot, 'chunks/c.js'), 'const f=`${b}/development/appConfigs/web_config.json`');
+  const development = spawnSync(process.execPath, [scriptPath, '--dist', tempRoot], { encoding: 'utf8' });
+  check('the command fails a bundle that reads the development configuration', () => {
+    assert.notEqual(development.status, 0);
+    assert.match(development.stderr, /built without NODE_ENV=production: chunks\/c\.js/u);
   });
 } finally {
   await fs.rm(tempRoot, { force: true, recursive: true });

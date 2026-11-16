@@ -10,12 +10,13 @@ import {
   combineSourceProvenance,
   createExtensionBuildMetadata,
   enforceProductionReleaseEnvironment,
+  pinBuildNodeEnv,
   PRODUCTION_RELEASE_FLAGS,
   readSourceProvenance,
 } from './build-extension.mjs';
 import { readReleaseTransferFlags } from './release-transfer-flags.mjs';
 import { fileURLToPath } from 'node:url';
-import { commonViteConfig } from '../vite.config.shared.mjs';
+import { commonViteConfig, resolveBuildNodeEnv } from '../vite.config.shared.mjs';
 
 const productionEnvironment = {
   UNRELATED_VALUE: 'preserved',
@@ -91,6 +92,75 @@ withEnvironment(
     assert.equal(config.define['process.env.VUE_APP_ENABLE_IROHA_CONNECT'], JSON.stringify('false'));
   }
 );
+
+// One NODE_ENV for every bundle of a build (B35). It picks the chain list, the feature config and SORA's ids
+// (IS_PRODUCTION), so a release is production throughout and a test build is test throughout.
+const withVariables = (overrides, run) => {
+  const previous = Object.fromEntries(Object.keys(overrides).map((key) => [key, process.env[key]]));
+  const assign = (values) => {
+    for (const [key, value] of Object.entries(values)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  };
+  assign(overrides);
+  try {
+    return run();
+  } finally {
+    assign(previous);
+  }
+};
+const compiledNodeEnv = (mode) => JSON.parse(commonViteConfig(viteOptions(mode)).define['process.env.NODE_ENV']);
+const buildCases = [
+  // [build, --mode, environment before the build, NODE_ENV of every bundle]
+  ['yarn build:extension without NODE_ENV', 'production', {}, 'production'],
+  ['a release build with a stray NODE_ENV', 'production', { NODE_ENV: 'development' }, 'production'],
+  ['prepare:chrome-release', 'production', { NODE_ENV: 'production' }, 'production'],
+  ['yarn build:extension-test', 'development', { VUE_APP_TEST_ONLY: 'true' }, 'test'],
+  ['test:e2e:extension in prepare:chrome-release', 'development', { NODE_ENV: 'test', VUE_APP_TEST_ONLY: 'true' }, 'test'],
+  ['the dashboard smoke build', 'development', { NODE_ENV: 'production', VUE_APP_TEST_ONLY: 'true' }, 'production'],
+  ['yarn build-watch:extension', 'development', {}, 'development'],
+];
+for (const [build, mode, environment, expected] of buildCases) {
+  withVariables({ NODE_ENV: undefined, VUE_APP_TEST_ONLY: undefined, ...environment }, () => {
+    assert.equal(resolveBuildNodeEnv(mode, process.env), expected, build);
+    // build-extension.mjs: pin, then build the popup first and the worker and content scripts after it.
+    assert.equal(pinBuildNodeEnv(process.env, mode), expected, build);
+    const popup = compiledNodeEnv(mode);
+    // Vite gives an unset NODE_ENV the value `production` while it builds; a pinned one is kept.
+    process.env.NODE_ENV ||= 'production';
+    const worker = compiledNodeEnv(mode);
+    assert.deepEqual({ popup, worker }, { popup: expected, worker: expected }, build);
+  });
+}
+// Without the pin, a release's bundles still agree: production is decided by the mode, never by the shell.
+withVariables({ NODE_ENV: undefined }, () => {
+  const popup = compiledNodeEnv('production');
+  process.env.NODE_ENV = 'production';
+  assert.deepEqual({ popup, worker: compiledNodeEnv('production') }, { popup: 'production', worker: 'production' });
+});
+assert.equal(resolveBuildNodeEnv('test', {}), 'test');
+// Vue picks its development or production template compiler from NODE_ENV once, when it is first loaded. Importing the
+// build script loads neither Vue nor Vite, so its pin comes first, and Vue loaded after the pin is the production build.
+{
+  const scriptsDirectory = fileURLToPath(new URL('.', import.meta.url));
+  const childEnvironment = { ...process.env };
+  delete childEnvironment.NODE_ENV;
+  const child = `import path from 'node:path';
+import { createRequire } from 'node:module';
+const buildScript = await import(${JSON.stringify(path.join(scriptsDirectory, 'build-extension.mjs'))});
+if (process.argv[1] === 'pin') {
+  buildScript.pinBuildNodeEnv(process.env, 'production');
+  await buildScript.loadBuildToolchain();
+}
+const loaded = Object.keys(createRequire(${JSON.stringify(path.join(scriptsDirectory, '..', 'package.json'))}).cache);
+console.log(JSON.stringify(loaded.filter((file) => file.includes(path.join('@vue', 'compiler-core', 'dist'))).map((file) => path.basename(file))));`;
+  const loadedCompiler = (step) =>
+    JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', child, step], { encoding: 'utf8', env: childEnvironment }));
+
+  assert.deepEqual(loadedCompiler('import'), []);
+  assert.deepEqual(loadedCompiler('pin'), ['compiler-core.cjs.prod.js']);
+}
 
 const commit = '0123456789abcdef0123456789abcdef01234567';
 const clean = { sourceCommit: commit, sourceDirty: false };
@@ -187,4 +257,4 @@ try {
   await fs.rm(sourceArchiveDirectory, { recursive: true, force: true });
 }
 
-console.log('Extension production environment self-test passed (31 checks)');
+console.log('Extension production environment self-test passed (57 checks)');

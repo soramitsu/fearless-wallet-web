@@ -285,14 +285,23 @@ function runtimeJavaScriptDependencies(content, importer, label) {
 }
 
 function reviewedRuntimeJavaScript(files, manifest, label) {
-  const resources = [
-    manifest.background.service_worker,
-    ...manifest.content_scripts.flatMap((entry) => entry.js),
-    ...manifest.web_accessible_resources.flatMap((entry) =>
-      entry.resources.filter((resource) => resource.endsWith('.js'))
-    ),
-    ...popupJavaScriptReferences(files.get('popup.html'), `${label} popup.html`),
-  ];
+  return reachableJavaScript(
+    files,
+    [
+      manifest.background.service_worker,
+      ...manifest.content_scripts.flatMap((entry) => entry.js),
+      ...manifest.web_accessible_resources.flatMap((entry) =>
+        entry.resources.filter((resource) => resource.endsWith('.js'))
+      ),
+      ...popupJavaScriptReferences(files.get('popup.html'), `${label} popup.html`),
+    ],
+    label
+  );
+}
+
+/** The JavaScript files `roots` load, themselves included, following static and literal dynamic imports. */
+function reachableJavaScript(files, roots, label) {
+  const resources = [...roots];
   const reviewed = new Set();
 
   for (const resource of resources) {
@@ -711,6 +720,32 @@ function validatePngIcon(bytes, size, label) {
     inflateSync(Buffer.concat(idatChunks), { maxOutputLength: 4 * 1024 * 1024 });
   } catch (error) {
     fail(`${label} has invalid or oversized PNG image data: ${error.message}`);
+  }
+}
+
+/**
+ * The production chain list and feature config (src/consts/urls.ts). The popup and the worker of a release each read
+ * both. A surface compiled without NODE_ENV=production reads the development ones instead (audit-bundle-hosts.mjs
+ * refuses those anywhere), as the popup of a bare `--mode production` build did while its worker read production.
+ */
+export const PRODUCTION_CONFIG_PATHS = Object.freeze({
+  'chain list': '/production/chains/v13/chains.json',
+  'feature config': '/production/appConfigs/web_config.json',
+});
+
+function validateProductionConfiguration(files, manifest, label) {
+  for (const [surface, roots] of [
+    ['popup', popupJavaScriptReferences(files.get('popup.html'), `${label} popup.html`)],
+    ['service worker', [manifest.background.service_worker]],
+  ]) {
+    const javascript = reachableJavaScript(files, roots, label);
+
+    for (const [name, configPath] of Object.entries(PRODUCTION_CONFIG_PATHS)) {
+      requireCondition(
+        javascript.some(([, content]) => content.includes(Buffer.from(configPath))),
+        `${label} ${surface} does not read the production ${name} (${configPath}); build it with --mode production`
+      );
+    }
   }
 }
 
@@ -1153,6 +1188,8 @@ export async function auditChromeRelease({
     directoryExtensionId === zipExtensionId,
     'directory and ZIP manifests derive different extension IDs'
   );
+  // The ZIP is the directory byte for byte (compareArtifacts), so checking the directory checks both.
+  validateProductionConfiguration(directoryFiles, directoryManifest, 'Chrome release');
 
   return {
     archiveBytes: archive.length,
@@ -1169,8 +1206,9 @@ function usage() {
   return `Usage: node scripts/audit-chrome-release.mjs [--release] [--root DIR] [--dist DIR] [--zip FILE]
 
 Audits dist/extension/chrome and fearless-wallet-extension-chrome.zip as a Chrome Web Store release package.
-Every build fails when the package contains the 3.0.x phrase-upload strings or names a network host that
-scripts/release-network-hosts.json does not list.
+Every build fails when the package contains the 3.0.x phrase-upload strings, names a network host that
+scripts/release-network-hosts.json does not list, or has a popup or service worker that does not read the production
+chain list and feature config (a bundle built without NODE_ENV=production).
 --release additionally requires the production manifest key and OAuth client ID, verifies the stable extension ID,
 and requires the build metadata to name the checked-out HEAD commit, a clean source tree, and the current yarn.lock.`;
 }

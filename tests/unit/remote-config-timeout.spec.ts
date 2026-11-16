@@ -2,7 +2,7 @@ import axios from 'axios';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ActionCapabilityService, resolveActionCapabilities, type ActionCapabilityConfig } from '@extension-base/services/action-capability-service';
 import { SendKillSwitchService } from '@extension-base/services/send-kill-switch-service';
-import { REMOTE_CONFIG_TIMEOUT_MS } from '@/util/remoteConfig';
+import { REMOTE_CONFIG_TIMEOUT_MS, fetchRemoteFeatureConfig } from '@/util/remoteConfig';
 import { emptySendKillSwitchState, type SendKillSwitchState } from '@/util/sendKillSwitch';
 
 vi.mock('axios', () => ({ default: { get: vi.fn() } }));
@@ -65,5 +65,27 @@ describe('a stalled remote configuration host', () => {
     expect(write).not.toHaveBeenCalled();
     await expect(service.isSendEnabled('bitcoinSend')).resolves.toBe(false);
     await expect(service.isSendEnabled('solanaSend')).resolves.toBe(true);
+  });
+});
+
+describe('remote configuration requests', () => {
+  it('shares a request only while it is under way', async () => {
+    vi.mocked(axios.get).mockResolvedValue({ data: { actions: { solanaSend: false } } });
+
+    const [first, second] = await Promise.all([fetchRemoteFeatureConfig(), fetchRemoteFeatureConfig()]);
+    expect(first).toEqual({ actions: { solanaSend: false } });
+    expect(second).toBe(first);
+    expect(axios.get).toHaveBeenCalledOnce();
+
+    await fetchRemoteFeatureConfig();
+    expect(axios.get).toHaveBeenCalledTimes(2);
+  });
+
+  it('lets the next caller retry after a failed request', async () => {
+    vi.mocked(axios.get).mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ data: {} });
+
+    await expect(fetchRemoteFeatureConfig()).rejects.toThrow('offline');
+    await expect(fetchRemoteFeatureConfig()).resolves.toEqual({});
+    expect(axios.get).toHaveBeenCalledTimes(2);
   });
 });

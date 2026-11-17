@@ -98,3 +98,14 @@ extglob built from one or two of 28 atoms must compile and answer crafted
 strings within a CPU budget. The full audit runs this check first. Reassess these
 replacements when patched upstream versions become available; do not restore
 the affected implementations to silence compatibility errors.
+
+Yarn's registry audit skips `file:` packages, so it would never report a new
+advisory against the vendored braces or picomatch code. After it, both audits
+run `scripts/audit-vendored-dependencies.mjs`, which asks npm's bulk advisory
+endpoint about the upstream version each copy carries (braces 3.0.3, picomatch
+2.3.2 and 4.0.7) and fails on every advisory except the one that copy is
+reviewed to guard against. It first checks that each copy is the listed version
+and that its guarded files match the digests in
+`config/vendored-dependency-advisories.json`, so the exemption lapses as soon as
+a guard changes without review. `yarn test:vendored-dependency-audit` covers it
+with fixed registry responses.

@@ -61,7 +61,7 @@
       "restoreJson": "Restore JSON"
     },
     "exampleNameWallet": "Example: Savings, Investments, DeFi, Staking. This nickname will be displayed only for you and stored locally.",
-    "backupNonDigital": "Use a non-digital way to backup. Write it down on paper (or etch it into metal) and make sure not to loose it.",
+    "backupNonDigital": "Use a non-digital way to backup. Write it down on paper (or etch it into metal) and make sure not to lose it.",
     "backupPassphrase": "Backup the passphrase for your new wallet",
     "confirmPassphrase": "Confirm the passphrase",
     "selectPassphraseWords": "Use your backup to choose these 3 words.",

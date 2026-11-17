@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   copy: vi.fn(),
   wallet: { address: 'public-wallet', name: 'Test wallet' },
   balances: [] as unknown[],
+  accounts: [] as unknown[],
   networks: [] as { name: string; assets: { symbol: string; id?: string; precision?: number }[]; ecosystem?: string; chainId?: string }[],
 }));
 vi.mock('@/helpers', async (importOriginal) => ({ ...(await importOriginal<object>()), setClipboard: mocks.copy }));
@@ -17,14 +18,22 @@ vi.mock('@/helpers/numbers', async (importOriginal) => ({ ...(await importOrigin
 vi.mock('@/helpers/currencies', async (importOriginal) => ({ ...(await importOriginal<object>()), getUtilityAsset: () => ({ symbol: 'DOT' }) }));
 vi.mock('@/util/BaseApi', () => ({
   default: {
-    isBitcoinNetwork: () => false,
+    isBitcoinNetwork: (network: string) => network.startsWith('Bitcoin'),
+    validateAddress: (address: string) => address === 'bc1-next-address',
     isEthereumNetwork: (network: string) => ['ethereum', 'polygon', 'moonbeam'].includes(network.toLowerCase()),
     formatAddress: (_: unknown, network: string) => `${network}-complete-public-address-0123456789abcdef`,
   },
 }));
+vi.mock('@/helpers/receiveAddress', () => ({
+  receiveAddressForNetwork: (_wallet: unknown, _account: unknown, network: { name: string }) =>
+    `${network.name}-complete-public-address-0123456789abcdef`,
+}));
 vi.mock('@/stores/accounts', () => ({
   useAccountsStore: () => ({
     selectedWallet: mocks.wallet,
+    get accounts() { return mocks.accounts; },
+    portfolioView: { showTestnets: false },
+    selectedNetwork: 'all',
     get balances() {
       return mocks.balances;
     },
@@ -82,7 +91,7 @@ const group = (id: string, network: string, symbol: string, currencyId?: string)
 describe('public transfer review data', () => {
   beforeEach(() => {
     mocks.balances = [];
-    mocks.networks = [];
+    mocks.networks = ['Polkadot', 'Kusama'].map((name) => ({ name, assets: [] }));
   });
 
   it('uses the same full selected-network address for text, copy and QR', async () => {
@@ -237,6 +246,104 @@ describe('network-explicit Receive', () => {
     expect(wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text()).toContain('"symbol":"DOT"');
     expect(wrapper.find('[data-testid="receiveEvmSameAddress"]').exists()).toBe(true);
     wrapper.unmount();
+  });
+});
+
+describe('Receive starting from a network', () => {
+  beforeEach(() => {
+    mocks.accounts = [];
+    mocks.networks = [
+      { name: 'Polkadot', ecosystem: 'substrate', assets: [{ id: DOT, symbol: 'dot' }] },
+      { name: 'Polkadot AssetHub', ecosystem: 'substrate', assets: [{ id: DOT, symbol: 'dot' }, { id: 'usdt', symbol: 'usdt' }] },
+    ];
+    mocks.balances = [];
+  });
+
+  const mountNetwork = (network: string) => {
+    const global = globalFor({ network });
+    return mount(ReceiveForm, {
+      global: {
+        ...global,
+        stubs: {
+          ...global.stubs,
+          InputWithIcon: {
+            props: ['value', 'placeholder'],
+            emits: ['click'],
+            template: `<button @click="$emit('click')">{{ placeholder }} {{ value }}</button>`,
+          },
+          SelectPopup: {
+            props: ['options'],
+            emits: ['toggleValue'],
+            template: `<div><button v-for="option in options" :key="option.value" :data-value="option.value" @click="$emit('toggleValue', option.value)">{{ option.name }}</button></div>`,
+          },
+        },
+      },
+    });
+  };
+
+  it('shows the address and QR immediately, and lets the recipient choose and clear a token', async () => {
+    const wrapper = mountNetwork('Polkadot AssetHub');
+    const address = 'Polkadot AssetHub-complete-public-address-0123456789abcdef';
+
+    expect(wrapper.getComponent({ name: 'AboveForm' }).props('header')).toBe('assets.receiveFunds');
+    expect(wrapper.get('.full-address').text()).toBe(address);
+    expect(wrapper.get('[data-qr]').attributes('data-payload')).toBe(address);
+    await wrapper.get('[data-testid="copyAddress"]').trigger('click');
+    expect(mocks.copy).toHaveBeenLastCalledWith(address);
+    expect(wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text()).toContain('walletHome.picker.networkWarning');
+
+    await wrapper.get('[data-testid="receiveToken"]').trigger('click');
+    await wrapper.get('[data-value="usdt"]').trigger('click');
+    expect(wrapper.get('[data-testid="receiveToken"]').text()).toContain('USDT');
+    expect(wrapper.get('[data-testid="receiveOnlyOnNetwork"]').text()).toContain('"symbol":"USDT"');
+    expect(wrapper.get('[data-qr]').attributes('data-payload')).toBe(address);
+
+    await wrapper.get('[data-testid="receiveToken"]').trigger('click');
+    await wrapper.get('[data-value=""]').trigger('click');
+    expect(wrapper.getComponent({ name: 'AboveForm' }).props('header')).toBe('assets.receiveFunds');
+    expect(wrapper.get('.full-address').text()).toBe(address);
+    wrapper.unmount();
+  });
+
+  it('clears the token and shows only tokens on the newly selected network', async () => {
+    const wrapper = mountNetwork('Polkadot AssetHub');
+    await wrapper.get('[data-testid="receiveToken"]').trigger('click');
+    await wrapper.get('[data-value="usdt"]').trigger('click');
+    await wrapper.get('[data-testid="selectedNetwork"]').trigger('click');
+    await wrapper.get('[data-value="Polkadot"]').trigger('click');
+
+    expect(wrapper.get('[data-testid="receiveToken"]').text()).toContain('walletHome.picker.noToken');
+    expect(wrapper.get('[data-qr]').attributes('data-payload')).toBe('Polkadot-complete-public-address-0123456789abcdef');
+    await wrapper.get('[data-testid="receiveToken"]').trigger('click');
+    expect(wrapper.find('[data-value="usdt"]').exists()).toBe(false);
+    expect(wrapper.get(`[data-value="${DOT}"]`).text()).toBe('DOT');
+    wrapper.unmount();
+  });
+
+  it('uses the next unused Bitcoin address before and after choosing BTC', async () => {
+    mocks.networks = [{ name: 'Bitcoin', ecosystem: 'bitcoin', assets: [{ id: 'btc', symbol: 'btc' }] }];
+    mocks.accounts = [{ address: mocks.wallet.address, universalWallet: { publicAccounts: [{ ecosystem: 'bitcoin', address: 'bc1-base-address' }] } }];
+    const bitcoin = group('btc', 'Bitcoin', 'btc');
+    Object.assign(bitcoin.balances[0], { bitcoinNextReceiveAddress: 'bc1-next-address' });
+    mocks.balances = [bitcoin];
+    const wrapper = mountNetwork('Bitcoin');
+
+    expect(wrapper.get('.full-address').text()).toBe('bc1-next-address');
+    await wrapper.get('[data-testid="receiveToken"]').trigger('click');
+    await wrapper.get('[data-value="btc"]').trigger('click');
+    expect(wrapper.get('[data-qr]').attributes('data-payload')).toBe('bc1-next-address');
+    wrapper.unmount();
+  });
+
+  it('withholds the address on an unknown or incompatible network', () => {
+    mocks.networks.push({ name: 'Solana', ecosystem: 'solana', assets: [] });
+    for (const network of ['Unknown', 'Solana']) {
+      const wrapper = mountNetwork(network);
+      expect(wrapper.find('[data-qr]').exists()).toBe(false);
+      expect(wrapper.find('[data-testid="copyAddress"]').exists()).toBe(false);
+      expect(wrapper.text()).toContain('walletHome.picker.addressUnavailable');
+      wrapper.unmount();
+    }
   });
 });
 

@@ -7,12 +7,22 @@
           icon="rotate"
           data-testid="selectedNetwork"
           :value="networkName"
-          :ref="selectNetworkInputRef"
-          :isActiveRotate="showSelectNetworkPopup"
-          @click="toggleSelectNetworkPopupVisible"
+          :isActiveRotate="picker === 'network'"
+          @click="openPicker('network')"
         />
 
-        <div class="receive-content">
+        <InputWithIcon
+          v-if="chainFirst && address && networkTokens.length"
+          placeholder="walletHome.picker.optionalToken"
+          icon="rotate"
+          class="token-selector"
+          data-testid="receiveToken"
+          :value="receiveSymbol || $t('walletHome.picker.noToken')"
+          :isActiveRotate="picker === 'token'"
+          @click="openPicker('token')"
+        />
+
+        <div v-if="address" class="receive-content">
           <div class="address-wrapper">
             <div class="address-header">
               <span>{{ $t('assets.walletAddress') }}</span>
@@ -35,14 +45,14 @@
           </Alert>
 
           <Alert v-if="showSendUnavailable" class="network-warning send-unavailable" data-testid="receiveSendUnavailable">
-            {{ $t('assets.receiveSendUnavailable', { symbol: receiveSymbol, network: networkName }) }}
+            {{ $t(receiveSymbol ? 'assets.receiveSendUnavailable' : 'walletHome.picker.sendUnavailable', { symbol: receiveSymbol, network: networkName }) }}
           </Alert>
 
           <QR class="qr" ref="qr" data-testid="qr" :showLogo="true" :width="200" :payload="address" />
 
-          <Alert v-if="showNetworkWarning" class="network-warning" data-testid="receiveNetworkWarning">
+          <Alert v-if="networkName" class="network-warning" data-testid="receiveNetworkWarning">
             <span data-testid="receiveOnlyOnNetwork">
-              {{ $t('assets.receiveOnlyOnNetwork', { symbol: receiveSymbol, network: networkName }) }}
+              {{ $t(receiveSymbol ? 'assets.receiveOnlyOnNetwork' : 'walletHome.picker.networkWarning', { symbol: receiveSymbol, network: networkName }) }}
             </span>
             <span v-if="isEvmNetwork" class="evm-note" data-testid="receiveEvmSameAddress">
               {{ $t('assets.receiveEvmSameAddress') }}
@@ -50,10 +60,12 @@
           </Alert>
         </div>
 
-        <Tooltip text="common.copied" target=".copy-icon" placement="bottom" trigger="click" />
+        <Alert v-else role="status">{{ $t('walletHome.picker.addressUnavailable', { network: networkName }) }}</Alert>
+
+        <Tooltip v-if="address" text="common.copied" target=".copy-icon" placement="bottom" trigger="click" />
       </div>
 
-      <div class="activity-buttons">
+      <div v-if="address" class="activity-buttons">
         <BorderButton
           size="big"
           class="button"
@@ -80,21 +92,14 @@
     </div>
 
     <SelectPopup
-      v-if="showSelectNetworkPopup"
-      class="select-network-popup"
-      placeholder="common.searchNetwork"
-      verticalPlacement="top"
-      horizontalPlacement="left"
-      :value="networkName"
-      :showBlur="false"
-      :showBackground="false"
-      :top="148"
-      :left="popupLeft"
-      :height="360"
-      :options="assetNetworks"
-      @handlerFilter="handlerFilter"
-      @toggleValue="toggleSelectedNetwork"
-      @handlerClose="toggleSelectNetworkPopupVisible"
+      v-if="picker"
+      data-testid="receiveChoices"
+      :placeholder="picker === 'network' ? 'walletHome.picker.searchNetworks' : 'walletHome.picker.search'"
+      :value="picker === 'network' ? networkName : selectedAssetId"
+      :options="picker === 'network' ? assetNetworks : tokenOptions"
+      @handlerFilter="filterValue = $event"
+      @toggleValue="picker === 'network' ? toggleSelectedNetwork($event) : selectToken($event)"
+      @handlerClose="picker = null"
     />
   </AboveForm>
 </template>
@@ -108,7 +113,10 @@ import type { LegacyExposureStatus } from '@extension-base/services/legacy-expos
 import BaseApi from '@/util/BaseApi';
 import { isSameString, setClipboard } from '@/helpers';
 import { findTransferAssetGroup } from '@/helpers/currencies';
+import { receiveAddressForNetwork } from '@/helpers/receiveAddress';
 import { IS_EXTENSION } from '@/consts/global';
+import { getPortfolioAssetId } from '@/portfolio/assetIdentity';
+import { useReceiveNetworks } from '@/portfolio/useReceiveNetworks';
 import { isNetworkTransferEnabled } from '@/util/releaseFeatures';
 import { getLegacyExposureStatus } from '@/extension/messaging/legacy-exposure';
 import { isLegacyExposedAddress } from '@/util/legacyExposure';
@@ -116,30 +124,32 @@ import { canonicalGroupIndexFor, canonicalGroupOf } from '@/portfolio/tokenGroup
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
-export default defineComponent({ name: 'ReceiveForm' ,
+export default defineComponent({
+  name: 'ReceiveForm',
+  setup() {
+    return { receiveNetworks: useReceiveNetworks() };
+  },
   data() {
     return {
-      selectNetworkInputRef: 'selectNetworkInput',
       copyQRTooltip: {
-    text: 'common.copiedValue',
-    localeProps: { value: 'QR' },
-  },
+        text: 'common.copiedValue',
+        localeProps: { value: 'QR' },
+      },
       networksStore: useNetworksStore(),
       accountsStore: useAccountsStore(),
       filterValue: '',
-      selectedNetwork: 'polkadot',
-      /** The registry id of the token group member picked in the network list, when it differs from the route's. */
-      selectedMemberAssetId: '',
-      showSelectNetworkPopup: false,
+      selectedNetwork: String(this.$route.params.network ?? ''),
+      pickedAssetId: '',
+      picker: null as 'network' | 'token' | null,
       legacyExposure: undefined as LegacyExposureStatus | undefined,
     };
   },
   computed: {
-    selectedAssetId() {
-      return this.selectedMemberAssetId || (this.$route.params.assetId ?? '');
+    chainFirst() {
+      return !this.$route.params.assetId;
     },
-    popupLeft() {
-      return IS_EXTENSION ? -160 : 0;
+    selectedAssetId(): string {
+      return this.pickedAssetId || String(this.$route.params.assetId ?? '');
     },
     receiveBalance() {
       const currency = findTransferAssetGroup(this.accountsStore.balances, this.selectedAssetId, this.selectedNetwork);
@@ -147,14 +157,45 @@ export default defineComponent({ name: 'ReceiveForm' ,
       return currency?.balances.find(({ name }) => isSameString(name, this.selectedNetwork));
     },
     selectedNetworkJson() {
+      if (this.chainFirst) return this.receiveNetworks.find(({ name }) => isSameString(name, this.selectedNetwork));
+
       return this.selectedNetwork ? this.networksStore.getNetwork(this.selectedNetwork) : undefined;
     },
     networkName() {
       return this.selectedNetworkJson?.name ?? this.selectedNetwork;
     },
+    networkTokens() {
+      const tokens = new Map<string, { name: string; value: string; icon: string; subName: string }>();
+      const network = this.selectedNetworkJson;
+      if (!network) return [];
+
+      for (const asset of network.assets) {
+        tokens.set(asset.id, { name: getNativeAssetName(asset.symbol).toUpperCase(), value: asset.id, icon: asset.icon, subName: asset.name });
+      }
+      for (const group of this.accountsStore.balances) {
+        for (const balance of group.balances) {
+          if (!isSameString(balance.name, network.name) || balance.assetMetadataTrust !== 'verified') continue;
+          const id = getPortfolioAssetId(balance);
+          if (!tokens.has(id)) {
+            tokens.set(id, { name: getNativeAssetName(balance.symbol).toUpperCase(), value: id, icon: group.icon, subName: group.tokenName });
+          }
+        }
+      }
+      return [...tokens.values()].sort((a, b) => a.name.localeCompare(b.name));
+    },
+    tokenOptions() {
+      const filter = this.filterValue.trim().toLowerCase();
+      const options = this.networkTokens.filter(({ name, subName }) => `${name} ${subName}`.toLowerCase().includes(filter));
+      if (filter) return options;
+
+      return [{ name: this.$t('walletHome.picker.noToken'), value: '', icon: 'globus', isAll: true }, ...options];
+    },
     receiveSymbol() {
-      // Without the asset on this network, name the network's utility token instead.
-      const symbol = this.receiveBalance?.symbol ?? this.selectedNetworkJson?.assets?.[0]?.symbol ?? '';
+      if (this.chainFirst) return this.networkTokens.find(({ value }) => value === this.pickedAssetId)?.name ?? '';
+
+      const symbol = this.receiveBalance?.symbol ??
+        this.selectedNetworkJson?.assets?.find(({ id }) => id === this.selectedAssetId)?.symbol ??
+        this.selectedNetworkJson?.assets?.[0]?.symbol ?? '';
 
       return getNativeAssetName(symbol).toUpperCase();
     },
@@ -163,11 +204,9 @@ export default defineComponent({ name: 'ReceiveForm' ,
 
       return { text: 'assets.receiveTokenTitle', localeProps: { symbol: this.receiveSymbol } };
     },
-    showNetworkWarning() {
-      return this.receiveSymbol !== '' && this.networkName !== '';
-    },
     isEvmNetwork() {
-      return BaseApi.isEthereumNetwork(this.selectedNetwork);
+      const ecosystem = this.selectedNetworkJson?.ecosystem;
+      return ecosystem === 'ethereum' || ecosystem === 'ethereumBased' || BaseApi.isEthereumNetwork(this.selectedNetwork);
     },
     showSendUnavailable() {
       // Say before the QR code when this build cannot send from the network (Iroha), so
@@ -194,8 +233,14 @@ export default defineComponent({ name: 'ReceiveForm' ,
     assetNetworks() {
       // Every network that holds the same registry asset, e.g. KSM on Kusama and Kusama AssetHub, and every network
       // of the asset's token group, e.g. DOT on the parachains that hold reserve-backed DOT.
+      const filter = this.filterValue.trim().toLowerCase();
+      if (this.chainFirst) {
+        return this.receiveNetworks
+          .filter(({ name }) => name.toLowerCase().includes(filter))
+          .map(({ name, icon }) => ({ name, value: name, icon }));
+      }
+
       const assetId = this.receiveBalance?.id ?? this.selectedAssetId;
-      const filter = this.filterValue.toLowerCase();
       const networkNames = new Set<string>();
       const isMember = (id: string, name: string) =>
         [...this.groupNetworkAssets].some(
@@ -216,7 +261,9 @@ export default defineComponent({ name: 'ReceiveForm' ,
         .filter(({ name }) => name.toLowerCase().includes(filter));
     },
     address() {
-      if (this.accountsStore.selectedWallet.address === '') return '';
+      const wallet = this.accountsStore.selectedWallet;
+      const network = this.selectedNetworkJson;
+      if (!wallet.address || !network) return '';
 
       if (BaseApi.isBitcoinNetwork(this.selectedNetwork)) {
         const balance = this.accountsStore.balances
@@ -231,7 +278,8 @@ export default defineComponent({ name: 'ReceiveForm' ,
         }
       }
 
-          return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork);
+      const account = this.accountsStore.accounts.find(({ address }) => address === wallet.address);
+      return receiveAddressForNetwork(wallet, account, network);
     },
     widthSaveBtn() {
       return IS_EXTENSION ? (this.showCopyBtn ? '260px' : '530px') : '100%';
@@ -245,8 +293,6 @@ export default defineComponent({ name: 'ReceiveForm' ,
     },
   },
   mounted() {
-    this.selectedNetwork = this.$route.params.network ?? '';
-
     void this.loadLegacyExposure();
   },
   methods: {
@@ -260,22 +306,23 @@ export default defineComponent({ name: 'ReceiveForm' ,
     closeForm() {
       this.$router.back();
     },
-    toggleSelectNetworkPopupVisible() {
-      this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
+    openPicker(picker: 'network' | 'token') {
+      this.filterValue = '';
+      this.picker = picker;
+    },
+    selectToken(id: string) {
+      this.pickedAssetId = id;
+      this.picker = null;
     },
     toggleSelectedNetwork(value: string) {
-      // A group member can have its own registry id on that network; the symbol and warning follow it.
-      const memberAssetId = this.groupNetworkAssets.get(this.networksStore.getNetwork(value)?.name ?? value);
-      if (memberAssetId && !isSameString(memberAssetId, this.receiveBalance?.id ?? this.selectedAssetId)) {
-        this.selectedMemberAssetId = memberAssetId;
+      if (this.chainFirst) {
+        if (!isSameString(value, this.selectedNetwork)) this.pickedAssetId = '';
+      } else {
+        // A token opened from its own page can have a different registry id on the next network.
+        this.pickedAssetId = this.groupNetworkAssets.get(this.networksStore.getNetwork(value)?.name ?? value) ?? this.selectedAssetId;
       }
-
       this.selectedNetwork = value;
-
-          this.toggleSelectNetworkPopupVisible();
-    },
-    handlerFilter(value: string) {
-      this.filterValue = value;
+      this.picker = null;
     },
     copyAddress() {
       setClipboard(this.address);
@@ -308,8 +355,8 @@ export default defineComponent({ name: 'ReceiveForm' ,
 </script>
 
 <style lang="scss" scoped>
-.select-network-popup {
-  text-transform: capitalize;
+.token-selector {
+  margin-top: 8px;
 }
 
 .network-warning {

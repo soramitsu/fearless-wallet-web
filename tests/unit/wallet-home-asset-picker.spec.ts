@@ -113,28 +113,49 @@ describe('the Send and Receive pickers of the wallet home', () => {
     expect(wrapper.get('[data-testid="assetPickerEmpty"]').text()).toContain('walletHome.picker.emptySendHint');
   });
 
-  it('offers every token the list shows for Receive, a first deposit included', async () => {
+  it('offers networks for a first deposit and opens Receive with just the chosen network', async () => {
     openHomeWallet(homeBalances([]));
     const wrapper = mountPicker('receive');
     await flushPromises();
 
-    expect(offered(wrapper).length).toBeGreaterThan(0);
-    expect(wrapper.find('[data-testid="assetPickerEmpty"]').exists()).toBe(false);
+    const networks = wrapper.findAll('[data-testid="receiveNetworkOption"]').map((option) => option.text());
+    expect(networks).toEqual(expect.arrayContaining(['Polkadot', 'Polkadot AssetHub', 'Kusama']));
+    expect(new Set(networks).size).toBe(networks.length);
+    expect(offered(wrapper)).toEqual([]);
+
+    await wrapper.get('[data-testid="receiveNetworkOption"][data-network="Polkadot AssetHub"]').trigger('click');
+    expect(router.push).toHaveBeenCalledExactlyOnceWith({ name: 'ReceiveForm', params: { network: 'Polkadot AssetHub' } });
+    expect(wrapper.emitted('close')).toHaveLength(1);
   });
 
-  it('finds any verified token by search, and says so when nothing matches', async () => {
+  it('searches Receive by network name and recovers from an empty search result', async () => {
     openHomeWallet(homeBalances([['Polkadot', 'dot', '12.5']]));
     const wrapper = mountPicker('receive');
     await flushPromises();
 
-    await wrapper.get('.search-stub').setValue('usdc');
-    await flushPromises();
-    expect(wrapper.findAll('[data-testid="assetPickerOption"]').map((option) => option.attributes('data-symbol'))).toContain('USDC');
+    await wrapper.get('.search-stub').setValue('  pOLkadot aSsEtHub  ');
+    expect(wrapper.findAll('[data-testid="receiveNetworkOption"]').map((option) => option.text())).toEqual(['Polkadot AssetHub']);
 
-    await wrapper.get('.search-stub').setValue('no such token');
+    await wrapper.get('.search-stub').setValue('no such network');
+    expect(wrapper.find('[data-testid="receiveNetworkOption"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="assetPickerEmpty"]').text()).toContain('walletHome.picker.noNetworkMatch');
+
+    await wrapper.get('.search-stub').setValue('');
+    expect(wrapper.find('[data-testid="receiveNetworkOption"][data-network="Kusama"]').exists()).toBe(true);
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('offers only the wallet’s networks even before balances load', async () => {
+    const { accountsStore } = openHomeWallet([]);
+    accountsStore.setSelectedWallet({ ...accountsStore.accounts[0], ethereumAddress: '' });
+    const wrapper = mountPicker('receive');
     await flushPromises();
-    expect(offered(wrapper)).toEqual([]);
-    expect(wrapper.get('[data-testid="assetPickerEmpty"]').text()).toContain('walletHome.picker.noMatch');
+
+    const networks = wrapper.findAll('[data-testid="receiveNetworkOption"]').map((option) => option.text());
+    expect(networks).toContain('Polkadot');
+    expect(networks).not.toContain('Ethereum');
+    expect(networks).not.toContain('Moonbeam');
+    expect(networks).not.toContain('TON Mainnet');
   });
 
   it('closes when its sheet is closed', async () => {

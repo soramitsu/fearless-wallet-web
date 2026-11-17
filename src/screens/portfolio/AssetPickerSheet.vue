@@ -1,5 +1,4 @@
 <template>
-  <!-- One sheet at a time: the network question takes the token list's place, and closing it brings the list back. -->
   <PortfolioSheet
     v-if="!networkPicker"
     :title="t(action === 'send' ? 'walletHome.picker.sendTitle' : 'walletHome.picker.receiveTitle')"
@@ -8,10 +7,31 @@
   >
     <p class="hint">{{ t(action === 'send' ? 'walletHome.picker.sendHint' : 'walletHome.picker.receiveHint') }}</p>
 
-    <SearchInput :value="query" width="100%" placeholder="walletHome.picker.search" class="search" @change="query = $event" />
+    <SearchInput
+      :value="query"
+      width="100%"
+      :placeholder="action === 'send' ? 'walletHome.picker.search' : 'walletHome.picker.searchNetworks'"
+      class="search"
+      @change="query = $event"
+    />
 
-    <ul v-if="rows.length" class="options" data-testid="assetPickerOptions">
-      <li v-for="row in rows" :key="row.id">
+    <ul v-if="action === 'receive' && filteredNetworks.length" class="options" data-testid="receiveNetworkOptions">
+      <li v-for="network in filteredNetworks" :key="network.name">
+        <button
+          type="button"
+          class="option"
+          :data-network="network.name"
+          data-testid="receiveNetworkOption"
+          @click="openReceive(network.name)"
+        >
+          <ExternalLogo :name="network.icon" :width="36" class="option-logo" />
+          <span class="option-symbol">{{ network.name }}</span>
+        </button>
+      </li>
+    </ul>
+
+    <ul v-else-if="action === 'send' && sendRows.length" class="options" data-testid="assetPickerOptions">
+      <li v-for="row in sendRows" :key="row.id">
         <button type="button" class="option" :data-token="row.id" :data-symbol="row.symbol" data-testid="assetPickerOption" @click="pick(row)">
           <span class="option-icon">
             <ExternalLogo :name="row.icon" :width="36" class="option-logo" />
@@ -39,13 +59,12 @@
     </div>
   </PortfolioSheet>
 
-  <!-- A token on several networks: the network is named before Send or Receive, with the warning (contract §7). -->
   <PortfolioGroupNetworkPicker
     v-else
-    :action="action"
+    action="send"
     :symbol="networkPicker.symbol"
     :options="networkPicker.options"
-    @pick="open"
+    @pick="openSend"
     @close="networkPicker = null"
   />
 </template>
@@ -57,6 +76,7 @@ import type { GroupNetworkOption, PortfolioTokenChild, PortfolioTokenRow } from 
 import PortfolioSheet from '@/screens/portfolio/PortfolioSheet.vue';
 import PortfolioGroupNetworkPicker from '@/screens/wallet&asset/wallet/PortfolioGroupNetworkPicker.vue';
 import { usePortfolioFormatting } from '@/portfolio/usePortfolioFormatting';
+import { useReceiveNetworks } from '@/portfolio/useReceiveNetworks';
 import { useWalletTokenRows } from '@/portfolio/useWalletTokenRows';
 import { Components } from '@/router/routes';
 import { useI18n } from '@/locales/useI18n';
@@ -70,41 +90,49 @@ const { t, tc } = useI18n();
 const { formatAmount, formatFiat } = usePortfolioFormatting();
 const query = ref('');
 const networkPicker = ref<null | { symbol: string; options: GroupNetworkOption[] }>(null);
-// A search reaches every verified asset, zero balances included, as the wallet list's search does.
-const { tokenRows, sendOptions, receiveOptions } = useWalletTokenRows({ search: query });
+const { tokenRows, sendOptions } = useWalletTokenRows({ search: query });
+const receiveNetworks = useReceiveNetworks();
+const filteredNetworks = computed(() => {
+  const search = query.value.trim().toLowerCase();
+  return receiveNetworks.value.filter(({ name }) => name.toLowerCase().includes(search));
+});
 
 const isGroup = (row: PortfolioTokenRow): boolean => row.children.length + row.zeroChildren.length > 1;
 const held = (row: PortfolioTokenRow): PortfolioTokenChild[] => (row.children.length ? row.children : row.zeroChildren);
-const optionsOf = (row: PortfolioTokenRow): GroupNetworkOption[] => (props.action === 'send' ? sendOptions(row) : receiveOptions(row));
+const sendRows = computed(() => tokenRows.value.filter((row) => sendOptions(row).length > 0));
 
-// Send lists what can leave now; Receive lists every token the list shows, so a first deposit has somewhere to go.
-const rows = computed(() => (props.action === 'send' ? tokenRows.value.filter((row) => sendOptions(row).length > 0) : tokenRows.value));
+const emptyTitle = computed(() => {
+  if (props.action === 'receive') return t('walletHome.picker.noNetworkMatch');
 
-const emptyTitle = computed(() =>
-  query.value.trim() || props.action === 'receive' ? t('walletHome.picker.noMatch') : t('walletHome.picker.emptySend')
-);
+  return query.value.trim() ? t('walletHome.picker.noMatch') : t('walletHome.picker.emptySend');
+});
 const emptyHint = computed(() => (props.action === 'send' && !query.value.trim() ? t('walletHome.picker.emptySendHint') : ''));
 
 function pick(row: PortfolioTokenRow): void {
-  const options = optionsOf(row);
+  const options = sendOptions(row);
 
   // One network needs no question: it is named on the next screen. Several always ask, even if one is ready.
   if (!isGroup(row) && options.length === 1) {
-    open(options[0]);
+    openSend(options[0]);
     return;
   }
 
   networkPicker.value = { symbol: row.symbol, options };
 }
 
-function open(option: GroupNetworkOption): void {
+function openSend(option: GroupNetworkOption): void {
   networkPicker.value = null;
   emit('close');
 
   void router.push({
-    name: props.action === 'send' ? Components.SendForm : Components.ReceiveForm,
+    name: Components.SendForm,
     params: { assetId: option.assetId, network: option.networkName },
   });
+}
+
+function openReceive(network: string): void {
+  emit('close');
+  void router.push({ name: Components.ReceiveForm, params: { network } });
 }
 </script>
 

@@ -576,7 +576,7 @@ const routes: Array<RouteRecordRaw> = [
         meta: { title: 'send', primaryNavigation: 'portfolio' },
       },
       {
-        path: 'portfolio/receive/:assetId/:network',
+        path: 'portfolio/receive/:assetId?/:network',
         name: Components.ReceiveForm,
         component: ReceiveForm,
         meta: { title: 'receive', primaryNavigation: 'portfolio' },

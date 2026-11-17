@@ -358,6 +358,21 @@ export async function capturePortfolioScreenshots({
     await capture('07-receive-on-assethub', 'Receive opened on the network picked: "Only send DOT on Polkadot AssetHub".');
 
     await home();
+    await click('[data-testid="heroReceive"]');
+    await waitFor('receiveNetworkOptions', 'the Receive network picker');
+    await capture('07b-home-receive-networks', 'Receive asks which network the sender will use.');
+    await click('[data-testid="receiveNetworkOption"][data-network="Polkadot AssetHub"]');
+    await waitFor('qr', 'the network address before choosing a token');
+    const receiveAddress = await evaluate(cdp, sessionId, "document.querySelector('.full-address').textContent");
+    await capture('07c-home-receive-address', 'The address and QR code are available with no token selected.');
+    await click('[data-testid="receiveToken"]');
+    await typeInto('[data-testid="receiveChoices"] input', 'USDT');
+    await waitForExpression(cdp, sessionId, `document.querySelector('[data-testid="receiveChoices"] .row')?.textContent.includes('USDT')`, 'USDT on AssetHub');
+    await click('[data-testid="receiveChoices"] .row');
+    await waitForExpression(cdp, sessionId, `document.querySelector('[data-testid="receiveOnlyOnNetwork"]')?.textContent.includes('USDT') &&
+      document.querySelector('.full-address')?.textContent === ${JSON.stringify(receiveAddress)}`, 'the same address with USDT selected');
+
+    await home();
     await click('[data-testid="heroSend"]');
     await waitFor('assetPicker', 'the Send token picker');
     await capture('08-home-send-picker', "The home's Send asks which token first, as in Exodus.");

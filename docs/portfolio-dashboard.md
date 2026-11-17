@@ -24,10 +24,10 @@ networks narrow it (a search or a chip) instead of regrouping it, in every scope
 - **A row opens the next level.** A token held on several networks opens its page; a token on one network opens that
   network's asset page. Nothing expands in place. A token found by a search opens with the same search, so
   its page lists the networks the search found, hidden ones included, and opening one of those shows it again.
-- **Send and Receive** on the home ask which token first (`AssetPickerSheet.vue`; a search reaches every verified token),
-  then which network for a token on several, with the wrong-network warning (`PortfolioGroupNetworkPicker.vue`); a token
-  on one network goes straight to the form, which names the network. On a token's page they ask for the network the same
-  way. Swap opens Polkaswap. A recovery-only wallet gets Send only.
+- **Receive** on the home asks which network the sender will use, then shows the address and QR code. The recipient
+  can optionally choose a token on that network. **Send** asks which token to send and prompts for its network if it
+  is available on several. On a token's page both actions carry the token into the network picker. Swap opens Polkaswap.
+  A recovery-only wallet gets Send only.
 - **Finding a token or a network.** The search reads token symbols and names and network names: "AssetHub" lists what
   the wallet holds on the AssetHub networks, each as a row of its own. The chips are All networks, then every network
   the wallet holds something on, largest first (`summarizePortfolio` totals them in the summary's own pass). A chip is
@@ -223,7 +223,7 @@ node scripts/solana-extension-smoke.mjs --side-panel-screenshots output/side-pan
 ```
 
 The portfolio tour walks one wallet: the home, a search for a network and a network chip, a token's page and one of its
-networks, Send and Receive from the token page and from the home (token first, then network), the Portfolio view's token
+networks, Send and Receive from the token page and from the home, the Portfolio view's token
 and network parts, Manage assets and its search, then Russian, Akkadian and Egyptian. The side-panel run repeats it at 360 px.
 
 The unit specs cover the readiness evaluator against synthetic chains and the real snapshot, the hand-off locations, the

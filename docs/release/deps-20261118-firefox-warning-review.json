@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-18",
+  "referenceSourceCommit": "4689df2d44d63357e45d7c1015fb980877695172",
+  "referenceSourceTree": "c2afb2970cc2d567cc570ed9f3a24706fdfc3b12",
+  "applicationSourceTree": "18bff824fcefad8fb097781557e8635d3ed155cf",
+  "applicationSource": "The two commits before this record, on 4689df2d: bitcoinjs-lib 6.1.10 and the test that the installed copy keeps its security backports. Their tree is given because the commit ids change when the series is applied.",
+  "toolchain": {
+    "node": "24.19.0",
+    "webExt": "10.6.0"
+  },
+  "summary": "Review and refresh the keyless Firefox warning baseline. The same 36 warnings remain (35 DANGEROUS_EVAL, one UNSAFE_VAR_ASSIGNMENT; zero errors or notices). Against the keyless build of 4689df2d every warning has the same code, message and surrounding code; against a keyless rebuild of bf2bf0e8, the last reviewed set, 34 are identical and the two reviewed sites whose minified names change (lodash's root lookup, Vue's static-content insert) are the same code. The base had already moved 15 of SendForm.js's warnings into tokenGroups.js. The store baseline was not re-recorded.",
+  "comparison": {
+    "method": "Keyless builds (the CI recipe, no release configuration) of bf2bf0e8, 4689df2d and the application source, linted with web-ext 10.6.0 and compared by code, message and 60 characters of minified code each side of every warning, with the file both kept and ignored (content hashes in vendor chunk names removed).",
+    "keyless": {
+      "reviewedBf2bf0e8": 36,
+      "reference4689df2d": 36,
+      "head": 36,
+      "headVsReference": {
+        "siteDifferences": 0,
+        "sameContext": 36,
+        "contextDifferences": 0
+      },
+      "referenceVsReviewed": {
+        "sameContext": 34,
+        "contextDifferences": 2,
+        "filesChanged": "15 DANGEROUS_EVAL sites moved from chunks/SendForm.js to chunks/tokenGroups.js"
+      }
+    },
+    "whatChanged": [
+      "Base drift, before this series: bc0a50e2 (Prepare Chrome 4.2.10) split the popup chunks. In the keyless build of 4689df2d, chunks/SendForm.js is 136,438 bytes (780,809 at bf2bf0e8) and keeps only its UNSAFE_VAR_ASSIGNMENT; the 15 Vue-compiler DANGEROUS_EVAL warnings it carried at bf2bf0e8 are in chunks/tokenGroups.js (647,239 bytes, 3,294 at bf2bf0e8), each with the same code, message and surrounding code. mountApp.js grew from 1,096,086 to 1,099,611 bytes. The digests of mountApp.js (5b36a26d… to 4557a543…) and SendForm.js (de97072c… to 1bd311d7…) change accordingly, and the committed baseline, recorded for bf2bf0e8, already failed `audit-firefox-webext-warnings.mjs --ci` on 4689df2d.",
+      "The keyring vendor chunk's name differs even between the recorded bf2bf0e8 baseline (subwallet-keyring-DqCYaCGD.js) and a keyless rebuild of bf2bf0e8 with the same lockfile (subwallet-keyring-IqsIQnmD.js, the name 4689df2d also produces); its one warning keeps its code, message and context.",
+      "bitcoinjs-lib 6.1.10 changes only the bitcoinjs-lib vendor chunk's content (335 bytes larger: the psbt.js and block.js backports). The chunks that import it, the keyring chunk among them, keep their content but get new content hashes in their names (subwallet-keyring-IqsIQnmD.js is now subwallet-keyring-Cdc6ZvB8.js); with the import names mapped, every other file of the keyless builds of 4689df2d and of this source is byte-identical."
+    ],
+    "contextDifferences": [
+      {
+        "code": "DANGEROUS_EVAL",
+        "file": "chunks/mountApp.js",
+        "message": "The Function constructor is eval.",
+        "finding": "lodash root lookup (Function(`return this`)()), the site reviewed for bf2bf0e8; only minified names changed (ox/ix/ax to mx/fx/px)."
+      },
+      {
+        "code": "UNSAFE_VAR_ASSIGNMENT",
+        "file": "chunks/SendForm.js",
+        "message": "Unsafe assignment to innerHTML",
+        "finding": "Vue runtime-dom static-content insert, the site reviewed for bf2bf0e8; only minified names changed (Et/St to Nt/At)."
+      }
+    ]
+  },
+  "configurations": {
+    "keyless": {
+      "baseline": "config/firefox-webext-warning-baseline-ci.json",
+      "previousBaselineSha256": "5580ef6bb5a2fe52bd8c390e0a386fec9c88c8804e3da9fd44fa2163e0dcc348",
+      "previousWarningSetSha256": "eaea3b1930e516de990f7b3c00bdf8efdafd6ab3d972eb2d57f2e8d4fadc1cfb",
+      "referenceBuildWarningSetSha256": "4a4824c1cf718a8b992737097474d6728be42f8783815e113ea0ea25cd9dea68",
+      "baselineSha256": "7a98eeda37f0149123a02a5be5fc404b03575d4340ecdd1a0b2f747d49695e01",
+      "warningSetSha256": "3a17afe8cb8f1daf5df4650d307020e244c92eb4506e576b3dffa72436ef2d56",
+      "summary": {
+        "errors": 0,
+        "notices": 0,
+        "warnings": 36
+      }
+    },
+    "store": {
+      "baseline": "config/firefox-webext-warning-baseline.json",
+      "status": "not re-recorded: it needs the release provider configuration (.env.chrome-release.local), so it must be rebuilt and reviewed the same way before a store release"
+    }
+  },
+  "reviewedReference": {
+    "commit": "bf2bf0e89b3d8ddab0a73498db952745539ff6ee",
+    "record": "docs/release/consolidated-20261116-followups-firefox-warning-review.json",
+    "baselineWarningSetSha256": "eaea3b1930e516de990f7b3c00bdf8efdafd6ab3d972eb2d57f2e8d4fadc1cfb",
+    "rebuildWarningSetSha256": "4246184f70927faebf873f5caa96d10c19420b7c7f3a764ff17151a6e84cb328"
+  }
+}

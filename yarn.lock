@@ -9002,24 +9002,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"picomatch@npm:2.3.2":
+"picomatch@file:./vendor/picomatch-2::locator=fearless-wallet%40workspace%3A.":
   version: 2.3.2
-  resolution: "picomatch@npm:2.3.2"
-  checksum: 10/b788ef8148a2415b9dec12f0bb350ae6a5830f8f1950e472abc2f5225494debf7d1b75eb031df0ceaea9e8ec3e7bad599e8dbf3c60d61b42be429ba41bff4426
+  resolution: "picomatch@file:./vendor/picomatch-2#./vendor/picomatch-2::hash=29eba7&locator=fearless-wallet%40workspace%3A."
+  checksum: 10/057937c6cfb76e12e20ff74f8a6aba9762d78911eb3177a4244c112f68b0bb0a793891d6b337dd0c5452a60b8a9676ece26d54f7f5cae5dc60661c2a550a6f11
   languageName: node
   linkType: hard
 
-"picomatch@npm:^4.0.3, picomatch@npm:^4.0.4":
-  version: 4.0.4
-  resolution: "picomatch@npm:4.0.4"
-  checksum: 10/f6ef80a3590827ce20378ae110ac78209cc4f74d39236370f1780f957b7ee41c12acde0e4651b90f39983506fd2f5e449994716f516db2e9752924aff8de93ce
-  languageName: node
-  linkType: hard
-
-"picomatch@npm:^4.0.5, picomatch@npm:^4.0.7":
+"picomatch@file:./vendor/picomatch-4::locator=fearless-wallet%40workspace%3A.":
   version: 4.0.7
-  resolution: "picomatch@npm:4.0.7"
-  checksum: 10/66e1df34bc39c72fa3756be4069f7887ea3e35e94bba1c3f6167763007698cb04b8a0a365161d186fda6e9571a2d3efb606b2966eb6a7dea6252911224dc2f48
+  resolution: "picomatch@file:./vendor/picomatch-4#./vendor/picomatch-4::hash=487234&locator=fearless-wallet%40workspace%3A."
+  checksum: 10/737d37f1a4fdd0601a504eccaced4c8d063256ed9e2c6a633a3821127ff4515f1a30fe569f21fa22166fe71a933c488679f6f8e0cd33fcf906b1d6c475ff1222
   languageName: node
   linkType: hard
 

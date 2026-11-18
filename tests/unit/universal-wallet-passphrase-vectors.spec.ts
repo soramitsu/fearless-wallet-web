@@ -129,25 +129,25 @@ describe('Universal Wallet passphrase vectors', () => {
     expect(resolveUniversalWalletPassphrase(`${mnemonic}${source.substrateDerivationPath}`, ethereumSuri)).toBe(source.passphrase);
   });
 
-  it('keeps every no-password address apart from the protected ones (negative cases)', () => {
-    for (const vector of fixture.vectors) {
-      const previous = v2.vectors.find(({ mnemonic }) => mnemonic === vector.mnemonic)!.expected;
-      const legacy = deriveUniversalWalletKeyringFields(vector.mnemonic);
-      const fields = deriveUniversalWalletKeyringFields(vector.mnemonic, vector.passphrase);
+  it.each(fixture.vectors)('$id keeps the no-password addresses apart from the protected ones', (vector) => {
+    const previous = v2.vectors.find(({ mnemonic }) => mnemonic === vector.mnemonic)!.expected;
+    const legacy = deriveUniversalWalletKeyringFields(vector.mnemonic);
+    const fields = deriveUniversalWalletKeyringFields(vector.mnemonic, vector.passphrase);
 
-      // password-ignored: the empty passphrase gives exactly the v2 accounts, never the protected ones.
-      expect(legacy.bitcoinAddress).toBe(previous.bitcoin.mainnet.firstReceiveAddress);
-      expect(legacy.solanaAddress).toBe(previous.solana.address);
-      expect(legacy.tonPublicKeyHex).toBe(previous.ton.publicKeyHex);
-      expect(legacy.irohaPublicKeyHex).toBe(previous.iroha.taira.publicKeyHex);
-      for (const key of Object.keys(fields) as (keyof typeof fields)[]) expect(fields[key]).not.toBe(legacy[key]);
-      // A listed network keeps the account the words alone open.
-      expect(deriveUniversalWalletKeyringFields(vector.mnemonic, vector.passphrase, ['solana'])).toEqual({
-        ...fields,
-        solanaAddress: legacy.solanaAddress,
-      });
-    }
+    // password-ignored: the empty passphrase gives exactly the v2 accounts, never the protected ones.
+    expect(legacy.bitcoinAddress).toBe(previous.bitcoin.mainnet.firstReceiveAddress);
+    expect(legacy.solanaAddress).toBe(previous.solana.address);
+    expect(legacy.tonPublicKeyHex).toBe(previous.ton.publicKeyHex);
+    expect(legacy.irohaPublicKeyHex).toBe(previous.iroha.taira.publicKeyHex);
+    for (const key of Object.keys(fields) as (keyof typeof fields)[]) expect(fields[key]).not.toBe(legacy[key]);
+    // A listed network keeps the account the words alone open.
+    expect(deriveUniversalWalletKeyringFields(vector.mnemonic, vector.passphrase, ['solana'])).toEqual({
+      ...fields,
+      solanaAddress: legacy.solanaAddress,
+    });
+  });
 
+  it('normalises the passphrase and keeps a derivation path separate from it', () => {
     // passphrase-not-normalised: BIP39 salts with the NFKD form, so how the password was typed does not matter,
     // while a client that hashes the typed (NFC) bytes reaches another seed.
     const unicode = fixture.vectors[1];

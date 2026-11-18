@@ -116,19 +116,19 @@ const nativeOnly = nativeVectors.vectors.filter(({ bip39Valid }) => !bip39Valid)
 const nativeAndBip39 = nativeVectors.vectors.filter(({ bip39Valid }) => bip39Valid);
 
 describe('TON import candidates', PBKDF2_SUITE, () => {
-  it('offers the universal address and the one 3.0.x stored for every BIP39 phrase 3.0.5 accepted', async () => {
+  it('covers at least 48 BIP39 phrases accepted by the 3.0.5 build', () => {
     expect(bip39Vectors.vectors.length).toBeGreaterThanOrEqual(48);
+  });
 
-    for (const vector of bip39Vectors.vectors) {
-      const [universal, legacy, ...rest] = await deriveTonImportCandidates(vector.mnemonic);
+  it.each(bip39Vectors.vectors)('offers both the universal and 3.0.x addresses for accepted BIP39 vector %#', async (vector) => {
+    const [universal, legacy, ...rest] = await deriveTonImportCandidates(vector.mnemonic);
 
-      expect(rest).toEqual([]);
-      expect(universal).toMatchObject({ derivation: 'universal', address: deriveTonAccount({ mnemonic: vector.mnemonic }).address });
-      expect(legacy).toMatchObject({ derivation: 'fearless-legacy', address: vector.address, phrase: vector.mnemonic });
-      expect(hex(legacy.publicKey)).toBe(vector.publicKeyHex);
-      expect(universal.address).not.toBe(legacy.address);
-      expect(signVerify(payload, sign(payload, Buffer.from(legacy.secretKey)), Buffer.from(vector.publicKeyHex, 'hex'))).toBe(true);
-    }
+    expect(rest).toEqual([]);
+    expect(universal).toMatchObject({ derivation: 'universal', address: deriveTonAccount({ mnemonic: vector.mnemonic }).address });
+    expect(legacy).toMatchObject({ derivation: 'fearless-legacy', address: vector.address, phrase: vector.mnemonic });
+    expect(hex(legacy.publicKey)).toBe(vector.publicKeyHex);
+    expect(universal.address).not.toBe(legacy.address);
+    expect(signVerify(payload, sign(payload, Buffer.from(legacy.secretKey)), Buffer.from(vector.publicKeyHex, 'hex'))).toBe(true);
   });
 
   it('includes the address the real 3.0.5 build stored', async () => {

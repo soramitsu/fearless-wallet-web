@@ -370,9 +370,9 @@ describe('TON import: a 3.0.x phrase ends at the address 3.0.x stored', { timeou
     await wrapper.vm.proceed();
     await finish(wrapper);
 
-    // The save derives the key with tonweb's KDF, which outlasts a promise flush.
-    await vi.waitFor(() => expect(wrapper.vm.savedSuccessfully).toBe(true));
     await expect(mocks.save.mock.results.at(-1)!.value).resolves.toBe(vector.address);
+    await flushPromises();
+    expect(wrapper.vm.savedSuccessfully).toBe(true);
     wrapper.unmount();
   });
 
@@ -389,8 +389,9 @@ describe('TON import: a 3.0.x phrase ends at the address 3.0.x stored', { timeou
     await wrapper.vm.proceed();
     await finish(wrapper);
 
-    await vi.waitFor(() => expect(wrapper.vm.savedSuccessfully).toBe(true));
     await expect(mocks.save.mock.results.at(-1)!.value).resolves.toBe(vector.address);
+    await flushPromises();
+    expect(wrapper.vm.savedSuccessfully).toBe(true);
     wrapper.unmount();
   });
 
@@ -403,7 +404,9 @@ describe('TON import: a 3.0.x phrase ends at the address 3.0.x stored', { timeou
     await wrapper.vm.proceed();
     await finish(wrapper);
 
-    await vi.waitFor(() => expect(wrapper.vm.savedSuccessfully).toBe(true));
+    await mocks.save.mock.results.at(-1)!.value;
+    await flushPromises();
+    expect(wrapper.vm.savedSuccessfully).toBe(true);
     expect(mocks.save.mock.calls.at(-1)![0]).toBe(vector.typedText);
     const saved = await deriveTonImportChoice(vector.typedText, mocks.save.mock.calls.at(-1)![4]);
     expect(Buffer.from(saved.publicKey).toString('hex')).toBe(vector.publicKeyHex);

@@ -234,6 +234,7 @@ describe('password changes commit as one batch', () => {
     expect(Object.keys((writeWalletRecords as Mock).mock.calls[0][0])).toEqual([PASSWORD_STORAGE_KEY]);
   });
 
+  // A full rotation and restart decrypts each real fixture with scrypt. Keep the longer allowance local to these checks.
   it('restores Substrate, EVM and both TON fixture accounts with unchanged keys after restart', async () => {
     const { TonKeyringService: RealTonKeyring } = await vi.importActual<{ TonKeyringService: typeof TonKeyringService }>(
       '@extension-base/services/keyring-service/TonKeyring'
@@ -286,7 +287,7 @@ describe('password changes commit as one batch', () => {
     }
 
     restarted.lockALl();
-  });
+  }, 120_000);
 
   it('includes verifier, managed accounts and TON accounts in one awaited write', async () => {
     const tonRecord = structuredClone(fixture.accounts[0].stored);
@@ -493,7 +494,7 @@ describe('3.0.6 review: queued writes, committed changes and reset', () => {
     }
 
     restarted.lockALl();
-  });
+  }, 120_000);
 
   it('sets a first password without opening or rewriting TON records left by an earlier reset', async () => {
     const leftovers: Record<string, unknown> = {

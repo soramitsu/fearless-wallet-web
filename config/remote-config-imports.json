@@ -3264,7 +3264,7 @@
       "commit": "ca1c2655ff541ae5942d820423962d34fd29d7f9",
       "sourcePath": "chains/v13/chains.json",
       "upstreamSha256": "79a583f08f71139a31e00c825c746891cef50c04aa81318aaa492807757b9cec",
-      "ownedSha256": "388fbfb2630ed325973b3b95958b53f52f8d2254c287136bf23bebbcf2adaeb8"
+      "ownedSha256": "93c70d89d15c39c64b677a7e00eda0f72d16e2dfeb1582718c7d60dee1bd784b"
     },
     {
       "path": "production/fiat/fiats.json",

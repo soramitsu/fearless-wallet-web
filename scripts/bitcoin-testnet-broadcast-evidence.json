@@ -3,7 +3,7 @@
   "scope": "web-bitcoin-testnet-broadcast-readiness",
   "status": "ready",
   "releaseEnabled": true,
-  "lastReviewed": "2026-11-10",
+  "lastReviewed": "2026-11-19",
   "blockers": [],
   "smokeCommand": "yarn test:smoke:bitcoin",
   "readyVerificationCommands": [
@@ -44,15 +44,15 @@
   ],
   "evidence": [
     {
-      "txid": "fb096c6c5b8480be3076da51ad019290252252a0ca78def46b01dcafcd31cc78",
+      "txid": "9a8e38c45106d2ab5f93a43f2ba57e2b9fe90a2ec756d0767db827b68a86a04d",
       "sourceAddress": "tb1q77es2gt0mkz32yxser2w3t78r2y20f7s3xqptf",
       "recipientAddress": "tb1q9x084ta6myvtcy697px3axazyhm6hpkp2dxze9",
       "amountSat": "1000",
-      "outpoint": "bd857b994256a447300cb984cd59afd0dc3a99d843f1b61a28db2a43d4fee1fd:1",
+      "outpoint": "fb096c6c5b8480be3076da51ad019290252252a0ca78def46b01dcafcd31cc78:1",
       "indexerUrl": "https://blockstream.info/testnet/api",
-      "timestamp": "2026-11-10T11:37:19Z",
-      "commit": "a427199f08600e98a4daa235dece06750ddb91f3",
-      "operator": "claude (yarn test:smoke:bitcoin)"
+      "timestamp": "2026-11-19T05:34:06Z",
+      "commit": "451619abb5db3112a4e4a12ce5312519d81be3f5",
+      "operator": "Codex (Fearless Wallet QA live smoke)"
     }
   ]
 }

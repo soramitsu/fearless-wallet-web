@@ -37,6 +37,27 @@ describe('network preference durability', () => {
     vi.mocked(axios.get).mockRejectedValue(new Error('offline'));
   });
 
+  it.each([true, false])('moves a retired built-in provider after a catalog refresh (manual=%s)', async (isManual) => {
+    const before = readSnapshot().find(({ name }) => name === 'Polkadot')!;
+    const previous = before.nodes[0].url;
+    io.read.mockResolvedValue({ Polkadot: { ...before, currentProvider: previous, isManual } });
+    vi.mocked(axios.get).mockResolvedValue({ data: [{ ...before, nodes: [{ name: 'New RPC', url: 'wss://new.example' }] }] });
+    const service = create();
+    await service.initNetworkMap();
+    expect(service.networkMap.Polkadot).toMatchObject({ currentProvider: 'wss://new.example', isManual: false });
+    expect(io.write).toHaveBeenCalled();
+  });
+
+  it('preserves a manually saved custom URL that also appeared in the old catalog', async () => {
+    const before = readSnapshot().find(({ name }) => name === 'Polkadot')!;
+    const custom = before.nodes[0];
+    io.read.mockResolvedValue({ Polkadot: { ...before, currentProvider: custom.url, customNodes: [custom], isManual: true } });
+    vi.mocked(axios.get).mockResolvedValue({ data: [{ ...before, nodes: [{ name: 'New RPC', url: 'wss://new.example' }] }] });
+    const service = create();
+    await service.initNetworkMap();
+    expect(service.networkMap.Polkadot).toMatchObject({ currentProvider: custom.url, isManual: true });
+  });
+
   it('does not announce or apply a custom provider until storage acknowledges it', async () => {
     const service = create();
     await service.initNetworkMap();

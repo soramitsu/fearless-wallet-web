@@ -71,13 +71,38 @@ async function fetchSubqueryHistory(
   pageSize = 100,
   cursor: string | null = null
 ): Promise<SubqueryHistory> {
-  const res = await axios
-    .post(url, { query: computedSubqueryRequest(cursor, pageSize, address) }, dataApiRequestConfig(url))
-    .catch((e) => console.info(e));
+  const response = await axios.post(url, { query: computedSubqueryRequest(cursor, pageSize, address) }, dataApiRequestConfig(url));
+  const page = response.data?.data?.historyElements;
+  if (response.data?.errors?.length || !Array.isArray(page?.nodes) || !page.pageInfo) {
+    throw new Error('invalid_subquery_history');
+  }
+  return page;
+}
 
-  if (res && res.data) return res.data?.historyElements;
-
-  return { nodes: [], timestamp: Date.now(), pageInfo: { startCursor: '0', endCursor: '0' } };
+async function fetchSoraSubqueryHistory(
+  url: string,
+  address: string,
+  networkChainId?: string
+): Promise<SoraHistoryElement[] | undefined> {
+  const response = await axios.post(url, {
+    query: `query WalletHistory($address: String!) {
+      _health { genesisHash workerReady latestIndexedAt }
+      historyElements(first: 100, orderBy: TIMESTAMP_DESC, filter: { address: { equalTo: $address } }) {
+        nodes { id timestamp address blockHash blockHeight networkFee module method dataFrom dataTo data execution }
+      }
+    }`,
+    variables: { address },
+  }, dataApiRequestConfig(url));
+  const { _health: health, historyElements } = response.data?.data ?? {};
+  if (response.data?.errors?.length || !networkChainId || health?.genesisHash !== `0x${networkChainId}` ||
+      health.workerReady !== true || !Number.isFinite(health.latestIndexedAt) ||
+      Math.abs(Date.now() - health.latestIndexedAt * 1000) > 3_600_000 ||
+      !Array.isArray(historyElements?.nodes) ||
+      !historyElements.nodes.every((row: SoraHistoryElement) =>
+        row?.address === address && typeof row.id === 'string' &&
+        (typeof row.timestamp === 'string' || Number.isFinite(row.timestamp)) &&
+        typeof row.execution?.success === 'boolean')) return undefined;
+  return historyElements.nodes as SoraHistoryElement[];
 }
 
 async function fetchGiantsquidHistory(url: string, address: string): Promise<GiantsquidHistoryItem[]> {
@@ -702,12 +727,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-async function retryTransientHistory<T>(load: () => Promise<T>): Promise<T> {
+async function retryTransientHistory<T>(load: () => Promise<T>, delays = TRANSIENT_HISTORY_RETRY_DELAYS_MS): Promise<T> {
   for (let attempt = 0; ; attempt += 1) {
     try {
       return await load();
     } catch (error) {
-      const delayMs = TRANSIENT_HISTORY_RETRY_DELAYS_MS[attempt];
+      const delayMs = delays[attempt];
 
       if (delayMs === undefined || !isTransientHistoryError(error)) throw error;
       await new Promise((resolve) => setTimeout(resolve, delayMs));
@@ -719,6 +744,8 @@ function isTransientHistoryError(error: unknown): boolean {
   // fetch rejects with a TypeError when the indexer cannot be reached at all.
   if (error instanceof TypeError) return true;
   if (!(error instanceof Error)) return false;
+
+  if (axios.isAxiosError(error) && ['ETIMEDOUT', 'ECONNABORTED', 'ERR_NETWORK'].includes(error.code ?? '')) return true;
 
   const { status } = error as Error & { status?: unknown };
 
@@ -744,6 +771,8 @@ export async function fetchHistory(
       return await getHistory(address, networkName);
     }
 
+    if (type === 'soraSubquery') return await fetchSoraSubqueryHistory(url, address, networkChainId);
+
     if (type === 'sora') return await fetchSoraHistory(url, address);
 
     if (type === 'oklink') return await fetchX1History(url, address);
@@ -762,7 +791,7 @@ export async function fetchHistory(
       return await retryTransientHistory(() => fetchIrohaHistory(url, address, networkChainId, assetId, isUtility));
     }
 
-    if (type === 'subquery') return await fetchSubqueryHistory(url, address);
+    if (type === 'subquery') return await retryTransientHistory(() => fetchSubqueryHistory(url, address), [1_000]);
 
     if (type === 'subsquid') return await fetchSubsquidHistory(url, address);
 
@@ -786,7 +815,7 @@ export async function fetchHistory(
       error
     );
 
-    if (type === 'bitcoin' || type === 'iroha') return undefined;
+    if (type === 'bitcoin' || type === 'iroha' || type === 'subquery' || type === 'soraSubquery') return undefined;
 
     return [];
   }

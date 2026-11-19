@@ -202,6 +202,7 @@ export class NetworkService {
     }
     this.registryAvailable = remote;
 
+    const restored = new Set<string>();
     networks
       .filter((el) => {
         if (el.disabled) return false;
@@ -226,6 +227,14 @@ export class NetworkService {
         const saved = (useCurrent ? this.networkMap[network.name] : undefined) ?? networksFromStorage?.[network.name];
         const favorite = Array.isArray(saved?.favorite) ? saved.favorite.filter((value) => typeof value === 'string') : [];
 
+        const selected = saved?.currentProvider;
+        const retired = remote && !!selected && saved.chainId === network.chainId &&
+          saved.nodes?.some(({ url }) => url === selected) &&
+          !network.nodes.some(({ url }) => url === selected) &&
+          !saved.customNodes?.some(({ url }) => url === selected) &&
+          !Object.values(saved.customProviders ?? {}).includes(selected);
+        restored.add(network.name);
+
         this.networkMap[network.name] = {
           ...network,
           key: network.name,
@@ -235,17 +244,17 @@ export class NetworkService {
           active: true,
           customNodes: saved?.customNodes ?? [],
           customProviders: saved?.customProviders ?? {},
-          isManual: saved?.isManual,
+          isManual: retired ? false : saved?.isManual,
           favorite,
           providers,
-          currentProvider: saved?.currentProvider || currentProvider,
+          currentProvider: retired ? currentProvider : selected || currentProvider,
         };
       });
 
     if (!hadReadableCache) {
       // A recovered cache may contain settings for bundled chains absent from the remote response.
       for (const [name, saved] of Object.entries(networksFromStorage ?? {})) {
-        if (this.networkPreferenceRevision[name] > preferenceRevision) continue;
+        if (restored.has(name) || this.networkPreferenceRevision[name] > preferenceRevision) continue;
         const existing = this.networkMap[name];
         if (!existing) continue;
         existing.favorite = saved.favorite ?? existing.favorite;

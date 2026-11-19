@@ -10986,11 +10986,11 @@ __metadata:
   linkType: hard
 
 "tiny-secp256k1@npm:^2.2.3":
-  version: 2.2.4
-  resolution: "tiny-secp256k1@npm:2.2.4"
+  version: 2.2.5
+  resolution: "tiny-secp256k1@npm:2.2.5"
   dependencies:
     uint8array-tools: "npm:0.0.7"
-  checksum: 10/3f29104fcd6b17aefe8f3ce2fd3aa69cd2fb4b1c96e2e2f51d709dbea518705a9a706433c98d6f413f2d46555f4be0e1fd02b1727492a20d98d23ab848ff187d
+  checksum: 10/b404bdf54bd023954a5ae5ef22f88e3833227ee217bfa37cba834067f13b049d534dc123a41eda8dc8c1a6afeeb971773ce50da9e160ecc8f10d90ff9f736ed5
   languageName: node
   linkType: hard
 

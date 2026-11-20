@@ -98,15 +98,17 @@ export const actions: Actions = {
       this.history = { ...this.history, [assetId]: historyForAssetId };
     };
 
-    if (serviceType === 'sora') {
+    if (serviceType === 'sora' || serviceType === 'soraSubquery') {
+      const networkAssets = this.getNetwork(networkName)?.assets ?? [];
+      const nativeAsset = networkAssets.find((asset) => asset.isUtility)?.id ?? SORA_XOR_ASSET_ID;
+      const rewardAsset = networkAssets.find((asset) => isSameString(asset.symbol, 'val'))?.id ?? SORA_VAL_ASSET_ID;
       const typedHistory = history as SoraHistoryElement[];
       const historyAssets = typedHistory.reduce(
         (result, item) => {
           const baseAssetId = item.data?.baseAssetId ?? item.data?.assetId;
 
-          const networkJson = this.networks.find(({ name }) => isSora(name));
-          const asset = networkJson?.assets.find(({ currencyId }) => currencyId === baseAssetId);
-          const id = item.method === 'rewarded' ? SORA_VAL_ASSET_ID : (asset?.id ?? SORA_XOR_ASSET_ID);
+          const asset = baseAssetId && networkAssets.find(({ currencyId }) => currencyId === baseAssetId);
+          const id = item.method === 'rewarded' ? rewardAsset : (asset?.id ?? nativeAsset);
 
           if (result[id] === undefined) result[id] = [];
 
@@ -190,7 +192,6 @@ export const actions: Actions = {
           ? getIrohaHistoryUrl(network.chainId)
           : UNIVERSAL_WALLET_INDEXERS.solana,
     };
-    const url = isSora(networkName) ? externalApi.staking!.url : historyUrl; // TODO remove
 
     const isNativeEvm = isNativeEVMNetwork(networkName);
     const balances = (accountsStore.balances ?? []) as unknown as TokenGroup[];
@@ -250,6 +251,8 @@ export const actions: Actions = {
             .filter((item): item is string => typeof item === 'string' && item.length > 0)
         : undefined;
 
+    // Legacy SORA catalogs use the staking service for their activity query.
+    const url = type === 'sora' && isSora(networkName) ? (externalApi?.staking?.url ?? historyUrl) : historyUrl;
     const history = await fetchHistory(
       url,
       formattedAddress,

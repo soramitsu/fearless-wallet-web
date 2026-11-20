@@ -255,7 +255,7 @@ function getFormattedHistory(history: History, serviceType: HistoryServiceType):
     return { nodes, pageInfo: { endCursor: '', startCursor: '' }, timestamp: Date.now() };
   }
 
-  if (serviceType === 'sora' || serviceType === 'oklink' || serviceType === 'zeta') {
+  if (serviceType === 'sora' || serviceType === 'soraSubquery' || serviceType === 'oklink' || serviceType === 'zeta') {
     const nodes: HistoryElement[] = (history as SoraHistoryElement[]).map((historyElement) => {
       return {
         ...historyElement,

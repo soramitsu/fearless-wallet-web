@@ -28,6 +28,7 @@ type HistoryServiceType =
   | 'subquery'
   | 'etherscan'
   | 'sora'
+  | 'soraSubquery'
   | 'oklink'
   | 'zeta'
   | 'solana'

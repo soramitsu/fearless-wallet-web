@@ -115,7 +115,7 @@
                 <dt>{{ t('irohaConnectPage.relay') }}</dt>
                 <dd>{{ relayHost }}</dd>
               </div>
-              <div v-if="snapshot.session.appUrl">
+              <div v-if="snapshot.session.appUrl" class="wide">
                 <dt>{{ t('irohaConnectPage.app') }}</dt>
                 <dd>{{ appHost }}</dd>
               </div>

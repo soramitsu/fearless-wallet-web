@@ -67,9 +67,17 @@ class Cdp {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private readonly callbacks = new Map<number, { resolve: (value: any) => void; reject: (error: Error) => void }>();
   private id = 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private readonly listeners = new Set<(message: { method: string; params: any; sessionId?: string }) => void>();
 
   constructor(private readonly chrome: ChildProcess) {
     (chrome.stdio[4] as NodeJS.ReadableStream).on('data', (chunk: Buffer) => this.onData(chunk));
+  }
+
+   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onEvent(listener: (message: { method: string; params: any; sessionId?: string }) => void): void {
+    this.listeners.add(listener);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -99,6 +107,7 @@ class Cdp {
       end = this.buffer.indexOf('\0');
       if (!raw.trim()) continue;
       const message = JSON.parse(raw);
+      if (!message.id) this.listeners.forEach((listener) => listener(message));
       const callback = message.id && this.callbacks.get(message.id);
       if (!callback) continue;
       this.callbacks.delete(message.id);
@@ -163,6 +172,7 @@ describe('IrohaConnect in the built extension against live Taira', () => {
       const step = (name: string, detail: Record<string, unknown> = {}) =>
         (report.steps as unknown[]).push({ name, at: new Date().toISOString(), ...detail });
       let app: ReturnType<typeof createConnectAppSession> | undefined;
+      let diagnosticsPage: string | undefined;
 
       const evaluate = async (sessionId: string, expression: string) => {
         const result = await cdp.send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }, sessionId);
@@ -178,24 +188,35 @@ describe('IrohaConnect in the built extension against live Taira', () => {
         const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' }, sessionId);
         await fs.writeFile(path.join(reportDir, name), Buffer.from(data, 'base64'));
       };
+      // Clicks the middle of the element with the mouse, as a person would; a disabled or covered element fails.
       const click = async (sessionId: string, selector: string, description: string) => {
         const point = await eventually(
-          () =>
-            evaluate(
+          async () => {
+            const ready = await evaluate(
+              sessionId,
+              `(() => {
+                const element = document.querySelector(${JSON.stringify(selector)});
+                if (!element || element.disabled) return false;
+                element.scrollIntoView({ block: 'center', behavior: 'instant' });
+                return true;
+              })()`
+            );
+            if (!ready) return null;
+            await sleep(400);
+            return evaluate(
               sessionId,
               `(() => {
                 const element = document.querySelector(${JSON.stringify(selector)});
                 if (!element || element.disabled) return null;
-                element.scrollIntoView({ block: 'center' });
                 const { x, y, width, height } = element.getBoundingClientRect();
                 const top = document.elementFromPoint(x + width / 2, y + height / 2);
                 return top && element.contains(top) ? { x: x + width / 2, y: y + height / 2 } : null;
               })()`
-            ),
+            );
+          },
           description,
           60_000
         );
-        await sleep(300);
         for (const type of ['mousePressed', 'mouseReleased']) {
           await cdp.send('Input.dispatchMouseEvent', { type, x: point.x, y: point.y, button: 'left', clickCount: 1 }, sessionId);
         }
@@ -205,9 +226,42 @@ describe('IrohaConnect in the built extension against live Taira', () => {
       try {
         report.chrome = (await cdp.send('Browser.getVersion')).product;
         const { id: extensionId } = await cdp.send('Extensions.loadUnpacked', { path: extensionDir });
+        // The worker's console and its Connect WebSocket (sizes and states only) go into the report.
+        const workerLog: string[] = [];
+        report.worker = workerLog;
+        const worker = await eventually(async () => {
+          const { targetInfos } = await cdp.send('Target.getTargets');
+          return targetInfos.find(
+            (info: { type: string; url: string }) =>
+              info.type === 'service_worker' && info.url.startsWith(`chrome-extension://${extensionId}/`)
+          );
+        }, 'the extension worker');
+        const { sessionId: workerSession } = await cdp.send('Target.attachToTarget', { targetId: worker.targetId, flatten: true });
+        const sockets = new Set<string>();
+        cdp.onEvent(({ method, params, sessionId }) => {
+          if (sessionId !== workerSession) return;
+          const at = new Date().toISOString().slice(11, 23);
+          if (method === 'Runtime.consoleAPICalled') {
+            workerLog.push(`${at} console.${params.type} ${params.args.map((arg: { value?: unknown; description?: string }) => (typeof arg.value === 'string' ? arg.value : arg.description ?? JSON.stringify(arg.value))).join(' ')}`.slice(0, 600));
+          }
+          if (method === 'Runtime.exceptionThrown') workerLog.push(`${at} exception ${params.exceptionDetails?.exception?.description ?? params.exceptionDetails?.text}`.slice(0, 600));
+          if (method === 'Network.webSocketCreated' && /connect\/ws/u.test(params.url)) {
+            sockets.add(params.requestId);
+            workerLog.push(`${at} ws created ${params.url.replace(/sid=[^&]+/u, 'sid=…')}`);
+          }
+          if (!sockets.has(params?.requestId)) return;
+          if (method === 'Network.webSocketHandshakeResponseReceived') workerLog.push(`${at} ws handshake ${params.response.status} protocol=${params.response.headers?.['Sec-WebSocket-Protocol'] ?? params.response.headers?.['sec-websocket-protocol'] ?? ''}`);
+          if (method === 'Network.webSocketFrameReceived') workerLog.push(`${at} ws got opcode=${params.response.opcode} ${params.response.payloadData.length} chars`);
+          if (method === 'Network.webSocketFrameSent') workerLog.push(`${at} ws sent opcode=${params.response.opcode} ${params.response.payloadData.length} chars`);
+          if (method === 'Network.webSocketFrameError') workerLog.push(`${at} ws error ${params.errorMessage}`);
+          if (method === 'Network.webSocketClosed') workerLog.push(`${at} ws closed`);
+        });
+        await cdp.send('Runtime.enable', {}, workerSession);
+        await cdp.send('Network.enable', {}, workerSession);
         const url = `chrome-extension://${extensionId}/popup.html`;
         const { targetId } = await cdp.send('Target.createTarget', { url });
         const { sessionId: page } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
+        diagnosticsPage = page;
         await cdp.send('Runtime.enable', {}, page);
         await cdp.send('Emulation.setDeviceMetricsOverride', { width: 561, height: 600, deviceScaleFactor: 1, mobile: false }, page);
         await eventually(() => evaluate(page, `document.readyState === 'complete'`), 'the wallet page');
@@ -375,6 +429,12 @@ describe('IrohaConnect in the built extension against live Taira', () => {
       } catch (error) {
         report.result = 'failed';
         report.failure = (error as Error).message;
+        if (diagnosticsPage) {
+          await capture(diagnosticsPage, 'failure.png').catch(() => undefined);
+          report.failurePageText = await pageText(diagnosticsPage).catch((reason: Error) => reason.message);
+          report.failureLocation = await evaluate(diagnosticsPage, 'location.href').catch((reason: Error) => reason.message);
+          report.failureSnapshot = await read(diagnosticsPage, 'pri(irohaConnect.subscribe)').catch((reason: Error) => reason.message);
+        }
         throw error;
       } finally {
         app?.close('smoke cleanup');

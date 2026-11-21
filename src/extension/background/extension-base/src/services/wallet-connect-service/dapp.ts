@@ -8,6 +8,7 @@ import { walletAddressIdentity } from '@extension-base/services/keyring-service/
 import { EIP155_SIGNING_METHODS } from '@extension-base/services/wallet-connect-service/types';
 import { isSameAddress } from '@extension-base/utils';
 import { sessionAuthority } from './sessionAuthority';
+import { readSessionKey } from './sessionKey';
 import { isWalletSession, walletConnectClient } from './client';
 import { validateMobileSigningContext } from './mobileSigningContext';
 import { captureMobilePairingAccount, mobilePairingProposal, sameMobileIdentity } from './pairingContext';
@@ -82,7 +83,7 @@ export class WalletConnectDAppService {
 
   async restore() {
     const generation = this.generation;
-    if (this.state.keyringService?.getPassword?.() === '') return;
+    if (this.state.keyringService?.getPassword?.() === '' && !await readSessionKey()) return;
     if (await hasWalletConnectData() && generation === this.generation) await this.initClient();
   }
 

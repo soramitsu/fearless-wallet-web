@@ -1,6 +1,7 @@
 import { WalletConnectClient as WalletConnect } from '@extension-base/services/wallet-connect-service/protocol/client';
 import { hashSync } from 'bcryptjs';
 import { closeProtocolClient, walletConnectClient } from '@extension-base/services/wallet-connect-service/client';
+import { clearSessionKey, readSessionKey } from '@extension-base/services/wallet-connect-service/sessionKey';
 import { emptyRecord, WALLET_CONNECT_RECORD } from '@extension-base/services/wallet-connect-service/protocol/store';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WalletConnectService } from '@extension-base/services/wallet-connect-service';
@@ -10,11 +11,13 @@ import type { RequestService } from '@extension-base/services/request-service';
 import type State from '@extension-base/background/handlers/State';
 import type { WcSession } from '@extension-base/services/wallet-connect-service/protocol/types';
 
-const fixture = vi.hoisted(() => ({ data: {} as Record<string, unknown> }));
+const fixture = vi.hoisted(() => ({ data: {} as Record<string, unknown>, session: {} as Record<string, unknown>,
+  restrict: vi.fn(async () => undefined) }));
 vi.mock('@/consts/global', async (original) => ({ ...(await original<Record<string, unknown>>()), IS_EXTENSION: true }));
 vi.mock('@extension-base/utils/crossenv', () => ({ chrome: {
   runtime: { getURL: (path: string) => path, lastError: undefined },
-  storage: { local: {
+  storage: { session: { setAccessLevel: fixture.restrict, get: async () => structuredClone(fixture.session),
+    set: async (items: object) => { Object.assign(fixture.session, items); }, remove: async (key: string) => { delete fixture.session[key]; } }, local: {
     get: (keys: string | string[] | null, callback?: (value: Record<string, unknown>) => void) => {
       const wanted = keys === null ? Object.keys(fixture.data) : [keys].flat();
       const value = structuredClone(Object.fromEntries(wanted.filter((key) => key in fixture.data)
@@ -73,9 +76,10 @@ const makeState = () => ({
   keyringService: { isResetting: false, walletResetRevision: 0, getAddresses: () => [], getAllAccounts: () => [] },
 } as unknown as State);
 
-it('reopens the real client from protected Chrome storage without retaining the locked client', async () => {
+it('keeps the relay on lock, restores a worker while locked and requires unlock after a browser restart', async () => {
   vi.restoreAllMocks();
-  const state = makeState(), password = crypto.randomUUID();
+  let state = makeState();
+  const password = crypto.randomUUID();
   let typed: string = password;
   Object.assign(state.keyringService, { getPassword: () => typed });
   const record = emptyRecord(), topic = emptyRecord().clientSeed;
@@ -88,13 +92,40 @@ it('reopens the real client from protected Chrome storage without retaining the 
     const first = await walletConnectClient(state);
     expect(first.session.values).toEqual(record.sessions);
     typed = '';
+    expect(await walletConnectClient(state)).toBe(first);
+    const address = `0x${'22'.repeat(20)}`;
+    const onWCSign = vi.fn(() => new Promise(() => {}));
+    Object.assign(state.keyringService, { getSubstrateAddress: () => address, getEthereumAddress: () => address,
+      getAddresses: () => [{ address, meta: { name: 'Fixture' } }], isMobileAccount: () => false });
+    Object.assign(state.networkService, { networkMap: { ethereum: { name: 'ethereum', chainId: '1', ecosystem: 'ethereum', assets: [] } } });
+    Object.assign(state, { requestService: { evmRequestHandler: { onWCSign } } });
+    const wallet = new WalletConnectService(state, state.requestService);
+    Object.assign(state, { walletConnectService: wallet });
+    await wallet.initClient();
+    first['emit']('session_request', { id: 12, topic, verifyContext: { verified: {
+      origin: metadata.url, validation: 'UNKNOWN', verifyUrl: '',
+    } }, params: { chainId: 'eip155:1', request: {
+      method: 'personal_sign', params: ['0x1234', address],
+    } } });
+    expect(onWCSign).toHaveBeenCalledOnce();
     closeProtocolClient(state);
     expect(first.session.values).toEqual([]);
+    state = makeState();
+    Object.assign(state.keyringService, { getPassword: () => typed });
+    const restarted = new WalletConnectService(state, {} as RequestService);
+    await restarted.initClient();
+    expect(restarted.sessions).toEqual(record.sessions);
+    expect(fixture.restrict).toHaveBeenCalledWith({ accessLevel: 'TRUSTED_CONTEXTS' });
+    closeProtocolClient(state);
+    fixture.session = {};
     await expect(walletConnectClient(state)).rejects.toThrow();
     expect(fixture.data[WALLET_CONNECT_RECORD]).toBeUndefined();
     expect(JSON.stringify(fixture.data)).not.toContain(record.keys[topic]);
     typed = password;
     expect((await walletConnectClient(state)).session.values).toEqual(record.sessions);
+    expect(await readSessionKey()).toBeTruthy();
+    await clearSessionKey();
+    expect(await readSessionKey()).toBeUndefined();
   } finally { closeProtocolClient(state); }
 });
 function services() {
@@ -113,6 +144,7 @@ async function restored() {
 
 beforeEach(() => {
   fixture.data = {};
+  fixture.session = {};
   clients = [];
   vi.restoreAllMocks();
   vi.spyOn(WalletConnect, 'init').mockImplementation(async () => {

@@ -169,15 +169,18 @@ describe('acknowledged whole-wallet reset with retained keys', { timeout: 60_000
 
   it('waits for storage before reporting reset or clearing the master password and live pair', async () => {
     const address = await native();
+    service.clearProtocolSession = vi.fn(async () => undefined);
     const pair = service.getPair(address)!;
     let settled = false;
     const result = track(service.resetWallet()).then((outcome) => { settled = true; return outcome; });
     await drain(false);
     expect(settled).toBe(false);
+    expect(service.clearProtocolSession).not.toHaveBeenCalled();
     expect(service.hasMasterPassword).toBe(true);
     expect(service.getPair(address)).toBe(pair);
     await drain();
     expect(await result).toEqual({ value: true });
+    expect(service.clearProtocolSession).toHaveBeenCalledOnce();
     expect(service.hasMasterPassword).toBe(false);
     expect(fixture.data['fw:keyring']).toBeUndefined();
     expect(service.getPair(address)).toBeNull();

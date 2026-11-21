@@ -10,11 +10,14 @@ export type Envelope = { version: 2; salt: string; nonce: string; ciphertext: st
 export class ProtocolKey {
   private readonly key: Uint8Array;
 
-  constructor(password: string, readonly salt = base64.encode(randomBytes(32))) {
+  constructor(password: string | Uint8Array, readonly salt = base64.encode(randomBytes(32))) {
     const bytes = base64.decode(salt);
     if (!password || bytes.length !== 32) throw new Error('WalletConnect vault is locked or invalid');
-    this.key = scrypt(password, bytes, { N: 1 << 15, r: 8, p: 1, dkLen: 32 });
+    if (typeof password !== 'string' && password.length !== 32) throw new Error('Invalid WalletConnect session key');
+    this.key = typeof password === 'string' ? scrypt(password, bytes, { N: 1 << 15, r: 8, p: 1, dkLen: 32 }) : password;
   }
+
+  exportSessionKey() { return base64.encode(this.key); }
 
   seal(text: string): Envelope {
     const nonce = randomBytes(24);

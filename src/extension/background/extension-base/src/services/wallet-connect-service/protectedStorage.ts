@@ -2,6 +2,8 @@ import AccountsStore from '@extension-base/stores/Accounts';
 import { assertWebStorageWritable } from '@extension-base/stores/WebStorageMode';
 import { decodeWebPassword, validateWebPasswordRecord, WEB_PASSWORD_RECORD_KEY } from '@extension-base/stores/WebPasswordRecord';
 import { compareSync } from 'bcryptjs';
+import { base64 } from '@scure/base';
+import { readSessionKey, saveSessionKey } from './sessionKey';
 import WalletConnectStorage from './storage';
 import { emptyRecord, importSdkRecords, SDK_KEYCHAIN, SDK_RECORDS, WALLET_CONNECT_RECORD } from './protocol/store';
 import { ProtocolKey, VAULT_KEY, type Envelope } from './protocol/vault';
@@ -24,7 +26,7 @@ export class ProtectedStorage {
   private authenticated() {
     if (!IS_EXTENSION) assertWebStorageWritable();
     const password = this.password();
-    if (this.closed || !password) throw new Error('Unlock the wallet to use WalletConnect');
+    if (this.closed || (!password && !this.key)) throw new Error('Unlock the wallet to use WalletConnect');
     return password;
   }
 
@@ -32,9 +34,10 @@ export class ProtectedStorage {
 
   async getItem<T>(name: string): Promise<T | undefined> {
     if (name !== WALLET_CONNECT_RECORD) throw new Error('Unexpected WalletConnect storage key');
-    this.authenticated();
     this.current = await this.read();
-    this.key = new ProtocolKey(this.authenticated(), this.current?.salt);
+    const cached = this.current && !this.password() ? await readSessionKey() : undefined;
+    if (this.closed) throw new Error('WalletConnect vault closed');
+    this.key = new ProtocolKey(cached ? base64.decode(cached) : this.authenticated(), this.current?.salt);
     let text: string;
     if (this.current !== undefined) text = this.key.open(this.current);
     else {
@@ -59,6 +62,10 @@ export class ProtectedStorage {
       }
     }
     this.authenticated();
+    if (!cached) await saveSessionKey(() => {
+      this.authenticated();
+      return this.key!.exportSessionKey();
+    });
     return record;
   }
 

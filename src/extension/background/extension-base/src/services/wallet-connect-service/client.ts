@@ -20,11 +20,10 @@ export function closeProtocolClient(state: State) {
 }
 
 export function walletConnectClient(state: State): Promise<WalletConnectClient> {
+  if (state.keyringService?.isResetting) return Promise.reject(new Error('Wallet reset in progress'));
   const existing = clients.get(state);
   if (existing) return existing.pending;
-  const revision = state.keyringService?.walletAuthenticationRevision;
-  const storage = new ProtectedStorage(() => !state.keyringService.isResetting && revision === state.keyringService.walletAuthenticationRevision
-    ? state.keyringService.getPassword() : '');
+  const storage = new ProtectedStorage(() => state.keyringService.getPassword());
   const pending = WalletConnectClient.init({
     ...DEFAULT_WALLET_CONNECT_OPTIONS, storage,
     userAgent: `wc-2/fearless-wallet-${APP_VERSION}/browser-extension`,

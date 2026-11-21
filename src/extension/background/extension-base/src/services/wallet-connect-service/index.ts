@@ -10,6 +10,7 @@ import { isWalletSession, walletConnectClient } from '@extension-base/services/w
 import WalletConnectRetiredSessions from '@extension-base/stores/WalletConnectRetiredSessions';
 import { isSameAddress } from '@extension-base/utils';
 import { sessionAuthority } from './sessionAuthority';
+import { readSessionKey } from './sessionKey';
 import type { WalletConnectClient } from '@extension-base/services/wallet-connect-service/protocol/client';
 import type State from '@extension-base/background/handlers/State';
 import type { WcRespondParams, WcSession, WcSessionNamespace, WcSessionProposalEvent, WcSessionRequestEvent } from '@extension-base/services/wallet-connect-service/protocol/types';
@@ -104,8 +105,8 @@ export class WalletConnectService {
 
   async initClient(force?: boolean) {
     const generation = this.generation;
-    if (!force && this.state.keyringService?.getPassword?.() === '') return;
     if (this.client) return;
+    if (!force && this.state.keyringService?.getPassword?.() === '' && !await readSessionKey()) return;
     if (!force && !(await hasWalletConnectData())) return;
     if (generation !== this.generation) throw new Error('Wallet authentication changed');
     // The storage read above may yield while another caller initializes.

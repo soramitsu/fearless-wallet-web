@@ -1,5 +1,6 @@
 import WalletConnectRetiredSessions, { sessionIsApproved } from '@extension-base/stores/WalletConnectRetiredSessions';
 import { closeProtocolClient } from '@extension-base/services/wallet-connect-service/client';
+import { clearSessionKey } from '@extension-base/services/wallet-connect-service/sessionKey';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata } from '@polkadot/extension-chains';
 import { isEthereumAddress } from '@polkadot/util-crypto';
@@ -182,14 +183,13 @@ export default class State {
   );
 
   constructor() {
-    const suspendProtocol = () => {
+    this.keyringService.clearProtocolSession = () => {
       closeProtocolClient(this);
       this.walletConnectService.suspend();
       this.walletConnectDappService.suspend();
+      return clearSessionKey();
     };
-    this.keyringService.lockSubject.subscribe(suspendProtocol);
     this.keyringService.authenticatedSubject.subscribe(() => {
-      suspendProtocol();
       void this.walletConnectService.initClient().catch(console.error);
       void this.walletConnectDappService.restore().catch(console.error);
     });

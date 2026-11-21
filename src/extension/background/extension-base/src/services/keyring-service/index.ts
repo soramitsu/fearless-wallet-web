@@ -159,6 +159,7 @@ async function flushWalletWrites(): Promise<void> {
 export class KeyringService {
   readonly lockSubject = new Subject<void>();
   readonly authenticatedSubject = new Subject<void>();
+  clearProtocolSession?: () => Promise<void>;
   private sessionExpiryCheck?: () => void;
 
   setSessionExpiryCheck(check: () => void): void {
@@ -1335,6 +1336,7 @@ export class KeyringService {
     return this.tonKeyring.vault.exclusive(async () => {
       // The form enforces the same rule; this refuses a weak password however the request was sent.
       if (!newPassword || !isAcceptableNewMasterPassword(newPassword)) return false;
+      let clearing: Promise<void> | undefined;
       try {
         await flushWalletWrites();
         assertCurrent();
@@ -1342,6 +1344,7 @@ export class KeyringService {
           .filter((pair): pair is KeyringPair => !!pair);
         const retained = await commitMasterPasswordChange(pairs, this.tonKeyring, this.hasMasterPassword,
           oldPassword, newPassword, assertCurrent, password => {
+            clearing ??= this.clearProtocolSession?.();
             if ((this.authenticationRevision ?? 0) !== revision) {
               this.password = '';
               this.lockSubject?.next();
@@ -1352,12 +1355,14 @@ export class KeyringService {
             return true;
           });
         this.authenticationRevision = (this.authenticationRevision ?? 0) + 1;
+        await clearing;
         this.authenticatedSubject?.next();
         retained.forEach(address => this.access.flagPreviousMasterPair(address));
         this.scheduleLegacyNetworkEnrollment();
         this.access.scheduleScan(newPassword);
         return true;
       } catch (error) {
+        await clearing?.catch(console.error);
         console.error(error);
         return false;
       }
@@ -1646,6 +1651,7 @@ export class KeyringService {
       this.resetRevision = (this.resetRevision ?? 0) + 1;
       this.enrollmentEpoch = (this.enrollmentEpoch ?? 0) + 1;
       let committed = false;
+      let clearing: Promise<void> | undefined;
       try {
         await beforeReset?.();
         // The handler clears State/Sora too. Direct callers still acknowledge
@@ -1664,6 +1670,7 @@ export class KeyringService {
           return mutation;
         }, () => {
           committed = true;
+          clearing = this.clearProtocolSession?.();
           // Memory changes only after storage acknowledges every archive/removal.
           try {
             for (const pair of pairs) { pair.lock(); keyring.keyring.removePair(pair.address); }
@@ -1688,6 +1695,7 @@ export class KeyringService {
         return committed;
       } finally {
         this.resetting = false;
+        await clearing;
       }
     });
     this.resetWork = work;

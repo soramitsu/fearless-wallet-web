@@ -49,8 +49,12 @@ push notifications.
 The client opens after master-password unlock. The accounts store holds one `walletconnect:v2` envelope in extension
 local storage or web IndexedDB. A random salt and scrypt (N=32768, r=8, p=1) derive its key. Each whole-record write
 uses XChaCha20-Poly1305 with a new nonce and a format-specific authentication context. Password changes re-encrypt
-the envelope in the same commit as the verifier. Lock closes both relay roles and drops the derived key; a wallet
-without a master password cannot pair. Messages may expire at the relay before the user unlocks again.
+the envelope in the same commit as the verifier. Lock leaves both relay roles listening: a request can prompt for
+unlock and approval, but the relay key cannot unlock the wallet or authorize a signature. A wallet without a master
+password cannot pair. Chrome keeps only the derived record key in trusted-context `chrome.storage.session` so an
+MV3 worker can resume while locked. A browser restart (or extension reload/update) clears it; the first unlock
+resumes WalletConnect. On web the key lives only in page memory, so a reload also requires unlock. Reset drops the
+key; a successful password change drops the old key and resumes with the rotated envelope.
 
 On first unlocked use the client preserves the v1 record, or imports the SDK 2.x sessions, pairings, keys and relay
 identity. It decrypts and checks the persisted envelope before removing legacy records. Interrupted cleanup resumes

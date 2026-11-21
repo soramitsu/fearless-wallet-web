@@ -1,0 +1,194 @@
+{
+  "schema": "fearless.iroha-connect-current-protocol-validation.v1",
+  "recordedAt": "2026-11-21",
+  "sourceCommit": "db4e0109e959d4ca0cc123fcf374b925fd9d60e5",
+  "sourceDirty": false,
+  "base": {
+    "branch": "release/consolidated-20261110",
+    "commit": "90d576fa"
+  },
+  "branch": "feature/iroha-connect-current",
+  "relay": {
+    "torii": "https://taira.sora.org",
+    "toriiBuild": "815f5b46a0bc02f9db70a60b612799c91fbec345",
+    "networkId": "hash:4978D0BD15FC32B834672B27BBD8A03653B1DF060A1EEE7E9374D29AF3886D91#6774"
+  },
+  "toolchain": {
+    "unitBuildAndAuditNode": "v24.19.0",
+    "yarn": "4.17.0 (yarn install --immutable; node_modules matched yarn.lock, tiny-secp256k1 2.2.5)",
+    "smokeNode": "v26.13.1 (vitest, --no-experimental-webstorage)",
+    "chrome": "Chrome/147.0.7727.15"
+  },
+  "checks": [
+    {
+      "name": "full unit suite with coverage gate",
+      "command": "FEARLESS_TEST_WORKERS=3 FEARLESS_TEST_TIMEOUT_MS=60000 FEARLESS_HOOK_TIMEOUT_MS=60000 node --test scripts/test-check-coverage.mjs && vitest run --coverage && node scripts/check-coverage.mjs",
+      "tree": "db4e0109 plus an earlier evidence record (no code difference)",
+      "result": "passed",
+      "testFiles": "596 passed, 3 skipped",
+      "tests": "6795 passed, 22 skipped",
+      "coverage": "30324/36162 authored executable lines (83.86%), floor 80%"
+    },
+    {
+      "name": "typecheck",
+      "command": "vue-tsc --noEmit",
+      "result": "passed"
+    },
+    {
+      "name": "lint",
+      "command": "eslint 'src/**/*.{js,jsx,vue,ts,tsx}' 'tests/**/*.{js,jsx,ts,tsx}'",
+      "result": "passed (0 errors; 37 existing warnings, none in IrohaConnect files)"
+    },
+    {
+      "name": "Chrome release audit self-test",
+      "command": "node scripts/test-chrome-release-audit.mjs",
+      "result": "passed (110 checks)"
+    },
+    {
+      "name": "build environment self-test",
+      "command": "node scripts/test-extension-build-environment.mjs",
+      "result": "passed (57 checks)"
+    },
+    {
+      "name": "public artifacts audit self-test",
+      "command": "bash scripts/test-public-artifacts-audit.sh",
+      "result": "passed (26 modes: 6 positive, 20 adversarial)"
+    },
+    {
+      "name": "vendored iroha-js audit and self-test",
+      "command": "node scripts/audit-vendored-iroha-js-sdk.mjs && node scripts/test-vendored-iroha-js-sdk-audit.mjs",
+      "result": "passed (0.0.3, SHA-256 1fefeae587873fed45821f4a59f7b5722eab72dcc161561ffa7ecdb97049dd41)"
+    },
+    {
+      "name": "tiny-secp256k1 WASM provenance",
+      "command": "node scripts/verify-tiny-secp256k1-wasm-provenance.mjs",
+      "result": "passed (d5238297…, v2.2.5 source rebuild)"
+    },
+    {
+      "name": "Chrome release audit on the packaged build",
+      "command": "node scripts/audit-chrome-release.mjs",
+      "result": "passed (version 4.2.10; 328 files; 9978454 bytes)"
+    },
+    {
+      "name": "live Taira relay through the wallet service",
+      "command": "FEARLESS_IROHA_CONNECT_LIVE=1 vitest run tests/smoke/iroha-connect-taira.spec.ts",
+      "result": "passed",
+      "sid": "yzk2Rd68puTQVRQvZ7bF7PNxOJr1etaMGsT7Qdi2k2A",
+      "events": [
+        "0.23s connecting",
+        "0.52s relay frame 989 bytes",
+        "0.52s session-approval",
+        "0.57s connected",
+        "0.78s relay frame 992 bytes",
+        "0.83s request-approval",
+        "0.84s connected",
+        "20.72s relay frame 372 bytes",
+        "40.72s relay frame 372 bytes",
+        "46.02s relay frame 844 bytes",
+        "46.06s request-approval",
+        "46.09s connected",
+        "46.23s relay frame 523 bytes",
+        "46.23s connected notice=raw_signing_unavailable",
+        "46.31s app closes the session",
+        "46.39s relay frame 530 bytes",
+        "46.39s idle notice=dapp_closed",
+        "46.40s relay socket closed 1006",
+        "46.42s idle"
+      ]
+    },
+    {
+      "name": "live Taira relay through the built extension in Chrome for Testing",
+      "command": "FEARLESS_IROHA_CONNECT_EXTENSION=<abs dist/extension/chrome> CHROME_BIN=<Chrome for Testing 147> vitest run tests/smoke/iroha-connect-extension.spec.ts (outside the command sandbox, which blocks Chrome's network)",
+      "result": "passed",
+      "steps": [
+        {
+          "name": "wallet created",
+          "accountId": "testuﾛ1PoSwﾖｸﾜb9ﾖLｵ4ｺｿｱBﾈﾔYﾇﾋwﾁTZfｳﾓJ3ﾅｲｾNｹc5648TQQQ"
+        },
+        {
+          "name": "dApp registered",
+          "sid": "DX_DwugV4Djoog1k0S8bvI7qjvzYOvgnFUElv__u8Dw"
+        },
+        {
+          "name": "connection approved in the page; the dApp verified the approval",
+          "accountId": "testuﾛ1PoSwﾖｸﾜb9ﾖLｵ4ｺｿｱBﾈﾔYﾇﾋwﾁTZfｳﾓJ3ﾅｲｾNｹc5648TQQQ"
+        },
+        {
+          "name": "transfer reviewed and signed",
+          "payloadHash": "45444c7bca435bc570fae6d7c5d01e340c733429af48d67e2ab601b609a19385"
+        },
+        {
+          "name": "session survived 45 s of keepalive"
+        },
+        {
+          "name": "contract call reviewed and signed"
+        },
+        {
+          "name": "raw request declined with a notice",
+          "notice": "Fearless smoke dApp asked to sign a message. Fearless declined: messages need a separate signing key."
+        },
+        {
+          "name": "rejected the third request, then disconnected; the dApp session ended"
+        }
+      ],
+      "connectSocket": [
+        "22:06:36.318 ws created wss://taira.sora.org/v1/connect/ws?sid=…&role=wallet",
+        "22:06:36.550 ws handshake 101 protocol=iroha-connect.token.v1.WWdQd213NXhUT0cxSFJ6WW51bnRqOENoaVFlbXYyNDJCUXF4bmJHbHRMUQ",
+        "22:06:36.552 ws got opcode=2 1320 chars",
+        "22:06:37.294 ws sent opcode=2 2080 chars",
+        "22:06:37.530 ws got opcode=2 1364 chars",
+        "22:06:38.425 ws sent opcode=2 740 chars",
+        "22:06:57.304 ws sent opcode=2 496 chars",
+        "22:06:57.414 ws got opcode=2 496 chars",
+        "22:07:17.308 ws sent opcode=2 496 chars",
+        "22:07:17.465 ws got opcode=2 496 chars",
+        "22:07:23.806 ws got opcode=2 1128 chars",
+        "22:07:24.703 ws sent opcode=2 740 chars",
+        "22:07:24.835 ws got opcode=2 700 chars",
+        "22:07:24.835 ws sent opcode=2 820 chars",
+        "22:07:25.054 ws got opcode=2 1364 chars",
+        "22:07:25.419 ws sent opcode=2 724 chars",
+        "22:07:25.785 ws sent opcode=2 720 chars",
+        "22:07:25.862 ws closed"
+      ],
+      "screenshots": {
+        "01-connection-review.png": "18f2be62860166b6e7e58e71348993a535571764b61bfd9048b78da06f0286a2",
+        "02-transfer-review.png": "1110ee4a5cd6624bf49c14282e12bc945f1af20ac65e638031b1fb3dbb5fd3a9",
+        "03-contract-call-review.png": "aa8ee8d5deb3b96b5040ad85d3effd03570121570e06a07493c2aeaec0bc49e4",
+        "04-raw-request-declined.png": "3108db295187ec6736ea5a00f016e70b2f8d5c1e9a71a3bd34f217b55be696ce"
+      }
+    }
+  ],
+  "artifacts": {
+    "build": "NODE_ENV=production VUE_APP_EXTENSION_SMOKE=false VUE_APP_TEST_ONLY=false EXTENSION_TYPE=chrome OUTPUT_DIR=chrome IS_EXTENSION=true env-cmd -f .env.extension node scripts/build-extension.mjs --mode production",
+    "releaseFlags": {
+      "VUE_APP_ENABLE_BITCOIN_TRANSFERS": "true",
+      "VUE_APP_ENABLE_IROHA_TRANSFERS": "true",
+      "VUE_APP_ENABLE_IROHA_CONNECT": "true",
+      "VUE_APP_ENABLE_SOLANA_TRANSFERS": "true",
+      "VUE_APP_EXTENSION_SMOKE": "false",
+      "VUE_APP_PORTFOLIO_DASHBOARD": "true",
+      "VUE_APP_TEST_ONLY": "false"
+    },
+    "yarnLockSha256": "9b4539ead3c84f8c128c3b5f57b2b2ac8173ad283c6bda93681c11eadf8fed1e",
+    "background-runtime.js": "15e475bb3cab31ebac6ad63561f38b4fd61caecdfabcfab600efeb97a3e03845",
+    "manifest.json": "85ab2021e22866d912c219098580dedcdae345c1461d78ebe3f78dd4c7f39119",
+    "packageZip": {
+      "command": "node scripts/package-extension.mjs --source dist/extension/chrome --output dist/extension/chrome/fearless-wallet-extension-chrome.zip",
+      "files": 328,
+      "bytes": 9978454,
+      "sha256": "11972f2f13b184e800ef3880a235cac8a93acf75d2f19e27fc0581d6456f010c"
+    },
+    "note": "Local build without release API keys; not a store submission artifact."
+  },
+  "findings": [
+    "Taira's Torii closes a Connect socket on any text frame; the previous 20 s text keepalive ended every session. Keepalive is now a sequenced Connect Ping.",
+    "The service called the global setTimeout/clearTimeout as methods; Chrome throws Illegal invocation, so connect() failed before attaching socket handlers (also true of the retired implementation). Found by the extension smoke, fixed with a regression test.",
+    "The canonical checkout's node_modules had tiny-secp256k1 2.2.4 while yarn.lock pins 2.2.5, which fails the release head's new WASM provenance check (test-chrome-release-audit) with or without this branch; these results use an install that matches yarn.lock."
+  ],
+  "limits": [
+    "SORA Nexus: NetworkId not pinned and minamoto.sora.org served a certificate for another hostname on 2026-11-21; Nexus links are refused.",
+    "Raw requests: answered SIGNING_KEY_REQUIRED; no SDK can register the required off-chain signing key.",
+    "Native instructions other than an asset transfer need the SDK's Rust decoder and are refused, not signed."
+  ]
+}

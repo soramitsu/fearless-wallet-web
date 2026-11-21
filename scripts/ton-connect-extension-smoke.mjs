@@ -3,7 +3,7 @@
 //
 // A page on https://app.tonconnect.test uses the official @tonconnect/sdk browser bundle. SDK 4 lists an injected wallet
 // only when the wallets list names its bridge key, so the page serves two lists: an empty one, which must not show the
-// extension, and one with the proposed Fearless entry (docs/ton-connect.md), which must show it as installed. It then
+// extension, and one with the submitted Fearless entry (docs/ton-connect.md), which must show it as installed. It then
 // connects through window.Fearless.tonconnect with a ton_proof,
 // restore the connection after a reload, get a text signData signature and send a transaction, each approved in the
 // real popup. The proof and both signatures are verified here with independent code. The extension's TON provider
@@ -179,18 +179,19 @@ async function screenshot(cdp, sessionId, name) {
 // ---------------------------------------------------------------------------------------------------------------
 // The dApp server
 
-/** The entry proposed for the public wallets list (ton-blockchain/wallets-list), with this page's icon. */
+/** The entry submitted to the public wallets list (ton-connect/wallets-list#370), with this page's icon. */
 const listingEntry = (origin) => ({
-  app_name: 'fearless',
+  app_name: 'Fearless',
   name: 'Fearless Wallet',
   image: `${origin}/icon.png`,
   about_url: 'https://fearlesswallet.io',
-  bridge: [{ type: 'js', key: 'Fearless' }],
-  platforms: ['chrome', 'firefox'],
-  features: [
-    { name: 'SendTransaction', maxMessages: 4 },
-    { name: 'SignData', types: ['text', 'binary', 'cell'] },
+  universal_url: 'https://fearlesswallet.io/ton-connect/',
+  bridge: [
+    { type: 'sse', url: 'https://connect.ton.org/bridge' },
+    { type: 'js', key: 'Fearless' },
   ],
+  platforms: ['ios', 'chrome'],
+  features: [{ name: 'SendTransaction', maxMessages: 4, extraCurrencySupported: false }],
 });
 
 async function startDappServer(dir) {

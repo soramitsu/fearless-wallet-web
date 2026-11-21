@@ -31,26 +31,33 @@ list (`config.ton.org/wallets-v2.json`, repository `ton-blockchain/wallets-list`
 connect to the extension only if they name it (`connect({ jsBridgeKey: 'Fearless' })` or
 `walletsListConfiguration.includeWallets`). Older SDKs list it on their own.
 
-The entry the smoke test checks (the image must be a public PNG):
+The entry submitted as [ton-connect/wallets-list#370](https://github.com/ton-connect/wallets-list/pull/370), in
+draft until this release is in the Chrome Web Store and the mobile catalogs use the new bridge. The list requires
+`app_name` to equal `deviceInfo.appName` and the bridge key, so all three are `Fearless`; the smoke test serves the same
+entry:
 
 ```json
 {
-  "app_name": "fearless",
+  "app_name": "Fearless",
   "name": "Fearless Wallet",
-  "image": "https://…/fearless-wallet.png",
+  "image": "https://raw.githubusercontent.com/ton-connect/wallets-list/main/assets/fearless.png",
   "about_url": "https://fearlesswallet.io",
-  "bridge": [{ "type": "js", "key": "Fearless" }],
-  "platforms": ["chrome", "firefox"],
-  "features": [
-    { "name": "SendTransaction", "maxMessages": 4 },
-    { "name": "SignData", "types": ["text", "binary", "cell"] }
-  ]
+  "universal_url": "https://fearlesswallet.io/ton-connect/",
+  "bridge": [
+    { "type": "sse", "url": "https://connect.ton.org/bridge" },
+    { "type": "js", "key": "Fearless" }
+  ],
+  "platforms": ["ios", "chrome"],
+  "features": [{ "name": "SendTransaction", "maxMessages": 4, "extraCurrencySupported": false }]
 }
 ```
 
-Listing the mobile apps as well needs an SSE bridge entry and a universal link. The bridge in the chain catalog
-(`tonBridgeUrl`, `https://fearless-ton-bridge.odachi.soramitsu.co.jp/bridge`) did not resolve (NXDOMAIN) on
-2026-11-21.
+- Features are what every listed platform supports: the iOS app has no SignData yet (the extension does, and says so in
+  its own `deviceInfo`).
+- Android is left out: it opens `https://fearlesswallet.io/ton-connect/` links without starting a connection, and its
+  scanner accepts only `tc:` codes, while dApps show a listed wallet's QR as its universal link.
+- The mobile apps' bridge moved from the dead Soramitsu hosts (`fearless-ton-bridge.odachi.soramitsu.co.jp`, NXDOMAIN,
+  and `.tachi.`, SERVFAIL, on 2026-11-21) to `https://connect.ton.org/bridge`: fearless-iOS#1330, fearless-Android#1284.
 
 ## Checking it
 

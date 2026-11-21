@@ -1,4 +1,4 @@
-/* global clearTimeout, console, process, setTimeout, structuredClone */
+/* global Buffer, TextEncoder, clearTimeout, console, process, setTimeout */
 // Real-Chrome check of the extension's two WalletConnect roles in one worker. The dApps and the mobile wallet are the
 // in-repo WalletConnect client, or, with WALLETCONNECT_REFERENCE_SDK, the SDK most dApps ship (installed outside this
 // repository; scripts/walletconnect-peer.mjs):
@@ -16,12 +16,13 @@
 // `--worker-console` adds the worker's console and its relay frames (method, id and topic) to the report.
 // `--keep-going` records a failed check and runs the rest, to see everything a build gets wrong in one run.
 import { spawn } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, scryptSync } from 'node:crypto';
 import fs from 'node:fs/promises';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { xchacha20poly1305 } from '@noble/ciphers/chacha';
 import { encodeAddress } from '@polkadot/util-crypto';
 import { HDNodeWallet, Wallet, getBytes, hexlify, toUtf8Bytes, verifyMessage } from 'ethers';
 import { startWalletConnectPeer } from './walletconnect-peer.mjs';
@@ -41,7 +42,10 @@ const PORT_EXTENSION = 'fw-fearless-extension';
 const PASSWORD = 'fearless-walletconnect-smoke-password';
 const RELAY_MS = 90_000;
 const NAMESPACES = { eip155: { chains: ['eip155:1'], methods: ['personal_sign', 'eth_sendTransaction'], events: ['accountsChanged', 'chainChanged'] } };
-const WALLET_CONNECT_RECORD = 'fearless:walletconnect:v1';
+// The plaintext record the client used to keep. It now seals that record with the wallet password in the accounts
+// store (protocol/vault.ts) and removes the plaintext one.
+const LEGACY_WALLET_CONNECT_RECORD = 'fearless:walletconnect:v1';
+const SEALED_WALLET_CONNECT_RECORD = 'fw:walletconnect:v2';
 // The peers here are separate apps: without this, the SDK gives every client in this process one shared Core.
 process.env.DISABLE_GLOBAL_CORE = 'true';
 
@@ -504,9 +508,23 @@ async function signOnWallet(cdp, wallet, dapp, session, account, label) {
   return result;
 }
 
+// Opens the sealed record as the client does: scrypt (N=2^15, r=8, p=1) of the wallet password, then
+// XChaCha20-Poly1305 with the record's own context.
+function openSealedRecord(envelope) {
+  const key = scryptSync(PASSWORD, Buffer.from(envelope.salt, 'base64'), 32, { N: 1 << 15, r: 8, p: 1, maxmem: 64 * 1024 * 1024 });
+  const cipher = xchacha20poly1305(key, Buffer.from(envelope.nonce, 'base64'), new TextEncoder().encode('fearless:walletconnect:v2'));
+  return JSON.parse(Buffer.from(cipher.decrypt(Buffer.from(envelope.ciphertext, 'base64'))).toString('utf8'));
+}
+
 async function storedSessions(cdp, wallet) {
-  const stored = await evaluate(cdp, wallet.sessionId, `chrome.storage.local.get(${JSON.stringify(WALLET_CONNECT_RECORD)}).then((data) => data[${JSON.stringify(WALLET_CONNECT_RECORD)}]?.sessions ?? [])`);
-  return stored.map(({ topic, peer }) => ({ topic, peer: peer?.metadata?.name }));
+  const keys = [LEGACY_WALLET_CONNECT_RECORD, SEALED_WALLET_CONNECT_RECORD];
+  const { legacy, sealed } = await evaluate(cdp, wallet.sessionId, `chrome.storage.local.get(${JSON.stringify(keys)}).then((data) => ({
+    legacy: data[${JSON.stringify(LEGACY_WALLET_CONNECT_RECORD)}] !== undefined,
+    sealed: data[${JSON.stringify(SEALED_WALLET_CONNECT_RECORD)}] ?? null,
+  }))`);
+  assert(!legacy, 'The plaintext WalletConnect record is still stored');
+  assert(sealed?.version === 2, 'No sealed WalletConnect record is stored', { sealed: sealed && { version: sealed.version } });
+  return (openSealedRecord(sealed).sessions ?? []).map(({ topic, peer }) => ({ topic, peer: peer?.metadata?.name }));
 }
 
 // The reference SDK throws from a timer when it gets a second answer to one of its requests ("emitting ... without any

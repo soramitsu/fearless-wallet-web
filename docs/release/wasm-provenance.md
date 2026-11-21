@@ -48,11 +48,32 @@ All local source builds used linux/amd64 under Rosetta in the designated Colima 
 The replay exports the pinned Git object, verifies all download hashes, and compiles in a new container with networking disabled. The Cargo crates and the official Rust components are installed from checked archives. The Rust release manifest SHA-256 is `5596679723faf7e63772bacb1d0c898abaa51eb4ed193b328929d907c8c4bd5a`. The additional Buster and musl inputs are recorded separately. [Replay script](wasm-builder/tiny-secp256k1/rebuild.sh) · [Rust, Binaryen and crate archives](wasm-builder/tiny-secp256k1/archives.sha256) · [Ubuntu packages](wasm-builder/ubuntu-archives.sha256) · [Comparison inputs](wasm-builder/tiny-secp256k1/comparison-archives.sha256)
 
 ```sh
-export DOCKER_HOST="unix://$HOME/.colima/fearless-f02-20261120/docker.sock"
+export DOCKER_HOST=unix:///path/to/a/local/docker.sock   # any engine that runs linux/amd64
 bash docs/release/wasm-builder/tiny-secp256k1/rebuild.sh ../f02-src/tiny-secp
 ```
 
 Set `F02_DOWNLOAD_CACHE` to reuse raw archives named by SHA-256. The script compares against the published digest and installed file. The GNU build currently fails the published-digest check. The wallet's offline provenance gate continues to cover Polkadot only.
+
+### What remains open
+
+The only difference between the source build and the npm module is which of two slots holds two Rust `core::fmt::Debug` integer formatter bodies. Every other section is byte-identical, and the musl-hosted build shows that the Rust host distribution changes this layout. Formatters like these serve panic and error formatting, not the secp256k1 arithmetic. This is still not a byte-for-byte match. No signed build record covers the npm bytes, and an aarch64 Linux host (a maintainer on an Apple silicon Docker default) was not tried because the build machine ran out of disk. To close it, either reproduce `d5238297…` with that or another host, or ship the reproduced module (`8c11a74b…`, identical to upstream CI) in place of the npm file and run the Bitcoin signing vectors.
+
+### Wallet and clean-replay verification (21 November 2026)
+
+The fresh-container replay used a cache of raw source and tool archives. It reproduced both Ubuntu GNU stage hashes in the table. The final published SHA-256 comparison exited 1. All `f02-secp-` containers were removed.
+
+With Node 24.19.0, Corepack Yarn 4.17.0 and `YARN_CHILD_CONCURRENCY` unset, these commands exited 0. The wallet started at `d92dd3d7b0197d7c3fcd09f735068a54d34c9db7`. The production package was built at `0a4d11f517f8b711f565f2b3247c6cb4d64507fe`, which adds only the comparison recipe and evidence.
+
+```sh
+corepack yarn test:crypto-dependency-shims
+corepack yarn typecheck
+corepack yarn lint:check                     # 0 errors, 37 warnings
+corepack yarn build:extension:zip
+corepack yarn audit:chrome-release
+corepack yarn test:smoke:chrome:production   # CHROME_BIN selected Chrome for Testing
+```
+
+The audited 4.2.10 Chrome ZIP contains 328 members, 9,967,070 bytes, SHA-256 `bd14c857663b859f758beb3d05a0e079cdc0a4202bf285f0971552e416ed4f1c`. Its single `assets/secp256k1.wasm` member compared byte-for-byte equal to the installed npm module. The existing one-byte tamper test exercises the reproduced Polkadot module.
 
 ## Polkadot source and experiment
 

@@ -205,6 +205,7 @@
     "pre-commit": "lint-staged"
   },
   "resolutions": {
+    "tiny-secp256k1": "2.2.5",
     "bitcoinjs-lib@npm:^6.1.5": "6.1.10",
     "@babel/core@npm:^7.20.12": "7.29.7",
     "@babel/helpers@npm:^7.22.10": "7.29.7",

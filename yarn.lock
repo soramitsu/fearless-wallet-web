@@ -6555,7 +6555,7 @@ __metadata:
     vue-i18n: "npm:^11.4.14"
     vue-router: "npm:^5.1.0"
     vue-tsc: "npm:^3.3.5"
-    vuedraggable: "npm:vuedraggable@next"
+    vuedraggable: "npm:4.1.0"
     web-ext: "npm:^10.6.0"
   languageName: unknown
   linkType: soft
@@ -11220,7 +11220,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vuedraggable@npm:vuedraggable@next":
+"vuedraggable@npm:4.1.0":
   version: 4.1.0
   resolution: "vuedraggable@npm:4.1.0"
   dependencies:

@@ -144,7 +144,7 @@
     "vue": "3.5.44",
     "vue-i18n": "^11.4.14",
     "vue-router": "^5.1.0",
-    "vuedraggable": "npm:vuedraggable@next"
+    "vuedraggable": "4.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

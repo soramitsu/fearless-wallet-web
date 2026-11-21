@@ -1,5 +1,7 @@
 # Dependency audit policy
 
+For the production WASM inventory and binary-to-source evidence (a separate check from advisory scanning), see [Chrome WASM provenance](release/wasm-provenance.md).
+
 Both the full and production dependency audits run without advisory ignores:
 
 ```sh

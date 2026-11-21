@@ -324,6 +324,31 @@ async function run() {
     passed += 1;
 
     const clean = await expectPass(tempRoot, 'clean-release', {}, { release: true });
+    // Shipped WebAssembly must be a module rebuilt byte for byte from its tagged source.
+    const reproducedWasm = await fs.readFile(fileURLToPath(new URL('./secp256k1.wasm', import.meta.resolve('tiny-secp256k1'))));
+    await expectPass(tempRoot, 'reproduced-wasm', { extraFiles: [['assets/secp256k1.wasm', reproducedWasm]] });
+    const tamperedWasm = Buffer.from(reproducedWasm);
+    tamperedWasm[tamperedWasm.length - 1] ^= 1;
+    await expectFailure(
+      tempRoot,
+      'unreproduced-wasm',
+      { extraFiles: [['assets/secp256k1.wasm', tamperedWasm]] },
+      /Chrome directory artifact ships WebAssembly assets\/secp256k1\.wasm \(SHA-256 [0-9a-f]{64}\) that no recorded source rebuild reproduces/u
+    );
+    await expectFailure(
+      tempRoot,
+      'renamed-unreproduced-wasm',
+      { extraFiles: [['assets/data.bin', Buffer.from([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00])]] },
+      /ships WebAssembly assets\/data\.bin/u
+    );
+    await expectFailure(
+      tempRoot,
+      'unreproduced-wasm-only-in-archive',
+      {
+        mutateZipEntries: (entries) => [...entries, { data: tamperedWasm, name: 'assets/secp256k1.wasm' }],
+      },
+      /Chrome ZIP artifact ships WebAssembly assets\/secp256k1\.wasm/u
+    );
     // One NODE_ENV per build (B35): a popup built without NODE_ENV=production read the development chain list and
     // feature config while its worker read production, and the audit passed it.
     await expectFailure(

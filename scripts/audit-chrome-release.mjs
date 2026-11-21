@@ -103,11 +103,28 @@ const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0
 const CRC32_TABLE = makeCrc32Table();
 
 const GIT_COMMIT_PATTERN = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/u;
+// Every WebAssembly file the package may ship, by the SHA-256 of a byte-for-byte rebuild from its tagged source
+// (docs/release/wasm-provenance.md). The Polkadot module is embedded in JavaScript; verify:polkadot-wasm checks it.
+const REPRODUCED_WASM_SHA256 = new Map([
+  ['d5238297a4dc75c761f0cf0057d3f55e014ea84992d935869a46ad4f0df31ada', 'tiny-secp256k1 2.2.5'],
+]);
+const WASM_MAGIC = Buffer.from([0x00, 0x61, 0x73, 0x6d]);
 
 export class ChromeReleaseAuditError extends Error {
   constructor(message) {
     super(message);
     this.name = 'ChromeReleaseAuditError';
+  }
+}
+
+function validateReproducedWasm(files, label) {
+  for (const [name, content] of files) {
+    if (!content.subarray(0, WASM_MAGIC.length).equals(WASM_MAGIC)) continue;
+    const digest = createHash('sha256').update(content).digest('hex');
+    requireCondition(
+      REPRODUCED_WASM_SHA256.has(digest),
+      `${label} ships WebAssembly ${name} (SHA-256 ${digest}) that no recorded source rebuild reproduces`
+    );
   }
 }
 
@@ -1156,6 +1173,8 @@ export async function auditChromeRelease({
   validateNoProductionDebugOutput(zipFiles, 'Chrome ZIP artifact');
   assertNoKnownKeyExfiltration(directoryFiles, 'Chrome directory artifact');
   assertNoKnownKeyExfiltration(zipFiles, 'Chrome ZIP artifact');
+  validateReproducedWasm(directoryFiles, 'Chrome directory artifact');
+  validateReproducedWasm(zipFiles, 'Chrome ZIP artifact');
   const releaseFlags = expectedReleaseFlags(rootDir);
   // The reviewed host list ships with this script, not with the tree being audited.
   const allowedHosts = await readHostAllowlist(hostAllowlistPath);
@@ -1207,8 +1226,9 @@ function usage() {
 
 Audits dist/extension/chrome and fearless-wallet-extension-chrome.zip as a Chrome Web Store release package.
 Every build fails when the package contains the 3.0.x phrase-upload strings, names a network host that
-scripts/release-network-hosts.json does not list, or has a popup or service worker that does not read the production
-chain list and feature config (a bundle built without NODE_ENV=production).
+scripts/release-network-hosts.json does not list, ships a WebAssembly file that no recorded source rebuild
+reproduces, or has a popup or service worker that does not read the production chain list and feature config (a
+bundle built without NODE_ENV=production).
 --release additionally requires the production manifest key and OAuth client ID, verifies the stable extension ID,
 and requires the build metadata to name the checked-out HEAD commit, a clean source tree, and the current yarn.lock.`;
 }

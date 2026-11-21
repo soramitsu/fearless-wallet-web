@@ -42,6 +42,16 @@ New code clears temporary agreement/session keys and the keyring's temporary
 exported signing key after use. This change does not repair secrets disclosed
 by previously installed wallet versions.
 
+The envelope is not web-private. At SORA JS SDK revision `c0b57b32`,
+`packages/sdk/src/crypto.ts:69` reads the wrapped key and payload, and
+`scripts/examples/encrypt.ts:47` calls that reader without the extension.
+The SDK MST reader also calls the injected wallet API (`packages/sdk/src/mst/index.ts:304`).
+Changing the writer alone would strand those readers. Define a versioned AEAD
+payload and key-wrap format with canonical sender and recipient identities and
+version authenticated in both layers. Ship dual readers and shared positive,
+tamper and unknown-version vectors first; enable new writes only for compatible
+recipients. Never retry a failed authenticated message as legacy CBC.
+
 `audit:sora-removal` and the shared Vite build guard reject reintroduced packages,
 lockfile entries, installed package residue, source imports, and repository URLs.
 Source provenance is explicitly exempted from the text scan and is not bundled.

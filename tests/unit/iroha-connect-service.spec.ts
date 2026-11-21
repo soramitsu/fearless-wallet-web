@@ -547,6 +547,32 @@ describe('IrohaConnectService (current v1 protocol, against the iroha-js app SDK
     expect(replay.service.snapshot).toMatchObject({ phase: 'error', error: 'The dApp replayed an IrohaConnect frame.' });
   });
 
+  it('calls the browser timer functions with their own receiver', async () => {
+    vi.useRealTimers();
+    const realSetTimeout = globalThis.setTimeout;
+    const realClearTimeout = globalThis.clearTimeout;
+    // Chrome throws "Illegal invocation" when setTimeout or clearTimeout runs with a foreign `this`.
+    const strict = <T extends (...args: never[]) => unknown>(real: T) =>
+      function (this: unknown, ...args: Parameters<T>) {
+        if (this !== undefined && this !== globalThis) throw new TypeError('Illegal invocation');
+        return real(...args);
+      };
+    vi.stubGlobal('setTimeout', strict(realSetTimeout as never));
+    vi.stubGlobal('clearTimeout', strict(realClearTimeout as never));
+    try {
+      const { approval, accountId, preview, service } = createHarness();
+      await settle();
+      expect(service.connect(walletUriFor(preview)).phase).toBe('connecting');
+      await settle();
+      expect(service.snapshot.phase).toBe('session-approval');
+      await service.approveSession(accountId);
+      await expect(approval).resolves.toMatchObject({ accountId });
+      service.disconnect();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('times out when the dApp never opens the session', () => {
     relay = new Relay();
     const socket = new WalletSocket();

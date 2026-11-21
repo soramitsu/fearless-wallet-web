@@ -168,13 +168,15 @@ export class IrohaConnectService {
     private readonly state: Pick<State, 'keyringService'>,
     options: IrohaConnectServiceOptions = {}
   ) {
-    this.clearTimer = options.clearTimer ?? clearTimeout;
+    // Browsers throw "Illegal invocation" when the global timer functions run with another `this`, so the defaults
+    // are wrappers, never the bare globals stored as methods.
+    this.clearTimer = options.clearTimer ?? ((timer) => clearTimeout(timer));
     this.createSocket = options.createSocket ?? defaultCreateSocket;
     this.makeRequestId = options.makeRequestId ?? (() => randomHex(16));
     this.makeWalletKeyPair = options.makeWalletKeyPair ?? generateIrohaConnectWalletKeyPair;
-    this.now = options.now ?? Date.now;
+    this.now = options.now ?? (() => Date.now());
     this.onStateChange = options.onStateChange ?? (() => undefined);
-    this.setTimer = options.setTimer ?? setTimeout;
+    this.setTimer = options.setTimer ?? ((callback, delay) => setTimeout(callback, delay));
   }
 
   get snapshot(): IrohaConnectSnapshot {

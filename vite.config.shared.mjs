@@ -228,9 +228,6 @@ function assertTransferEvidenceReady(flag, manifestPath, errorCode, description)
 }
 
 export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir = 'public', asyncWasm = true, nativeAsyncModules = false }) {
-  if (process.env.VUE_APP_ENABLE_IROHA_CONNECT === 'true' && mode === 'production') {
-    throw new Error('iroha_connect_blind_signing_unreviewed: IrohaConnect must stay disabled until decoded-payload signing ships');
-  }
   assertTransferEvidenceReady(
     'VUE_APP_ENABLE_BITCOIN_TRANSFERS',
     'scripts/bitcoin-testnet-broadcast-evidence.json',

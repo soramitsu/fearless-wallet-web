@@ -70,7 +70,7 @@ const EXPECTED_EXTENSION_CSP =
 function expectedReleaseFlags(rootDir) {
   return {
     ...readReleaseTransferFlags(rootDir),
-    VUE_APP_ENABLE_IROHA_CONNECT: 'false',
+    VUE_APP_ENABLE_IROHA_CONNECT: 'true',
     VUE_APP_ENABLE_SOLANA_TRANSFERS: 'true',
     VUE_APP_EXTENSION_SMOKE: 'false',
     VUE_APP_PORTFOLIO_DASHBOARD: 'true',

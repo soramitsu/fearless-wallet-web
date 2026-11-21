@@ -241,7 +241,7 @@
     "walletDetailsDescription": "Accounts, keys, and export",
     "networksAssets": "Networks & assets",
     "networksAssetsDescription": "Display filters, nodes, and asset preferences",
-    "irohaConnectDescription": "SORA 3 wallet sessions for Uranai and Iroha dApps",
+    "irohaConnectDescription": "Connect Iroha dApps on SORA Taira",
     "walletConnectDescription": "WalletConnect sessions for compatible ecosystems",
     "tonConnectDescription": "TonConnect sessions are not supported in this build yet.",
     "buildUnavailable": "Build unavailable",
@@ -274,11 +274,11 @@
   "irohaConnectPage": {
     "backToSettings": "Back to settings",
     "walletBridge": "SORA 3 wallet bridge",
-    "walletMode": "Wallet mode · Uranai compatible",
+    "walletMode": "Wallet mode · IrohaConnect v1",
     "sakuraTitle": "Connect with a falling sakura.",
-    "intro": "Pair a dApp with your SORA Nexus or Taira account. Fearless asks before the session and before every signature.",
+    "intro": "Pair an Iroha dApp with your account. Fearless asks before the session and shows every transaction, decoded, before it signs.",
     "linkLabel": "IrohaConnect link",
-    "pasteHint": "Paste the wallet link shown by Uranai or another compatible dApp.",
+    "pasteHint": "Paste the IrohaConnect link the dApp shows.",
     "paste": "Paste",
     "openingRelay": "Opening relay…",
     "connectWallet": "Connect wallet",
@@ -320,7 +320,7 @@
     },
     "live": {
       "connectionRequested": "{appName} is requesting a connection.",
-      "signatureReview": "A contract signature needs your review.",
+      "signatureReview": "A transaction needs your review.",
       "connectedTo": "Connected to {appName}.",
       "openingRelay": "Opening the IrohaConnect relay.",
       "ready": "IrohaConnect is ready."

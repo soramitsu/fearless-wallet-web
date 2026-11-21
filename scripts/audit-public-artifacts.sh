@@ -60,11 +60,6 @@ if [[ "${VUE_APP_ENABLE_BITCOIN_TRANSFERS:-}" == "true" ]]; then
   bitcoin_transfers_enabled=true
 fi
 
-iroha_connect_enabled=false
-if [[ "${VUE_APP_ENABLE_IROHA_CONNECT:-}" == "true" ]]; then
-  iroha_connect_enabled=true
-fi
-
 iroha_js_github_release_configured=false
 if [[ -n "${IROHA_JS_SDK_RELEASE_REPO:-}" || -n "${IROHA_JS_SDK_RELEASE_TAG:-}" || -n "${IROHA_JS_SDK_RELEASE_ASSET:-}" || -n "${IROHA_JS_SDK_RELEASE_SHA256:-}" ]]; then
   if [[ -z "${IROHA_JS_SDK_RELEASE_REPO:-}" || -z "${IROHA_JS_SDK_RELEASE_TAG:-}" || -z "${IROHA_JS_SDK_RELEASE_ASSET:-}" || -z "${IROHA_JS_SDK_RELEASE_SHA256:-}" ]]; then
@@ -107,14 +102,9 @@ for env_file in .env.example .env.extension .env.web; do
       fi
     fi
 
-    if [[ "$key" == "VUE_APP_ENABLE_IROHA_CONNECT" ]]; then
-      if [[ "$value" != "true" && "$value" != "false" ]]; then
-        fail "$env_file contains invalid VUE_APP_ENABLE_IROHA_CONNECT=$value; expected true or false"
-      fi
-
-      if [[ "$value" == "true" ]]; then
-        iroha_connect_enabled=true
-      fi
+    # IrohaConnect ships enabled (decoded-payload review); the flag must still be an exact boolean.
+    if [[ "$key" == "VUE_APP_ENABLE_IROHA_CONNECT" && "$value" != "true" && "$value" != "false" ]]; then
+      fail "$env_file contains invalid VUE_APP_ENABLE_IROHA_CONNECT=$value; expected true or false"
     fi
 
     if [[ "$key" =~ (^|_)(API.*KEY|API_?KEY|SECRET|TOKEN|PRIVATE_?KEY|CLIENT_?SECRET|OAUTH_?CLIENT_?ID|EXTENSION_?PUBLIC_?KEY|MNEMONIC|SEED|PASSWORD)$ ]]; then
@@ -137,10 +127,6 @@ fi
 
 if [[ "$bitcoin_transfers_enabled" == "true" ]] && ! evidence_ready scripts/bitcoin-testnet-broadcast-evidence.json; then
   fail 'VUE_APP_ENABLE_BITCOIN_TRANSFERS=true is blocked until funded testnet broadcast evidence is marked ready and release-enabled (bitcoin_testnet_broadcast_evidence_missing)'
-fi
-
-if [[ "$iroha_connect_enabled" == "true" ]]; then
-  fail 'VUE_APP_ENABLE_IROHA_CONNECT=true is blocked: IrohaConnect signs dApp-supplied bytes it does not decode (iroha_connect_blind_signing_unreviewed)'
 fi
 
 ./scripts/check-iroha-js-sdk-artifact.sh --self-test

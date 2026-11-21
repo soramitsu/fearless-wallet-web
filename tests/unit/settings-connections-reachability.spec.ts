@@ -67,7 +67,7 @@ vi.mock('@/locales/useI18n', () => ({
   useI18n: () => ({
     t: (key: string) =>
       ({
-        'settingsPage.irohaConnectDescription': 'SORA 3 wallet sessions for Uranai and Iroha dApps',
+        'settingsPage.irohaConnectDescription': 'Connect Iroha dApps on SORA Taira',
         'settingsPage.irohaConnectUnavailable': 'IrohaConnect is not available in this version. Nothing was signed.',
         'settingsPage.tonConnectDescription': 'TonConnect sessions are not supported in this build yet.',
         'settingsPage.buildUnavailable': 'Build unavailable',
@@ -209,6 +209,7 @@ describe('settings connection reachability', () => {
   });
 
   it('hides IrohaConnect while the build compiles it off', () => {
+    process.env.VUE_APP_ENABLE_IROHA_CONNECT = 'false';
     const wrapper = mountSettings();
 
     expect(wrapper.find('[data-testid="settings-iroha-connect"]').exists()).toBe(false);
@@ -226,12 +227,11 @@ describe('settings connection reachability', () => {
     );
   });
 
-  it('exposes IrohaConnect as a SORA 3 wallet connection when the reviewed flag enables it', async () => {
-    process.env.VUE_APP_ENABLE_IROHA_CONNECT = 'true';
+  it('exposes IrohaConnect as a wallet connection by default', async () => {
     const wrapper = mountSettings();
     const irohaConnect = wrapper.get('[data-testid="settings-iroha-connect"]');
 
-    expect(irohaConnect.text()).toContain('SORA 3 wallet sessions for Uranai and Iroha dApps');
+    expect(irohaConnect.text()).toContain('Connect Iroha dApps on SORA Taira');
 
     await irohaConnect.trigger('click');
 

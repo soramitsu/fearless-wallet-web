@@ -140,7 +140,7 @@ function baseFiles(manifest, metadataOverrides = {}) {
             mode: 'production',
             releaseFlags: {
               ...RELEASE_TRANSFER_FLAGS,
-              VUE_APP_ENABLE_IROHA_CONNECT: 'false',
+              VUE_APP_ENABLE_IROHA_CONNECT: 'true',
               VUE_APP_ENABLE_SOLANA_TRANSFERS: 'true',
               VUE_APP_EXTENSION_SMOKE: 'false',
               VUE_APP_PORTFOLIO_DASHBOARD: 'true',

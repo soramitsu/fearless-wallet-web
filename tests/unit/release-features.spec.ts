@@ -43,8 +43,14 @@ describe('release feature gates', () => {
   });
 
 
-  it('enables IrohaConnect only for the exact reviewed true flag', () => {
-    exactTrueOnly('VUE_APP_ENABLE_IROHA_CONNECT', isIrohaConnectEnabled);
+  it('ships IrohaConnect enabled and compiles it off only for an explicit false', () => {
+    for (const value of [undefined, '', 'true', 'TRUE', '1']) {
+      if (value === undefined) delete process.env.VUE_APP_ENABLE_IROHA_CONNECT;
+      else process.env.VUE_APP_ENABLE_IROHA_CONNECT = value;
+      expect(isIrohaConnectEnabled()).toBe(true);
+    }
+    process.env.VUE_APP_ENABLE_IROHA_CONNECT = 'false';
+    expect(isIrohaConnectEnabled()).toBe(false);
   });
 
   it('removes Bitcoin networks from transfer selectors while keeping other ecosystems available', () => {

@@ -347,7 +347,7 @@
     "walletDetailsDescription": "Счета, ключи и экспорт",
     "networksAssets": "Сети и активы",
     "networksAssetsDescription": "Фильтры отображения, узлы и настройки активов",
-    "irohaConnectDescription": "Сеансы кошелька SORA 3 для Uranai и Iroha dApps",
+    "irohaConnectDescription": "Подключение dApp Iroha в SORA Taira",
     "walletConnectDescription": "Сеансы WalletConnect для совместимых экосистем",
     "tonConnectDescription": "Сеансы TonConnect пока не поддерживаются в этой сборке.",
     "buildUnavailable": "Недоступно в сборке",
@@ -380,11 +380,11 @@
   "irohaConnectPage": {
     "backToSettings": "Назад к настройкам",
     "walletBridge": "Мост кошелька SORA 3",
-    "walletMode": "Режим кошелька · совместимо с Uranai",
+    "walletMode": "Режим кошелька · IrohaConnect v1",
     "sakuraTitle": "Подключитесь под падающей сакурой.",
-    "intro": "Свяжите dApp со своей учетной записью SORA Nexus или Taira. Fearless запрашивает подтверждение перед сеансом и каждой подписью.",
+    "intro": "Свяжите dApp Iroha со своей учетной записью. Fearless спрашивает перед сеансом и показывает каждую транзакцию в расшифрованном виде перед подписью.",
     "linkLabel": "Ссылка IrohaConnect",
-    "pasteHint": "Вставьте ссылку кошелька, показанную Uranai или другим совместимым dApp.",
+    "pasteHint": "Вставьте ссылку IrohaConnect, которую показывает dApp.",
     "paste": "Вставить",
     "openingRelay": "Открываем ретранслятор…",
     "connectWallet": "Подключить кошелек",
@@ -426,7 +426,7 @@
     },
     "live": {
       "connectionRequested": "{appName} запрашивает подключение.",
-      "signatureReview": "Подпись контракта требует вашей проверки.",
+      "signatureReview": "Транзакция требует вашей проверки.",
       "connectedTo": "Подключено к {appName}.",
       "openingRelay": "Открываем ретранслятор IrohaConnect.",
       "ready": "IrohaConnect готов."

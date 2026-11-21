@@ -1,0 +1,111 @@
+// IrohaConnect v1 review strings: the decoded transaction a dApp asks the wallet to sign, the permissions it asked
+// for, and why the wallet answered a request on its own. Akkadian and Egyptian fall back to English, like the other
+// supplemental bundles. {symbol}, {appName}, {count} and {seconds} are filled in by the page.
+const en = {
+  irohaConnectReview: {
+    permissions: {
+      signTransactions: 'Ask you to approve transactions',
+      signMessages: 'Ask to sign messages (Fearless declines)',
+      noRestriction: 'Ask you to approve transactions',
+      other: 'Also requested: {list}',
+    },
+    sendTitle: 'Send {quantity} {symbol}',
+    callTitle: 'Call {entrypoint}',
+    callsTitle: '{count} contract calls',
+    to: 'To',
+    asset: 'Asset',
+    amount: 'Amount',
+    maxFee: 'Max fee',
+    feePayer: 'Fee paid by',
+    feePayerYou: 'You',
+    gasLimit: 'Gas limit',
+    validFor: 'Valid for',
+    seconds: '{seconds} s',
+    memo: 'Metadata',
+    contract: 'Contract',
+    entrypoint: 'Entrypoint',
+    arguments: 'Arguments',
+    noArguments: 'None',
+    argumentBytes: '{count} bytes',
+    codeHash: 'Code hash',
+    details: 'Technical details',
+    payloadHash: 'Transaction hash to sign',
+    decodedNote:
+      'Fearless decoded this transaction from the exact bytes it will sign. Approve only if it matches what you asked {appName} to do.',
+    approve: 'Approve and sign',
+    notices: {
+      raw_signing_unavailable: '{appName} asked to sign a message. Fearless declined: messages need a separate signing key.',
+      transaction_unsupported: '{appName} sent a transaction Fearless cannot show in full, so it was declined.',
+      transaction_invalid: '{appName} sent an invalid transaction. It was declined.',
+      transaction_wrong_account: '{appName} sent a transaction for another account. It was declined.',
+      permission_denied: '{appName} did not ask permission to request transactions. It was declined.',
+      request_in_progress: '{appName} sent a second request while one was open. It was declined.',
+      request_expired: 'The request expired before it was approved. Nothing was signed.',
+      dapp_closed: 'The dApp ended the session.',
+    },
+    errors: {
+      iroha_connect_retired_link: 'This link uses a retired IrohaConnect format. Ask the dApp for a new link.',
+      iroha_connect_network_unavailable: 'IrohaConnect is not available for SORA Nexus yet.',
+      iroha_connect_unknown_network: 'This link is for a network Fearless does not support.',
+      iroha_connect_wrong_node: 'This link names a relay that is not the network’s own Torii.',
+      iroha_connect_invalid_link: 'This is not a valid IrohaConnect link.',
+      iroha_connect_invalid_frame: 'The dApp sent data Fearless could not verify, so the session was closed.',
+    },
+  },
+};
+
+const ru: typeof en = {
+  irohaConnectReview: {
+    permissions: {
+      signTransactions: 'Просить вас подтверждать транзакции',
+      signMessages: 'Просить подписывать сообщения (Fearless отказывает)',
+      noRestriction: 'Просить вас подтверждать транзакции',
+      other: 'Также запрошено: {list}',
+    },
+    sendTitle: 'Отправить {quantity} {symbol}',
+    callTitle: 'Вызвать {entrypoint}',
+    callsTitle: 'Вызовов контракта: {count}',
+    to: 'Кому',
+    asset: 'Актив',
+    amount: 'Сумма',
+    maxFee: 'Макс. комиссия',
+    feePayer: 'Комиссию платит',
+    feePayerYou: 'Вы',
+    gasLimit: 'Лимит газа',
+    validFor: 'Действует',
+    seconds: '{seconds} с',
+    memo: 'Метаданные',
+    contract: 'Контракт',
+    entrypoint: 'Точка входа',
+    arguments: 'Аргументы',
+    noArguments: 'Нет',
+    argumentBytes: '{count} байт',
+    codeHash: 'Хеш кода',
+    details: 'Технические подробности',
+    payloadHash: 'Хеш транзакции для подписи',
+    decodedNote:
+      'Fearless расшифровал эту транзакцию из тех самых байтов, которые подпишет. Подтверждайте, только если она совпадает с тем, что вы просили сделать в {appName}.',
+    approve: 'Подтвердить и подписать',
+    notices: {
+      raw_signing_unavailable:
+        '{appName} попросил подписать сообщение. Fearless отказал: для сообщений нужен отдельный ключ подписи.',
+      transaction_unsupported: '{appName} прислал транзакцию, которую Fearless не может показать полностью. Она отклонена.',
+      transaction_invalid: '{appName} прислал недопустимую транзакцию. Она отклонена.',
+      transaction_wrong_account: '{appName} прислал транзакцию для другой учетной записи. Она отклонена.',
+      permission_denied: '{appName} не запрашивал разрешение на транзакции. Запрос отклонен.',
+      request_in_progress: '{appName} прислал второй запрос, пока первый был открыт. Он отклонен.',
+      request_expired: 'Срок запроса истек до подтверждения. Ничего не подписано.',
+      dapp_closed: 'dApp завершил сеанс.',
+    },
+    errors: {
+      iroha_connect_retired_link: 'Эта ссылка использует устаревший формат IrohaConnect. Попросите у dApp новую ссылку.',
+      iroha_connect_network_unavailable: 'IrohaConnect пока недоступен для SORA Nexus.',
+      iroha_connect_unknown_network: 'Эта ссылка для сети, которую Fearless не поддерживает.',
+      iroha_connect_wrong_node: 'В ссылке указан ретранслятор, который не является Torii этой сети.',
+      iroha_connect_invalid_link: 'Это недопустимая ссылка IrohaConnect.',
+      iroha_connect_invalid_frame: 'dApp прислал данные, которые Fearless не смог проверить, поэтому сеанс закрыт.',
+    },
+  },
+};
+
+export const irohaConnectMessages = { 'en-EN': en, 'ru-RU': ru } as const;

@@ -28,7 +28,7 @@ const outputDir = process.env.OUTPUT_DIR || browser;
 const outDir = path.resolve(root, 'dist/extension', outputDir);
 export const PRODUCTION_RELEASE_FLAGS = Object.freeze({
   ...readReleaseTransferFlags(root),
-  VUE_APP_ENABLE_IROHA_CONNECT: 'false',
+  VUE_APP_ENABLE_IROHA_CONNECT: 'true',
   VUE_APP_ENABLE_SOLANA_TRANSFERS: 'true',
   VUE_APP_EXTENSION_SMOKE: 'false',
   VUE_APP_PORTFOLIO_DASHBOARD: 'true',

@@ -52,10 +52,10 @@ const developmentFirefox = { EXTENSION_TYPE: 'firefox', OAUTH_CLIENT_ID: 'develo
 enforceProductionReleaseEnvironment(developmentFirefox, 'development', 'firefox');
 assert.equal(developmentFirefox.OAUTH_CLIENT_ID, 'development-fixture');
 
-// Bitcoin and Solana sends ship enabled; IrohaConnect stays compiled off.
+// Bitcoin and Solana sends and IrohaConnect ship enabled.
 assert.equal(PRODUCTION_RELEASE_FLAGS.VUE_APP_ENABLE_BITCOIN_TRANSFERS, 'true');
 assert.equal(PRODUCTION_RELEASE_FLAGS.VUE_APP_ENABLE_SOLANA_TRANSFERS, 'true');
-assert.equal(PRODUCTION_RELEASE_FLAGS.VUE_APP_ENABLE_IROHA_CONNECT, 'false');
+assert.equal(PRODUCTION_RELEASE_FLAGS.VUE_APP_ENABLE_IROHA_CONNECT, 'true');
 assert.equal(PRODUCTION_RELEASE_FLAGS.VUE_APP_ENABLE_IROHA_TRANSFERS,
   readReleaseTransferFlags(fileURLToPath(new URL('..', import.meta.url))).VUE_APP_ENABLE_IROHA_TRANSFERS);
 // The portfolio dashboard ships; a release cannot leave it out by its environment.
@@ -74,9 +74,10 @@ const withEnvironment = (overrides, run) => {
   }
 };
 const viteOptions = (mode) => ({ mode, outDir: path.join(os.tmpdir(), 'fearless-vite-guard-test'), publicDir: false });
+// Decoded-payload review shipped, so a production build may compile IrohaConnect on; `false` still compiles it off.
 withEnvironment({ VUE_APP_ENABLE_IROHA_CONNECT: 'true', VUE_APP_ENABLE_IROHA_TRANSFERS: 'false' }, () => {
-  assert.throws(() => commonViteConfig(viteOptions('production')), /iroha_connect_blind_signing_unreviewed/u);
-  assert.doesNotThrow(() => commonViteConfig(viteOptions('development')));
+  const config = commonViteConfig(viteOptions('production'));
+  assert.equal(config.define['process.env.VUE_APP_ENABLE_IROHA_CONNECT'], JSON.stringify('true'));
 });
 withEnvironment(
   {

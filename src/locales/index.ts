@@ -10,6 +10,7 @@ import { balanceStatusMessages } from './balanceStatusMessages';
 import { walletUpgradeMessages } from './walletUpgradeMessages';
 import { feelMessages } from './feelMessages';
 import { dappSigningMessages } from './dappSigningMessages';
+import { irohaConnectMessages } from './irohaConnectMessages';
 import { accountController } from '@/controllers';
 
 const messages = {
@@ -153,6 +154,7 @@ export const i18n = createI18n({
   feelMessages,
   balanceStatusMessages,
   dappSigningMessages,
+  irohaConnectMessages,
 ].forEach((bundle) => {
   Object.entries(bundle).forEach(([locale, supplementalMessages]) => {
     i18n.global.mergeLocaleMessage(locale, supplementalMessages);

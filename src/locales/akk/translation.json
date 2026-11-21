@@ -241,7 +241,7 @@
     "walletDetailsDescription": "𒌅𒌒𒉺𒀜 𒋗𒈪𒅎, 𒈾𒄠𒍝𒆪, 𒌑 𒋗𒍪𒌑𒌝",
     "networksAssets": "𒊑𒅅𒊓𒌅𒌝 𒌑 𒈠𒀝𒆪𒊒",
     "networksAssetsDescription": "𒈬𒁀𒅈𒊒𒌑 𒊭 𒀀𒈠𒊑𒅎, 𒈠𒊍𒍝𒊒, 𒌑 𒅆𒈠𒀜 𒈠𒀝𒆪𒊑",
-    "irohaConnectDescription": "𒉿𒀸𒁍 𒊭 𒆠𒋛𒅎 SORA 3 𒀀𒈾 Uranai 𒌑 dApps Iroha",
+    "irohaConnectDescription": "𒉿𒀸𒁍 𒊭 𒆠𒋛𒅎 SORA Taira 𒀀𒈾 dApps Iroha",
     "walletConnectDescription": "𒉿𒀸𒁍 WalletConnect 𒀀𒈾 𒆠𒅖𒊭𒋾𒅎 𒈠𒄴𒊑𒋾𒅎",
     "tonConnectDescription": "𒉿𒀸𒁍 TonConnect 𒄿𒈾 𒁉𒉌𒋾𒅎 𒀭𒉌𒋾𒅎 𒀀𒁲𒉌 𒆷 𒈠𒄴𒊒.",
     "buildUnavailable": "𒁉𒉌𒌅𒌝 𒆷 𒁀𒊭𒀀𒀜",
@@ -274,7 +274,7 @@
   "irohaConnectPage": {
     "backToSettings": "𒀀𒈾 𒅆𒈠𒋾𒅎 𒌅𒌨",
     "walletBridge": "𒅗𒍝𒊒𒌝 𒊭 𒆠𒋛𒅎 SORA 3",
-    "walletMode": "𒀀𒆷𒀝𒌅𒌝 𒊭 𒆠𒋛𒅎 · Uranai 𒈠𒄴𒊒𒌝",
+    "walletMode": "𒀀𒆷𒀝𒌅𒌝 𒊭 𒆠𒋛𒅎 · IrohaConnect v1",
     "sakuraTitle": "𒄿𒈾 𒉿𒅕𒄭𒅎 𒈠𒆠𒀉𒋾𒅎 𒆪𒍪𒌨.",
     "intro": "dApp 𒀀𒈾 𒌅𒌒𒉿𒅗 𒊭 SORA Nexus 𒌑 𒇻 Taira 𒆪𒍪𒌨. Fearless 𒆷𒄠 𒉿𒀸𒁉𒅎 𒌑 𒆷𒄠 𒆪𒌌𒆷𒀜 𒆪𒉡𒊌𒆠𒅎 𒂊𒊑𒌍𒅗.",
     "linkLabel": "𒊑𒅅𒋢𒌝 𒊭 IrohaConnect",

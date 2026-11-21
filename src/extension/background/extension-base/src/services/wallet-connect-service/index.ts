@@ -24,6 +24,14 @@ const namespaceAccounts = (namespace: WcSessionNamespace | unknown[]): string[] 
 export class WalletConnectService {
   private client?: WalletConnectClient;
   private initialization?: Promise<void>;
+  private generation = 0;
+
+  suspend() {
+    this.generation++;
+    this.initialization = undefined;
+    this.client = undefined;
+    this.updateSessions();
+  }
   private readonly sessionRevisions = new Map<string, number>();
   private readonly retiredTopics = new Set<string>();
   private readonly expiredRequestIds = new Set<number>();
@@ -35,7 +43,7 @@ export class WalletConnectService {
   private get authority() { return sessionAuthority(this.state); }
 
   getSessionRevision(topic: string): number {
-    return (this.sessionRevisions.get(topic) ?? 0) + this.authority.revision;
+    return (this.sessionRevisions.get(topic) ?? 0) + this.authority.revision + (this.generation ?? 0);
   }
 
   private sessionChanged(topic: string, retired = false): void {
@@ -95,21 +103,28 @@ export class WalletConnectService {
   }
 
   async initClient(force?: boolean) {
+    const generation = this.generation;
+    if (!force && this.state.keyringService?.getPassword?.() === '') return;
     if (this.client) return;
     if (!force && !(await hasWalletConnectData())) return;
+    if (generation !== this.generation) throw new Error('Wallet authentication changed');
     // The storage read above may yield while another caller initializes.
     if (this.client) return;
     if (!this.initialization) {
       this.initialization = this.authority.load()
-        .then(() => walletConnectClient(this.state))
+        .then(() => {
+          if (generation !== this.generation) throw new Error('Wallet authentication changed');
+          return walletConnectClient(this.state);
+        })
         .then(async (client) => {
           await this.authority.load();
+          if (generation !== this.generation) throw new Error('Wallet authentication changed');
           this.client = client;
           this.updateSessions();
           this.createListener();
         })
         .finally(() => {
-          this.initialization = undefined;
+          if (generation === this.generation) this.initialization = undefined;
         });
     }
     await this.initialization;

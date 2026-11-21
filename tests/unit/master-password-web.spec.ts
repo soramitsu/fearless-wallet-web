@@ -28,6 +28,8 @@ import * as WebDatabase from '@extension-base/stores/WebDatabase';
 import CurrentAccountStore from '@extension-base/stores/CurrentAccountStore';
 import KeyringStoreWeb from '@extension-base/stores/KeyringStoreWeb';
 import { WEB_PASSWORD_RECORD_KEY } from '@extension-base/stores/WebPasswordRecord';
+import { ProtectedStorage } from '@extension-base/services/wallet-connect-service/protectedStorage';
+import { emptyRecord, WALLET_CONNECT_RECORD, WalletConnectStore } from '@extension-base/services/wallet-connect-service/protocol/store';
 import vectors from '../../docs/universal-wallet-v2-vectors.json';
 import { WalletEcosystem } from '@/interfaces';
 
@@ -164,6 +166,33 @@ const NEW_PASSWORD = 'Public replacement web password';
 const change = () => track(service.changeMasterPassword({ oldPassword: PASSWORD, newPassword: NEW_PASSWORD }));
 
 describe('master password change through actual IndexedDB store adapter', { timeout: 60_000 }, () => {
+  it('migrates the web protocol record and rotates it atomically with the master password', async () => {
+    const original = emptyRecord();
+    const legacyKey = `fwWalletConnectSdk:${WALLET_CONNECT_RECORD}`;
+    fixture.data[legacyKey] = original;
+    const storage = new ProtectedStorage(() => service.getPassword());
+    const migration = track(new WalletConnectStore(storage).load());
+    await drain();
+    expect(await migration).toEqual({ value: original });
+    expect(fixture.data[legacyKey]).toBeUndefined();
+    expect(JSON.stringify(fixture.data)).not.toContain(original.clientSeed);
+    storage.close();
+    const before = structuredClone(fixture.data);
+    fixture.failMigration = true;
+    const aborted = change();
+    await drain();
+    expect(await aborted).toEqual({ value: false });
+    expect(fixture.data).toEqual(before);
+    fixture.failMigration = false;
+    const rotation = change();
+    await drain();
+    expect(await rotation).toEqual({ value: true });
+    expect(service.lockKeyring()).toBe(true);
+    const reopen = () => new WalletConnectStore(new ProtectedStorage(() => service.getPassword())).load();
+    await expect(reopen()).rejects.toThrow();
+    expect(service.unlockKeyring({ password: NEW_PASSWORD })).toBe(true);
+    await expect(reopen()).resolves.toEqual(original);
+  });
   it('upgrades the active legacy web verifier atomically without rewriting account ciphertext', async () => {
     await native();
     const before = structuredClone(fixture.data);

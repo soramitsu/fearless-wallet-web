@@ -158,6 +158,7 @@ async function flushWalletWrites(): Promise<void> {
 
 export class KeyringService {
   readonly lockSubject = new Subject<void>();
+  readonly authenticatedSubject = new Subject<void>();
   private sessionExpiryCheck?: () => void;
 
   setSessionExpiryCheck(check: () => void): void {
@@ -1341,11 +1342,17 @@ export class KeyringService {
           .filter((pair): pair is KeyringPair => !!pair);
         const retained = await commitMasterPasswordChange(pairs, this.tonKeyring, this.hasMasterPassword,
           oldPassword, newPassword, assertCurrent, password => {
-            if ((this.authenticationRevision ?? 0) !== revision) { this.password = ''; return false; }
+            if ((this.authenticationRevision ?? 0) !== revision) {
+              this.password = '';
+              this.lockSubject?.next();
+              return false;
+            }
             this.password = password;
+            if (!password) this.lockSubject?.next();
             return true;
           });
         this.authenticationRevision = (this.authenticationRevision ?? 0) + 1;
+        this.authenticatedSubject?.next();
         retained.forEach(address => this.access.flagPreviousMasterPair(address));
         this.scheduleLegacyNetworkEnrollment();
         this.access.scheduleScan(newPassword);
@@ -1579,6 +1586,7 @@ export class KeyringService {
       keyring.unlockKeyring(password);
       this.authenticationRevision = (this.authenticationRevision ?? 0) + 1;
       this.password = password;
+      this.authenticatedSubject?.next();
       this.scheduleLegacyNetworkEnrollment();
       this.access.scheduleScan(password);
 
@@ -1666,6 +1674,7 @@ export class KeyringService {
             if (!IS_EXTENSION) KeyringStoreWeb.commitReset();
           } finally {
             this.password = '';
+            this.lockSubject?.next();
             this.universalPassphraseCache?.clear();
             this.access.reset();
           }

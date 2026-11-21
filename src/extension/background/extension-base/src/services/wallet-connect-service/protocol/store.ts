@@ -6,7 +6,7 @@ import type { WcPairing, WcProposal, WcSession } from './types';
 
 export const WALLET_CONNECT_RECORD = 'fearless:walletconnect:v1';
 
-/** The records WalletConnect SDK 2.x kept. They are read once, when this client first starts, and left in place. */
+/** Historical SDK 2.x records read by the upgrade adapter. */
 export const SDK_KEYCHAIN = 'wc@2:core:0.3//keychain';
 export const SDK_SESSIONS = 'wc@2:client:0.3//session';
 export const SDK_PAIRINGS = 'wc@2:core:0.3//pairing';
@@ -53,9 +53,9 @@ export type WalletConnectRecord = {
   migratedFromSdk?: boolean;
 };
 
-export const emptyRecord = (): WalletConnectRecord => ({
+export const emptyRecord = (clientSeed = randomKey()): WalletConnectRecord => ({
   version: 1,
-  clientSeed: randomKey(),
+  clientSeed,
   keys: {},
   pairings: [],
   sessions: [],
@@ -108,7 +108,7 @@ function normalize(value: unknown): WalletConnectRecord | undefined {
 }
 
 /** Sessions and pairings SDK 2.x saved, with the keys they need. Proposals and requests in flight are not kept. */
-async function importSdkRecords(storage: KeyValueStorage): Promise<WalletConnectRecord | undefined> {
+export async function importSdkRecords(storage: Pick<KeyValueStorage, 'getItem'>): Promise<WalletConnectRecord | undefined> {
   const [keychain, sessions, pairings] = await Promise.all([
     storage.getItem<unknown>(SDK_KEYCHAIN),
     storage.getItem<unknown>(SDK_SESSIONS),

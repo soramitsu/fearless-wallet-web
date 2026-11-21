@@ -17,7 +17,7 @@ import {
 import { decrypt, deriveSymKey, encrypt, fromHexKey, generateKeyPair, hashMessage, isHexKey, randomKey, relayAuthToken, topicOf } from './crypto';
 import { getInternalError, getSdkError } from './errors';
 import { RelayConnection, type RelayMessage, type RelaySocketFactory } from './relay';
-import { WalletConnectStore, type KeyValueStorage, type SentProposal, type WalletConnectRecord } from './store';
+import { emptyRecord, WalletConnectStore, type KeyValueStorage, type SentProposal, type WalletConnectRecord } from './store';
 import { formatPairingUri, parsePairingUri } from './uri';
 import {
   coversRequired,
@@ -205,6 +205,8 @@ export class WalletConnectClient {
   /** Stops the relay connection and the timers. The client cannot be used afterwards. */
   close(): void {
     this.closed = true;
+    this.record = emptyRecord('');
+    this.listeners.clear();
     if (this.sweepTimer) this.clear(this.sweepTimer);
     if (this.startTimer) this.clear(this.startTimer);
     this.relay.close();

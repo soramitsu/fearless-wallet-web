@@ -42,6 +42,14 @@ type PairingAttempt = {
 export class WalletConnectDAppService {
   private client?: WalletConnectClient;
   private initialization?: Promise<void>;
+  private generation = 0;
+
+  suspend() {
+    this.generation++;
+    this.initialization = undefined;
+    this.client = undefined;
+    for (const attempt of this.pairingAttempts.values()) void this.finishPairing(attempt).catch(console.error);
+  }
   private readonly sessionRevisions = new Map<string, number>();
   private readonly retiredTopics = new Set<string>();
   private readonly listenerClients = new WeakSet<object>();
@@ -49,7 +57,7 @@ export class WalletConnectDAppService {
   private get authority() { return sessionAuthority(this.state); }
 
   getSessionRevision(topic: string): number {
-    return (this.sessionRevisions.get(topic) ?? 0) + this.authority.revision;
+    return (this.sessionRevisions.get(topic) ?? 0) + this.authority.revision + (this.generation ?? 0);
   }
 
   private sessionChanged(topic: string): void {
@@ -69,22 +77,33 @@ export class WalletConnectDAppService {
   constructor(private state: State) {
     // The client reads all of storage and starts a 5 s heartbeat, and its extension calls keep an MV3 worker awake.
     // With nothing stored there is no session to restore: the first mobile pairing starts it (initPairing).
-    hasWalletConnectData().then((stored) => (stored ? this.initClient() : undefined)).catch(console.error);
+    void this.restore().catch(console.error);
+  }
+
+  async restore() {
+    const generation = this.generation;
+    if (this.state.keyringService?.getPassword?.() === '') return;
+    if (await hasWalletConnectData() && generation === this.generation) await this.initClient();
   }
 
   private initClient(): Promise<void> {
+    const generation = this.generation;
     if (this.client) return Promise.resolve();
     if (!this.initialization) {
       this.initialization = this.authority.load()
-        .then(() => walletConnectClient(this.state))
+        .then(() => {
+          if (generation !== this.generation) throw new Error('Wallet authentication changed');
+          return walletConnectClient(this.state);
+        })
         .then(async (client) => {
           await this.authority.load();
+          if (generation !== this.generation) throw new Error('Wallet authentication changed');
           this.client = client;
           this.setListeners();
           this.state?.workerSleepService?.refresh();
         })
         .finally(() => {
-          this.initialization = undefined;
+          if (generation === this.generation) this.initialization = undefined;
         });
     }
     return this.initialization;

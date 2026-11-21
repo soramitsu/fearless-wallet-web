@@ -1,4 +1,5 @@
 import WalletConnectRetiredSessions, { sessionIsApproved } from '@extension-base/stores/WalletConnectRetiredSessions';
+import { closeProtocolClient } from '@extension-base/services/wallet-connect-service/client';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata } from '@polkadot/extension-chains';
 import { isEthereumAddress } from '@polkadot/util-crypto';
@@ -181,6 +182,17 @@ export default class State {
   );
 
   constructor() {
+    const suspendProtocol = () => {
+      closeProtocolClient(this);
+      this.walletConnectService.suspend();
+      this.walletConnectDappService.suspend();
+    };
+    this.keyringService.lockSubject.subscribe(suspendProtocol);
+    this.keyringService.authenticatedSubject.subscribe(() => {
+      suspendProtocol();
+      void this.walletConnectService.initClient().catch(console.error);
+      void this.walletConnectDappService.restore().catch(console.error);
+    });
     this.keyringService.setUniversalWalletFundsProbe(balanceServiceFundsProbe(this.balanceService));
     // The networks where the selected wallet holds funds connect first, from its saved balances on a start.
     this.networkService.connectFirst = () => this.balanceService.fundedNetworks(this.currentAccount?.address);

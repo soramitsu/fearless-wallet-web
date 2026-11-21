@@ -46,11 +46,18 @@ push notifications.
 
 ## Storage and upgrades
 
-Everything is one record, `fearless:walletconnect:v1`, in `chrome.storage.local`, written whole. On its first start the
-client imports what WalletConnect SDK 2.x saved: sessions, pairings, their keys and the relay identity. It leaves those
-records in place, so a session made before the upgrade keeps working after it, and an older version still finds them.
-Proposals and requests in flight are not imported. A session that expired while the worker was stopped is reported on
-the next start, so mobile accounts are retired as before.
+The client opens after master-password unlock. The accounts store holds one `walletconnect:v2` envelope in extension
+local storage or web IndexedDB. A random salt and scrypt (N=32768, r=8, p=1) derive its key. Each whole-record write
+uses XChaCha20-Poly1305 with a new nonce and a format-specific authentication context. Password changes re-encrypt
+the envelope in the same commit as the verifier. Lock closes both relay roles and drops the derived key; a wallet
+without a master password cannot pair. Messages may expire at the relay before the user unlocks again.
+
+On first unlocked use the client preserves the v1 record, or imports the SDK 2.x sessions, pairings, keys and relay
+identity. It decrypts and checks the persisted envelope before removing legacy records. Interrupted cleanup resumes
+after authenticated readback. Downgrades do not restore old sessions; leaving a plaintext rollback copy would defeat
+the protection. Removing database records is not secure disk erasure. Copies made before migration are not protected
+retroactively. Re-pair if one may have been exposed.
+SDK proposals and requests in flight are not imported. Expiries are reported on restart as before.
 
 After a worker starts, the client waits two seconds before it reconnects to the relay and reports expiries. The
 services attach their listeners after a storage read of their own, and must not miss a request the relay held while the

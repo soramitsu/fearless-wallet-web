@@ -1,4 +1,7 @@
 import { WalletConnectClient as WalletConnect } from '@extension-base/services/wallet-connect-service/protocol/client';
+import { hashSync } from 'bcryptjs';
+import { closeProtocolClient, walletConnectClient } from '@extension-base/services/wallet-connect-service/client';
+import { emptyRecord, WALLET_CONNECT_RECORD } from '@extension-base/services/wallet-connect-service/protocol/store';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WalletConnectService } from '@extension-base/services/wallet-connect-service';
 import { WalletConnectDAppService } from '@extension-base/services/wallet-connect-service/dapp';
@@ -24,6 +27,7 @@ vi.mock('@extension-base/utils/crossenv', () => ({ chrome: {
       callback?.();
       return Promise.resolve();
     },
+    remove: async (key: string) => { delete fixture.data[key]; },
   } },
 } }));
 vi.mock('@/sora/cosigner', () => ({ decryptForCosigner: vi.fn(), encryptForCosigners: vi.fn() }));
@@ -68,6 +72,31 @@ const makeState = () => ({
   networkService: { networkValues: [{ name: 'Public Substrate', ecosystem: 'substrate', chainId: '11'.repeat(32) }] },
   keyringService: { isResetting: false, walletResetRevision: 0, getAddresses: () => [], getAllAccounts: () => [] },
 } as unknown as State);
+
+it('reopens the real client from protected Chrome storage without retaining the locked client', async () => {
+  vi.restoreAllMocks();
+  const state = makeState(), password = crypto.randomUUID();
+  let typed: string = password;
+  Object.assign(state.keyringService, { getPassword: () => typed });
+  const record = emptyRecord(), topic = emptyRecord().clientSeed;
+  record.keys[topic] = emptyRecord().clientSeed;
+  record.sessions.push({ ...dappSession, topic, expiry: 2e9, acknowledged: true, controller: record.clientSeed,
+    self: { ...self, publicKey: record.clientSeed }, peer: { ...self, publicKey: record.clientSeed } });
+  fixture.data[WALLET_CONNECT_RECORD] = record;
+  fixture.data['fw:keyring'] = { passwordHash: hashSync(password, 4) };
+  try {
+    const first = await walletConnectClient(state);
+    expect(first.session.values).toEqual(record.sessions);
+    typed = '';
+    closeProtocolClient(state);
+    expect(first.session.values).toEqual([]);
+    await expect(walletConnectClient(state)).rejects.toThrow();
+    expect(fixture.data[WALLET_CONNECT_RECORD]).toBeUndefined();
+    expect(JSON.stringify(fixture.data)).not.toContain(record.keys[topic]);
+    typed = password;
+    expect((await walletConnectClient(state)).session.values).toEqual(record.sessions);
+  } finally { closeProtocolClient(state); }
+});
 function services() {
   const state = makeState();
   const wallet = new WalletConnectService(state, {} as RequestService);

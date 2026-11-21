@@ -89,14 +89,18 @@ export default defineComponent({ name: 'SelectValidator',
       return this.selectedValidator !== null;
     },
     filteredValidatorsBySettings() {
-      return this.validators.filter(({ isOversubscribed, isKnownGood, isSlashed, limitValidatorsIdentity }) => {
+      const identities = new Set<string>();
+      return this.validators.filter(({ isOversubscribed, isKnownGood, isSlashed, identityKey }) => {
             if (this.onchainIdentity && !isKnownGood) return false;
 
-            if (this.notSlashed && isSlashed) return false;
+            if (this.notSlashed && isSlashed !== false) return false;
 
             if (this.notOversubscribed && isOversubscribed) return false;
 
-            if (this.limitValidatorsIdentity && !limitValidatorsIdentity) return false;
+            if (this.limitValidatorsIdentity) {
+              if (!identityKey || identities.has(identityKey)) return false;
+              identities.add(identityKey);
+            }
 
             return true;
           });

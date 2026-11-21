@@ -1,12 +1,15 @@
 import { type NetworkJson } from '@extension-base/types';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { isNetworkGroup } from './common';
+import { matchesNetworkSelection } from './networkSelection';
 import { type NetworkName } from '@/interfaces';
 
-function networksIsPending(networks: NetworkJson[], selectedNetwork: NetworkName = 'all') {
+function networksIsPending(networks: NetworkJson[], selectedNetwork: NetworkName = 'all', address = '') {
   if (isNetworkGroup(selectedNetwork)) {
-    //TODO добавить проверку по группам
-    const isPendingExists = networks.some(({ networkStatus }) => networkStatus === NETWORK_STATUS.CONNECTING);
+    const isPendingExists = networks.some((network) =>
+      network.active !== false && matchesNetworkSelection(network, selectedNetwork, address) &&
+      network.networkStatus === NETWORK_STATUS.CONNECTING
+    );
 
     return !navigator.onLine || isPendingExists;
   }

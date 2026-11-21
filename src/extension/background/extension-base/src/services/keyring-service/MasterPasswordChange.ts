@@ -2,6 +2,7 @@ import { Keyring } from '@subwallet/keyring/keyring';
 import { keyring } from '@subwallet/ui-keyring';
 import { stringToU8a, u8aEq } from '@polkadot/util';
 import AccountsStore from '../../stores/Accounts';
+import { rotateProtocolVault, VAULT_KEY, type Envelope } from '../wallet-connect-service/protocol/vault';
 import KeyringStoreWeb from '../../stores/KeyringStoreWeb';
 import { decodeWebPassword, WEB_PASSWORD_RECORD_KEY, validateWebPasswordRecord } from '../../stores/WebPasswordRecord';
 import { accountStorageKey, alreadyPersistedAccountStore, isCurrentAccountPair } from './AccountMetadata';
@@ -89,11 +90,15 @@ export async function commitMasterPasswordChange(
   assertCurrent();
   const committedNative: KeyringPair$Json[] = [];
   const committedTon: TonStoreAccount[] = [];
-  await store.mutateRecordsAndWait([passwordKey, ...native.keys(), ...tonChanges.keys()], current => {
+  const vault = snapshot[VAULT_KEY] as Envelope | undefined;
+  const rotated = vault === undefined ? undefined : rotateProtocolVault(vault, oldPassword ?? '', newPassword);
+  await store.mutateRecordsAndWait([passwordKey, VAULT_KEY, ...native.keys(), ...tonChanges.keys()], current => {
     assertCurrent();
     if (!equal(current[passwordKey], snapshot[passwordKey])) throw new Error('Password changed during preparation.');
     const entries: Record<string, unknown> = { [passwordKey]: IS_EXTENSION ? nextPassword
       : { ...snapshot[passwordKey] as object, version: 1, serialized: JSON.stringify(nextPassword) } };
+    if (!equal(current[VAULT_KEY], vault)) throw new Error('WalletConnect changed during password preparation. Retry.');
+    if (rotated) entries[VAULT_KEY] = rotated;
     for (const [storageKey, { original, before, json }] of native) {
       const latest = current[storageKey] as KeyringPair$Json | undefined;
       if (!latest || !isCurrentAccountPair(original) || latest.address !== before.address || latest.encoded !== before.encoded ||

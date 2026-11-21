@@ -1,11 +1,11 @@
 import { flushPromises, shallowMount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ generate: vi.fn(), validate: vi.fn(), save: vi.fn(), derive: vi.fn(), push: vi.fn() }));
-vi.mock('@/extension/messaging', () => ({ generateMnemonic: mocks.generate, mnemonicValidate: mocks.validate, addAccount: mocks.save, isDerivationPathValid: async () => true, isJsonValid: async () => ({ value: true }), forgetAccount: vi.fn(), jsonRestore: vi.fn(), windowOpen: vi.fn(), updatePairMeta: vi.fn(), createGoogleFile: vi.fn(), exportJSON: vi.fn(), getExtensionPassword: vi.fn(), updateCurrentAccount: vi.fn() }));
+vi.mock('@/extension/messaging', () => ({ generateMnemonic: mocks.generate, mnemonicValidate: mocks.validate, addAccount: mocks.save, isDerivationPathValid: async () => true, isJsonValid: async () => ({ value: true }), forgetAccount: vi.fn(), jsonRestore: vi.fn(), windowOpen: vi.fn(), updatePairMeta: vi.fn(), createGoogleFile: vi.fn(), exportJSON: vi.fn(), updateCurrentAccount: vi.fn() }));
 vi.mock('@/router/routes', () => ({ Components: { Welcome: 'Welcome', Wallet: 'Wallet' } }));
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => ({ accounts: [], selectedWallet: {} }) }));
 vi.mock('@/util/universalWalletKeyringFields', () => ({ deriveUniversalWalletKeyringFields: mocks.derive }));
-vi.mock('@/util/BaseApi', () => ({ default: { parseJson: () => ({}), isValidSequenceMnemonic: () => true, isValidEthereumDerivationPath: () => true } }));
+vi.mock('@/util/BaseApi', () => ({ default: { parseJson: () => ({}), isValidEthereumDerivationPath: () => true } }));
 vi.mock('@/consts/globalClient', () => ({ IS_POPUP: false, IS_SIDE_PANEL: false }));
 import AddWallet from '@/screens/addWallet/AddWallet.vue';
 import CreateGoogle from '@/screens/addWallet/google/CreateGoogle.vue';
@@ -122,11 +122,11 @@ describe('new-wallet generation proof', () => {
   it('clears an expired phrase and requests a fresh backup before another create attempt', async () => {
     mocks.save.mockRejectedValueOnce(new Error('wallet_generation_expired'));
     const wrapper = mountFlow();
-    await wrapper.setData({ nickname: 'Fixture', mnemonic: 'old public test phrase', step: 4 });
+    await wrapper.setData({ nickname: 'Fixture', mnemonic: 'old public test phrase', mnemonicConfirmed: true, step: 4 });
     await flushPromises();
     expect(wrapper.vm.step).toBe(1);
     expect(wrapper.vm.mnemonic).toBe('');
-    expect(wrapper.vm.selectedMnemonicElements).toEqual([]);
+    expect(wrapper.vm.mnemonicConfirmed).toBe(false);
     expect(wrapper.vm.savedSuccessfully).toBe(false);
     expect(wrapper.vm.isLoading).toBe(false);
     expect(wrapper.find('[data-testid="generationExpired"]').text()).toContain('creation session expired');

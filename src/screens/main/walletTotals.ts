@@ -5,19 +5,23 @@ import { hiddenKeysForWallet } from '@/portfolio/usePortfolioPreferences';
 import { useAccountsStore } from '@/stores/accounts';
 import { useNetworksStore } from '@/stores/networks';
 
-/** Every wallet's full balance, the wallet's hidden assets named so the background can say how much of it is hidden. */
-export function fetchWalletTotals(address: string): Promise<ResponseTotalBalances[]> {
+/** Every wallet's full balance, the given wallets' hidden assets named so the background can say how much of each is hidden. */
+export function fetchWalletTotals(addresses: string | string[]): Promise<ResponseTotalBalances[]> {
   const accountsStore = useAccountsStore();
   const networksStore = useNetworksStore();
-  let hiddenKeys: string[] = [];
+  const hiddenKeysByAddress: Record<string, string[]> = {};
 
-  try {
-    hiddenKeys = hiddenKeysForWallet(address, accountsStore.assetPreferencesForAllAccounts[address] ?? {}, networksStore.allNetworks);
-  } catch {
-    // Without hidden keys the full total still shows; only the "incl. hidden" label is missing.
+  for (const address of [addresses].flat()) {
+    try {
+      const hiddenKeys = hiddenKeysForWallet(address, accountsStore.assetPreferencesForAllAccounts[address] ?? {}, networksStore.allNetworks);
+
+      if (hiddenKeys.length) hiddenKeysByAddress[address] = hiddenKeys;
+    } catch {
+      // Without hidden keys the full total still shows; only the "incl. hidden" label is missing.
+    }
   }
 
-  return getTotalBalances(hiddenKeys.length ? { hiddenKeysByAddress: { [address]: hiddenKeys } } : null);
+  return getTotalBalances(Object.keys(hiddenKeysByAddress).length ? { hiddenKeysByAddress } : null);
 }
 
 // The wallet list and the delete confirmation show the full balance; when part of it is hidden in the portfolio, or

@@ -12,7 +12,10 @@ Hyperledger Iroha source:
 
 The wallet uses two browser entry points: `@iroha/iroha-js/transaction-codec`
 (canonical transfer payloads, payload hashing and signed-transaction
-finalization) and `NetworkId` from `@iroha/iroha-js/browser`. The SDK reaches
+finalization, and for IrohaConnect the rebuild and validation of dApp transfer
+and contract-call payloads before they are reviewed) and `NetworkId` from
+`@iroha/iroha-js/browser`. Unit tests also drive `@iroha/iroha-js/connect-browser`
+as the dApp side of an IrohaConnect session; the extension does not import it. The SDK reaches
 its Rust binding only to parse and render I105 account literals; the extension
 build redirects that import to `src/util/irohaSdkBrowserBinding.ts`, which uses
 the wallet's I105 codec. Every other native operation still fails closed.

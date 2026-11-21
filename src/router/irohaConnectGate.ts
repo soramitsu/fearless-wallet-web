@@ -4,7 +4,7 @@ import { isIrohaConnectEnabled } from '@/util/releaseFeatures';
 export const IROHA_CONNECT_UNAVAILABLE_NOTICE = 'iroha-connect-unavailable';
 
 // A stale deep link, popup route or unlock redirect lands on Settings with a
-// notice that nothing was signed while release builds compile IrohaConnect off.
+// notice that nothing was signed while a build compiles IrohaConnect off (VUE_APP_ENABLE_IROHA_CONNECT=false).
 export const createIrohaConnectRouteGuard =
   (settingsRouteName: string): NavigationGuardWithThis<undefined> =>
   (_to, _from, next) => {

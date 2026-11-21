@@ -63,6 +63,8 @@ export type BuildBitcoinTransactionParams = {
   mnemonicOrSeed: string;
   network?: BitcoinDerivationNetwork;
   outputs: BitcoinPaymentOutput[];
+  /** BIP39 passphrase (the wallet password); '' for accounts derived from the words alone. */
+  passphrase?: string;
 };
 
 export type BuildBitcoinTransactionResult = {
@@ -125,6 +127,7 @@ export const buildBitcoinP2wpkhTransaction = ({
   mnemonicOrSeed,
   network = 'mainnet',
   outputs,
+  passphrase,
 }: BuildBitcoinTransactionParams): BuildBitcoinTransactionResult => {
   const normalizedInputs = normalizeInputs(inputs);
   const normalizedOutputs = normalizeOutputs(outputs, network);
@@ -151,6 +154,7 @@ export const buildBitcoinP2wpkhTransaction = ({
     const key = deriveBitcoinKey({
       mnemonicOrSeed,
       network,
+      passphrase,
       path: input.derivationPath,
     });
     const witnessScript = getP2wpkhOutputScript(key.publicKey);

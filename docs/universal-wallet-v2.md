@@ -83,55 +83,99 @@ and result payloads that do not match their status and method.
 
 ## IrohaConnect Wallet Relay
 
-The browser wallet exposes a wallet-side IrohaConnect flow under **Settings →
-IrohaConnect** for SORA Nexus and Taira. It accepts the deployed
-Uranai-compatible v1 wallet URI in either `iroha://connect` or
-`irohaconnect://connect` form. The URI must contain exactly `sid`, `chain_id`,
-`node`, `v`, `role`, and `token`; the chain id and Torii root must match one of
-the canonical profiles below.
+The browser wallet is the wallet side of the current Iroha Connect v1 protocol,
+the one Torii relays on Taira and that `@iroha/iroha-js/connect-browser` and
+`@iroha/connect-widget` speak on the app side. It lives under **Settings →
+IrohaConnect** and ships enabled; a build with
+`VUE_APP_ENABLE_IROHA_CONNECT=false` compiles it off as a kill switch.
 
-| Network | Chain id                               | Torii root                  |
-| ------- | -------------------------------------- | --------------------------- |
-| Taira   | `fc56984b-2be7-431d-840e-21514d1883f0` | `https://taira.sora.org`    |
-| Nexus   | `sora:nexus:global`                    | `https://minamoto.sora.org` |
+### Links
 
-The background service owns the authenticated WebSocket so closing the popup
-does not approve, sign, or silently discard a live request. The visible UI and
-private extension messages receive only a bounded public snapshot: app name and
-HTTPS origin, canonical network, public account descriptors, and a summarized
-contract request. Relay tokens, ephemeral private keys, mnemonic material, and
-raw signing bytes never enter the UI snapshot.
+The dApp registers its session with Torii (`POST /v1/connect/session`) and shows
+the returned wallet link, as `iroha://connect` or `irohaconnect://connect`. The
+link must carry exactly `sid`, `network_id`, `app_pk`, `nonce`, `node`, `v=1`,
+`role=wallet`, `token` and `relay`. The wallet accepts it only when:
 
-An incoming contract signature request opens or focuses the dedicated
-IrohaConnect review route, contributes to the shared approval badge, and keeps
-that route as the post-unlock destination when the keyring is locked. Stale
-notification windows are discarded and recreated at the review route; a popup
-failure does not alter or implicitly approve the protocol request.
+- `network_id` is the exact checksummed NetworkId pinned for a supported network
+  and `node` is that network's own Torii root;
+- `sid` equals blake2b-256(`iroha-connect|sid|` || NetworkId || `app_pk` ||
+  `nonce`), so the session is bound to the network and the app key;
+- every token and key is canonical unpadded base64url.
 
-During session review and approved sessions, the background sends the text
-frame `keepalive` every 20 seconds for Chrome 116+ extension-service-worker
-liveness. Torii ignores text frames, so this does not create an IrohaConnect
-message, consume a protocol sequence number, or require the dApp to answer a
-Ping. Protocol Ping controls received from the dApp are still answered with a
-matching Pong.
+| Network | NetworkId                                                                   | Torii root                  |
+| ------- | --------------------------------------------------------------------------- | --------------------------- |
+| Taira   | `hash:4978D0BD15FC32B834672B27BBD8A03653B1DF060A1EEE7E9374D29AF3886D91#6774` | `https://taira.sora.org`    |
+| Nexus   | not pinned yet: Nexus links are refused                                      | `https://minamoto.sora.org` |
 
-Connection approval signs the IrohaConnect approval preimage with the selected
-Iroha Ed25519 key. A connection does not authorize unattended signing. Each
-`uranai.irohaconnect.contract-call-signature.v1` request is checked against the
-approved I105 account, capped, held for at most 90 seconds, and shown for a
-separate user decision with the exact byte length and SHA-256 digest. Approval
-signs the exact decoded bytes; rejection, expiry, account mismatch, concurrent
-requests, replayed sequence numbers, and socket teardown fail closed. Key
-material is derived only inside the background keyring boundary and temporary
-byte arrays are cleared after use.
-Sessions and pending approvals are intentionally not persisted; a background
-restart requires a fresh dApp pairing and never restores a signing grant.
+The retired Uranai link (`chain_id` instead of `network_id`, no `relay`, a
+plaintext "ciphertext" slot) is refused with its own message: Torii no longer
+relays it.
 
-Uranai's optional private-trade-proof extension is not a generic signature and
-requires a dedicated proof system. This wallet responds with the protocol-level
-`unsupported_private_proof` rejection instead of fabricating or auto-signing a
-proof. Public Uranai contract calls use the supported per-request signature
-flow.
+### Session
+
+The background service owns the WebSocket
+(`wss://<torii>/v1/connect/ws?sid=…&role=wallet`, token in the
+`iroha-connect.token.v1.*` subprotocol), so closing the popup never approves,
+signs or silently drops a request. It waits for the dApp's Open frame, checks
+that its app key and NetworkId match the link, and shows the app name and HTTPS
+origin, network, relay and requested permissions next to the account choice.
+
+Approval signs the tagged approval preimage (domain, NetworkId, constraints
+hash, sid, app key, wallet key, account, permissions hash when present, relay
+auth hash) with the account's Ed25519 key. The app SDK verifies it against the
+I105 account before deriving keys. Both sides then derive direction keys from an
+ephemeral X25519 exchange (HKDF-SHA256, sid-salted). Every later request and
+answer is a ChaCha20-Poly1305 envelope in a Norito `EnvelopeV1` frame, bound to
+the sid, direction and sequence number. Frames must arrive in strict sequence.
+Replays, gaps, foreign sids and frames that do not authenticate close the
+session.
+
+During review and approved sessions the background sends a sequenced Connect
+Ping every 20 seconds, which the dApp SDK answers with a Pong. That traffic keeps
+the Chrome 116+ extension worker alive. Torii closes a Connect socket on any
+text frame, so the wallet never sends one. Pings from the dApp get a matching
+Pong.
+
+### Transactions
+
+A `SignRequestTx` carries an unsigned transaction payload. Before anything is
+shown, the wallet decodes every signature-bound field: NetworkId, authority,
+creation time, TTL, nonce, fee payer and charge limits, gas limit, metadata, and
+the executable. It then rebuilds the payload with the vendored SDK builders and
+requires the identical bytes. The authority must be the connected account and
+the NetworkId the session's network. The review shows:
+
+- an asset transfer: amount and asset, destination, maximum fee and payer;
+- contract calls: entrypoint, contract address, argument size and SHA-256, and
+  code hash;
+- the TTL, any metadata, and (under technical details) the payload hash to sign.
+
+Payloads the browser codec cannot rebuild are refused with
+`UNSUPPORTED_TRANSACTION` and never signed. That covers instructions that need
+the SDK's native decoder, proof attachments and multi-instruction lists. Wrong
+accounts, wrong networks and malformed payloads get `WRONG_ACCOUNT`,
+`WRONG_NETWORK` or `INVALID_TRANSACTION`. Approval signs the marked Blake2b-256
+payload hash with the account key, exactly as the wallet's own transfers do.
+Each request is held for at most 120 seconds. Rejection (`USER_REJECTED`),
+expiry (`REQUEST_EXPIRED`), a second request while one is open
+(`REQUEST_IN_FLIGHT`) and an Open that did not ask for `sign_transaction`
+(`PERMISSION_DENIED`) all fail closed. The wallet tells the person when it
+declined a request on its own.
+
+### Raw requests
+
+`SignRequestRaw` is signed only by an account's registered off-chain signing
+key, inside the off-chain envelope (`specs/account_signing_keys.md` upstream), so
+a dApp can never obtain a transaction signature through a raw request. No SDK
+can register such a key yet. Fearless therefore answers every raw request with
+`SIGNING_KEY_REQUIRED` and never signs raw bytes with the account key.
+
+The UI and private extension messages receive only a bounded public snapshot.
+Relay tokens, session keys, ephemeral private keys, mnemonic material and payload
+bytes never enter it. Sessions and pending approvals are not persisted; a
+background restart needs a fresh pairing and never restores a signing grant.
+`tests/smoke/iroha-connect-taira.spec.ts` (`FEARLESS_IROHA_CONNECT_LIVE=1`)
+pairs with the live Taira relay through the upstream app SDK.
 
 ## Legacy upgrade continuity
 
@@ -226,6 +270,67 @@ never overwritten; a stored phrase that no longer opens with the current
 password is repaired from the typed one. Fixtures:
 `tests/fixtures/ton/ton-{bip39,native}-3.0.5-vectors.json` (3.0.5 libraries) and
 `tests/fixtures/ton/ton-android-4.2.0-vectors.json` (shipped Android 4.2.0).
+
+### Wallet password
+
+A wallet created or imported with a password (`///password` in its Substrate
+derivation path, or, when that path has none, in its Ethereum path) derives
+Bitcoin, Solana, TON and Taira/Nexus from the words with that password as the
+BIP39 passphrase (NFKD-normalised, as BIP39 specifies). Paths, curves and address
+formats stay as above; without a password the accounts are exactly the ones every
+earlier version derived. Owner decision of 2026-10-31 (design A):
+
+- A newly created wallet gets only password-protected accounts.
+- An import checks, read-only, whether each address the words alone open holds
+  funds, as the TON chooser does. A funded address, or one that could not be
+  checked, stays the wallet's account for that network; the others are protected.
+  Networks a password wallet gains later follow the same rule.
+- An address a wallet already shows is never replaced automatically. Signing
+  follows the stored address: the password opens protected accounts and the words
+  alone open the rest.
+- A wallet with such old addresses gets one notice listing them with their
+  protected addresses. Switch replaces only those a lookup confirms empty.
+- An old address the wallet moved away from (Switch, or an import or later
+  network that found it empty) stays watched, because funds can still arrive there:
+  it is looked at again on every unlock and when the wallet's screen opens. If it
+  holds funds and the protected account is confirmed empty, it becomes the wallet's
+  account again; otherwise the protected account stays and the notice reports the
+  funds at the old address.
+- The background keeps the password sealed in the account metadata
+  (`universalWalletPassphrase`, XSalsa20-Poly1305 under an HKDF key of the
+  account's own secret, so the recovery words alone cannot open it). Wallets saved
+  before this version kept no password: when their key shows a derivation path,
+  the notice asks for the path once and keeps its password only if the path
+  reproduces the stored key.
+
+#### JSON and Google Drive restores
+
+A JSON backup (the file Export → JSON saves, and the file a Google Drive backup
+holds) carries the key and the words it came from, but not the derivation path.
+When the words alone do not reproduce the key, the restored wallet is
+`isMnemonicUnverified`: it signs with its key and shows no Bitcoin, Solana, TON or
+Taira account. An Ethereum key at the standard path (`m/44'/60'/0'/0/0`, which
+Fearless makes every Ethereum key at) needs no asking and counts as verified,
+including keys earlier 4.x restores left unverified, at the next unlock.
+
+- The restore asks once for the derivation path, in the JSON import step and in
+  the Google Drive row (Skip leaves the wallet as it is). Wallet details offer it
+  again ("Show Bitcoin, Solana, TON and Taira"); on a wallet that is not
+  recovery-only the notice also asks once by itself.
+- The words with the typed path must reproduce the stored key. Only then is the
+  phrase verified and the wallet's accounts added, by the import rule above: with
+  a password, each address the words alone open is checked first, and a funded or
+  unchecked one stays while the others are protected and their old addresses
+  watched; without one, every account is the one earlier versions showed. The
+  wallet's linked Ethereum key gets the same accounts, and gains none of its own
+  while the wallet waits for its path.
+- The restore tests start from backups real 3.0.6 and 4.2.2 builds wrote, and
+  from 4.2.2's own restore of them (`tests/fixtures/upgrade/json-backups`).
+
+Vectors: `docs/universal-wallet-v2-passphrase-vectors.json`, generated by
+`scripts/generate-universal-wallet-passphrase-vectors.py` (Python standard library
+only; `--check-v2` reproduces the v2 fixture). The same file is byte-identical in
+the iOS and Android repositories.
 
 Bitcoin restore and manual rescan behavior is defined in
 `docs/bitcoin-restore-discovery.md`. Clients must use the shared registry gap
@@ -345,3 +450,7 @@ repo must keep an equivalent fixture and test that:
 The fixture intentionally contains a 12-word import vector and a non-zero
 24-word default-wallet vector so test suites catch both compatibility and new
 wallet creation regressions.
+
+`docs/universal-wallet-v2-passphrase-vectors.json` adds the same phrases with a
+password (one that NFKD rewrites) and the derivation paths that do and do not
+carry one; every repo derives its expected addresses with the passphrase.

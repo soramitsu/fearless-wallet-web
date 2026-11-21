@@ -13,12 +13,11 @@ export function isIrohaTransfersEnabled(): boolean {
   return process.env.VUE_APP_ENABLE_IROHA_TRANSFERS === 'true';
 }
 
-// IrohaConnect signs dApp-supplied bytes without decoding them, so release
-// builds keep it compiled off until decoded-payload signing ships. Only the
-// exact reviewed `true` enables it, and the Vite config refuses that value in
-// production mode.
+// IrohaConnect ships enabled: every dApp transaction is decoded, rebuilt byte for byte and shown before the account
+// key signs its hash, and raw requests are never signed with the account key. An explicit build-time `false` still
+// compiles it off as a kill switch.
 export function isIrohaConnectEnabled(): boolean {
-  return process.env.VUE_APP_ENABLE_IROHA_CONNECT === 'true';
+  return process.env.VUE_APP_ENABLE_IROHA_CONNECT !== 'false';
 }
 
 // Bitcoin and Solana sends are compiled on for this release. The remote kill

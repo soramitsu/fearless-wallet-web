@@ -39,6 +39,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 
+import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { HistoryElement } from '@/interfaces/history';
 import HistoryDetailsForm from '@/screens/wallet&asset/asset/HistoryDetailsForm.vue';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
@@ -58,8 +59,9 @@ import {
   isLegacyCrowdloanAssetContext,
   type LegacyCrowdloanAssetContext,
 } from '@/portfolio/legacyCrowdloan';
-import { getCanonicalAssetId } from '@/portfolio/assetIdentity';
+import { getBalancePrice, getCanonicalAssetId, holdingBalance, type AssetPriceDecision } from '@/portfolio/assetIdentity';
 import { findAssetGroup } from '@/helpers/currencies';
+import { FPNumber } from '@/sora/number';
 
 export default defineComponent({
   name: 'Asset',
@@ -203,8 +205,47 @@ export default defineComponent({
     selectedAssetUpper() {
       return this.selectedAsset.toUpperCase();
     },
-    assetPrice() {
-      return this.networksStore.getAssetPrice(this.currentCurrency.priceId ?? '');
+    /**
+     * The balances the header prices: the asset on the network on screen. An old link to the asset across its
+     * networks names no network; then it is every network that holds the asset (every network when none does).
+     */
+    pricedBalances(): BalanceItem[] {
+      if (this.selectedLocalNetwork) return this.selectedNetworkAsset.id ? [this.selectedNetworkAsset] : [];
+
+      const balances: BalanceItem[] = this.currentCurrency.balances ?? [];
+      const held = balances.filter((balance) => new FPNumber(holdingBalance(balance)).isGreaterThan(FPNumber.ZERO));
+
+      return held.length ? held : balances;
+    },
+    /**
+     * The price the portfolio trusts for exactly this asset, as the wallet's list shows it (`getBalancePrice`), or
+     * `null`: the page then says the price is unavailable rather than showing $0.00. A token group's price id is not a
+     * price for its members, and neither is a price of 0. Across networks one price is shown only when every network
+     * has that same trusted price: a group never lends one network's price to another (portfolio contract §3).
+     */
+    assetPrice(): { price: number; priceChange: number | null } | null {
+      const { tokenPriceMap, tokenPriceChange } = this.networksStore.assetsPrice;
+      const decisions = this.pricedBalances.map((balance): AssetPriceDecision | undefined => {
+        const network = this.networksStore.getNetwork(balance.name);
+
+        return network
+          ? getBalancePrice({
+              network,
+              balance,
+              group: this.currentCurrency,
+              prices: tokenPriceMap,
+              priceChanges: tokenPriceChange,
+            })
+          : undefined;
+      });
+      const [first] = decisions;
+
+      if (!first?.unitPrice || decisions.some((decision) => decision?.unitPrice !== first.unitPrice)) return null;
+
+      return {
+        price: Number(first.unitPrice),
+        priceChange: first.priceChangePercent === null ? null : Number(first.priceChangePercent) / 100,
+      };
     },
   },
   watch: {

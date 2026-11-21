@@ -12,12 +12,15 @@ import { soraDependencyGuard } from './scripts/audit-sora-dependency-removal.mjs
 import { keystoreScryptParamsPlugin } from './scripts/keystore-scrypt-params.mjs';
 import { subwalletPackageCompatPlugin } from './scripts/subwallet-package-compat.mjs';
 import { svgToSymbol, wrapSvgSymbols } from './scripts/svg-symbol.mjs';
+import { resolveBuildNodeEnv } from './scripts/build-node-env.mjs';
+
+export { BUILD_NODE_ENVS, resolveBuildNodeEnv } from './scripts/build-node-env.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// NODE_ENV is not among these: resolveBuildNodeEnv decides it, once per build.
 const ENV_KEYS = [
   'BASE_URL',
-  'NODE_ENV',
   'IS_EXTENSION',
   'OAUTH_CLIENT_ID',
   'RAMP_TEST_API_KEY',
@@ -191,7 +194,7 @@ export function portfolioDashboardBuildFlag(env = process.env) {
 
 export function makeDefine(mode, extraEnv = {}) {
   const env = { ...process.env, ...extraEnv };
-  const nodeEnv = mode === 'production' ? 'production' : 'development';
+  const nodeEnv = resolveBuildNodeEnv(mode, env);
   const define = {
     'process.env.NODE_ENV': JSON.stringify(nodeEnv),
     'process.env.BASE_URL': JSON.stringify('./'),
@@ -225,9 +228,6 @@ function assertTransferEvidenceReady(flag, manifestPath, errorCode, description)
 }
 
 export function commonViteConfig({ mode, outDir, emptyOutDir = true, publicDir = 'public', asyncWasm = true, nativeAsyncModules = false }) {
-  if (process.env.VUE_APP_ENABLE_IROHA_CONNECT === 'true' && mode === 'production') {
-    throw new Error('iroha_connect_blind_signing_unreviewed: IrohaConnect must stay disabled until decoded-payload signing ships');
-  }
   assertTransferEvidenceReady(
     'VUE_APP_ENABLE_BITCOIN_TRANSFERS',
     'scripts/bitcoin-testnet-broadcast-evidence.json',

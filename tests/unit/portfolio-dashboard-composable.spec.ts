@@ -259,18 +259,18 @@ describe('portfolio dashboard composable', () => {
     expect(mocks.getPortfolioHoldings.mock.calls.length).toBe(calls);
   });
 
-  it('follows the wallet screen lens for one wallet, and its own lens for All wallets', async () => {
+  it('keeps token grouping for both scopes despite saved wallet and network lenses', async () => {
     mocks.getPortfolioHoldings.mockResolvedValue([savingsAnswer()]);
+    usePortfolioDashboardStore().setLens('wallet');
+    mocks.accounts.portfolioView.lens = 'network';
     const { dashboard } = mountDashboard();
     await flushPromises();
 
     expect(dashboard.lens.value).toBe('token');
-    usePortfolioDashboardStore().setLens('wallet');
-    expect(dashboard.lens.value).toBe('wallet');
-    expect(dashboard.allocation.value.groups.map(({ name }) => name).sort()).toEqual(['Main', 'Savings']);
+    expect(dashboard.allocation.value.groups.map(({ name }) => name).sort()).toEqual(['DOT', 'ETH']);
 
     usePortfolioDashboardStore().setScope('wallet');
-    mocks.accounts.portfolioView.lens = 'network';
-    expect(dashboard.lens.value).toBe('network');
+    expect(dashboard.lens.value).toBe('token');
+    expect(dashboard.allocation.value.groups.map(({ name }) => name).sort()).toEqual(['DOT', 'ETH']);
   });
 });

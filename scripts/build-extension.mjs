@@ -6,9 +6,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
-import { build, createLogger } from 'vite';
-
-import { commonViteConfig } from '../vite.config.shared.mjs';
+import { resolveBuildNodeEnv } from './build-node-env.mjs';
 import { createFirefoxBuildLogPolicy, polkadotIifePackageInfoPlugin } from './firefox-build-warning-policy.mjs';
 import { auditSoraDependencyRemoval } from './audit-sora-dependency-removal.mjs';
 import { auditKeyExfiltrationDirectory } from './audit-key-exfiltration.mjs';
@@ -30,7 +28,7 @@ const outputDir = process.env.OUTPUT_DIR || browser;
 const outDir = path.resolve(root, 'dist/extension', outputDir);
 export const PRODUCTION_RELEASE_FLAGS = Object.freeze({
   ...readReleaseTransferFlags(root),
-  VUE_APP_ENABLE_IROHA_CONNECT: 'false',
+  VUE_APP_ENABLE_IROHA_CONNECT: 'true',
   VUE_APP_ENABLE_SOLANA_TRANSFERS: 'true',
   VUE_APP_EXTENSION_SMOKE: 'false',
   VUE_APP_PORTFOLIO_DASHBOARD: 'true',
@@ -45,6 +43,28 @@ export function enforceProductionReleaseEnvironment(environment, buildMode, targ
     if (targetBrowser === 'firefox') environment.OAUTH_CLIENT_ID = '';
   }
   return environment;
+}
+
+// Gives this build one NODE_ENV (resolveBuildNodeEnv) before it loads Vite. Left unset, Vite sets it to `production`
+// during the first build, the popup's: the popup then read the development chain list and feature config while the
+// worker and the content scripts, built later, read the production ones. Vue also picks its development or production
+// template compiler from NODE_ENV once, when it is first loaded (vue/index.js, @vue/compiler-core/index.js), and
+// vite.config.shared.mjs loads it through @vitejs/plugin-vue, so this script loads both only after the pin
+// (loadBuildToolchain).
+export function pinBuildNodeEnv(environment, buildMode) {
+  environment.NODE_ENV = resolveBuildNodeEnv(buildMode, environment);
+  return environment.NODE_ENV;
+}
+
+// Vite and the shared Vite config, loaded by run() after pinBuildNodeEnv.
+let build;
+let createLogger;
+let commonViteConfig;
+
+export async function loadBuildToolchain() {
+  const [vite, shared] = await Promise.all([import('vite'), import('../vite.config.shared.mjs')]);
+
+  return { build: vite.build, createLogger: vite.createLogger, commonViteConfig: shared.commonViteConfig };
 }
 
 // Records which source the artifact was built from so the release audit can
@@ -210,6 +230,8 @@ async function normalizeExtensionPages() {
 
 async function run() {
   enforceProductionReleaseEnvironment(process.env, mode, browser);
+  pinBuildNodeEnv(process.env, mode);
+  ({ build, createLogger, commonViteConfig } = await loadBuildToolchain());
   auditSoraDependencyRemoval(root);
   await auditKeyExfiltrationDirectory(path.join(root, 'src'));
   const sourceBefore = readSourceProvenance(root);

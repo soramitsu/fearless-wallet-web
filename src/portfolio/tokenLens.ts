@@ -200,8 +200,8 @@ export function buildTokenRows({
 }
 
 /**
- * Rows with a balance first; rows that only hold zero go into the collapsed "N tokens · no balance" block. A row
- * whose balance could not be loaded stays with the funded ones, saying so, as its network does in the By network lens.
+ * Rows with a balance, and rows whose balance could not be loaded (which may hold something, and say so), apart from
+ * rows that only hold zero.
  */
 export function splitZeroTokenRows(rows: PortfolioTokenRow[]): { funded: PortfolioTokenRow[]; zeroOnly: PortfolioTokenRow[] } {
   return {
@@ -210,7 +210,7 @@ export function splitZeroTokenRows(rows: PortfolioTokenRow[]): { funded: Portfol
   };
 }
 
-/** Every asset key of a row: what a group switch in Manage writes. */
+/** Every asset key of a row, one per network. */
 export function tokenRowKeys(row: PortfolioTokenRow): string[] {
   return [...row.children, ...row.zeroChildren].map(({ asset }) => asset.key);
 }

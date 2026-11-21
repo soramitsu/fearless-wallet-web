@@ -55,7 +55,8 @@ function createState() {
 
 describe('IrohaConnect release gate', () => {
   beforeEach(() => {
-    delete process.env.VUE_APP_ENABLE_IROHA_CONNECT;
+    // The kill switch: an explicit build-time false compiles IrohaConnect off.
+    process.env.VUE_APP_ENABLE_IROHA_CONNECT = 'false';
   });
 
   afterEach(() => {
@@ -71,8 +72,8 @@ describe('IrohaConnect release gate', () => {
     Object.values(ACTION_MESSAGES).forEach((method) => expect(irohaConnectService[method]).not.toHaveBeenCalled());
   });
 
-  it('hands the service back when the reviewed flag enables it', () => {
-    process.env.VUE_APP_ENABLE_IROHA_CONNECT = 'true';
+  it('hands the service back in a default build', () => {
+    delete process.env.VUE_APP_ENABLE_IROHA_CONNECT;
     const { irohaConnectService } = createState();
 
     expect(requireEnabledIrohaConnect(irohaConnectService)).toBe(irohaConnectService);
@@ -86,8 +87,8 @@ describe('IrohaConnect release gate', () => {
     expect(irohaConnectService.stateSubject.subscribe).not.toHaveBeenCalled();
   });
 
-  it('subscribes and cleans up on disconnect when the reviewed flag enables it', () => {
-    process.env.VUE_APP_ENABLE_IROHA_CONNECT = 'true';
+  it('subscribes and cleans up on disconnect in a default build', () => {
+    delete process.env.VUE_APP_ENABLE_IROHA_CONNECT;
     const { irohaConnectService, state, subscriptionService } = createState();
     let disconnect: () => void = () => undefined;
     const port = { onDisconnect: { addListener: (listener: () => void) => (disconnect = listener) } };
@@ -97,7 +98,7 @@ describe('IrohaConnect release gate', () => {
     expect(irohaConnectService.stateSubject.subscribe).toHaveBeenCalledOnce();
 
     disconnect();
-    expect(subscriptionService.cancelSubscription).toHaveBeenCalledWith('fixture-id');
+    expect(subscriptionService.cancelSubscription).toHaveBeenCalledWith('fixture-id', port);
   });
 
   it('routes every background IrohaConnect action through the release gate', () => {
@@ -126,7 +127,7 @@ describe('IrohaConnect release gate', () => {
     guard.call(undefined, route, route, next);
     expect(next).toHaveBeenCalledWith({ name: 'Settings', query: { notice: IROHA_CONNECT_UNAVAILABLE_NOTICE } });
 
-    process.env.VUE_APP_ENABLE_IROHA_CONNECT = 'true';
+    delete process.env.VUE_APP_ENABLE_IROHA_CONNECT;
     vi.mocked(next).mockClear();
     guard.call(undefined, route, route, next);
     expect(next).toHaveBeenCalledWith();

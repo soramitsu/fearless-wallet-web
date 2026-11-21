@@ -10,6 +10,8 @@ const isSameEcosystem = (networkEcosystem: NetworkEcosystem, walletEcosystem: Wa
   if (walletEcosystem === WalletEcosystem.Solana) return networkEcosystem === WalletEcosystem.Solana;
   if (walletEcosystem === WalletEcosystem.Bitcoin) return networkEcosystem === WalletEcosystem.Bitcoin;
   if (walletEcosystem === WalletEcosystem.Iroha) return networkEcosystem === WalletEcosystem.Iroha;
+  // An independently imported Ethereum key has no account on a Substrate network.
+  if (walletEcosystem === WalletEcosystem.Evm && networkEcosystem === WalletEcosystem.Substrate) return false;
 
   return (
     networkEcosystem !== WalletEcosystem.Ton &&

@@ -1,4 +1,4 @@
-import { type ProposalTypes } from '@walletconnect/types';
+import type { WcProposalNamespaces } from '@extension-base/services/wallet-connect-service/protocol/types';
 
 export type ChainData = {
   name: string;
@@ -6,4 +6,4 @@ export type ChainData = {
   connected: boolean;
 };
 
-export type SessionProposalNamespaces = ProposalTypes.RequiredNamespaces | ProposalTypes.OptionalNamespaces;
+export type SessionProposalNamespaces = WcProposalNamespaces | WcProposalNamespaces;

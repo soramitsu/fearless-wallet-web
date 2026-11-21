@@ -3,7 +3,7 @@
     <template v-if="showLogo">
       <ExternalLogo v-if="showWalletLogo && isTonWallet" class="brand-badge" :name="tonIcon" :width="parseInt(sizeCircle, 10)" />
 
-      <img v-else class="brand-badge" :src="sunBadge" :style="styleCircle" alt="" />
+      <img v-else class="brand-badge" :src="crestBadge" :style="styleCircle" alt="" />
     </template>
 
     <div v-if="text" class="text">{{ $t(text) }}</div>
@@ -15,7 +15,8 @@
 import { computed } from 'vue';
 import { useAccountsStore } from '@/stores/accounts';
 import { TON_ICON } from '@/consts/networks';
-import sunBadge from '@/assets/brand/winged-sun-badge-lines.svg';
+import crestBadgeArt from '@/assets/brand/crest-badge.svg';
+import crestBadgeSmallArt from '@/assets/brand/crest-badge-small.svg';
 import ExternalLogo from '@/components/ExternalLogo.vue';
 
 type SizeLogo = 'mini' | 'small' | 'medium' | 'big';
@@ -49,6 +50,9 @@ const isTonWallet = computed(() => accountsStore.selectedWallet.isTon);
 const sizeCircle = computed(() => circleSizes[props.size] ?? circleSizes.medium);
 
 const styleCircle = computed(() => ({ height: sizeCircle.value, width: sizeCircle.value }));
+
+// Below 64 px the small crest replaces the detailed one (brand rule).
+const crestBadge = computed(() => (parseInt(sizeCircle.value, 10) < 64 ? crestBadgeSmallArt : crestBadgeArt));
 
 </script>
 

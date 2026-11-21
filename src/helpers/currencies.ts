@@ -6,13 +6,14 @@ import type { BasePriceJson, TokenGroup } from '@extension-base/background/types
 import { FPNumber } from '@/sora/number';
 import { getNativeAssetName } from '@/extension/background/extension-base/src/background/handlers/utils';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/sora';
-import { FAVORITE_NETWORKS, POPULAR_NETWORKS, ALL_NETWORKS } from '@/consts/networks';
+import { ALL_NETWORKS } from '@/consts/networks';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
 import { isSameString, isSora } from '@/helpers';
 import { getSummaryTransferableBalance, isNetworkGroup } from '@/helpers/common';
+import { matchesNetworkSelection } from '@/helpers/networkSelection';
 import { formatDecimalString } from '@/helpers/numbers';
-import { getCanonicalAssetId } from '@/portfolio/assetIdentity';
+import { getBalancePrice, getCanonicalAssetId } from '@/portfolio/assetIdentity';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
@@ -22,6 +23,8 @@ export function getTransferableBalanceInNetwork(token: TokenGroup, network: stri
 
 function defaultSortingCurrencies(currencies: TokenGroup[], { tokenPriceMap }: BasePriceJson, network: NetworkName) {
   const relayChains = [];
+  const networks = useNetworksStore().networks;
+  const address = useAccountsStore().selectedWallet.address;
 
   const currenciesThatReady = currencies.filter(({ balances }) =>
     balances.some(({ state }) => state === APIItemState.READY)
@@ -64,8 +67,8 @@ function defaultSortingCurrencies(currencies: TokenGroup[], { tokenPriceMap }: B
   }
 
   currenciesWithAssetsAndWithFiatBalance.sort((currency1, currency2) => {
-    const totalFiatBalanceOne = +getSummaryTransferableBalance(currency1, network);
-    const totalFiatBalanceTwo = +getSummaryTransferableBalance(currency2, network);
+    const totalFiatBalanceOne = +getSummaryTransferableBalance(currency1, network, networks, address);
+    const totalFiatBalanceTwo = +getSummaryTransferableBalance(currency2, network, networks, address);
 
     const tokenPriceOne = tokenPriceMap[currency1.priceId ?? ''] ?? 0;
     const tokenPriceTwo = tokenPriceMap[currency2.priceId ?? ''] ?? 0;
@@ -74,8 +77,8 @@ function defaultSortingCurrencies(currencies: TokenGroup[], { tokenPriceMap }: B
   });
 
   currenciesWithAssetsAndWithoutFiatBalance.sort((currency1, currency2) => {
-    const totalFiatBalanceOne = +getSummaryTransferableBalance(currency1, network);
-    const totalFiatBalanceTwo = +getSummaryTransferableBalance(currency2, network);
+    const totalFiatBalanceOne = +getSummaryTransferableBalance(currency1, network, networks, address);
+    const totalFiatBalanceTwo = +getSummaryTransferableBalance(currency2, network, networks, address);
 
     return totalFiatBalanceTwo - totalFiatBalanceOne;
   });
@@ -129,7 +132,7 @@ type TransferAssetOption = {
 };
 
 type TransferAssetOptionsParams = {
-  getPrice?: (priceId: string) => number;
+  prices?: Record<string, number>;
   isNetworkAvailable?: (network: NetworkJson) => boolean;
 };
 
@@ -157,7 +160,7 @@ function toPositiveNumber(value: unknown) {
 function getTransferAssetOptions(
   groups: TokenGroup[],
   getNetwork: (name: string) => NetworkJson | undefined,
-  { getPrice = () => 0, isNetworkAvailable = () => true }: TransferAssetOptionsParams = {}
+  { prices = {}, isNetworkAvailable = () => true }: TransferAssetOptionsParams = {}
 ): TransferAssetOption[] {
   const values = new Set<string>();
 
@@ -186,7 +189,7 @@ function getTransferAssetOptions(
             icon: group.icon,
           },
           // Only orders the list; no fiat value is shown in the picker.
-          fiat: total * toPositiveNumber(getPrice(balance.priceId ?? group.priceId ?? '')),
+          fiat: total * toPositiveNumber(getBalancePrice({ network, balance, group, prices }).unitPrice),
           total,
           symbol,
           rank: network.rank ?? Number.POSITIVE_INFINITY,
@@ -251,6 +254,28 @@ function getUtilityAsset(balances: TokenGroup[], _network: NetworkName) {
   return balances.find(({ balances }) =>
     balances.some(({ name, isUtility }) => isSameString(name, _network) && isUtility)
   )!;
+}
+
+/**
+ * The price the portfolio trusts (`getBalancePrice`) for the group's balance on this network that `matches`, by
+ * default the first one there (the balance a send moves), or `null` when there is none. A token group's price id is
+ * never lent to its balance, so a token without a trusted price has no fiat value rather than $0.
+ */
+export function getTransferAssetPrice(
+  group: TokenGroup | undefined,
+  network: NetworkJson | undefined,
+  prices: Record<string, number>,
+  matches: (balance: BalanceItem) => boolean = () => true
+): number | null {
+  const balance = network
+    ? group?.balances?.find((item) => isSameString(item.name, network.name) && matches(item))
+    : undefined;
+
+  if (!network || !balance) return null;
+
+  const { unitPrice } = getBalancePrice({ network, balance, group, prices });
+
+  return unitPrice === null ? null : Number(unitPrice);
 }
 
 const getXORCurrency = (balances: TokenGroup[]) => {
@@ -334,18 +359,7 @@ function filterBalanceItemsByNetwork(balance: BalanceItem, selectedNetwork: stri
   const accountsStore = useAccountsStore();
   const networksStore = useNetworksStore();
   const network: NetworkJson = networksStore.getNetwork(balance.name);
-  const favoriteNetworks = networksStore.favoriteNetworksNames;
-  const { address } = accountsStore.selectedWallet;
-
-  if (selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
-
-  if (selectedNetwork === FAVORITE_NETWORKS) {
-    return favoriteNetworks.some(
-      ({ name, favorite }) => isSameString(name, balance.name) && favorite.includes(address)
-    );
-  }
-
-  return isSameString(balance.name, selectedNetwork);
+  return matchesNetworkSelection(network, selectedNetwork, accountsStore.selectedWallet.address);
 }
 
 export function getSummaryTransferableBalanceFilteredByActiveNetworks(
@@ -355,16 +369,54 @@ export function getSummaryTransferableBalanceFilteredByActiveNetworks(
   if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
 
   const networksStore = useNetworksStore();
+  const address = useAccountsStore().selectedWallet.address;
 
   return (
     token.balances?.reduce((sum, { state, name, transferable }) => {
-      const network: NetworkJson = networksStore.getNetwork(name);
+      const entry: NetworkJson = networksStore.getNetwork(name);
 
-      if (state === APIItemState.READY && network.active && transferable) sum += +transferable;
+      if (state === APIItemState.READY && entry?.active && transferable && matchesNetworkSelection(entry, network, address)) {
+        sum += +transferable;
+      }
 
       return sum;
     }, 0) ?? 0
   );
+}
+
+// What the portfolio list counts for a balance: the total, staked and locked funds included.
+function heldAmount({ total, free, transferable }: BalanceItem): FPNumber {
+  try {
+    const amount = new FPNumber(String(total ?? free ?? transferable ?? '0').trim());
+
+    return amount.isFinity() && amount.isGteZero() ? amount : FPNumber.ZERO;
+  } catch {
+    return FPNumber.ZERO;
+  }
+}
+
+/** What the wallet holds of a token on the network on screen, counted exactly as the portfolio list counts it. */
+export function getSummaryHeldBalanceFilteredByActiveNetworks(token: TokenGroup, network: string = ALL_NETWORKS): string {
+  if (!isNetworkGroup(network)) {
+    const balance = token.balances?.find(({ name }) => isSameString(name, network));
+
+    return balance ? heldAmount(balance).toString() : '0';
+  }
+
+  const networksStore = useNetworksStore();
+  const address = useAccountsStore().selectedWallet.address;
+
+  return (token.balances ?? [])
+    .reduce((sum, balance) => {
+      const entry: NetworkJson = networksStore.getNetwork(balance.name);
+
+      if (balance.state !== APIItemState.READY || !entry?.active || !matchesNetworkSelection(entry, network, address)) {
+        return sum;
+      }
+
+      return sum.add(heldAmount(balance));
+    }, FPNumber.ZERO)
+    .toString();
 }
 
 export {

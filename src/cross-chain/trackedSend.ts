@@ -50,6 +50,13 @@ export type TrackedSendOutcome =
 /** Long enough for a mortal extrinsic on a slow parachain, short enough not to leave the user waiting forever. */
 export const CROSS_CHAIN_INCLUSION_TIMEOUT_MS = 180_000;
 
+/**
+ * The pool of the connected node found the extrinsic invalid. It is reported as a failure, but it does not prove that
+ * the extrinsic can never be included: another node or another fork may still include it, and a hostile node can say
+ * so while broadcasting it. Only the chain settles it, by the nonce or the mortality.
+ */
+export const CROSS_CHAIN_EXTRINSIC_INVALID = 'cross_chain_extrinsic_invalid';
+
 const XCM_PALLETS = new Set(['xcmPallet', 'polkadotXcm']);
 
 export function normalizeExtrinsicHash(hex: string): string {
@@ -140,9 +147,9 @@ export function sendAndTrackExtrinsic(
       const { status } = result;
 
       if (status.isInBlock || status.isFinalized) settle(inBlockOutcome(extrinsic, hash, result));
-      // Revalidation against the chain state found it can never be included.
+      // This node's revalidation found it invalid; see CROSS_CHAIN_EXTRINSIC_INVALID for why that is not final.
       else if (status.isInvalid) {
-        settle({ kind: 'failed', hash, reason: 'cross_chain_extrinsic_invalid', included: false });
+        settle({ kind: 'failed', hash, reason: CROSS_CHAIN_EXTRINSIC_INVALID, included: false });
       }
       // Gone from this node's pool, but it may already have been gossiped to the nodes that author blocks.
       else if (status.isDropped || status.isUsurped) {

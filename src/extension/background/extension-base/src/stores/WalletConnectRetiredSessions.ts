@@ -45,7 +45,14 @@ export default class WalletConnectRetiredSessions extends (IS_EXTENSION ? BaseEx
   async reset(topics: string[]): Promise<RetirementRecord> {
     if (!topics.every(validTopic)) throw new Error('Invalid session retirement topic.');
     return (await super.updateAndWait('retiredTopics', current => {
-      const record = readRecord(current);
+      // Reset approves no session, so a saved record that cannot be read is replaced instead of leaving Reset wallet
+      // unable to finish and WalletConnect unable to start.
+      let record: RetirementRecord;
+      try {
+        record = readRecord(current);
+      } catch {
+        record = { version: 1, topics: [] };
+      }
       const generation = (record.generation ?? 0) + 1;
       if (!Number.isSafeInteger(generation)) throw new Error('Invalid session approval generation.');
       // The allowlist fences even sessions the SDK has not exposed yet. It is

@@ -8,6 +8,7 @@ import {
   type ReviewedRuntimeCall,
 } from '@/cross-chain/reviewedRoutes';
 import { assertReviewedRecipient } from '@/cross-chain/recipient';
+import { assertReviewedCallLayout } from '@/cross-chain/reviewedCallLayout';
 import { assertReviewedCallIndex, assertReviewedRuntimeVersion } from '@/cross-chain/reviewedRuntimes';
 
 type RuntimeMethod = ((...args: unknown[]) => Extrinsic) & {
@@ -291,6 +292,8 @@ export async function createReviewedCrossChainExtrinsic({
   }
 
   const extrinsic = method(...params);
+  // The node's metadata chose how these arguments were encoded; the bytes must equal the independently written layout.
+  assertReviewedCallLayout(execution, to, precisionAmount, extrinsic?.method);
 
   return {
     extrinsic,

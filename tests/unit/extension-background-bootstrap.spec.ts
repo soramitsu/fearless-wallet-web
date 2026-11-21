@@ -13,11 +13,9 @@ function event() {
 function fixture() {
   const api = {
     runtime: { onConnect: event(), onInstalled: event(), onUpdateAvailable: event(), reload: vi.fn() },
-    tabs: { onUpdated: event(), onActivated: event(), onRemoved: event() },
-    windows: { onFocusChanged: event() },
-    alarms: { create: vi.fn(), onAlarm: event() },
+    alarms: { get: vi.fn().mockResolvedValue(undefined), create: vi.fn(), onAlarm: event() },
   };
-  const runtime = { handleMessage: vi.fn().mockResolvedValue(undefined), onInstalled: vi.fn().mockResolvedValue(undefined), getActiveTabs: vi.fn(), onAlarm: vi.fn() };
+  const runtime = { handleMessage: vi.fn().mockResolvedValue(undefined), onConnect: vi.fn(), onInstalled: vi.fn().mockResolvedValue(undefined), onAlarm: vi.fn() };
   const port = { onMessage: event(), onDisconnect: event(), postMessage: vi.fn() };
   let resolve!: (value: BackgroundRuntime) => void;
   let reject!: (error: Error) => void;
@@ -42,23 +40,43 @@ describe('synchronous extension background wake listeners', () => {
     expect(f.runtime.handleMessage).toHaveBeenNthCalledWith(2, second, f.port);
   });
 
-  it('captures install, alarms and tab lifecycle events during cold startup', async () => {
+  it('captures install and alarm events during cold startup', async () => {
     const f = fixture();
     const details = { reason: 'install' };
     const alarm = { name: 'fearless-asset-discovery-sweep' };
     f.api.runtime.onInstalled.emit(details);
     f.api.alarms.onAlarm.emit(alarm);
-    f.api.tabs.onUpdated.emit(1, { status: 'complete' });
-    f.api.tabs.onUpdated.emit(1, { url: 'https://fixture.example' });
-    f.api.tabs.onActivated.emit({ tabId: 1 });
-    f.api.tabs.onRemoved.emit(1);
-    f.api.windows.onFocusChanged.emit(1);
     expect(f.runtime.onInstalled).not.toHaveBeenCalled();
     f.resolve(f.runtime);
-    await vi.waitFor(() => expect(f.runtime.getActiveTabs).toHaveBeenCalledTimes(4));
-    expect(f.runtime.onInstalled).toHaveBeenCalledExactlyOnceWith(details);
+    await vi.waitFor(() => expect(f.runtime.onInstalled).toHaveBeenCalledExactlyOnceWith(details));
     expect(f.runtime.onAlarm).toHaveBeenCalledExactlyOnceWith(alarm);
     expect(f.api.alarms.create).toHaveBeenCalledWith('fearless-asset-discovery-sweep', { periodInMinutes: 60 });
+  });
+
+  // The runtime keeps the wallet's connections open while a wallet page is open (WorkerSleepService).
+  it('tells the runtime about each port before its messages, and when the port closes', async () => {
+    const f = fixture();
+    f.api.runtime.onConnect.emit(f.port);
+    f.port.onMessage.emit({ id: 'first' });
+    f.resolve(f.runtime);
+    await vi.waitFor(() => expect(f.runtime.handleMessage).toHaveBeenCalledOnce());
+    expect(f.runtime.onConnect).toHaveBeenCalledExactlyOnceWith(f.port, expect.any(Promise));
+    expect(f.runtime.onConnect.mock.invocationCallOrder[0]).toBeLessThan(f.runtime.handleMessage.mock.invocationCallOrder[0]);
+    const closed = vi.fn();
+    void f.runtime.onConnect.mock.calls[0][1].then(closed);
+    await Promise.resolve();
+    expect(closed).not.toHaveBeenCalled();
+    f.port.onDisconnect.emit();
+    await vi.waitFor(() => expect(closed).toHaveBeenCalledOnce());
+  });
+
+  it('reports a port that closed before the runtime loaded as already closed', async () => {
+    const f = fixture();
+    f.api.runtime.onConnect.emit(f.port);
+    f.port.onDisconnect.emit();
+    f.resolve(f.runtime);
+    await vi.waitFor(() => expect(f.runtime.onConnect).toHaveBeenCalledOnce());
+    await expect(f.runtime.onConnect.mock.calls[0][1]).resolves.toBeUndefined();
   });
 
   it('does not execute queued requests from a window that closed during initialization', async () => {

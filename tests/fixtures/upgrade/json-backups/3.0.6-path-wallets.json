@@ -1,0 +1,209 @@
+{
+  "provenance": {
+    "scenario": "JSON backups (Export → JSON, the same file a Google Drive backup holds) of wallets imported with a derivation path, written by 3.0.6",
+    "writtenBy": "the Fearless Wallet 3.0.6 Chrome extension (the published 3.0.5 keyring code without the phrase upload; the Web Store rollback target), built from source and driven in a real browser",
+    "commit": "cfcdb591fd7098b24022e8e9afc19b511d0fe785",
+    "yarnLockSha256": "439d64f2cd5a5631c9af8ab49cad6695415d9fed05fc095a70ad2fc16a60e1bb",
+    "build": "scripts/upgrade-e2e/build-legacy.mjs 3.0.6 (corepack yarn@3.4.1 install --immutable && yarn build:extension on Node 20.20.2)",
+    "keyringLibraries": "@subwallet/ui-keyring 0.1.7, @subwallet/keyring 0.1.7, @polkadot/util-crypto 12.6.2",
+    "chrome": "Google Chrome for Testing 153.0.8010.12 (headless, every host name unresolvable)",
+    "harness": "tests/fixtures/upgrade/README.md",
+    "capturedAt": "2026-10-31",
+    "syntheticSecretsOnly": true,
+    "phrases": "docs/universal-wallet-v2-vectors.json (import12, default24) with the passphrases of docs/universal-wallet-v2-passphrase-vectors.json",
+    "extensionId": "plnlnnlkcnkiokjgpefakfhgngpbnaec",
+    "capture": "node scripts/upgrade-e2e/capture-json-backups.mjs 3.0.6 <build> <ext dir> <profile dir> <out>",
+    "masterPassword": "Master password for JSON backups"
+  },
+  "masterPassword": "Master password for JSON backups",
+  "wallets": [
+    {
+      "name": "Password wallet",
+      "vectorId": "import12",
+      "substratePath": "//polkadot///TREZOR",
+      "ethereumPath": "/m/44'/60'/0'/0/0",
+      "address": "5Eqf3HjMyuHLhjZEk8uizmmF2zTsPqZy3XJENDTJuRdjMe7N",
+      "ethereumAddress": "0x9858EfFD232B4033E47d90003D41EC34EcaEda94",
+      "backup": {
+        "encoded": "AqeaeMkyfugycLOmCxS1AHrVU5rqZhIR83wqjsiSFvUAgAAAAQAAAAgAAABSkufh1S1zhnPCdnk3i701IwDmIgc+JDXPW261dfvvp1Qp9yOWibgOWDpwa2bjh1IMPXaj3OBZCMmdjzFWldTI1Oz6qQACRuny72+5J+1L/q36tIlqqg+7xNFEPzHSzwHyVNJA5zcIMS8rzhsGVfy0depoDa3FxM8akIOrY8NY0rTl7xrh409LCDn4tF50ieMDtcDKPC0U22+gKeFay0NYi69ZQupL4A+QlhaWq4pmOgi3",
+        "encoding": {
+          "content": [
+            "pkcs8",
+            "sr25519"
+          ],
+          "type": [
+            "scrypt",
+            "xsalsa20-poly1305"
+          ],
+          "version": "3"
+        },
+        "address": "5Eqf3HjMyuHLhjZEk8uizmmF2zTsPqZy3XJENDTJuRdjMe7N",
+        "meta": {
+          "name": "Password wallet",
+          "ethereumAddress": "0x9858EfFD232B4033E47d90003D41EC34EcaEda94",
+          "walletEcosystem": "substrate",
+          "isMobile": false,
+          "isMasterAccount": true,
+          "genesisHash": "",
+          "whenCreated": 1793443817035,
+          "isMasterPassword": true,
+          "isSubWallet": true
+        }
+      },
+      "ethereumBackup": {
+        "encoded": "Q6aZfAuCCSBLS+ZLB6nGoWwgVV94WRdy1lL4RHFGSpkAgAAAAQAAAAgAAAACYkGv81TUdOFv13OCEa5tbmjpkj8cN0cZJghIsBg7uf+7TVmo57k3rfSmhy1PrOiVynovEhpj4QcVtQSqP9eXcoMkVN+yWegDW6Z8nYrFSfFCB7ZJP5+lSIbO1Ik9ebLJqudVV5zo86Atr/ODhPwuIaTHOSRmh2oFnLLvPvJiu7OYx/rH5yoUpqI2LLym+AX1qSE=",
+        "encoding": {
+          "content": [
+            "pkcs8",
+            "ethereum"
+          ],
+          "type": [
+            "scrypt",
+            "xsalsa20-poly1305"
+          ],
+          "version": "3"
+        },
+        "address": "0x0237b0bb7a8288d38ed49a524b5dc98cff3eb5ca824c9f9dc0dfdb3d9cd600f299",
+        "meta": {
+          "name": "Password wallet",
+          "ethereumAddress": "",
+          "walletEcosystem": "substrate",
+          "isMobile": false,
+          "isMasterAccount": true,
+          "genesisHash": "",
+          "whenCreated": 1793443816907,
+          "isMasterPassword": true,
+          "isSubWallet": true
+        }
+      }
+    },
+    {
+      "name": "Staking",
+      "vectorId": "default24",
+      "substratePath": "//staking",
+      "ethereumPath": "",
+      "address": "5FESUFR5DHi72NZ226yDsf5CM8kW7fdEFEMzGpKboaf6DSZJ",
+      "ethereumAddress": "",
+      "backup": {
+        "encoded": "AO6qW1XROROpZanQ8jjBPJiYuSIOaq+WaF9qXUJPQw4AgAAAAQAAAAgAAABqCeY1BGBZpis2aA6NNaYKy88jqk7YhdhhALxDDSCN0DA6RYoi24zJn8dLuzKdniNk0D99XULbVASTLpjnOV+Sv85dk2IgNLy3xECnERPWcX4ZVsZEDt/4ki9HheH7gTmQIzbQj6mo5sGMmjpEen+DbhHD8sajubBXM5CkAoloM6dhG/FpywoPvGPUH7sX0oDHFjTM495jb1mO6ir8F5UKXs7KS+HX6+4qZVw7xDiitBd+AB24hsJygnb+uqppJ50ovg==",
+        "encoding": {
+          "content": [
+            "pkcs8",
+            "sr25519"
+          ],
+          "type": [
+            "scrypt",
+            "xsalsa20-poly1305"
+          ],
+          "version": "3"
+        },
+        "address": "5FESUFR5DHi72NZ226yDsf5CM8kW7fdEFEMzGpKboaf6DSZJ",
+        "meta": {
+          "name": "Staking",
+          "ethereumAddress": "",
+          "walletEcosystem": "substrate",
+          "isMobile": false,
+          "isMasterAccount": true,
+          "genesisHash": "",
+          "whenCreated": 1793443817613,
+          "isMasterPassword": true,
+          "isSubWallet": true
+        }
+      }
+    },
+    {
+      "name": "Unicode password",
+      "vectorId": "default24",
+      "substratePath": "//unicode///pässwörd ＦＷ",
+      "ethereumPath": "",
+      "address": "5DFfYd6KVpYF37Kwvs1Z9i4XVEV32C4mtwGARMURScrHm2kS",
+      "ethereumAddress": "",
+      "backup": {
+        "encoded": "7gq4Qa9SrO1XNHloJiW6tFhu1rGeEhFDL6W9Ez2lAjIAgAAAAQAAAAgAAAAxNTHrtm38oO/YbxiPfp4ZGT+DnCXgl7HnKQsZHwtlxrC/4Gd/1XipJjeBV5GSzgLo3+ImCqjzJ8eXvsxV9IgD4zM/LRDlDOvSQ3I2owTMN9IERzxiKVIXJRTrACXc+bewYCElWe6Xpm5CoeBQc74Zh0Xgjs3AEXVv6Acp9mwkI7nhKdNHAGTU3G3JpaEdXRDBEV5DfrpdhicqICNvAxI1dVRFYiI6QkZVvumMq8Cbc23PwfnxDArTO6XKZy70Ie5qjg==",
+        "encoding": {
+          "content": [
+            "pkcs8",
+            "sr25519"
+          ],
+          "type": [
+            "scrypt",
+            "xsalsa20-poly1305"
+          ],
+          "version": "3"
+        },
+        "address": "5DFfYd6KVpYF37Kwvs1Z9i4XVEV32C4mtwGARMURScrHm2kS",
+        "meta": {
+          "name": "Unicode password",
+          "ethereumAddress": "",
+          "walletEcosystem": "substrate",
+          "isMobile": false,
+          "isMasterAccount": true,
+          "genesisHash": "",
+          "whenCreated": 1793443817945,
+          "isMasterPassword": true,
+          "isSubWallet": true
+        }
+      }
+    },
+    {
+      "name": "Plain",
+      "vectorId": "default24",
+      "substratePath": "",
+      "ethereumPath": "/m/44'/60'/0'/0/0",
+      "address": "5Dk9MxUvnUi9b3RpXZSj3q6FGbVskBxrKzLF1LkU5uBD4Nd8",
+      "ethereumAddress": "0xF9297b542BDb5DA50C364f9AE4Cbe1F3933bA40F",
+      "backup": {
+        "encoded": "DXaIEtS5quWBF3l/79T3G1MSiCJu7k3LT0RNjuJU4hEAgAAAAQAAAAgAAACo+8WehCf6ACqcDr+hGZVhzd0mIDxts+uAKGXJlB5rSs/P8SG0kFYGbqNNSa4kVsspN0345f4McbN1N72IUs0bJdiaPm8nmtP8sl3RGiIBenXbxPfo8xcGJTvxQeOiyi2SDPL1OCIW5yXG5N/IGgPD471+Gc+zzXWNRLdBTxzUaD5XyTmveYiKh0NuoK1SrHCE74NXBWt4lKiQHxmm8I/Mcs4HmT+dD2GP9f9BYlwddJcb4HUVfdn5XX61awr18gzZhA==",
+        "encoding": {
+          "content": [
+            "pkcs8",
+            "sr25519"
+          ],
+          "type": [
+            "scrypt",
+            "xsalsa20-poly1305"
+          ],
+          "version": "3"
+        },
+        "address": "5Dk9MxUvnUi9b3RpXZSj3q6FGbVskBxrKzLF1LkU5uBD4Nd8",
+        "meta": {
+          "name": "Plain",
+          "ethereumAddress": "0xF9297b542BDb5DA50C364f9AE4Cbe1F3933bA40F",
+          "walletEcosystem": "substrate",
+          "isMobile": false,
+          "isMasterAccount": true,
+          "genesisHash": "",
+          "whenCreated": 1793443818398,
+          "isMasterPassword": true,
+          "isSubWallet": true
+        }
+      },
+      "ethereumBackup": {
+        "encoded": "y54zXj4r4PExUPa2slUJ66SapLV4oaB+AYMzfqNYckoAgAAAAQAAAAgAAADaVY46KLFmtpUhLu5OzxVwPqtJzLlRvNI8jEumVVdFbrsFUK3WTexqzObluESgjSsSXf/txcW/jFQvfoqpZ88iECXFslJSbqiBFqiU66ld8NEjkV3rzVZb8fcl+gIK7GAN4KJemgHIfnhwa9iQgWHc8Q7w/hxDptr31/WtG3A5jSIClJpYxMREixXTBJIJJ5CuS3rZM+sYvm5VDXLnwYPaO9Gi",
+        "encoding": {
+          "content": [
+            "pkcs8",
+            "ethereum"
+          ],
+          "type": [
+            "scrypt",
+            "xsalsa20-poly1305"
+          ],
+          "version": "3"
+        },
+        "address": "0x036fa76e9b04454619d94f15cc0ea3b9df3c5b76f077186ea59bb638095f6ecaea",
+        "meta": {
+          "name": "Plain",
+          "ethereumAddress": "",
+          "walletEcosystem": "substrate",
+          "isMobile": false,
+          "isMasterAccount": true,
+          "genesisHash": "",
+          "whenCreated": 1793443818283,
+          "isMasterPassword": true,
+          "isSubWallet": true
+        }
+      }
+    }
+  ]
+}

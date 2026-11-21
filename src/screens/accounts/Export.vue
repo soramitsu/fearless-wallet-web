@@ -37,7 +37,7 @@
 import { computed, ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import BaseApi from '@/util/BaseApi';
-import { exportMnemonic, getExtensionPassword, validatePassword } from '@/extension/messaging';
+import { exportMnemonic, validatePassword } from '@/extension/messaging';
 import { useAccountsStore } from '@/stores/accounts';
 
 const emit = defineEmits(['setPassword']);
@@ -50,6 +50,11 @@ const isWrongPassword = ref(false);
 
 watch(password, () => {
   isWrongPassword.value = false;
+});
+
+// A password typed while one wallet was selected does not export another.
+watch(() => accountsStore.selectedWallet.address, () => {
+  password.value = '';
 });
 
 const network = computed(() => (Array.isArray(route.params.network) ? route.params.network[0] : route.params.network) ?? '');
@@ -73,21 +78,25 @@ const changePassword = (value: string) => {
 const checkPassword = async () => {
   if (accountsStore.selectedWallet.isTon) {
     const { address, walletEcosystem } = accountsStore.selectedWallet;
+    const typed = password.value;
     try {
-      const { seed } = await exportMnemonic(address, password.value, walletEcosystem);
-      const currentPassword = await getExtensionPassword();
-      // Recovery must finish before the next export screen uses the current password.
-      if (!seed || !currentPassword) throw new Error('Unable to export TON account');
+      // The background opens the phrase only with the typed password, and the extension only when it is the
+      // wallet's current one; recovery has finished when this resolves, so the next export screen can use it.
+      const { seed } = await exportMnemonic(address, typed, walletEcosystem);
+      if (!seed) throw new Error('Unable to export TON account');
       if (accountsStore.selectedWallet.address !== address) return;
       isWrongPassword.value = false;
-      emit('setPassword', currentPassword);
+      emit('setPassword', typed);
     } catch {
       if (accountsStore.selectedWallet.address === address) isWrongPassword.value = true;
     }
     return;
   }
 
+  const { address } = accountsStore.selectedWallet;
   const validatePass = await validatePassword(password.value);
+
+  if (accountsStore.selectedWallet.address !== address) return;
 
   isWrongPassword.value = !validatePass;
 

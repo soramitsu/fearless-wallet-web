@@ -152,7 +152,7 @@ describe('acknowledged whole-wallet reset with retained keys', { timeout: 60_000
       isMobile: false, walletEcosystem: WalletEcosystem.Substrate }));
     await drain();
     expect(await selection).toHaveProperty('value');
-    const sora = apiSora as unknown as { account?: { pair: unknown }; bridgeProxy: { sub: { account?: unknown } } };
+    const sora = apiSora as unknown as { account?: { pair: unknown } };
     expect(sora.account?.pair).toBe(service.getPair(address));
     vi.mocked(state.poolsService.unsubscribePools).mockClear();
     const result = track(new Extension(state).handle('public-reset', 'pri(keyring.reset)', null));
@@ -160,7 +160,7 @@ describe('acknowledged whole-wallet reset with retained keys', { timeout: 60_000
     expect(service.currentAccountSubject.value).toBeNull();
     expect(fixture.data['fwcurrent_account:CurrentAccountInfo']).toBeNull();
     expect(sora.account).toBeUndefined();
-    expect(sora.bridgeProxy.sub.account).toBeUndefined();
+    expect(sora).not.toHaveProperty('bridgeProxy');
     expect(state.poolsService.unsubscribePools).toHaveBeenCalledOnce();
     expect(service.getPair(address)).not.toBeNull();
     await drain();
@@ -169,15 +169,18 @@ describe('acknowledged whole-wallet reset with retained keys', { timeout: 60_000
 
   it('waits for storage before reporting reset or clearing the master password and live pair', async () => {
     const address = await native();
+    service.clearProtocolSession = vi.fn(async () => undefined);
     const pair = service.getPair(address)!;
     let settled = false;
     const result = track(service.resetWallet()).then((outcome) => { settled = true; return outcome; });
     await drain(false);
     expect(settled).toBe(false);
+    expect(service.clearProtocolSession).not.toHaveBeenCalled();
     expect(service.hasMasterPassword).toBe(true);
     expect(service.getPair(address)).toBe(pair);
     await drain();
     expect(await result).toEqual({ value: true });
+    expect(service.clearProtocolSession).toHaveBeenCalledOnce();
     expect(service.hasMasterPassword).toBe(false);
     expect(fixture.data['fw:keyring']).toBeUndefined();
     expect(service.getPair(address)).toBeNull();

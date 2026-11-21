@@ -1,107 +1,119 @@
+import { NetworkId } from '@iroha/iroha-js/browser';
+import {
+  createConnectAppSession,
+  createConnectSessionPreview,
+  type BrowserConnectSessionPreview,
+} from '@iroha/iroha-js/connect-browser';
+import {
+  browserTransactionPayloadHashHex,
+  buildBrowserExecutableBatchPayload,
+  buildBrowserTransferPayload,
+  finalizeBrowserSignedTransaction,
+} from '@iroha/iroha-js/transaction-codec';
 import { ed25519 } from '@noble/curves/ed25519';
 
-import { IrohaConnectService, type IrohaConnectSocket } from '@extension-base/services/iroha-connect-service';
 import {
-  LEGACY_IROHA_CONNECT_PROFILES,
-  buildLegacyIrohaConnectApprovalPreimage,
-  decodeLegacyIrohaConnectFrame,
-} from '@extension-base/services/iroha-connect-service/legacyWire';
+  IROHA_CONNECT_PROFILES,
+  IrohaConnectService,
+  decodeIrohaConnectFrame,
+  encodeIrohaConnectPingFrame,
+  toBase64Url,
+  type IrohaConnectSocket,
+} from '@extension-base/services/iroha-connect-service';
+import { UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
 import { WalletEcosystem } from '@/interfaces';
 import { encodeIrohaI105Address } from '@/util/iroha';
 import { deriveIrohaSigningKey } from '@/util/irohaKeyring';
 import { CURRENT_WALLET_SECURITY_GENERATION } from '@/util/walletSecurity';
 
 const MNEMONIC = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
-const SID_BYTES = new Uint8Array(32).fill(0x11);
-const APP_PUBLIC_KEY = new Uint8Array(32).fill(0x22);
-const WALLET_PRIVATE_KEY = new Uint8Array(32).fill(0x33);
-const WALLET_PUBLIC_KEY = new Uint8Array(32).fill(0x44);
-const TOKEN_BYTES = new Uint8Array(32).fill(0x55);
-const SIGNING_MESSAGE = new Uint8Array([0, 1, 2, 3, 0xfe, 0xff]);
-const textEncoder = new TextEncoder();
-const textDecoder = new TextDecoder();
+const TAIRA = IROHA_CONNECT_PROFILES.taira;
+const XOR = UNIVERSAL_WALLET_IROHA_NETWORKS.taira.nativeAsset.id;
+const CONTRACT = 'irohac1qyqqqqqqqqqqqq95fes93ygegsv5enq9mqsz6x4lv4vp9gg4yxgjw';
+const TOKEN_APP = toBase64Url(new Uint8Array(32).fill(0x51));
+const TOKEN_WALLET = toBase64Url(new Uint8Array(32).fill(0x52));
+const TOKEN_RELAY = toBase64Url(new Uint8Array(32).fill(0x53));
+const OTHER_ACCOUNT = encodeIrohaI105Address(
+  Buffer.from(ed25519.getPublicKey(new Uint8Array(32).fill(0x0b))).toString('hex'),
+  'taira'
+);
 
-const toBase64Url = (value: Uint8Array): string =>
-  Buffer.from(value).toString('base64').replace(/\+/gu, '-').replace(/\//gu, '_').replace(/=+$/u, '');
+const settle = async (): Promise<void> => {
+  for (let index = 0; index < 50; index += 1) await Promise.resolve();
+};
 
-const SID = toBase64Url(SID_BYTES);
-const TOKEN = toBase64Url(TOKEN_BYTES);
+/** Stands in for Torii: buffers app frames until the wallet joins, then forwards each side's frames. */
+class Relay {
+  app?: AppSocket;
+  wallet?: WalletSocket;
+  readonly walletFrames: Uint8Array[] = [];
+  private readonly forWallet: Uint8Array[] = [];
 
-const concatBytes = (...parts: Uint8Array[]): Uint8Array => {
-  const output = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
-  let offset = 0;
-  for (const part of parts) {
-    output.set(part, offset);
-    offset += part.length;
+  toWallet(bytes: Uint8Array): void {
+    if (!this.wallet) {
+      this.forWallet.push(bytes);
+      return;
+    }
+    const socket = this.wallet;
+    queueMicrotask(() => socket.onmessage?.({ data: bytes.slice().buffer }));
   }
-  return output;
-};
 
-const u32 = (value: number): Uint8Array => {
-  const output = new Uint8Array(4);
-  new DataView(output.buffer).setUint32(0, value, true);
-  return output;
-};
+  attachWallet(socket: WalletSocket): void {
+    this.wallet = socket;
+    for (const frame of this.forWallet.splice(0)) this.toWallet(frame);
+  }
 
-const u64 = (value: number): Uint8Array => {
-  const output = new Uint8Array(8);
-  new DataView(output.buffer).setBigUint64(0, BigInt(value), true);
-  return output;
-};
+  toApp(bytes: Uint8Array): void {
+    this.walletFrames.push(bytes.slice());
+    const app = this.app;
+    if (app) queueMicrotask(() => app.dispatch('message', { data: bytes.slice().buffer }));
+  }
+}
 
-const field = (payload: Uint8Array): Uint8Array => concatBytes(u64(payload.length), payload);
-const struct = (fields: Uint8Array[]): Uint8Array => concatBytes(...fields.map(field));
-const string = (value: string): Uint8Array => field(textEncoder.encode(value));
-const tagged = (tag: number, payload: Uint8Array): Uint8Array => concatBytes(u32(tag), u64(payload.length), payload);
-const optionString = (value?: string): Uint8Array =>
-  value === undefined ? Uint8Array.of(0) : concatBytes(Uint8Array.of(1), field(string(value)));
+let relay: Relay;
 
-const openFrame = ({ sequence = 1 }: { sequence?: number } = {}): Uint8Array => {
-  const appMeta = concatBytes(
-    Uint8Array.of(1),
-    field(struct([string('Uranai'), optionString('https://uranai.sora.org/markets/demo'), optionString(undefined)]))
-  );
-  const body = struct([
-    APP_PUBLIC_KEY,
-    appMeta,
-    struct([string(LEGACY_IROHA_CONNECT_PROFILES.taira.chainId)]),
-    Uint8Array.of(0),
-  ]);
+class AppSocket {
+  binaryType = 'arraybuffer';
+  readyState = 0;
+  private readonly listeners = new Map<string, Array<(event: unknown) => void>>();
 
-  return struct([SID_BYTES, u32(0), u64(sequence), tagged(0, tagged(0, body))]);
-};
+  constructor(
+    readonly url: string,
+    readonly protocols: string[]
+  ) {
+    relay.app = this;
+    queueMicrotask(() => {
+      this.readyState = 1;
+      this.dispatch('open', {});
+    });
+  }
 
-const appCiphertextFrame = (value: unknown, sequence: number): Uint8Array => {
-  const payload = textEncoder.encode(JSON.stringify(value));
-  const body = struct([u32(0), concatBytes(u64(payload.length), payload)]);
+  addEventListener(name: string, listener: (event: unknown) => void): void {
+    this.listeners.set(name, [...(this.listeners.get(name) ?? []), listener]);
+  }
 
-  return struct([SID_BYTES, u32(0), u64(sequence), tagged(1, body)]);
-};
+  dispatch(name: string, event: unknown): void {
+    for (const listener of this.listeners.get(name) ?? []) listener(event);
+  }
 
-const appPingFrame = (sequence: number, nonce: number): Uint8Array =>
-  struct([SID_BYTES, u32(0), u64(sequence), tagged(0, tagged(4, struct([u64(nonce)])))]);
+  send(data: Uint8Array): void {
+    relay.toWallet(new Uint8Array(data));
+  }
 
-const walletUri = (): string => {
-  const profile = LEGACY_IROHA_CONNECT_PROFILES.taira;
+  close(): void {
+    if (this.readyState === 3) return;
+    this.readyState = 3;
+    this.dispatch('close', {});
+  }
+}
 
-  return `iroha://connect?${new URLSearchParams({
-    sid: SID,
-    chain_id: profile.chainId,
-    node: profile.toriiBaseUrl,
-    v: '1',
-    role: 'wallet',
-    token: TOKEN,
-  }).toString()}`;
-};
-
-class FakeSocket implements IrohaConnectSocket {
+class WalletSocket implements IrohaConnectSocket {
   binaryType = '';
   readyState = 1;
   onclose: ((event?: unknown) => void) | null = null;
   onerror: ((event?: unknown) => void) | null = null;
   onmessage: ((event: { data: unknown }) => void) | null = null;
   onopen: ((event?: unknown) => void) | null = null;
-  readonly sent: Uint8Array[] = [];
   readonly textSent: string[] = [];
   readonly close = vi.fn(() => {
     this.readyState = 3;
@@ -109,118 +121,27 @@ class FakeSocket implements IrohaConnectSocket {
 
   send(data: string | Uint8Array): void {
     if (typeof data === 'string') this.textSent.push(data);
-    else this.sent.push(data.slice());
-  }
-
-  emit(data: Uint8Array): void {
-    this.onmessage?.({ data });
+    else relay.toApp(data);
   }
 }
 
-class Cursor {
-  private offset = 0;
+const walletUriFor = (preview: BrowserConnectSessionPreview): string =>
+  `iroha://connect?${new URLSearchParams({
+    sid: preview.sidBase64Url,
+    network_id: TAIRA.networkId!,
+    app_pk: toBase64Url(preview.appKeyPair.publicKey),
+    nonce: toBase64Url(preview.nonce),
+    node: TAIRA.toriiBaseUrl,
+    v: '1',
+    role: 'wallet',
+    token: TOKEN_WALLET,
+    relay: TOKEN_RELAY,
+  }).toString()}`;
 
-  constructor(private readonly bytes: Uint8Array) {}
+type Permissions = { methods: string[]; events?: string[]; resources?: string[] | null } | null;
 
-  readBytes(length: number): Uint8Array {
-    const result = this.bytes.slice(this.offset, this.offset + length);
-    this.offset += length;
-    return result;
-  }
-
-  readU32(): number {
-    const bytes = this.readBytes(4);
-    return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(0, true);
-  }
-
-  readU64(): number {
-    const bytes = this.readBytes(8);
-    return Number(new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getBigUint64(0, true));
-  }
-
-  readField(): Uint8Array {
-    return this.readBytes(this.readU64());
-  }
-}
-
-const readFields = (bytes: Uint8Array): Uint8Array[] => {
-  const cursor = new Cursor(bytes);
-  const fields: Uint8Array[] = [];
-  let consumed = 0;
-  while (consumed < bytes.length) {
-    const value = cursor.readField();
-    fields.push(value);
-    consumed += 8 + value.length;
-  }
-  expect(consumed).toBe(bytes.length);
-  return fields;
-};
-
-const readTagged = (bytes: Uint8Array): { body: Uint8Array; tag: number } => {
-  const cursor = new Cursor(bytes);
-  const tag = cursor.readU32();
-  const body = cursor.readBytes(cursor.readU64());
-  return { body, tag };
-};
-
-const decodeLegacySignature = (bytes: Uint8Array): Uint8Array => {
-  const [algorithm, vector] = readFields(bytes);
-  expect(new Cursor(algorithm).readU32()).toBe(0);
-  const vectorCursor = new Cursor(vector);
-  expect(vectorCursor.readU64()).toBe(64);
-
-  return concatBytes(...Array.from({ length: 64 }, () => new Cursor(vectorCursor.readField()).readBytes(1)));
-};
-
-const decodeApproval = (frame: Uint8Array) => {
-  const outer = readFields(frame);
-  expect(new Cursor(outer[1]).readU32()).toBe(1);
-  const sequence = new Cursor(outer[2]).readU64();
-  const kind = readTagged(outer[3]);
-  const control = readTagged(kind.body);
-  const [walletPublicKey, accountString, proof, permissions, signature] = readFields(control.body);
-
-  return {
-    accountId: textDecoder.decode(new Cursor(accountString).readField()),
-    controlTag: control.tag,
-    frameTag: kind.tag,
-    permissions,
-    proof,
-    sequence,
-    signature: decodeLegacySignature(signature),
-    sid: outer[0],
-    walletPublicKey,
-  };
-};
-
-const decodeWalletJson = (frame: Uint8Array): Record<string, unknown> => {
-  const decoded = decodeLegacyIrohaConnectFrame(frame, {
-    expectedSid: SID,
-    expectedDirection: 'wallet-to-app',
-  });
-  expect(decoded.kind).toBe('ciphertext');
-  if (decoded.kind !== 'ciphertext') throw new Error('Expected a ciphertext frame');
-
-  return JSON.parse(textDecoder.decode(decoded.aead)) as Record<string, unknown>;
-};
-
-const contractRequest = (overrides: Record<string, unknown> = {}): Record<string, unknown> => ({
-  schema: 'uranai.irohaconnect.contract-call-signature.v1',
-  kind: 'contract_call_signature_request',
-  requestId: 'request-one',
-  accountId: '',
-  signingMessageB64: Buffer.from(SIGNING_MESSAGE).toString('base64'),
-  contractAlias: 'uranai',
-  entrypoint: 'create_market',
-  ...overrides,
-});
-
-const createHarness = (
-  onStateChange: (
-    snapshot: IrohaConnectService['snapshot'],
-    previous: IrohaConnectService['snapshot']
-  ) => void = vi.fn()
-) => {
+const createHarness = ({ permissions = { methods: ['sign_transaction'], events: [] } }: { permissions?: Permissions } = {}) => {
+  relay = new Relay();
   const derived = deriveIrohaSigningKey({ mnemonic: MNEMONIC });
   const accountId = encodeIrohaI105Address(derived.publicKeyHex, 'taira');
   const storedAccount = {
@@ -232,321 +153,443 @@ const createHarness = (
       walletSecurityGeneration: CURRENT_WALLET_SECURITY_GENERATION as number | undefined,
     },
   };
-  const observableAccount = {
-    json: {
-      address: storedAccount.address,
-      meta: storedAccount.meta,
-    },
-    type: 'ed25519',
-  };
-  const socket = new FakeSocket();
   const keyringService = {
-    accountSubject: { value: { primary: observableAccount } },
+    accountSubject: { value: { primary: { json: { address: storedAccount.address, meta: storedAccount.meta }, type: 'ed25519' } } },
     addressSubject: { value: {} },
     exportMnemonic: vi.fn(() => ({ seed: MNEMONIC })),
     getAccounts: vi.fn(() => [storedAccount]),
     keyringIsLocked: false,
   };
-  const createSocket = vi.fn(() => socket);
-  const service = new IrohaConnectService({ keyringService } as never, {
-    createSocket,
-    makeWalletKeyPair: () => ({ privateKey: WALLET_PRIVATE_KEY.slice(), publicKey: WALLET_PUBLIC_KEY.slice() }),
-    onStateChange,
+  const socket = new WalletSocket();
+  const createSocket = vi.fn(() => {
+    relay.attachWallet(socket);
+    return socket;
   });
+  const onStateChange = vi.fn();
+  const service = new IrohaConnectService({ keyringService } as never, { createSocket, onStateChange });
 
-  return { accountId, createSocket, derived, keyringService, onStateChange, service, socket, storedAccount };
+  const preview = createConnectSessionPreview({ networkId: NetworkId.parse(TAIRA.networkId!), node: TAIRA.toriiBaseUrl });
+  const app = createConnectAppSession({
+    baseUrl: TAIRA.toriiBaseUrl,
+    preview,
+    session: { sid: preview.sidBase64Url, token_app: TOKEN_APP, token_relay: TOKEN_RELAY },
+    webSocketImpl: AppSocket as never,
+    appMeta: { name: 'Hanami Market', url: 'https://hanami.example/market' },
+    permissions,
+  } as never);
+  // The SDK settles approval asynchronously; observe failures so a test that expects one does not leak it.
+  const approval = app.waitForApproval();
+  approval.catch(() => undefined);
+
+  return { accountId, app, approval, createSocket, derived, keyringService, onStateChange, preview, service, socket, storedAccount };
 };
 
-const openAndApprove = async (
-  onStateChange?: (snapshot: IrohaConnectService['snapshot'], previous: IrohaConnectService['snapshot']) => void
-) => {
-  const harness = createHarness(onStateChange);
-  harness.service.connect(walletUri());
-  harness.socket.emit(openFrame());
+const connectAndApprove = async (options?: { permissions?: Permissions }) => {
+  const harness = createHarness(options);
+  await settle();
+  harness.service.connect(walletUriFor(harness.preview));
+  await settle();
   await harness.service.approveSession(harness.accountId);
-
+  await settle();
   return harness;
 };
 
-describe('IrohaConnectService', () => {
+const feePayment = (gasLimit: string | null = null) => ({
+  payer: 'authority' as const,
+  chargeLimits: [{ kind: 'nexus' as const, assetDefinitionId: XOR, maxAmount: '0.25' }],
+  gasLimit,
+});
+
+const transferPayload = (authority: string, overrides: Record<string, unknown> = {}): Uint8Array =>
+  new Uint8Array(
+    buildBrowserTransferPayload({
+      networkId: NetworkId.parse(TAIRA.networkId!),
+      networkPrefix: TAIRA.networkPrefix,
+      authority,
+      sourceAssetHoldingId: `${XOR}#${authority}`,
+      quantity: '1.5',
+      destinationAccountId: OTHER_ACCOUNT,
+      feePayment: feePayment(),
+      metadata: { memo: 'hanami' },
+      creationTimeMs: 1_795_000_000_000,
+      ttlMs: 100_000,
+      ...overrides,
+    } as never)
+  );
+
+const contractPayload = (authority: string): Uint8Array =>
+  new Uint8Array(
+    buildBrowserExecutableBatchPayload({
+      networkId: NetworkId.parse(TAIRA.networkId!),
+      networkPrefix: TAIRA.networkPrefix,
+      authority,
+      entries: [
+        {
+          kind: 'contractCall',
+          contractAddress: CONTRACT,
+          expectedCodeHash: `${'ab'.repeat(31)}a1`,
+          entrypoint: 'place_order',
+          arguments: Uint8Array.of(1, 2, 3, 4),
+        },
+      ],
+      feePayment: feePayment('50000'),
+      creationTimeMs: 1_795_000_000_000,
+      ttlMs: 100_000,
+    } as never)
+  );
+
+describe('IrohaConnectService (current v1 protocol, against the iroha-js app SDK)', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-08-31T00:00:00.000Z'));
+    vi.setSystemTime(new Date('2026-11-21T00:00:00.000Z'));
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it('does not sign an Iroha Connect approval with a pre-update wallet', async () => {
-    const { accountId, keyringService, service, socket, storedAccount } = createHarness();
-    storedAccount.meta.walletSecurityGeneration = undefined;
-    service.connect(walletUri());
-    socket.emit(openFrame());
+  it('opens the relay with the wallet token and shows the dApp Open for approval', async () => {
+    const { accountId, createSocket, preview, service, socket } = createHarness({
+      permissions: { methods: ['sign_transaction', 'sign_raw'], events: [], resources: null },
+    });
+    await settle();
 
-    await expect(service.approveSession(accountId)).rejects.toThrow(/recovery-only/i);
-    expect(keyringService.exportMnemonic).not.toHaveBeenCalled();
-    expect(socket.sent).toHaveLength(0);
-  });
-
-  it('connects to the authenticated relay and exposes the Open session for explicit approval', () => {
-    const { accountId, createSocket, service, socket } = createHarness();
-
-    expect(service.connect(walletUri())).toMatchObject({ phase: 'connecting', accounts: [] });
-    expect(createSocket).toHaveBeenCalledWith(`wss://taira.sora.org/v1/connect/ws?sid=${SID}&role=wallet`, [
-      `iroha-connect.token.v1.${toBase64Url(textEncoder.encode(TOKEN))}`,
-    ]);
+    expect(service.connect(walletUriFor(preview))).toMatchObject({ phase: 'connecting', accounts: [] });
+    expect(createSocket).toHaveBeenCalledWith(
+      `wss://taira.sora.org/v1/connect/ws?sid=${preview.sidBase64Url}&role=wallet`,
+      [`iroha-connect.token.v1.${toBase64Url(new TextEncoder().encode(TOKEN_WALLET))}`]
+    );
     expect(socket.binaryType).toBe('arraybuffer');
-
-    socket.emit(openFrame());
+    await settle();
 
     expect(service.snapshot).toMatchObject({
       phase: 'session-approval',
       accounts: [{ address: accountId, name: 'Sakura', network: 'taira' }],
       session: {
-        appName: 'Uranai',
-        appUrl: 'https://uranai.sora.org/markets/demo',
+        appName: 'Hanami Market',
+        appUrl: 'https://hanami.example/market',
         network: 'taira',
+        networkId: TAIRA.networkId,
+        permissions: { methods: ['sign_transaction', 'sign_raw'], events: [], resources: null },
+        protocol: 'iroha-connect-v1',
       },
     });
-    expect(socket.sent).toEqual([]);
+    expect(relay.walletFrames).toHaveLength(0);
   });
 
-  it('signs the exact approval preimage and emits the deployed Taira approval shape', async () => {
-    const { accountId, derived, service, socket } = await openAndApprove();
+  it('approves with a signature and session key the app SDK verifies', async () => {
+    const { accountId, approval, service } = await connectAndApprove();
 
     expect(service.snapshot).toMatchObject({ phase: 'connected', selectedAccountId: accountId });
-    expect(socket.sent).toHaveLength(1);
-    const approval = decodeApproval(socket.sent[0]);
-    const expectedPreimage = buildLegacyIrohaConnectApprovalPreimage({
-      sid: SID,
-      appPublicKey: APP_PUBLIC_KEY,
-      walletPublicKey: WALLET_PUBLIC_KEY,
-      accountId,
-    });
-
-    expect(approval).toMatchObject({
-      accountId,
-      controlTag: 1,
-      frameTag: 0,
-      sequence: 1,
-      sid: SID_BYTES,
-      walletPublicKey: WALLET_PUBLIC_KEY,
-      proof: Uint8Array.of(0),
-      permissions: Uint8Array.of(0),
-    });
-    expect(ed25519.verify(approval.signature, expectedPreimage, derived.publicKeyHex)).toBe(true);
+    await expect(approval).resolves.toMatchObject({ accountId });
   });
 
-  it('keeps an approved background session alive without creating protocol heartbeat obligations', async () => {
-    const { service, socket } = await openAndApprove();
+  it('reviews a transfer, then returns the transaction signature only after approval', async () => {
+    const { accountId, app, derived, onStateChange, service } = await connectAndApprove();
+    const payload = transferPayload(accountId);
+    const signature = app.signTransaction(payload);
+    await settle();
 
-    vi.advanceTimersByTime(60_000);
-
-    expect(socket.textSent).toEqual(['keepalive', 'keepalive', 'keepalive']);
-    expect(socket.sent).toHaveLength(1);
-
-    service.disconnect();
-    const textSentAfterDisconnect = socket.textSent.length;
-    vi.advanceTimersByTime(60_000);
-    expect(socket.textSent).toHaveLength(textSentAfterDisconnect);
-  });
-
-  it('keeps the relay active while the user reviews the initial session approval', async () => {
-    const { accountId, service, socket } = createHarness();
-    service.connect(walletUri());
-    socket.emit(openFrame());
-
-    vi.advanceTimersByTime(20_000);
-
-    expect(service.snapshot.phase).toBe('session-approval');
-    expect(socket.textSent).toEqual(['keepalive']);
-    expect(socket.sent).toEqual([]);
-
-    await service.approveSession(accountId);
-    expect(decodeApproval(socket.sent.at(-1)!).sequence).toBe(1);
-  });
-
-  it('offers only locally signable Iroha accounts for session approval', () => {
-    const { keyringService, service, socket } = createHarness();
-    (keyringService.accountSubject.value.primary.json.meta as Record<string, unknown>).isHardware = true;
-    keyringService.addressSubject.value = {
-      watched: {
-        ...keyringService.accountSubject.value.primary,
-        json: {
-          ...keyringService.accountSubject.value.primary.json,
-          meta: { ...keyringService.accountSubject.value.primary.json.meta, isHardware: false },
-        },
-      },
-    };
-
-    service.connect(walletUri());
-    socket.emit(openFrame());
-
-    expect(service.snapshot).toMatchObject({ phase: 'session-approval', accounts: [] });
-  });
-
-  it('answers app Ping controls and preserves contiguous request sequencing', async () => {
-    const { accountId, service, socket } = await openAndApprove();
-
-    socket.emit(appPingFrame(2, 77));
-
-    const outer = readFields(socket.sent.at(-1)!);
-    const control = readTagged(readTagged(outer[3]).body);
-    const [nonce] = readFields(control.body);
-    expect(control.tag).toBe(5);
-    expect(new Cursor(nonce).readU64()).toBe(77);
-
-    socket.emit(appCiphertextFrame(contractRequest({ accountId }), 3));
-    expect(service.snapshot).toMatchObject({ phase: 'request-approval', request: { requestId: 'request-one' } });
-  });
-
-  it('signs the exact contract bytes and returns the matching account public key', async () => {
-    const onStateChange = vi.fn();
-    const { accountId, derived, service, socket } = await openAndApprove(onStateChange);
-    socket.emit(appCiphertextFrame(contractRequest({ accountId }), 2));
-
-    expect(onStateChange.mock.calls.filter(([snapshot]) => snapshot.phase === 'request-approval')).toHaveLength(1);
+    expect(service.snapshot.phase).toBe('request-approval');
     expect(onStateChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ phase: 'request-approval' }),
       expect.objectContaining({ phase: 'connected' })
     );
-    expect(service.snapshot).toMatchObject({
-      phase: 'request-approval',
-      request: {
-        requestId: 'request-one',
-        accountId,
-        signingMessageBytes: SIGNING_MESSAGE.length,
-        signingMessageSha256: '7ea646958715ed687aa9ac2f5d785feb1a93411f4f25fdd6c7fcc6ab07fdf0e3',
+    const request = service.snapshot.request!;
+    expect(request).toMatchObject({
+      accountId,
+      kind: 'transaction',
+      review: {
+        kind: 'transfer',
+        authority: accountId,
+        networkId: TAIRA.networkId,
+        payloadBytes: payload.length,
+        payloadHashHex: browserTransactionPayloadHashHex(payload, TAIRA.networkPrefix),
+        ttlMs: '100000',
+        metadata: '{"memo":"hanami"}',
+        fee: { payer: 'authority', gasLimit: null, chargeLimits: [{ kind: 'nexus', maxAmount: '0.25', asset: { definitionId: XOR, symbol: 'XOR' } }] },
+        transfer: { asset: { definitionId: XOR, symbol: 'XOR' }, quantity: '1.5', destination: OTHER_ACCOUNT, scope: null },
       },
     });
-    service.approveRequest('request-one');
+    expect(request.expiresAt - request.createdAt).toBe(120_000);
+    expect(JSON.stringify(service.snapshot)).not.toContain(MNEMONIC.split(' ')[0] + ' ' + MNEMONIC.split(' ')[1]);
 
-    const response = decodeWalletJson(socket.sent.at(-1)!);
-    expect(response).toMatchObject({
-      schema: 'uranai.irohaconnect.contract-call-signature.v1',
-      kind: 'contract_call_signature_response',
-      requestId: 'request-one',
-      publicKeyHex: derived.publicKeyHex,
-    });
-    expect(
-      ed25519.verify(Buffer.from(response.signatureB64 as string, 'base64'), SIGNING_MESSAGE, derived.publicKeyHex)
-    ).toBe(true);
-    expect(service.snapshot).toMatchObject({ phase: 'connected', request: undefined });
-  });
+    service.approveRequest(request.requestId);
+    await settle();
+    const signed = await signature;
 
-  it('rejects account mismatch without presenting a signing approval', async () => {
-    const onStateChange = vi.fn();
-    const { accountId, service, socket } = await openAndApprove(onStateChange);
-    const transitionsBeforeRequest = onStateChange.mock.calls.length;
-    socket.emit(appCiphertextFrame(contractRequest({ accountId: `${accountId}-other` }), 2));
-
-    expect(service.snapshot.phase).toBe('connected');
-    expect(onStateChange).toHaveBeenCalledTimes(transitionsBeforeRequest);
-    expect(decodeWalletJson(socket.sent.at(-1)!)).toMatchObject({
-      kind: 'contract_call_signature_reject',
-      requestId: 'request-one',
-      code: 'account_mismatch',
-    });
-  });
-
-  it('explicitly rejects private proof requests while keeping the approved session open', async () => {
-    const { service, socket } = await openAndApprove();
-    socket.emit(
-      appCiphertextFrame(
-        {
-          schema: 'uranai.irohaconnect.private-trade-proof.v1',
-          kind: 'private_trade_proof_request',
-          requestId: 'private-one',
-        },
-        2
-      )
+    const hash = Buffer.from(browserTransactionPayloadHashHex(payload, TAIRA.networkPrefix), 'hex');
+    expect(ed25519.verify(signed, hash, derived.publicKeyHex)).toBe(true);
+    const finalized = finalizeBrowserSignedTransaction(
+      {
+        networkId: NetworkId.parse(TAIRA.networkId!),
+        networkPrefix: TAIRA.networkPrefix,
+        payloadBytes: payload,
+        authority: accountId,
+        signatureAlgorithm: 'ed25519',
+      },
+      signed,
+      derived.publicKeyHex
     );
-
-    expect(service.snapshot.phase).toBe('connected');
-    expect(decodeWalletJson(socket.sent.at(-1)!)).toMatchObject({
-      kind: 'private_trade_proof_reject',
-      requestId: 'private-one',
-      code: 'unsupported_private_proof',
-    });
-  });
-
-  it('keeps the first concurrent request pending and rejects the second', async () => {
-    const { accountId, service, socket } = await openAndApprove();
-    socket.emit(appCiphertextFrame(contractRequest({ accountId }), 2));
-    socket.emit(appCiphertextFrame(contractRequest({ accountId, requestId: 'request-two' }), 3));
-
-    expect(service.snapshot).toMatchObject({ phase: 'request-approval', request: { requestId: 'request-one' } });
-    expect(decodeWalletJson(socket.sent.at(-1)!)).toMatchObject({
-      kind: 'contract_call_signature_reject',
-      requestId: 'request-two',
-      code: 'request_in_progress',
-    });
-  });
-
-  it('expires pending signatures, disconnects cleanly, and fails closed after teardown', async () => {
-    const { accountId, service, socket } = await openAndApprove();
-    socket.emit(appCiphertextFrame(contractRequest({ accountId }), 2));
-
-    vi.advanceTimersByTime(90_000);
-
+    expect(finalized.hashHex).toMatch(/^[0-9a-f]{64}$/u);
     expect(service.snapshot).toMatchObject({ phase: 'connected', request: undefined });
-    expect(decodeWalletJson(socket.sent.at(-1)!)).toMatchObject({
-      kind: 'contract_call_signature_reject',
-      requestId: 'request-one',
-      code: 'request_expired',
-    });
-
-    expect(service.disconnect()).toEqual({ accounts: [], phase: 'idle' });
-    expect(socket.close).toHaveBeenCalledWith(1000, 'Wallet session closed');
-    expect(() => service.approveRequest('request-one')).toThrow('session is not active');
   });
 
-  it('closes the transport on replayed, out-of-order, or pre-Open application data', async () => {
-    const first = await openAndApprove();
-    first.socket.emit(appCiphertextFrame(contractRequest({ accountId: first.accountId }), 1));
+  it('reviews contract calls with their entrypoint, code hash and argument digest', async () => {
+    const { accountId, app, derived, service } = await connectAndApprove();
+    const payload = contractPayload(accountId);
+    const signature = app.signTransaction(payload);
+    await settle();
 
-    expect(first.service.snapshot).toMatchObject({ phase: 'error', error: expect.stringContaining('replayed') });
-    expect(first.socket.close).toHaveBeenCalled();
-
-    const second = createHarness();
-    second.service.connect(walletUri());
-    second.socket.emit(appCiphertextFrame(contractRequest({ accountId: second.accountId }), 2));
-
-    expect(second.service.snapshot).toMatchObject({
-      phase: 'error',
-      error: expect.stringContaining('before opening'),
+    expect(service.snapshot.request?.review).toMatchObject({
+      kind: 'contract-calls',
+      fee: { gasLimit: '50000' },
+      calls: [
+        {
+          contractAddress: CONTRACT,
+          entrypoint: 'place_order',
+          codeHashHex: `${'ab'.repeat(31)}a1`,
+          argumentBytes: 4,
+          argumentsSha256: Buffer.from(await crypto.subtle.digest('SHA-256', Uint8Array.of(1, 2, 3, 4))).toString('hex'),
+        },
+      ],
     });
-    expect(second.socket.close).toHaveBeenCalled();
-
-    const third = await openAndApprove();
-    third.socket.emit(appCiphertextFrame(contractRequest({ accountId: third.accountId }), 3));
-
-    expect(third.service.snapshot).toMatchObject({
-      phase: 'error',
-      error: expect.stringContaining('out-of-order'),
-    });
-    expect(third.socket.close).toHaveBeenCalled();
+    service.approveRequest(service.snapshot.request!.requestId);
+    await settle();
+    const hash = Buffer.from(browserTransactionPayloadHashHex(payload, TAIRA.networkPrefix), 'hex');
+    expect(ed25519.verify(await signature, hash, derived.publicKeyHex)).toBe(true);
   });
 
-  it('keeps the protocol request pending when the best-effort UI notification fails', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const onStateChange = vi.fn((snapshot: IrohaConnectService['snapshot']) => {
-      if (snapshot.phase === 'request-approval') throw new Error('Popup unavailable');
-    });
+  it('answers a rejection, an expiry and a closed session without signing', async () => {
+    const { accountId, app, service } = await connectAndApprove();
 
+    const rejected = expect(app.signTransaction(transferPayload(accountId))).rejects.toMatchObject({
+      code: 'USER_REJECTED',
+    });
+    await settle();
+    service.rejectRequest(service.snapshot.request!.requestId);
+    await rejected;
+
+    const expired = expect(app.signTransaction(transferPayload(accountId))).rejects.toMatchObject({
+      code: 'REQUEST_EXPIRED',
+    });
+    await settle();
+    const requestId = service.snapshot.request!.requestId;
+    vi.advanceTimersByTime(120_001);
+    await expired;
+    expect(service.snapshot).toMatchObject({ phase: 'connected', notice: { code: 'request_expired' } });
+    expect(() => service.approveRequest(requestId)).toThrow('That IrohaConnect action is not available.');
+
+    const closed = expect(app.signTransaction(transferPayload(accountId))).rejects.toMatchObject({
+      name: 'ConnectSessionClosedError',
+    });
+    await settle();
+    service.disconnect();
+    await closed;
+    expect(service.snapshot).toEqual({ accounts: [], phase: 'idle' });
+  });
+
+  it.each([
+    ['another account', () => transferPayload(OTHER_ACCOUNT), 'WRONG_ACCOUNT', 'transaction_wrong_account'],
+    ['random bytes', () => Uint8Array.of(1, 2, 3, 4, 5), 'INVALID_TRANSACTION', 'transaction_invalid'],
+  ])('refuses a transaction for %s without asking', async (_label, makePayload, code, notice) => {
+    const { app, service } = await connectAndApprove();
+    const result = expect(app.signTransaction(makePayload())).rejects.toMatchObject({ code });
+    await settle();
+    await result;
+    expect(service.snapshot).toMatchObject({ phase: 'connected', notice: { code: notice } });
+  });
+
+  it('refuses payloads it cannot rebuild exactly', async () => {
+    const { accountId, app, service } = await connectAndApprove();
+    const payload = transferPayload(accountId);
+    // Replace the trailing `attachments: None` field (compact length 1, tag 0) with a non-empty attachment field.
+    const withAttachment = new Uint8Array([...payload.subarray(0, payload.length - 2), 2, 1, 0]);
+    const unsupported = expect(app.signTransaction(withAttachment)).rejects.toMatchObject({
+      code: 'UNSUPPORTED_TRANSACTION',
+    });
+    await settle();
+    await unsupported;
+
+    // A payload for another network (first NetworkId byte: compact domain length, u32 variant, compact length).
+    const wrongNetwork = transferPayload(accountId).slice();
+    wrongNetwork[1 + 4 + 1] ^= 0x02;
+    const refused = expect(app.signTransaction(wrongNetwork)).rejects.toMatchObject({ code: 'WRONG_NETWORK' });
+    await settle();
+    await refused;
+    expect(service.snapshot.phase).toBe('connected');
+  });
+
+  it('never signs raw requests with the account key', async () => {
+    const { app, keyringService, service } = await connectAndApprove({
+      permissions: { methods: ['sign_transaction', 'sign_raw'], events: [], resources: ['iroha:torii:canonical-request:v1'] },
+    });
+    keyringService.exportMnemonic.mockClear();
+    const raw = expect(app.signRaw('iroha:torii:canonical-request:v1', Uint8Array.of(1, 2, 3))).rejects.toMatchObject({
+      code: 'SIGNING_KEY_REQUIRED',
+    });
+    await settle();
+    await raw;
+    expect(keyringService.exportMnemonic).not.toHaveBeenCalled();
+    expect(service.snapshot).toMatchObject({ phase: 'connected', notice: { code: 'raw_signing_unavailable' } });
+  });
+
+  it('refuses transactions a session did not ask to sign', async () => {
+    const { accountId, app } = await connectAndApprove({
+      permissions: { methods: ['sign_raw'], events: [], resources: ['iroha:torii:canonical-request:v1'] },
+    });
+    const result = expect(app.signTransaction(transferPayload(accountId))).rejects.toMatchObject({
+      code: 'PERMISSION_DENIED',
+    });
+    await settle();
+    await result;
+  });
+
+  it('allows transactions when the Open frame declares no permissions', async () => {
+    const { accountId, app, service } = await connectAndApprove({ permissions: null });
+    void app.signTransaction(transferPayload(accountId)).catch(() => undefined);
+    await settle();
+
+    expect(service.snapshot.phase).toBe('request-approval');
+  });
+
+  it('keeps the worker alive with binary Connect pings that keep the session in sequence', async () => {
+    const { accountId, app, service, socket } = await connectAndApprove();
+    const before = relay.walletFrames.length;
+
+    vi.advanceTimersByTime(20_000);
+    await settle();
+    vi.advanceTimersByTime(20_000);
+    await settle();
+
+    expect(socket.textSent).toEqual([]);
+    const pings = relay.walletFrames.slice(before);
+    expect(pings).toHaveLength(2);
+    for (const frame of pings) {
+      const decoded = decodeIrohaConnectFrame(frame, { sidBytes: frameSid(frame) });
+      expect(decoded).toMatchObject({ kind: 'control', direction: 'wallet-to-app', control: { type: 'ping' } });
+    }
+
+    // The app SDK answered both pings; later wallet and app frames still line up.
+    const signature = app.signTransaction(transferPayload(accountId));
+    await settle();
+    service.approveRequest(service.snapshot.request!.requestId);
+    await expect(signature).resolves.toHaveLength(64);
+  });
+
+  it('answers an app ping with a pong', async () => {
+    const { preview, service } = await connectAndApprove();
+    const nextAppSequence = 2;
+    const ping = encodeIrohaConnectPingFrame({ sidBytes: preview.sidBytes, sequence: nextAppSequence, nonce: 77n });
+    ping[8 + 288 + 8] = 0; // app-to-wallet direction
+    relay.toWallet(ping);
+    await settle();
+
+    const pong = decodeIrohaConnectFrame(relay.walletFrames.at(-1)!, { sidBytes: preview.sidBytes });
+    expect(pong).toMatchObject({ kind: 'control', direction: 'wallet-to-app', control: { type: 'pong', nonce: 77n } });
+    expect(service.snapshot.phase).toBe('connected');
+  });
+
+  it('returns to idle with a notice when the dApp closes the session', async () => {
+    const { app, service } = await connectAndApprove();
+    app.close('done');
+    await settle();
+
+    expect(service.snapshot).toMatchObject({ phase: 'idle', notice: { code: 'dapp_closed' } });
+  });
+
+  it('sends a protocol rejection when the person declines the connection', async () => {
+    const { approval, preview, service } = createHarness();
+    await settle();
+    service.connect(walletUriFor(preview));
+    await settle();
+
+    const rejection = expect(approval).rejects.toMatchObject({
+      name: 'ConnectApprovalRejectedError',
+      codeId: 'user_rejected',
+    });
+    service.rejectSession();
+    await rejection;
+    expect(service.snapshot).toEqual({ accounts: [], phase: 'idle' });
+  });
+
+  it('does not sign an approval with a pre-update wallet or a locked keyring', async () => {
+    const recovery = createHarness();
+    recovery.storedAccount.meta.walletSecurityGeneration = undefined;
+    await settle();
+    recovery.service.connect(walletUriFor(recovery.preview));
+    await settle();
+    await expect(recovery.service.approveSession(recovery.accountId)).rejects.toThrow(/recovery-only/i);
+    expect(recovery.keyringService.exportMnemonic).not.toHaveBeenCalled();
+    expect(relay.walletFrames).toHaveLength(0);
+
+    const locked = createHarness();
+    locked.keyringService.keyringIsLocked = true;
+    await settle();
+    locked.service.connect(walletUriFor(locked.preview));
+    await settle();
+    await expect(locked.service.approveSession(locked.accountId)).rejects.toThrow('Unlock Fearless');
+  });
+
+  it('fails closed on frames from another session and on replays', async () => {
+    const harness = createHarness();
+    await settle();
+    const otherPreview = createConnectSessionPreview({ networkId: NetworkId.parse(TAIRA.networkId!), node: TAIRA.toriiBaseUrl });
+    harness.service.connect(walletUriFor(otherPreview));
+    await settle();
+    expect(harness.service.snapshot).toMatchObject({ phase: 'error', error: 'iroha_connect_invalid_frame' });
+
+    const replay = await connectAndApprove();
+    const ping = encodeIrohaConnectPingFrame({ sidBytes: replay.preview.sidBytes, sequence: 1, nonce: 1n });
+    ping[8 + 288 + 8] = 0;
+    relay.toWallet(ping);
+    await settle();
+    expect(replay.service.snapshot).toMatchObject({ phase: 'error', error: 'The dApp replayed an IrohaConnect frame.' });
+  });
+
+  it('calls the browser timer functions with their own receiver', async () => {
+    vi.useRealTimers();
+    const realSetTimeout = globalThis.setTimeout;
+    const realClearTimeout = globalThis.clearTimeout;
+    // Chrome throws "Illegal invocation" when setTimeout or clearTimeout runs with a foreign `this`.
+    const strict = <T extends (...args: never[]) => unknown>(real: T) =>
+      function (this: unknown, ...args: Parameters<T>) {
+        if (this !== undefined && this !== globalThis) throw new TypeError('Illegal invocation');
+        return real(...args);
+      };
+    vi.stubGlobal('setTimeout', strict(realSetTimeout as never));
+    vi.stubGlobal('clearTimeout', strict(realClearTimeout as never));
     try {
-      const { accountId, service, socket } = await openAndApprove(onStateChange);
-      socket.emit(appCiphertextFrame(contractRequest({ accountId }), 2));
-
-      expect(service.snapshot).toMatchObject({ phase: 'request-approval', request: { requestId: 'request-one' } });
-      expect(socket.close).not.toHaveBeenCalled();
-      expect(consoleError).toHaveBeenCalledWith(
-        'Unable to update the IrohaConnect request UI.',
-        expect.objectContaining({ message: 'Popup unavailable' })
-      );
+      const { approval, accountId, preview, service } = createHarness();
+      await settle();
+      expect(service.connect(walletUriFor(preview)).phase).toBe('connecting');
+      await settle();
+      expect(service.snapshot.phase).toBe('session-approval');
+      await service.approveSession(accountId);
+      await expect(approval).resolves.toMatchObject({ accountId });
+      service.disconnect();
     } finally {
-      consoleError.mockRestore();
+      vi.unstubAllGlobals();
     }
   });
+
+  it('times out when the dApp never opens the session', () => {
+    relay = new Relay();
+    const socket = new WalletSocket();
+    const service = new IrohaConnectService({ keyringService: { accountSubject: { value: {} } } } as never, {
+      createSocket: () => socket,
+    });
+    const preview = createConnectSessionPreview({ networkId: NetworkId.parse(TAIRA.networkId!), node: TAIRA.toriiBaseUrl });
+    service.connect(walletUriFor(preview));
+    vi.advanceTimersByTime(20_001);
+
+    expect(service.snapshot).toMatchObject({ phase: 'error', error: 'The IrohaConnect dApp did not open the session in time.' });
+    expect(socket.close).toHaveBeenCalled();
+  });
 });
+
+function frameSid(frame: Uint8Array): Uint8Array {
+  const sid = new Uint8Array(32);
+  for (let index = 0; index < 32; index += 1) sid[index] = frame[8 + index * 9 + 8];
+  return sid;
+}

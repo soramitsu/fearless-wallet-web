@@ -1,7 +1,8 @@
 <template>
   <div class="unlock">
     <div>
-      <div class="header">
+      <!-- data-fw-depth: the mark is nearest, then the password, when this screen flies up at launch (src/feel). -->
+      <div class="header" data-fw-depth="2">
         <CircleButton
           v-if="isPopup"
           iconName="expand"
@@ -13,22 +14,16 @@
         />
       </div>
 
-      <div class="logo-container">
+      <div class="logo-container" data-fw-depth="0">
         <div class="logo-mark" role="img" :aria-label="t('common.fearlessLogo')">
-          <img :src="sunColour" class="unlock-logo" alt="" />
+          <img :src="lockup" class="unlock-logo" alt="" />
         </div>
 
-        <Logo
-          class="description"
-          size="big"
-          text="common.fearlessWallet"
-          :subtext="$t('welcome.deFiWallet')"
-          :showLogo="false"
-        />
+        <BrandSignature :text="t('welcome.deFiWallet')" />
       </div>
     </div>
 
-    <div class="pass-block">
+    <div class="pass-block" data-fw-depth="1">
       <ValidatedInput
         v-if="!unlockNotice"
         size="big"
@@ -81,7 +76,8 @@
 <script lang="ts" setup>
 import { watch, ref, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import sunColour from '@/assets/brand/winged-sun-colour.svg';
+import lockup from '@/assets/brand/fearless-lockup-stacked.svg';
+import BrandSignature from '@/components/BrandSignature.vue';
 import { useI18n } from '@/locales/useI18n';
 import { unlockExtension, windowOpen } from '@/extension/messaging';
 import { Components } from '@/router/routes';
@@ -174,13 +170,11 @@ const toggleResetPopup = () => (showResetPopup.value = !showResetPopup.value);
     padding: 24px 0 8px;
 
     :deep(.unlock-logo) {
-      width: 240px;
-      max-width: 100%;
+      width: 152px;
+      max-width: 60%;
       height: auto;
     }
   }
-
-  .description :deep(.text) { font-size: 1.75rem; }
 
 
   .pass-block {

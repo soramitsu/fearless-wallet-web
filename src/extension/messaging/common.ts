@@ -49,10 +49,6 @@ export function lockExtension(skipCheck = false): Promise<boolean> {
   return sendMessage('pri(keyring.lock)', skipCheck);
 }
 
-export function getExtensionPassword(): Promise<string> {
-  return sendMessage('pri(keyring.getPassword)');
-}
-
 export function resetWallet(): Promise<boolean> {
   return sendMessage('pri(keyring.reset)');
 }

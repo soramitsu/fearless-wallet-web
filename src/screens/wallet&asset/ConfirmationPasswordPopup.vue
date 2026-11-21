@@ -3,9 +3,10 @@
     <div class="popup-content">
       <SignMobile v-if="!transactionState" @onSign="onSignMobile" @onCancel="close" />
 
-      <Loader v-if="isTransactionPending" />
+      <!-- Every operation shows its seal while it is on its way (brand kit v4); the loader stays for anything else. -->
+      <Loader v-if="isTransactionPending && !showsSeal" />
 
-      <template v-else-if="isTransactionFinished">
+      <template v-else-if="isTransactionFinished || showsSeal">
         <p v-if="isFailed" class="transaction-error-message" data-testid="transactionErrorMessage">
           {{ transactionErrorText }}
         </p>
@@ -43,7 +44,12 @@
         </template>
 
         <template v-if="extrinsicType !== 'nft'">
-          <div class="descriptions">
+          <div class="descriptions" :class="{ 'descriptions--ignite': showsSeal, 'descriptions--ignite-wide': showsSeal && secondIcon }">
+            <!--
+              Brand kit v4: the seal draws round the operation while it is on its way; when the network accepts it the
+              seal closes and ignites (kit v3), with the send sound for a send. A failure breaks it.
+            -->
+            <SealFigure v-if="showsSeal" class="send-ignite" :size="sealSize" :stage="sealStage" :failed="isFailed" />
             <ExternalLogo v-if="firstIconUrl" :name="firstIconUrl" :width="30" class="asset-icon" />
 
             <template v-if="secondIcon">
@@ -53,10 +59,16 @@
             </template>
           </div>
 
-          <template v-if="showsAmount">
+          <template v-if="showsAmount && isTransactionFinished">
             <div class="transfer-amount" data-testid="confirmedTransferAmount">{{ transferAmountString }}</div>
 
             <div class="transfer-value" data-testid="confirmedTransferValue">{{ transferValueString }}</div>
+          </template>
+          <!-- While the seal waits, the amount's lines keep their room, so the figure does not move when they arrive. -->
+          <template v-else-if="showsSeal && isTransactionPending">
+            <div class="transfer-amount transfer-room" aria-hidden="true">&nbsp;</div>
+
+            <div class="transfer-value transfer-room" aria-hidden="true">&nbsp;</div>
           </template>
 
           <FButton
@@ -88,8 +100,10 @@
         </template>
 
         <template v-else>
-          <div class="icon-circle">
+          <div class="icon-circle" :class="{ 'icon-circle--ignite': showsSeal }">
+            <SealFigure v-if="showsSeal" class="send-ignite" :size="IGNITE_SIZE" :stage="sealStage" :failed="isFailed" />
             <Icon
+              v-if="isTransactionFinished"
               :icon="isFailed ? 'close' : 'check'"
               className="icon__lock-green"
               :iconColor="isFailed ? 'error' : 'success'"
@@ -165,6 +179,8 @@ import { type StakingOperation } from '@/interfaces';
 import { makeSwap, makeTransfer, makeCrossChain, makeStaking, makePool } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
+import SealFigure from '@/components/SealFigure.vue';
+import { playSound, prepareSounds } from '@/feel/sound';
 import { IS_EXTENSION } from '@/consts/global';
 import { sendNft } from '@/extension/messaging/nfts';
 import { isSameString, setClipboard } from '@/helpers';
@@ -182,14 +198,16 @@ import { getAccountAccessErrorLocaleKey } from '@/helpers/transferErrors';
 // Components.AssetHistory and Components.AccountAccessRecovery. The route table is not imported
 // here: it imports screens that embed this popup.
 const ASSET_HISTORY_ROUTE = 'AssetHistory';
+const SENDS = ['transfer', 'crossChain', 'nft'];
 const ACCOUNT_ACCESS_ROUTE = 'AccountAccessRecovery';
 
 export default defineComponent({
   name: 'ConfirmationPasswordPopup',
-  components: { SignMobile },
+  components: { SignMobile, SealFigure },
   props: {
     amount: { type: String, default: '0' },
     value: { type: String, default: '0' },
+    priceUnavailable: { type: Boolean, default: false },
     fee: { type: String, default: '0' },
     feeValue: { type: String, default: '0' },
     firstIcon: String,
@@ -208,6 +226,11 @@ export default defineComponent({
       signedPayload: null,
       transactionState: null,
       transactionResponse: null as BasicTxResponse | ResponseNftTransfer | null,
+      // Small enough to stay inside the popup's scroll box around the success mark.
+      IGNITE_SIZE: 112,
+      // Two tokens (a swap, a pool, a cross-chain send) make a pill as wide as that figure: a larger one keeps them
+      // inside its inner ring.
+      IGNITE_SIZE_WIDE: 156,
     };
   },
   computed: {
@@ -318,6 +341,8 @@ export default defineComponent({
       return `-${this.$n(value, 'decimal')} ${symbol}`;
     },
     transferValueString() {
+      if (this.priceUnavailable) return this.$t('portfolioPage.priceUnavailable');
+
       const sumValue = +this.value + +this.feeValue;
       const value = this.isSuccess || this.isUnconfirmed ? sumValue : +this.feeValue;
 
@@ -331,6 +356,22 @@ export default defineComponent({
     },
     isTransactionFinished() {
       return this.isSuccess || this.isFailed || this.isUnconfirmed;
+    },
+    // Tokens left the wallet: a transfer, a cross-chain send or an NFT. A failure or an unconfirmed send gets no sound.
+    showsIgnite() {
+      return this.isSuccess && SENDS.includes(this.extrinsicType);
+    },
+    // Every operation here (a send, a swap, staking, a pool) shows its seal from the moment it is on its way. The popup
+    // learns only the outcome, so the seal is ready, with its comet, until then; an outcome the wallet cannot tell
+    // (unconfirmed) shows no seal. Only a send has a sound (showsIgnite).
+    showsSeal() {
+      return this.isTransactionPending || this.isSuccess || this.isFailed;
+    },
+    sealSize() {
+      return this.secondIcon ? this.IGNITE_SIZE_WIDE : this.IGNITE_SIZE;
+    },
+    sealStage() {
+      return this.isSuccess ? 'accepted' : 'ready';
     },
     isTon() {
       return this.accountsStore.selectedWallet.isTon;
@@ -352,7 +393,13 @@ export default defineComponent({
       );
     },
   },
+  watch: {
+    showsIgnite(sent: boolean) {
+      if (sent) void playSound('send');
+    },
+  },
   async mounted() {
+    prepareSounds();
     this.resetTxStatus();
     this.sendExtrinsic();
   },
@@ -506,6 +553,7 @@ export default defineComponent({
   }
 
   .descriptions {
+    position: relative;
     display: flex;
     justify-content: space-between;
     background: $secondary-background-color;
@@ -535,6 +583,10 @@ export default defineComponent({
     color: $gray-color;
   }
 
+  .transfer-room {
+    visibility: hidden;
+  }
+
   .nft-img {
     margin-left: auto;
     margin-right: auto;
@@ -555,9 +607,35 @@ export default defineComponent({
   }
 
   .icon-circle {
+    position: relative;
     background-color: #ffffff08;
     border-radius: 50%;
     padding: 21px;
+  }
+
+  .descriptions--ignite,
+  .icon-circle--ignite {
+    margin-top: 18px;
+  }
+
+  // The larger figure and its stars' glow reach about 56 px above and below the pill.
+  .descriptions--ignite-wide {
+    margin-top: 40px;
+    margin-bottom: 56px;
+  }
+
+  .send-ignite {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 0;
+    translate: -50% -50%;
+  }
+
+  .descriptions > :not(.send-ignite),
+  .icon-circle > :not(.send-ignite) {
+    position: relative;
+    z-index: 1;
   }
 }
 </style>

@@ -13,11 +13,18 @@ import type {
   ResponsePortfolioHoldings,
   ResponseAccountExport,
   ResponseExportSeed,
+  ResponseUniversalWalletPasswordPath,
+  ResponseUniversalWalletWatchedCheck,
+  SubstratePasswordAccountInfo,
   TonImportCandidateInfo,
+  UniversalWalletPasswordDiscoveryItem,
+  UniversalWalletPasswordStatus,
+  UniversalWalletPasswordSwitchResult,
 } from '@extension-base/background/types/types';
 import type { DerivationPath, NetworkName, TonEventTokens } from '@/interfaces';
 import type { WordCount } from '@extension-base/services';
 import type { TonImportChoice } from '@/util/tonKeyring';
+import type { SubstratePasswordRule } from '@extension-base/services/keyring-service/SubstratePassword';
 import { WalletEcosystem } from '@/interfaces';
 import { UNIVERSAL_WALLET_DEFAULT_WORD_COUNT } from '@/consts/universalWallet';
 import { sendMessage } from '@/extension/messaging/index';
@@ -27,11 +34,14 @@ export function addAccount(
   type: KeypairType,
   meta: FWKeyringMeta,
   walletEcosystem = WalletEcosystem.Substrate,
-  tonImportOrFreshGeneration?: TonImportChoice | boolean
+  tonImportOrFreshGeneration?: TonImportChoice | boolean,
+  substratePasswordRule?: SubstratePasswordRule
 ): Promise<string> {
   const tonImport = typeof tonImportOrFreshGeneration === 'object' ? tonImportOrFreshGeneration : undefined;
   const requireFreshGeneration = tonImportOrFreshGeneration === true;
-  return sendMessage('pri(accounts.create)', { suri, type, meta, walletEcosystem, tonImport, requireFreshGeneration });
+  return sendMessage('pri(accounts.create)', {
+    suri, type, meta, walletEcosystem, tonImport, requireFreshGeneration, ...(substratePasswordRule ? { substratePasswordRule } : {}),
+  });
 }
 
 export function createMobileWallet(address: string, meta: FWKeyringMeta): Promise<boolean> {
@@ -44,6 +54,11 @@ export function subscribeAccounts(cb: (accounts: AccountJson[]) => void): Promis
 
 export function exportJSON(address: string, password: string, network?: string): Promise<ResponseAccountExport> {
   return sendMessage('pri(accounts.export.json)', { address, password, network });
+}
+
+// The Google Drive copy of the wallet being created, encrypted under the master password in the background.
+export function exportBackupJSON(address: string): Promise<ResponseAccountExport> {
+  return sendMessage('pri(accounts.export.backup)', address);
 }
 
 export function migrateExportJSON(address: string): Promise<ResponseAccountExport> {
@@ -62,6 +77,11 @@ export function exportRowSeed(address: string, password: string, isEVM: boolean)
   return sendMessage('pri(keyring.export.rowSeed)', { address, password, isEVM });
 }
 
+// Only whether Raw seed export would open this wallet; the seed stays in the background.
+export function rawSeedAvailable(address: string, password: string): Promise<boolean> {
+  return sendMessage('pri(keyring.export.rawSeedAvailable)', { address, password });
+}
+
 export function generateMnemonic(
   walletEcosystem = WalletEcosystem.Substrate,
   wordCount: WordCount = UNIVERSAL_WALLET_DEFAULT_WORD_COUNT
@@ -75,6 +95,33 @@ export function mnemonicValidate(walletEcosystem = WalletEcosystem.Substrate, se
 
 export function tonImportCandidates(mnemonic: string): Promise<TonImportCandidateInfo[]> {
   return sendMessage('pri(keyring.tonImportCandidates)', { mnemonic });
+}
+
+export function substratePasswordAccounts(suri: string, type: KeypairType): Promise<SubstratePasswordAccountInfo[]> {
+  return sendMessage('pri(keyring.substratePasswordAccounts)', { suri, type });
+}
+
+export function universalWalletPasswordDiscovery(mnemonic: string): Promise<UniversalWalletPasswordDiscoveryItem[]> {
+  return sendMessage('pri(keyring.universalWalletPasswordDiscovery)', { mnemonic });
+}
+
+export function universalWalletPasswordStatus(address: string): Promise<UniversalWalletPasswordStatus> {
+  return sendMessage('pri(accounts.universalWalletPassword.status)', { address });
+}
+
+export function addUniversalWalletPasswordPath(
+  address: string,
+  derivationPath: string
+): Promise<ResponseUniversalWalletPasswordPath> {
+  return sendMessage('pri(accounts.universalWalletPassword.addPath)', { address, derivationPath });
+}
+
+export function switchUniversalWalletAccounts(address: string): Promise<UniversalWalletPasswordSwitchResult[]> {
+  return sendMessage('pri(accounts.universalWalletPassword.switch)', { address });
+}
+
+export function checkUniversalWalletWatched(address: string): Promise<ResponseUniversalWalletWatchedCheck> {
+  return sendMessage('pri(accounts.universalWalletPassword.checkWatched)', { address });
 }
 
 export function accountUpdateName(address: string, name: string, walletEcosystem: WalletEcosystem): Promise<boolean> {

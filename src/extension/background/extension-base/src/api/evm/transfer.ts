@@ -1,6 +1,6 @@
 import { captureWalletResetGuard, WalletResetContextChanged } from '@extension-base/api/walletResetGuard';
-import { type TransactionRequest, Transaction, Wallet, getAddress, parseEther, parseUnits } from 'ethers';
-import { type BasicTxResponse, TransferErrorCode } from '@extension-base/background/types/types';
+import { type TransactionRequest, Transaction, Wallet, getAddress, isError, parseEther, parseUnits } from 'ethers';
+import { type BasicTxResponse, type EvmProvider, TransferErrorCode } from '@extension-base/background/types/types';
 import { state } from '@extension-base/background/handlers';
 import { type BalanceItem } from '@extension-base/api/evm/types';
 import type State from '@extension-base/background/handlers/State';
@@ -49,6 +49,121 @@ export function maximumEvmNetworkFee({ gasLimit, gasPrice, maxFeePerGas }: Pick<
   return gasLimit * price;
 }
 
+// How long a send waits for the node's answer. Without one the transaction is looked for EVM_SEND_LOOKUPS times,
+// EVM_SEND_LOOKUP_INTERVAL_MS apart: about ten seconds.
+const EVM_SEND_TIMEOUT_MS = 30_000;
+const EVM_SEND_LOOKUPS = 4;
+const EVM_SEND_LOOKUP_INTERVAL_MS = 2_500;
+
+// The node has the transaction already, or its nonce is used, maybe by this very transaction. Geth and Erigon say
+// "already known" and "nonce too low", Besu "Known transaction", Nethermind "AlreadyKnown" and "OldNonce".
+const KNOWN_TRANSACTION_ANSWER =
+  /already ?known|(?<!un)known ?transaction|already ?imported|already ?exists|nonce ?(?:is ?)?too ?low|old ?nonce|nonce ?(?:has ?)?already ?(?:been ?)?used/iu;
+// The node, or a gateway in front of it, was too busy to say whether it took the transaction.
+const BUSY_ANSWER = /rate ?limit|rate exceeded|too many requests?|request limit|capacity|timeout|timed out|internal error/iu;
+const BUSY_ANSWER_CODES: ReadonlySet<unknown> = new Set([429, -32005, -32603]);
+// ethers raises these for a node's JSON-RPC error answer, and keeps the answer's error object on them.
+const NODE_ANSWER_ERROR_CODES: ReadonlySet<unknown> = new Set([
+  'INSUFFICIENT_FUNDS',
+  'NONCE_EXPIRED',
+  'REPLACEMENT_UNDERPRICED',
+  'UNSUPPORTED_OPERATION',
+  'UNKNOWN_ERROR',
+]);
+
+/** The error object the node answered with. A request that got no answer (network, HTTP status, timeout) has none. */
+function nodeErrorAnswer(error: unknown): { code?: unknown; message: string } | undefined {
+  if (!error || typeof error !== 'object' || !NODE_ANSWER_ERROR_CODES.has((error as { code?: unknown }).code)) return;
+
+  const { error: answer, info } = error as { error?: unknown; info?: { error?: unknown; info?: { error?: unknown } } };
+
+  return [answer, info?.error, info?.info?.error].find(
+    (value): value is { code?: unknown; message: string } =>
+      !!value && typeof value === 'object' && typeof (value as { message?: unknown }).message === 'string'
+  );
+}
+
+/** Whether the node answered that it does not take the transaction. Any other failure may come after it did. */
+function isNodeRefusal(error: unknown): boolean {
+  const answer = nodeErrorAnswer(error);
+
+  if (!answer || isError(error, 'NONCE_EXPIRED') || BUSY_ANSWER_CODES.has(answer.code)) return false;
+
+  return !KNOWN_TRANSACTION_ANSWER.test(answer.message) && !BUSY_ANSWER.test(answer.message);
+}
+
+/** Whether the network has the transaction. Asked of its current provider: the one that sent may be destroyed. */
+async function findSentTransaction(networkKey: string, hash: string): Promise<boolean> {
+  for (let lookup = 1; ; lookup++) {
+    // Lookups start EVM_SEND_LOOKUP_INTERVAL_MS apart, however long each one takes.
+    const next = lookup < EVM_SEND_LOOKUPS && new Promise((resolve) => setTimeout(resolve, EVM_SEND_LOOKUP_INTERVAL_MS));
+
+    try {
+      const api = state.getEvmApi(networkKey)?.api;
+      const found: unknown = api
+        ? await withTimeout(
+            api.send('eth_getTransactionByHash', [hash]),
+            EVM_SEND_LOOKUP_INTERVAL_MS,
+            () => new Error('evm_lookup_timeout')
+          )
+        : null;
+
+      if (found && typeof found === 'object' && String((found as { hash?: unknown }).hash).toLowerCase() === hash) {
+        return true;
+      }
+    } catch (error) {
+      console.warn(error);
+    }
+
+    if (!next) return false;
+
+    await next;
+  }
+}
+
+/**
+ * Sends a signed transaction with eth_sendRawTransaction alone and says whether the node answered with its hash; throws
+ * only when the node refused it. ethers' broadcastTransaction also waited for the block number and chain ID, so a
+ * failure of either, or a provider replaced meanwhile, reported a send the node had taken as failed, and sending again
+ * paid twice.
+ */
+async function submitEvmTransaction(api: EvmProvider, serialized: string, hash: string): Promise<boolean> {
+  try {
+    const answer: unknown = await withTimeout(
+      api.send('eth_sendRawTransaction', [serialized]),
+      EVM_SEND_TIMEOUT_MS,
+      () => new Error('evm_send_timeout')
+    );
+
+    if (typeof answer === 'string' && answer.toLowerCase() === hash) return true;
+
+    console.warn('Unexpected eth_sendRawTransaction answer', answer);
+  } catch (error) {
+    if (isNodeRefusal(error)) throw error;
+
+    console.warn(error);
+  }
+
+  return false;
+}
+
+/** Sends a signed transaction and says whether the network has it; throws only when the node refused it. */
+async function sendEvmTransaction(api: EvmProvider, networkKey: string, serialized: string, hash: string): Promise<boolean> {
+  return (await submitEvmTransaction(api, serialized, hash)) || findSentTransaction(networkKey, hash);
+}
+
+/**
+ * Sends a transaction a site asked for and returns its hash. Only the node's refusal throws: after any other failure
+ * the network may have the transaction, and a site told it failed may send it again with a fresh nonce.
+ */
+export async function sendDappEvmTransaction(api: EvmProvider, signed: string): Promise<string> {
+  const hash = Transaction.from(signed).hash!;
+
+  await submitEvmTransaction(api, signed, hash);
+
+  return hash;
+}
+
 export async function handleTransfer({
   callback,
   networkKey,
@@ -76,7 +191,19 @@ export async function handleTransfer({
     transaction.signature = signer.signingKey.sign(digest);
     finalGuard?.();
     if (!web3Api) throw new Error(`Unknown network ${networkKey}`);
-    await web3Api.broadcastTransaction(transaction.serialized);
+    const transactionHash = transaction.hash!;
+
+    if (!(await sendEvmTransaction(web3Api, networkKey, transaction.serialized, transactionHash))) {
+      // The network may still take it: the Send screen shows the hash to check before sending again.
+      callback?.({
+        status: false,
+        outcome: 'unknown',
+        transactionHash,
+        errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: 'evm_broadcast_ambiguous' }],
+      });
+
+      return;
+    }
 
     callback?.({ status: true });
   } catch (error: unknown) {
@@ -103,28 +230,38 @@ export function calcEvmFees(maxFee: bigint | null, baseFee: bigint | null | unde
   return prepGasPrice * gasLimit;
 }
 
-async function getUtilityTransactionObject(params: TransferParams): Promise<TransactionObject> {
-  const { networkKey, to, amount } = params;
+async function getUtilityTransactionObject(params: TransferParams, forQuote = false): Promise<TransactionObject> {
+  const { networkKey, from, to, amount } = params;
   const web3Api = state.getEvmApi(networkKey)?.api;
 
   if (!web3Api) throw new Error(`Unknown network ${networkKey}`);
 
   const { maxFeePerGas, maxPriorityFeePerGas, gasPrice } = await web3Api.getFeeData();
+  const value = parseEther(amount);
 
   const transactionObject: TransactionRequest = {
     to,
     maxFeePerGas,
     maxPriorityFeePerGas,
-    value: parseEther('0.0'),
+    value,
   } as TransactionRequest;
 
-  const gasLimit = await web3Api.provider.estimateGas(transactionObject);
+  // A contract recipient's gas depends on the sender and the value it receives. Without fee fields a node does not cap
+  // the estimate at what the balance pays after the value, which would leave nothing for Max.
+  const gasLimit = await web3Api.provider.estimateGas({ from, to, value }).catch((error: unknown) => {
+    // The Send screen also prices 1 coin before an amount is entered, and amounts above the balance: such a quote
+    // prices a zero-value transfer. A send only signs a gas limit estimated for its own value.
+    if (!forQuote) throw error;
+
+    console.info(error);
+
+    return web3Api.provider.estimateGas({ from, to });
+  });
   const block = await web3Api.provider.getBlock('latest');
 
   const estimateFee = calcEvmFees(maxFeePerGas ?? gasPrice, block?.baseFeePerGas, gasLimit);
 
   transactionObject.gasLimit = gasLimit;
-  transactionObject.value = parseEther(amount);
 
   return { tx: transactionObject, fee: estimateFee };
 }
@@ -150,20 +287,9 @@ async function getERC20TransactionObject(params: TransferParams, state: State): 
     data,
   };
 
-  let gasLimit: bigint;
-
-  try {
-    gasLimit = await web3Api.estimateGas(transactionObject);
-  } catch (e) {
-    //BNB on ethereum is working that way, remove if something better is comes up
-    console.info(e);
-
-    const tx = { ...transactionObject };
-
-    delete tx.data;
-
-    gasLimit = await web3Api.estimateGas(tx);
-  }
+  // A transfer the node cannot estimate is not quoted or sent: a gas limit estimated without its call data runs out of
+  // gas on chain and costs the fee.
+  const gasLimit = await web3Api.estimateGas(transactionObject);
 
   const estimateFee = calcEvmFees(maxFeePerGas ?? gasPrice, block?.baseFeePerGas, gasLimit);
 
@@ -186,7 +312,7 @@ async function makeERC20Transfer(params: MakeTransferParams, state: State) {
 }
 
 export function getEVMTransactionObject(params: TransferParams, state: State): Promise<TransactionObject> {
-  if (params.balance.isUtility) return getUtilityTransactionObject(params);
+  if (params.balance.isUtility) return getUtilityTransactionObject(params, true);
 
   return getERC20TransactionObject(params, state);
 }

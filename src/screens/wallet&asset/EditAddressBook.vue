@@ -44,10 +44,12 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
+import { Address } from '@ton/core';
 
 import { storage } from '@extension-base/stores/Storage';
 import BaseApi from '@/util/BaseApi';
 import { useAccountsStore } from '@/stores/accounts';
+import { isTonNetwork } from '@/helpers';
 
 export default defineComponent({ name: 'EditAddressBook' ,
   props: {
@@ -65,6 +67,9 @@ export default defineComponent({ name: 'EditAddressBook' ,
     };
   },
   computed: {
+    isTonContact() {
+      return isTonNetwork(this.network ?? '') || this.accountStore.selectedWallet.isTon;
+    },
     buttonDisabled() {
       return this.name === '' || this.address.trim() === '' || this.isErrorAddress;
     },
@@ -73,8 +78,14 @@ export default defineComponent({ name: 'EditAddressBook' ,
 
           if (address.length === 0) return false;
 
-          // TODO ton
-          if (this.accountStore.selectedWallet.isTon) return false;
+          if (this.isTonContact) {
+            try {
+              Address.parse(address);
+              return false;
+            } catch {
+              return true;
+            }
+          }
 
           return !(BaseApi.validateAddress(address, 'polkadot') || BaseApi.validateAddress(address, 'moonbeam'));
     },
@@ -91,6 +102,7 @@ export default defineComponent({ name: 'EditAddressBook' ,
       this.address = value;
     },
     async updateContact() {
+      if (this.buttonDisabled) return;
       const { addressBook } = await storage.get(['addressBook']);
           const key = this.saveForAllNetworks ? 'all' : this.network;
           const value = addressBook[key] ?? [];
@@ -98,7 +110,7 @@ export default defineComponent({ name: 'EditAddressBook' ,
           storage.set({
             addressBook: {
               ...addressBook,
-              [key]: [...value, { name: this.name, address: BaseApi.encodeAddress(this.address.trim()) }],
+              [key]: [...value, { name: this.name, address: this.isTonContact ? this.address.trim() : BaseApi.encodeAddress(this.address.trim()) }],
             },
           });
 

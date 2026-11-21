@@ -1,7 +1,7 @@
 <template>
   <div class="welcome-page">
     <div>
-      <div class="back-wallet-container">
+      <div class="back-wallet-container" data-fw-depth="2">
         <CircleButton
           v-if="showBackWalletIcon"
           backgroundColor="light-black"
@@ -11,17 +11,17 @@
         />
       </div>
 
-      <Logo
-        class="description"
-        size="big"
-        text="common.fearlessWallet"
-        :subtext="$t('welcome.deFiWallet')"
-        data-testid="headerText"
-      />
+      <div class="welcome-brand" data-testid="headerText" data-fw-depth="0">
+        <div class="welcome-mark" role="img" :aria-label="$t('common.fearlessLogo')">
+          <img :src="lockup" class="welcome-lockup" alt="" />
+        </div>
+
+        <BrandSignature :text="$t('welcome.deFiWallet')" />
+      </div>
     </div>
 
     <div>
-      <div class="welcome-task">
+      <div class="welcome-task" data-fw-depth="1">
         <h1>{{ $t(showChoiceEcosystem ? 'ux.chooseNetworks' : 'ux.walletTaskTitle') }}</h1>
         <p>{{ $t(showChoiceEcosystem ? 'ux.chooseNetworksDescription' : 'ux.walletTaskDescription') }}</p>
         <ChoiceEcosystem v-if="showChoiceEcosystem" @setEcosystem="setEcosystem" />
@@ -101,12 +101,16 @@ import { type WalletEcosystem } from '@/interfaces';
 import { isGoogleDriveBackupEnabled } from '@/util/releaseFeatures';
 import ChoiceEcosystem from '@/screens/welcome/ChoiceEcosystem.vue';
 import RecoveryDataLink from '@/components/RecoveryDataLink.vue';
+import BrandSignature from '@/components/BrandSignature.vue';
+import lockup from '@/assets/brand/fearless-lockup-stacked.svg';
 
 export default defineComponent({
   name: 'Welcome',
-  components: { ChoiceEcosystem, RecoveryDataLink },
+  components: { BrandSignature, ChoiceEcosystem, RecoveryDataLink },
   data() {
     return {
+      // A full-page brand screen: the stacked lockup over the tagline, as on Unlock and the onboarding start.
+      lockup,
       isExtension: IS_EXTENSION,
       googleDriveBackupEnabled: isGoogleDriveBackupEnabled(),
       accountsStore: useAccountsStore(),
@@ -220,8 +224,20 @@ export default defineComponent({
     height: 32px;
   }
 
-  .description {
-    margin-top: 24px;
+  .welcome-brand {
+    margin-top: 8px;
+  }
+
+  .welcome-mark {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0;
+  }
+
+  .welcome-lockup {
+    width: 152px;
+    max-width: 60%;
+    height: auto;
   }
 
   .privacy-policy {

@@ -118,7 +118,7 @@ export type NftTx = {
 export type CheckNftResponse = {
   fee: string;
   data: string;
-  error?: 'insufficientFunds' | 'incorrectRecipient';
+  error?: 'insufficientFunds' | 'incorrectRecipient' | 'estimationFailed';
 };
 
 export type NftSettings = {

@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('@/stores/extension', () => ({ useExtensionStore: () => mocks.store }));
 vi.mock('@/stores/networks', () => ({ useNetworksStore: () => ({ allNetworks: [] }) }));
+vi.mock('@/stores/dappSigningKillSwitch', () => ({ useDappSigningKillSwitchStore: () => ({ vetoes: {} }) }));
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: mocks.push, currentRoute: { value: { name: 'Transaction' } } }),
 }));

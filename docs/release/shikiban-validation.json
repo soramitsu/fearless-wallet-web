@@ -1,0 +1,81 @@
+{
+  "date": "2026-11-15",
+  "task": "Brand kit v4 \"Shikiban\" in the browser extension (owner request: more informative animations, a 3D startup zoom, a high-tech look that keeps the Yatagarasu theme, sacred geometry guiding the composition)",
+  "baseCommit": "8dce94281169d19720f200d6abf52af6ebde5824",
+  "applicationSourceCommit": "3c866dc3611e31be7f400ce30d3b084ffce8fa4b",
+  "reviewedHead": "3c866dc3611e31be7f400ce30d3b084ffce8fa4b",
+  "branch": "claude/consolidated-20261110",
+  "brandKit": {
+    "manifestSha256": "19675ac743881b28bcae83a24f3ee15702c5a8af2b7a5d901c858848c4d74cd7",
+    "provenance": "docs/release/brand-asset-provenance.json"
+  },
+  "changes": [
+    "Launch flight: from the clip dive, six gates rush out of the focus, the eight-lobed mirror opens on the wallet in a corona, and the wallet flies up with its parts (data-fw-depth) at their own depths; a click or key runs the rest 2.5 times faster; later views arrive tier by tier",
+    "Sync dial in the balance card: eight segments lit to the share of the wallet networks that have answered, ember for those that failed, a comet and the count while any are outstanding; the tick ring turns 14 times faster meanwhile",
+    "The seal: a send draws the solar geometry while it is on its way, closes and ignites on acceptance, breaks on failure; SealFigure replaces SolarIgnite",
+    "Mirror loader behind Loader and Loading; dialogs arrive from scale 0.88",
+    "Value tick on rows and the total; corner marks, yamato ticks and an asanoha lattice with a band of light on the balance card",
+    "Reduced motion and Reduced paint show every state without moving; Lite drops the band of light"
+  ],
+  "validation": {
+    "environment": "Clean git archive export of the head, Node 24.19.0, macOS arm64, machine load 600-900 from other sessions",
+    "typecheck": "vue-tsc --noEmit: clean",
+    "lint": "eslint: 0 errors, 37 warnings (the same 37 as the base)",
+    "unit": {
+      "files": {
+        "passed": 578,
+        "skipped": 3
+      },
+      "tests": {
+        "passed": 6520,
+        "skipped": 20,
+        "failed": 0
+      },
+      "coverage": "83.22 % of authored executable lines (29278/35183, 809 files); gate 80 %",
+      "workers": 2,
+      "testTimeoutMs": 60000
+    },
+    "rawColours": "check-raw-colours.mjs --base-ref 8dce9428 on cf9eab71: only shrinks (3c866dc3 changes one .ts file)",
+    "brand": "generate-brand-assets.mjs --check (Sharp 0.35.5): 24 files verified; test-brand-assets.mjs 8/8",
+    "chromeZip": {
+      "bytes": 9957945,
+      "sha256": "25479fee8bc5ecbf5bd47a3f2cca34dc7527eb7ffa705164fbdbf900ff43f465",
+      "note": "keyless production build, not a store artifact"
+    },
+    "firefox": "docs/release/shikiban-firefox-warning-review.json",
+    "realExtension": "Chrome for Testing, offline fixture, test build of the same source: 37 checks, 37 passed (launch flight in popup, side panel, full tab and over the unlock form; tiers back at rest; no scroll width; dial counts, settle and partial; seal waiting, accepted, broken; loader; value tick; reduced motion; a key reaching the password field)"
+  },
+  "notProven": [
+    "No real transfer was sent: the popup request was kept in the page and the outcome given to the real component",
+    "The sync counts came from a fixture pushed into the page stores, not from live networks",
+    "The flight was not watched in Firefox; the Firefox builds were built and linted",
+    "Frame pacing was not measured"
+  ],
+  "updates": [
+    {
+      "date": "2026-11-15",
+      "applicationSourceCommit": "f3f23f88e4e4557a7feb11de3b5b9984e225ebab",
+      "change": "The seal on swaps, staking and pools (only a send keeps the send sound); a 156 px figure with room for two-token operations, including cross-chain sends",
+      "unit": {
+        "files": {
+          "passed": 578,
+          "skipped": 3
+        },
+        "tests": {
+          "passed": 6524,
+          "skipped": 20,
+          "failed": 0
+        },
+        "coverage": "83.23 % (29283/35184 lines, 809 files)"
+      },
+      "typecheck": "clean",
+      "lint": "0 errors, the base 37 warnings",
+      "brand": "provenance regenerated for the brand notes; --check and 8/8 brand tests pass",
+      "chromeZip": {
+        "bytes": 9957975,
+        "sha256": "f4d66f05c9d8665a06196d236c502fc33e27d4494c2a6ab4c8adf6ccbb68e8b3"
+      },
+      "realExtension": "swap seal waiting, accepted, at rest and failed in the test build: 7 of 7 checks; request kept in the page"
+    }
+  ]
+}

@@ -87,6 +87,15 @@ With the supplied macOS helper:
 The signer accepts only CRX3 payloads containing its own public-key-derived ID,
 checks its signature immediately, and refuses to overwrite an existing output.
 
+Each `sign` also asks for the owner's Touch ID or login password. The dialog names
+the first 16 hex digits of the package ZIP's SHA-256, the `zipSha256` of the
+signing receipt, so compare them before approving. The Keychain lets the helper
+use the key without asking, which would let any process running as this user have
+a package signed; with this check nothing is signed without someone at the Mac,
+and with the screen locked signing fails. After a rebuilt helper is installed,
+macOS asks once more, with the login password, whether it may use the key (Always
+Allow); that approval belongs to the new binary.
+
 ```sh
 node scripts/verified-crx.mjs assemble \
   --zip /secure/release/verified.zip \

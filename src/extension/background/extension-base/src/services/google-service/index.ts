@@ -13,7 +13,13 @@ import type {
 } from '@/interfaces';
 import { isGoogleDriveBackupEnabled } from '@/util/releaseFeatures';
 
+const GOOGLE_SESSION_PREFIX = 'fearless:google-drive-session:';
+const GOOGLE_SESSION_HANDLE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
+type GoogleSession = { token: string; expiresAt: number };
+
 export class GoogleService {
+  private readonly sessions = new Map<string, GoogleSession>();
+
   private readonly baseURL = 'https://www.googleapis.com/drive/v3';
   private readonly baseUploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
   private readonly extensionRedirectURL = chrome?.identity?.getRedirectURL('welcome');
@@ -89,7 +95,10 @@ export class GoogleService {
         params.get('state') !== state || params.has('error') || !token?.trim())
         throw new Error('Google authorization response was not valid');
       const popup = chrome.runtime.getURL('popup.html');
-      const baseURL = `${popup}#/${this.urlTypes[type]}/${encodeURIComponent(token)}`;
+      // The tab gets a handle, not the token: other extensions with the tabs permission read tab URLs, and history
+      // keeps them, and the token opens the wallet's encrypted Drive backups.
+      const handle = await this.openSession(token, Number(params.get('expires_in')));
+      const baseURL = `${popup}#/${this.urlTypes[type]}/${handle}`;
       const url = type === 'export' && wallet ? `${baseURL}?wallet=${encodeURIComponent(wallet)}` : baseURL;
       const tabs = await chrome.tabs.query({});
       const openTab = tabs.find((tab) => tab.url === popup || tab.url?.startsWith(`${popup}#`));
@@ -98,7 +107,48 @@ export class GoogleService {
     } finally { this.authPending = false; }
   }
 
-  public async getFiles({ token }: RequestGoogleToken): Promise<IGetFilesResponse> {
+  // Google access tokens last an hour; the handle is dropped a minute before. Session storage is memory-only and
+  // hidden from content scripts, and keeps the handle working if the worker restarts during the flow.
+  private async openSession(token: string, expiresIn: number): Promise<string> {
+    const lifetime = Number.isFinite(expiresIn) && expiresIn > 120 ? Math.min(expiresIn, 3600) - 60 : 3540;
+    const handle = crypto.randomUUID();
+    const session: GoogleSession = { token, expiresAt: Date.now() + lifetime * 1000 };
+
+    this.sessions.set(handle, session);
+    try {
+      await chrome?.storage?.session?.set({ [`${GOOGLE_SESSION_PREFIX}${handle}`]: session });
+    } catch {
+      // The in-memory session still serves this worker's lifetime.
+    }
+
+    return handle;
+  }
+
+  /** The access token behind a handle `authExtension` issued; a raw token, an unknown or an expired handle is refused. */
+  private async tokenFor(handle: unknown): Promise<string> {
+    if (typeof handle !== 'string' || !GOOGLE_SESSION_HANDLE.test(handle)) throw new Error('google_session_unknown');
+    const key = `${GOOGLE_SESSION_PREFIX}${handle}`;
+    let session = this.sessions.get(handle);
+
+    if (!session) {
+      try {
+        session = (await chrome?.storage?.session?.get(key))?.[key] as GoogleSession | undefined;
+      } catch {
+        session = undefined;
+      }
+    }
+    if (!session || typeof session.token !== 'string' || !(session.expiresAt > Date.now())) {
+      this.sessions.delete(handle);
+      await Promise.resolve(chrome?.storage?.session?.remove(key)).catch(() => undefined);
+      throw new Error('google_session_expired');
+    }
+    this.sessions.set(handle, session);
+
+    return session.token;
+  }
+
+  public async getFiles({ token: handle }: RequestGoogleToken): Promise<IGetFilesResponse> {
+    const token = await this.tokenFor(handle);
     const files: FilesResponse[] = [];
     const seen = new Set<string>();
     let pageToken: string | undefined;
@@ -118,7 +168,8 @@ export class GoogleService {
     return { files, incompleteSearch: false, kind: 'drive#fileList' };
   }
 
-  public async getFile({ id, token }: GoogleFileId): Promise<KeyringPair$Json> {
+  public async getFile({ id, token: handle }: GoogleFileId): Promise<KeyringPair$Json> {
+    const token = await this.tokenFor(handle);
     const { data } = await axios.get<KeyringPair$Json>(`${this.baseURL}/files/${encodeURIComponent(id)}?alt=media`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -129,7 +180,14 @@ export class GoogleService {
     return data;
   }
 
-  public async verifyToken({ token }: RequestGoogleToken): Promise<VerifyTokenResponse | null> {
+  public async verifyToken({ token: handle }: RequestGoogleToken): Promise<VerifyTokenResponse | null> {
+    let token: string;
+
+    try {
+      token = await this.tokenFor(handle);
+    } catch {
+      return null;
+    }
     const res = await axios
       .get<VerifyTokenResponse>('https://www.googleapis.com/oauth2/v1/tokeninfo', { params: { access_token: token } })
       .catch(() => {
@@ -141,7 +199,8 @@ export class GoogleService {
     return null;
   }
 
-  async createFile({ json, options, token }: ICreateFile): Promise<FilesResponse> {
+  async createFile({ json, options, token: handle }: ICreateFile): Promise<FilesResponse> {
+    const token = await this.tokenFor(handle);
     const { body, boundary } = this.prepareData(json, options);
 
     const { data } = await axios.post<FilesResponse>(this.baseUploadUrl, body, {
@@ -155,8 +214,9 @@ export class GoogleService {
     return data;
   }
 
-  async deleteFile({ id, token }: GoogleFileId) {
+  async deleteFile({ id, token: handle }: GoogleFileId) {
     if (!id?.trim()) throw new Error('Google Drive file identifier is required');
+    const token = await this.tokenFor(handle);
     await axios.delete(`${this.baseURL}/files/${encodeURIComponent(id)}`, {
       headers: {
         Authorization: `Bearer ${token}`,

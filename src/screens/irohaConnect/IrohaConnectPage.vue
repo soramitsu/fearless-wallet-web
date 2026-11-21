@@ -51,6 +51,9 @@
           </div>
 
           <section v-if="snapshot.phase === 'idle' || snapshot.phase === 'error'" class="connect-step">
+            <p v-if="noticeText" class="security-note" role="status" data-testid="iroha-connect-notice">
+              {{ noticeText }}
+            </p>
             <label for="iroha-connect-uri">{{ t('irohaConnectPage.linkLabel') }}</label>
             <textarea
               id="iroha-connect-uri"
@@ -112,13 +115,15 @@
                 <dt>{{ t('irohaConnectPage.relay') }}</dt>
                 <dd>{{ relayHost }}</dd>
               </div>
-              <div v-if="snapshot.session.appUrl">
+              <div v-if="snapshot.session.appUrl" class="wide">
                 <dt>{{ t('irohaConnectPage.app') }}</dt>
                 <dd>{{ appHost }}</dd>
               </div>
-              <div>
+              <div class="wide">
                 <dt>{{ t('irohaConnectPage.permission') }}</dt>
-                <dd>{{ t('irohaConnectPage.requestSignatures') }}</dd>
+                <dd class="wrap" data-testid="iroha-connect-permissions">
+                  <span v-for="line in permissionLines" :key="line" class="permission-line">{{ line }}</span>
+                </dd>
               </div>
             </dl>
 
@@ -155,45 +160,108 @@
             </div>
           </section>
 
-          <section v-else-if="snapshot.phase === 'request-approval' && snapshot.request" class="connect-step">
+          <section v-else-if="snapshot.phase === 'request-approval' && review" class="connect-step">
             <div class="review-heading">
               <div>
                 <p class="eyebrow">{{ t('irohaConnectPage.signatureRequest') }}</p>
-                <h3>{{ requestTitle }}</h3>
+                <h3 data-testid="iroha-connect-request-title">{{ requestTitle }}</h3>
               </div>
               <span class="network-stamp">{{ networkLabel }}</span>
             </div>
 
-            <div class="signing-seal" aria-hidden="true">
-              <Icon icon="iroha-connect" :hover="false" />
-              <span>{{ t('irohaConnectPage.reviewBytes') }}</span>
-            </div>
-
-            <dl class="session-facts">
-              <div v-if="snapshot.request.entrypoint">
-                <dt>{{ t('irohaConnectPage.entrypoint') }}</dt>
-                <dd>{{ snapshot.request.entrypoint }}</dd>
+            <dl class="session-facts" data-testid="iroha-connect-review">
+              <template v-if="review.transfer">
+                <div>
+                  <dt>{{ t('irohaConnectReview.amount') }}</dt>
+                  <dd>{{ review.transfer.quantity }} {{ assetLabel(review.transfer.asset) }}</dd>
+                </div>
+                <div>
+                  <dt>{{ t('irohaConnectReview.to') }}</dt>
+                  <dd :title="review.transfer.destination">{{ shorten(review.transfer.destination) }}</dd>
+                </div>
+              </template>
+              <template v-for="(call, index) in review.calls ?? []" :key="`call-${index}`">
+                <div>
+                  <dt>{{ t('irohaConnectReview.entrypoint') }}</dt>
+                  <dd>{{ call.entrypoint }}</dd>
+                </div>
+                <div>
+                  <dt>{{ t('irohaConnectReview.contract') }}</dt>
+                  <dd :title="call.contractAddress">{{ shorten(call.contractAddress) }}</dd>
+                </div>
+                <div class="wide">
+                  <dt>{{ t('irohaConnectReview.arguments') }}</dt>
+                  <dd>
+                    {{
+                      call.argumentBytes === null
+                        ? t('irohaConnectReview.noArguments')
+                        : t('irohaConnectReview.argumentBytes', { count: call.argumentBytes })
+                    }}
+                  </dd>
+                </div>
+              </template>
+              <div v-for="limit in review.fee.chargeLimits" :key="limit.kind">
+                <dt>{{ t('irohaConnectReview.maxFee') }}</dt>
+                <dd>{{ limit.maxAmount }} {{ assetLabel(limit.asset) }}</dd>
               </div>
-              <div v-if="snapshot.request.contractAddress || snapshot.request.contractAlias">
-                <dt>{{ t('irohaConnectPage.contract') }}</dt>
-                <dd>{{ snapshot.request.contractAlias || shorten(snapshot.request.contractAddress || '') }}</dd>
+              <div>
+                <dt>{{ t('irohaConnectReview.feePayer') }}</dt>
+                <dd :title="review.fee.program">
+                  {{ review.fee.payer === 'sponsor' ? shorten(review.fee.program ?? '') : t('irohaConnectReview.feePayerYou') }}
+                </dd>
+              </div>
+              <div v-if="review.fee.gasLimit">
+                <dt>{{ t('irohaConnectReview.gasLimit') }}</dt>
+                <dd>{{ review.fee.gasLimit }}</dd>
+              </div>
+              <div v-if="review.ttlMs">
+                <dt>{{ t('irohaConnectReview.validFor') }}</dt>
+                <dd>{{ t('irohaConnectReview.seconds', { seconds: ttlSeconds }) }}</dd>
               </div>
               <div>
                 <dt>{{ t('irohaConnectPage.account') }}</dt>
-                <dd>{{ shorten(snapshot.request.accountId) }}</dd>
+                <dd :title="snapshot.request?.accountId">{{ shorten(snapshot.request?.accountId ?? '') }}</dd>
               </div>
-              <div>
-                <dt>{{ t('irohaConnectPage.payload') }}</dt>
-                <dd>{{ t('irohaConnectPage.byteCount', { count: snapshot.request.signingMessageBytes }) }}</dd>
-              </div>
-              <div class="payload-hash">
-                <dt>SHA-256</dt>
-                <dd>{{ snapshot.request.signingMessageSha256 }}</dd>
+              <div v-if="review.metadata" class="wide">
+                <dt>{{ t('irohaConnectReview.memo') }}</dt>
+                <dd class="wrap">{{ review.metadata }}</dd>
               </div>
             </dl>
 
+            <details class="review-details">
+              <summary>{{ t('irohaConnectReview.details') }}</summary>
+              <dl>
+                <div>
+                  <dt>{{ t('irohaConnectReview.payloadHash') }}</dt>
+                  <dd>{{ review.payloadHashHex }}</dd>
+                </div>
+                <div>
+                  <dt>{{ t('irohaConnectPage.payload') }}</dt>
+                  <dd>{{ t('irohaConnectPage.byteCount', { count: review.payloadBytes }) }}</dd>
+                </div>
+                <div v-if="review.transfer">
+                  <dt>{{ t('irohaConnectReview.asset') }}</dt>
+                  <dd>{{ review.transfer.asset.definitionId }}{{ review.transfer.scope ? ` · ${review.transfer.scope}` : '' }}</dd>
+                </div>
+                <template v-for="(call, index) in review.calls ?? []" :key="`call-detail-${index}`">
+                  <div>
+                    <dt>{{ t('irohaConnectReview.contract') }}</dt>
+                    <dd>{{ call.contractAddress }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ t('irohaConnectReview.codeHash') }}</dt>
+                    <dd>{{ call.codeHashHex }}</dd>
+                  </div>
+                  <div v-if="call.argumentsSha256">
+                    <dt>{{ t('irohaConnectReview.arguments') }} SHA-256</dt>
+                    <dd>{{ call.argumentsSha256 }}</dd>
+                  </div>
+                </template>
+              </dl>
+            </details>
+
             <p class="security-note security-note--warning">
-              {{ t('irohaConnectPage.approveOnlyIfMatches', { appName: snapshot.session?.appName ?? '' }) }}
+              {{ t('irohaConnectReview.decodedNote', { appName: snapshot.session?.appName ?? '' }) }}
             </p>
 
             <div class="button-row">
@@ -207,7 +275,7 @@
                 :disabled="busy"
                 @click="approveRequest"
               >
-                {{ busy ? t('irohaConnectPage.signing') : t('irohaConnectPage.approveSignature') }}
+                {{ busy ? t('irohaConnectPage.signing') : t('irohaConnectReview.approve') }}
               </button>
             </div>
           </section>
@@ -220,6 +288,9 @@
             <h3>{{ snapshot.session?.appName || 'Iroha dApp' }}</h3>
             <p>{{ networkLabel }} · {{ selectedAccountName }}</p>
             <code>{{ shorten(snapshot.selectedAccountId || '') }}</code>
+            <p v-if="noticeText" class="security-note" role="status" data-testid="iroha-connect-notice">
+              {{ noticeText }}
+            </p>
             <div class="waiting-line"><span /> {{ t('irohaConnectPage.waitingForRequest') }}</div>
             <button class="action-button action-button--quiet" type="button" @click="disconnect">
               {{ t('irohaConnectPage.disconnect') }}
@@ -236,6 +307,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   EMPTY_IROHA_CONNECT_SNAPSHOT,
+  type IrohaConnectReviewAsset,
   type IrohaConnectSnapshot,
 } from '@extension-base/services/iroha-connect-service/types';
 import { Components } from '@/router/routes';
@@ -260,8 +332,16 @@ const selectedAccount = ref('');
 const uri = ref('');
 const busy = ref(false);
 const localError = ref('');
+const KNOWN_ERRORS = new Set([
+  'iroha_connect_retired_link',
+  'iroha_connect_network_unavailable',
+  'iroha_connect_unknown_network',
+  'iroha_connect_wrong_node',
+  'iroha_connect_invalid_link',
+  'iroha_connect_invalid_frame',
+]);
 const localizedError = computed(() =>
-  snapshot.value.error ? t('irohaConnectPage.actionFailed') : localError.value
+  snapshot.value.error ? readableError(snapshot.value.error) : localError.value
 );
 
 const canConnect = computed(() => /^(?:iroha|irohaconnect):\/\/connect\?/u.test(uri.value.trim()));
@@ -299,7 +379,38 @@ const liveStatus = computed(() => {
 });
 const relayHost = computed(() => hostFromUrl(snapshot.value.session?.toriiBaseUrl));
 const appHost = computed(() => hostFromUrl(snapshot.value.session?.appUrl));
-const requestTitle = computed(() => snapshot.value.request?.entrypoint || t('irohaConnectPage.contractCall'));
+const review = computed(() => snapshot.value.request?.review);
+const requestTitle = computed(() => {
+  const current = review.value;
+  if (current?.transfer) {
+    return t('irohaConnectReview.sendTitle', {
+      quantity: current.transfer.quantity,
+      symbol: assetLabel(current.transfer.asset),
+    });
+  }
+  const calls = current?.calls ?? [];
+  if (calls.length === 1) return t('irohaConnectReview.callTitle', { entrypoint: calls[0].entrypoint });
+  if (calls.length > 1) return t('irohaConnectReview.callsTitle', { count: calls.length });
+  return t('irohaConnectPage.contractCall');
+});
+const ttlSeconds = computed(() => {
+  const ttl = Number(review.value?.ttlMs ?? 0);
+  return Number.isFinite(ttl) ? Math.round(ttl / 1000) : 0;
+});
+const permissionLines = computed(() => {
+  const permissions = snapshot.value.session?.permissions;
+  if (!permissions) return [t('irohaConnectReview.permissions.noRestriction')];
+  const lines: string[] = [];
+  if (permissions.methods.includes('sign_transaction')) lines.push(t('irohaConnectReview.permissions.signTransactions'));
+  if (permissions.methods.includes('sign_raw')) lines.push(t('irohaConnectReview.permissions.signMessages'));
+  const other = permissions.methods.filter((method) => method !== 'sign_transaction' && method !== 'sign_raw');
+  if (other.length) lines.push(t('irohaConnectReview.permissions.other', { list: other.join(', ') }));
+  return lines.length ? lines : [t('irohaConnectReview.permissions.other', { list: '—' })];
+});
+const noticeText = computed(() => {
+  const code = snapshot.value.notice?.code;
+  return code ? t(`irohaConnectReview.notices.${code}`, { appName: snapshot.value.session?.appName ?? 'dApp' }) : '';
+});
 const selectedAccountName = computed(
   () =>
     snapshot.value.accounts.find(({ address }) => address === snapshot.value.selectedAccountId)?.name ||
@@ -346,8 +457,15 @@ function shorten(value: string): string {
   return value.length > 24 ? `${value.slice(0, 11)}…${value.slice(-9)}` : value;
 }
 
-function readableError(_error: unknown): string {
-  return t('irohaConnectPage.actionFailed');
+function assetLabel(asset: IrohaConnectReviewAsset): string {
+  return asset.symbol ?? shorten(asset.definitionId);
+}
+
+// Background errors cross the messaging boundary as their message text; only the stable IrohaConnect codes are
+// translated, everything else reads as a generic failure.
+function readableError(error: unknown): string {
+  const message = typeof error === 'string' ? error : error instanceof Error ? error.message : '';
+  return KNOWN_ERRORS.has(message) ? t(`irohaConnectReview.errors.${message}`) : t('irohaConnectPage.actionFailed');
 }
 
 async function run(action: () => Promise<IrohaConnectSnapshot>): Promise<void> {
@@ -750,14 +868,68 @@ const goBack = () => router.push({ name: Components.Settings });
     white-space: nowrap;
   }
 
-  .payload-hash {
+  .wide {
     grid-column: 1 / -1;
+  }
 
-    dd {
-      overflow-wrap: anywhere;
-      text-overflow: clip;
-      white-space: normal;
+  .wrap {
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
+  }
+}
+
+.permission-line {
+  display: block;
+
+  & + & {
+    margin-top: 4px;
+  }
+}
+
+.review-details {
+  margin: 0 0 14px;
+  border: 1px solid var(--connect-line);
+  border-radius: 8px;
+
+  summary {
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    padding: 0 11px;
+    color: var(--connect-muted);
+    cursor: pointer;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+
+    &:focus-visible {
+      outline: 2px solid var(--fw-focus);
+      outline-offset: 2px;
     }
+  }
+
+  dl {
+    display: grid;
+    gap: 9px;
+    margin: 0;
+    padding: 0 11px 11px;
+  }
+
+  dt {
+    margin-bottom: 3px;
+    color: var(--connect-muted);
+    font-size: 0.58rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--connect-ink);
+    font: 0.64rem/1.4 var(--s-font-family-mono);
+    overflow-wrap: anywhere;
   }
 }
 
@@ -849,22 +1021,6 @@ const goBack = () => router.push({ name: Components.Settings });
   display: grid;
   grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
   gap: 8px;
-}
-
-.signing-seal {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-  color: rgba(255, 244, 220, 0.78);
-  font-size: 0.68rem;
-  font-weight: 700;
-
-  svg {
-    width: 28px;
-    height: 28px;
-    color: #ef3341;
-  }
 }
 
 .connect-step--connected {

@@ -94,7 +94,7 @@ function initialize() {
         },
       },
     },
-    setActiveNetworks: vi.fn(async () => {}),
+    activateDappNetwork: vi.fn(async () => {}),
     keyringService: {
       tonKeyring: { getAccounts: () => [] },
       getAccount: () => ({ meta: { ethereumAddress: address } }),
@@ -193,12 +193,12 @@ describe('authorization mutation races through production callers', () => {
     'does not restore or mutate a changed grant after network activation: %s',
     async (change) => {
       let finish!: () => void;
-      vi.mocked(state.setActiveNetworks).mockImplementationOnce(
+      vi.mocked(state.activateDappNetwork).mockImplementationOnce(
         () => new Promise<void>((resolve) => { finish = resolve; })
       );
       const pending = state.switchEvmNetworkByUrl(first, 'Other');
       const outcome = pending.then(() => 'resolved', () => 'rejected');
-      await vi.waitFor(() => expect(state.setActiveNetworks).toHaveBeenCalledOnce());
+      await vi.waitFor(() => expect(state.activateDappNetwork).toHaveBeenCalledOnce());
       if (change === 'revocation') await revoke(first);
       else if (change === 'removal') await extension.removeAuthorization(first);
       else auth.setAuthorize({ ...grants(), [first]: { ...grants()[first], id: 'replacement' } });
@@ -216,11 +216,11 @@ describe('authorization mutation races through production callers', () => {
 
   it('preserves a concurrent other-origin revocation during network activation', async () => {
     let finish!: () => void;
-    vi.mocked(state.setActiveNetworks).mockImplementationOnce(
+    vi.mocked(state.activateDappNetwork).mockImplementationOnce(
       () => new Promise<void>((resolve) => { finish = resolve; })
     );
     const pending = state.switchEvmNetworkByUrl(first, 'Other');
-    await vi.waitFor(() => expect(state.setActiveNetworks).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(state.activateDappNetwork).toHaveBeenCalledOnce());
     await revoke(second);
     finish();
     await pending;
@@ -231,12 +231,12 @@ describe('authorization mutation races through production callers', () => {
 
   it('rejects network activation after an EVM grant was revoked and restored to the same value', async () => {
     let finish!: () => void;
-    vi.mocked(state.setActiveNetworks).mockImplementationOnce(
+    vi.mocked(state.activateDappNetwork).mockImplementationOnce(
       () => new Promise<void>((resolve) => { finish = resolve; })
     );
     const pending = state.switchEvmNetworkByUrl(first, 'Other');
     const outcome = pending.then(() => 'resolved', () => 'rejected');
-    await vi.waitFor(() => expect(state.setActiveNetworks).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(state.activateDappNetwork).toHaveBeenCalledOnce());
     await revoke(first);
     await requests.updateAuthorizedAccounts([[first, [address], 'evm']]);
     finish();

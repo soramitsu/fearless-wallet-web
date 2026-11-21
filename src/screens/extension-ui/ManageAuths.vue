@@ -1,5 +1,4 @@
 <template>
-  <Fragment>
     <Tabs class="connection-tabs" :activeTab="activeTab" :tabs="tabs" @update:activeTab="onActiveTabUpdate" />
 
     <div class="scroll-container">
@@ -7,7 +6,6 @@
         <router-view></router-view>
       </Scroll>
     </div>
-  </Fragment>
 </template>
 
 <script lang="ts" setup>

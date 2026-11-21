@@ -23,7 +23,7 @@ const provenanceTemporaryPath = `${provenancePath}.tmp`;
 const EXPECTED_RELEASE_ENVIRONMENT = {
   IS_EXTENSION: 'true',
   NODE_ENV: 'production',
-  VUE_APP_ENABLE_IROHA_CONNECT: 'false',
+  VUE_APP_ENABLE_IROHA_CONNECT: 'true',
   VUE_APP_ENABLE_SOLANA_TRANSFERS: 'true',
   VUE_APP_EXTENSION_SMOKE: 'false',
   VUE_APP_TEST_ONLY: 'false',
@@ -160,6 +160,7 @@ function runAutomatedReleaseGates(yarnPath) {
     ['test:all'],
     ['build:web'],
     ['test:e2e:extension'],
+    ['test:smoke:chrome:side-panel'],
     ['test:smoke:bitcoin'],
     // Bitcoin and Solana sends against bitcoind -regtest and solana-test-validator.
     ['test:e2e:local-chains'],

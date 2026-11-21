@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-16",
+  "referenceSourceCommit": "1c77e895e99fc8fe2f1cbb28db01a777168152d2",
+  "referenceSourceTree": "2096863de3f83db9c59f7a4b22d7c68594badfc4",
+  "applicationSourceTree": "b57c1a905ebfb9f61f540aa385e1d948d2e867f6",
+  "applicationSource": "The three commits before this record, on 1c77e895: \"Price unavailable\" in swaps and pools; one NODE_ENV for every bundle of an extension build; Liberland's second node. Their tree is given because the commit ids change when the series is applied.",
+  "toolchain": {
+    "node": "24.19.0",
+    "webExt": "10.6.0"
+  },
+  "summary": "Review and refresh the keyless Firefox warning baseline for the three commits. The same 36 warnings remain: 35 DANGEROUS_EVAL and one UNSAFE_VAR_ASSIGNMENT, at the same sites (code, file with its content hash removed, message) as the reference build; zero errors or notices. Only the digests of mountApp.js and SendForm.js change. The store baseline was not re-recorded.",
+  "comparison": {
+    "method": "The keyless build of the reference and of the application source linted with web-ext, compared by code, file (content hash removed) and message, then by 60 characters of minified code each side of every warning (warnings of one file, code and message paired in source order).",
+    "keyless": {
+      "reference": 36,
+      "head": 36,
+      "siteDifferences": 0,
+      "sameContext": 34,
+      "contextDifferences": 2
+    },
+    "contextDifferences": [
+      {
+        "code": "DANGEROUS_EVAL",
+        "file": "chunks/mountApp.js",
+        "message": "The Function constructor is eval.",
+        "finding": "lodash root lookup (Function(`return this`)()), a reviewed site; only minified names changed (Rx/Ix/Lx to ox/ix/ax)."
+      },
+      {
+        "code": "UNSAFE_VAR_ASSIGNMENT",
+        "file": "chunks/SendForm.js",
+        "message": "Unsafe assignment to innerHTML",
+        "finding": "Vue runtime-dom static-content insert, a reviewed site; only minified names changed (Mt/Ot to Et/St)."
+      }
+    ],
+    "whatChanged": [
+      "The swap and pool pricing commit alone changes only mountApp.js (205 bytes smaller); its 36 warnings keep their sites, and 35 their exact context.",
+      "The NODE_ENV commit is what changes the keyless build most. That build is the CI recipe, made without NODE_ENV. Its popup had been compiled with an empty NODE_ENV, so it read the development chain list and feature config and carried Vue's development checks, and its templates were compiled by Vue's development compiler (loaded before anything set NODE_ENV), while its worker was production. It is now production throughout and byte-identical to the same build made with NODE_ENV=production: mountApp.js is 22,663 bytes smaller, SendForm.js 2,847 and accounts.js 3,869, the popup chunks no longer contain \"[Vue warn]\" or the development configuration, and no warning moved or appeared.",
+      "No file was added, removed or renamed (file lists equal once content hashes are removed), and the worker's warning-bearing vendor chunks are byte-identical."
+    ]
+  },
+  "configurations": {
+    "keyless": {
+      "baseline": "config/firefox-webext-warning-baseline-ci.json",
+      "previousBaselineSha256": "4ba2feb1cc08404250e8eec7d0a2f147ce9caa355452daafbe1c5520a934fc15",
+      "previousWarningSetSha256": "2250b8f6e5745be9b93e795e023c73c8d52c991b54533b38682a20dd88083d41",
+      "baselineSha256": "5580ef6bb5a2fe52bd8c390e0a386fec9c88c8804e3da9fd44fa2163e0dcc348",
+      "warningSetSha256": "eaea3b1930e516de990f7b3c00bdf8efdafd6ab3d972eb2d57f2e8d4fadc1cfb",
+      "comparisonReportSha256": "849b520701af254a0dab856ca9fed8aedb29e4d5f8f10504c5e51bfc3825404b",
+      "summary": {
+        "errors": 0,
+        "notices": 0,
+        "warnings": 36
+      },
+      "artifacts": {
+        "chunks/mountApp.js": "5b36a26ddf1120292abdb5ebe9c97aded3fc4a48e0fe709bc6b9f3ea8dbefe9f",
+        "chunks/SendForm.js": "de97072c22ec9f325a62fc6b1ba0279681b8207f4327bf843232ad2e74c4ee81"
+      }
+    },
+    "store": {
+      "baseline": "config/firefox-webext-warning-baseline.json",
+      "baselineSha256": "5f8518db458bd524fffdc7324532f75a0dbdb6492cb1cc87ef4bbe29981a6f8a",
+      "reRecorded": false,
+      "reason": "The store build needs the release provider configuration, which this review did not use. The file is unchanged and still describes 2af46cd2's keyed build, which 1c77e895's own changes were already expected to break. A keyed build of this source is expected to fail it until it is rebuilt with the release configuration, compared with a keyed 1c77e895 build the same way and re-pinned. The release configuration sets NODE_ENV=production, so the NODE_ENV commit is not expected to change the store build; the pricing commit changes mountApp.js."
+    }
+  },
+  "review": [
+    "The reference 1c77e895 was built first with the same toolchain: its keyless build passed the committed --ci baseline and printed it byte for byte, so the toolchain reproduces it.",
+    "The keyless build is CI's recipe (the Firefox extension production build with no NODE_ENV and no provider keys); with the NODE_ENV commit, --mode production makes it production whatever NODE_ENV is.",
+    "The application source's keyless build failed the committed --ci baseline only on the warning fingerprint digest (two artifact digests); it has the same 36 warnings at the same sites, and the minified code around 34 of them is identical. The other two are the reviewed lodash and Vue sites above, with only identifier names changed.",
+    "The strict warning verifier and both warning policies are unchanged, and their self-tests pass. New warnings, errors, notices, fingerprint drift and warning-bearing artifact drift remain blocking. The ci-named file is the local keyless-build fixture; no hosted CI was required or modified."
+  ],
+  "evidenceDirectory": "../build/web-1117-followups-20261116/logs"
+}

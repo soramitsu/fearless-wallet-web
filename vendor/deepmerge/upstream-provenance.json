@@ -1,0 +1,34 @@
+{
+  "package": "deepmerge",
+  "version": "4.3.1",
+  "retrievedAt": "2026-10-29T03:28:32.505334+00:00",
+  "tarball": "https://registry.npmjs.org/deepmerge/-/deepmerge-4.3.1.tgz",
+  "tarballIntegrity": "sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==",
+  "tarballSha256": "4003a0a348276a95543fa969f561f6b5968629acbbb59d66018dd23e7b8f1d5c",
+  "upstreamFileSha256": {
+    ".editorconfig": "73cc38e40b41f1eea6fd2d98d0ade5324f1ad564c3f111ebd0040b4286d2c25c",
+    ".eslintcache": "7690c5da38095c17a8c3ce73f3ebdc7bf7d7797c618a9c919c79a6b5e0024012",
+    "dist/cjs.js": "2e5160f84a1141bd927264afe4d15766f1e6cf07daef182b37ff53fea121de7d",
+    "index.js": "12440c84957c1990ea2d5e33dc0091722dc1dc1585c6d20e0c780e568ffa9d30",
+    "rollup.config.js": "abba48beb11daa282e69134e4928ec32737ae6f6d192dd5f00a6e660e032bb25",
+    "dist/umd.js": "f33e6596482d1fb5c7c427f8ef92f2aa849eea9223acd974176b2fb27ddbf73a",
+    "package.json": "f56978e7a6da1a3c6edee41abb54f98584a2fa2680458c48db820ae772fef0c9",
+    "changelog.md": "360f6a3465a3e82f7bc1428cf1dc0cf5e6935a83b97345d172d27a4d8703321e",
+    "readme.md": "202430923abee498512b2f9cbab686a1e7d64759314a503ca0d5aaa29007fc0f",
+    "index.d.ts": "146ba4b99c5feb82663e17a671bf9f53bb39c704cd76345d6c5a801c26372f44",
+    "license.txt": "6cfc4687cb2f2d86f4a77e6b526290d3878e5e512f3fec2f4cb36a9cb36f798b"
+  },
+  "advisory": "https://github.com/advisories/GHSA-gcqx-w48m-w2h4",
+  "reviewedUnmergedPatch": "https://github.com/TehShrike/deepmerge/pull/274/files",
+  "localChanges": [
+    "Reject __proto__ by name in both mergeObject loops in index.js and the upstream dist/cjs.js and dist/umd.js builds",
+    "Keep original version and MIT license; mark package private; omit upstream build-only scripts/devDependencies; explicitly include maintained runtime/source/provenance files",
+    "Relocate patched dist/cjs.js to index.cjs and dist/umd.js to umd.cjs without executable byte changes; set package main and files accordingly so maintained vendored source complies with the tracked generated-dist audit"
+  ],
+  "upstreamFixStatus": "No published patched version as checked2026-10-29; this is a local remediation, not an upstream release.",
+  "localFileOrigins": {
+    "index.js": "index.js",
+    "index.cjs": "dist/cjs.js",
+    "umd.cjs": "dist/umd.js"
+  }
+}

@@ -186,7 +186,8 @@ describe('TON transfers through the verified provider', () => {
     const internal = loadMessageRelaxed(body.loadRef().beginParse());
     if (internal.info.type !== 'internal') throw new Error('expected an internal message');
     expect(internal.info.dest.equals(jettonWallet)).toBe(true);
-    expect(fromNano(internal.info.value.coins)).toBe('0.02');
+    expect(fromNano(internal.info.value.coins)).toBe('0.05');
+    expect(internal.info.bounce).toBe(true);
 
     const jettonTransfer = internal.body.beginParse();
     expect(jettonTransfer.loadUint(32)).toBe(0x0f8a7ea5);

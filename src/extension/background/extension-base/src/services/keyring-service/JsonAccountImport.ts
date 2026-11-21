@@ -4,7 +4,16 @@ import { accountStorageKey } from './AccountMetadata';
 import type { KeyringPair, KeyringPair$Json } from '@subwallet/keyring/types';
 import { decodeMnemonicFromJsonBackup } from '@/util/keyringJson';
 import { buildUniversalWalletKeyringMeta } from '@/util/universalWalletKeyringMeta';
+import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import { WalletEcosystem } from '@/interfaces';
+
+function phraseOpensKey(pair: KeyringPair, suri: string): boolean {
+  let root: KeyringPair | undefined;
+  try {
+    root = keyring.createFromUri(suri, {}, pair.type);
+    return u8aEq(root.publicKey, pair.publicKey);
+  } catch { return false; } finally { root?.lock(); }
+}
 
 /** Decode without registering. A JSON header, PKCS8 public key and private signing key
  * must identify the same account before any durable import is attempted. */
@@ -45,11 +54,9 @@ export function decodeJsonAccount(file: KeyringPair$Json, password: string): Key
     if (pair.haveEntropy) {
       // Old custom-path backups may omit the path/passphrase. Keep their encrypted entropy
       // and primary signing key, but do not advertise that unverified phrase as a root.
-      let root: KeyringPair | undefined;
-      try {
-        root = keyring.createFromUri(phrase, {}, pair.type);
-        verifiedMnemonic = u8aEq(root.publicKey, pair.publicKey);
-      } catch { verifiedMnemonic = false; } finally { root?.lock(); }
+      // Fearless makes every Ethereum key at the standard path, so that one needs no asking.
+      verifiedMnemonic = phraseOpensKey(pair, phrase) ||
+        (pair.type === 'ethereum' && phraseOpensKey(pair, `${phrase}${ETHEREUM_DEFAULT_DERIVATION_PATH}`));
     }
     pair.setMeta({ isMnemonicUnverified: !verifiedMnemonic });
     pair.setMeta({ universalWallet: buildUniversalWalletKeyringMeta({ address: pair.address,

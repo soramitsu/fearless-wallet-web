@@ -15,6 +15,13 @@ export function getAssetOptions(assetId: string, assetsMap: Asset[]) {
   if (type === 'equilibrium') return currencyId;
   if (type === 'assets') return currencyId;
   if (type === 'assetId') return currencyId;
+  // Pendulum and Amplitude key their XCM tokens by index, which the registry gives as currencyId. As { Token: symbol }
+  // their balances could not be read nor their transfers built.
+  if (type === 'xcm') {
+    if (!/^\d+$/.test(currencyId ?? '') || !Number.isSafeInteger(Number(currencyId))) throw new Error(`Invalid XCM asset index ${currencyId}`);
+
+    return { XCM: Number(currencyId) };
+  }
 
   // TODO AUSD
   if (assetId === '91a69026-0ab7-4db0-af53-8d571fd33ac4') return { Token: currencyId!.toUpperCase() };

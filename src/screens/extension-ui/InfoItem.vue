@@ -1,12 +1,9 @@
 <template>
-  <Fragment>
     <dt class="name">{{ name }}</dt>
     <dd class="value">{{ value }}</dd>
-  </Fragment>
 </template>
 
 <script lang="ts" setup>
-import { Fragment } from 'vue';
 
 const { name, value } = defineProps({
   name: { type: String, required: true },

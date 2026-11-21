@@ -22,12 +22,12 @@ vi.mock('@/stores/pools', () => ({ usePoolsStore: () => mocks.pools }));
 vi.mock('@/stores/networks', () => ({ useNetworksStore: () => ({
   soraFees: { AddLiquidity: '0.1', RemoveLiquidity: '0.1' },
   networks: [],
-  getAssetPrice: () => ({ price: 1 }), getHistory: () => ({ nodes: [{}] }),
+  getAssetPrice: () => ({ price: 1 }), getHistory: () => ({ nodes: [{}] }), getNetwork: () => undefined,
 }) }));
 vi.mock('@/router/routes', () => ({ Components: { Staking: 'Staking', Polkamarkt: 'Polkamarkt' } }));
 vi.mock('vue-router', () => ({ useRoute: () => mocks.route, useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@/consts/global', () => ({ CONTENT_FORM_HEIGHT: 379, IS_EXTENSION: true, IS_PRODUCTION: true }));
-vi.mock('@/helpers/currencies', () => ({ getUtilityAsset: () => ({ groupId: 'xor' }), getXORCurrency: () => ({}), isValidAmountAsset: mocks.validAmount }));
+vi.mock('@/helpers/currencies', () => ({ getUtilityAsset: () => ({ groupId: 'xor' }), getXORCurrency: () => ({}), getTransferAssetPrice: () => 1, isValidAmountAsset: mocks.validAmount }));
 vi.mock('@/extension/messaging', () => ({
   getDemeterPools: mocks.farming, mutateDemeter: mocks.mutateFarm,
   getPolkamarktSnapshot: mocks.market, getPolkamarktQuote: mocks.quote, mutatePolkamarkt: mocks.mutateMarket,

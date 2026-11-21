@@ -282,11 +282,15 @@ export async function captureEffectsScreenshots({
       await evaluate(
         cdp,
         sessionId,
-        // The DOT row stays expanded once opened (it is a per-wallet view setting).
+        // The DOT row opens DOT's page, whose Send asks for the network over the scrim.
         `(() => {
-          const send = () => document.querySelector('[data-token="group:dot"] [data-testid="groupSend"]');
-          if (!send()) document.querySelector('[data-token="group:dot"] [data-testid="tokenGroupHeader"]').click();
-          return new Promise((resolve) => requestAnimationFrame(() => resolve(send().click() ?? true)));
+          document.querySelector('[data-token="group:dot"] [data-testid="tokenGroupHeader"]').click();
+          const send = () => document.querySelector('[data-testid="tokenSend"]');
+          return new Promise((resolve, reject) => {
+            const started = Date.now();
+            const tick = () => (send() ? resolve(send().click() ?? true) : Date.now() - started > 5000 ? reject(new Error('No Send on the DOT page')) : requestAnimationFrame(tick));
+            tick();
+          });
         })()`
       );
       await waitForExpression(

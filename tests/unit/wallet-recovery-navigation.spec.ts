@@ -45,6 +45,13 @@ describe('extension recovery navigation', () => {
     }
   );
 
+  // Disconnecting a dApp or a WalletConnect session stays reachable; the names are the ones in router/routes.ts.
+  it.each(['ManageAuths', 'DAppsAuths', 'DAppDetails', 'WcAuths', 'WalletConnectAuthDetails'])(
+    'allows connection management screen %s for an old wallet', async (name) => {
+      expect(await navigate(name)).toHaveBeenCalledExactlyOnceWith();
+    }
+  );
+
   it('allows connection approval while a recovery-only wallet is selected', async () => {
     expect(await navigate('Authorize')).toHaveBeenCalledExactlyOnceWith();
   });

@@ -271,7 +271,8 @@ describe('Old Akkadian cuneiform locale', () => {
 
     for (const [path, stack] of [
       ['src/styles/soramitsu-variables.scss', /--s-font-family-default:[^;]*'Noto Sans Cuneiform'/],
-      ['src/screens/onboarding/Onboarding.vue', /font-family: Unbounded,[^;]*'Noto Sans Cuneiform'/],
+      // The onboarding title renders in the brand tagline.
+      ['src/components/BrandSignature.vue', /font-family: 'Sora Variable',[^;]*'Noto Sans Cuneiform'/],
       ['src/screens/onboarding/OnboardingStory.vue', /font-family: Unbounded,[^;]*'Noto Sans Cuneiform'/],
     ] as const) {
       expect(readRepositoryFile(path), path).toMatch(stack);

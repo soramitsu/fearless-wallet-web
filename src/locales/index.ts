@@ -5,7 +5,12 @@ import * as en from './en/translation.json';
 import * as ru from './ru/translation.json';
 import { syncDocumentLanguage, type Lang } from './languages';
 import { sidePanelMessages } from './sidePanelMessages';
+import { walletHomeMessages } from './walletHomeMessages';
+import { balanceStatusMessages } from './balanceStatusMessages';
 import { walletUpgradeMessages } from './walletUpgradeMessages';
+import { feelMessages } from './feelMessages';
+import { dappSigningMessages } from './dappSigningMessages';
+import { irohaConnectMessages } from './irohaConnectMessages';
 import { accountController } from '@/controllers';
 
 const messages = {
@@ -142,7 +147,15 @@ export const i18n = createI18n({
   },
 });
 
-[walletUpgradeMessages, sidePanelMessages].forEach((bundle) => {
+[
+  walletUpgradeMessages,
+  sidePanelMessages,
+  walletHomeMessages,
+  feelMessages,
+  balanceStatusMessages,
+  dappSigningMessages,
+  irohaConnectMessages,
+].forEach((bundle) => {
   Object.entries(bundle).forEach(([locale, supplementalMessages]) => {
     i18n.global.mergeLocaleMessage(locale, supplementalMessages);
   });

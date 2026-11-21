@@ -7,6 +7,7 @@
           backgroundColor="light-black"
           iconName="chevron-left"
           data-testid="backBtn"
+          :disabled="backDisabled"
           @click="back"
         />
       </div>
@@ -69,6 +70,7 @@ export default defineComponent({
     countSteps: { required: true, type: Number },
     step: { required: true, type: Number },
     isLoading: { default: false, type: Boolean },
+    backDisabled: { default: false, type: Boolean },
     completionConfirmed: { default: true, type: Boolean },
     header: String,
     showFullScreenIcon: { default: false },

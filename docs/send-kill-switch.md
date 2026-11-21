@@ -47,6 +47,29 @@ file, and veto only the affected chain. To lift the veto later, publish an
 explicit `true` for that key; removing the key leaves the veto in place on
 every device that saw it.
 
+## dApp signing kill switch
+
+The same rules (`src/util/remoteVeto.ts`) pause signing for dApps, one
+network family at a time. The keys match the mobile apps':
+
+| Family   | `actions` key         | `feature_toggle` key            | Pauses                                                          |
+| -------- | --------------------- | ------------------------------- | --------------------------------------------------------------- |
+| Polkadot | `polkadotDappSigning` | `polkadot_dapp_signing_enabled` | polkadot-js `signPayload`/`signRaw`, WalletConnect `polkadot_*` |
+| EVM      | `evmDappSigning`      | `evm_dapp_signing_enabled`      | injected and WalletConnect `eth_*`, `personal_sign`             |
+| Solana   | `solanaDappSigning`   | `solana_dapp_signing_enabled`   | every Solana provider request, sign-only ones included          |
+| TON      | `tonDappSigning`      | `ton_dapp_signing_enabled`      | nothing yet: this build has no TonConnect                       |
+
+The background checks the switch when the person approves a request, once the
+phishing-list lookup has answered and before any key is used, a paired mobile
+wallet is asked, or an external signature is delivered. A paused request ends as Reject ends it, so the dApp gets the usual
+rejection, and the signing screen says that signing for the family is paused
+and offers only Reject. Connecting and reading accounts keep working. The
+background remembers pauses in `chrome.storage` (`dappSigningKillSwitch`), the
+popup in `localStorage` (`feature_dapp-signing-kill-switch-v1`).
+
+Never use a key named `dapp_enabled`: production configs already hold it as
+`false`, and reading it would pause every family at once.
+
 ## Local runner lifecycle — 2026-10-12
 
 The local-chain runner now owns daemon processes from the moment they are spawned, before waiting for readiness. A missing binary or early exit fails promptly; startup failures and SIGINT/SIGTERM shut down owned processes before removing their run directory. Startup RPC waits are bounded, and a process that ignores TERM is killed and reaped. This changes the test harness only.

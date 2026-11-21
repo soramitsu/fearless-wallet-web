@@ -32,6 +32,7 @@ export default defineComponent({ name: 'LockedDetailsPopup' ,
   props: {
     network: String,
     currency: Object,
+    /** The price the portfolio trusts for the asset (AssetInfo), or `null`: then no line shows a fiat value. */
     assetPrice: Object,
   },
   data() {
@@ -82,19 +83,16 @@ export default defineComponent({ name: 'LockedDetailsPopup' ,
             { reserved: 0, locked: 0, frozen: 0, transferable: 0, total: 0 }
           );
 
+          // No trusted price gives 0, which hides each line's fiat value (`getFiatValueVisible`).
+          const price = Number(this.assetPrice?.price ?? 0) || 0;
+
           return [
-            { name: 'reserved', value: reserved, fiat: reserved * +this.assetPrice.price },
-            { name: 'frozen', value: frozen, fiat: frozen * +this.assetPrice.price },
-            { name: 'transferable', value: transferable, fiat: transferable * +this.assetPrice.price },
-            { name: 'totalLocked', value: locked, fiat: locked * +this.assetPrice.price },
-            { name: 'total', value: total, fiat: total * +this.assetPrice.price },
+            { name: 'reserved', value: reserved, fiat: reserved * price },
+            { name: 'frozen', value: frozen, fiat: frozen * price },
+            { name: 'transferable', value: transferable, fiat: transferable * price },
+            { name: 'totalLocked', value: locked, fiat: locked * price },
+            { name: 'total', value: total, fiat: total * price },
           ];
-    },
-    showFiatValue() {
-      return this.fiatPrice !== 0;
-    },
-    fiatPrice() {
-      return this.networksStore.getAssetPrice(this.currency.priceId ?? '').price ?? 0;
     },
   },
   methods: {

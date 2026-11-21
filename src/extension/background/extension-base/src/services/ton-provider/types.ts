@@ -81,6 +81,9 @@ type TonWalletState = {
   deployed: boolean;
 };
 
+/** The state of the account at an address. Only an `active` or `frozen` account has code. */
+type TonAccountStatus = 'active' | 'uninitialized' | 'frozen' | 'nonexist';
+
 /** What the extension asks of a TON provider. Each source implements it against its own API. */
 interface TonDataProvider {
   readonly source: TonProviderSource;
@@ -95,6 +98,8 @@ interface TonDataProvider {
   /** Fiat rates by token, or `undefined` when the provider has none. */
   getRates(tokens: string[], currency: string): Promise<Record<string, TokenRates> | undefined>;
   getWalletState(address: Address): Promise<TonWalletState>;
+  /** The state of any account, such as a transfer's recipient. */
+  getAccountStatus(address: Address): Promise<TonAccountStatus>;
   sendMessage(boc: Cell): Promise<void>;
 }
 
@@ -126,6 +131,7 @@ class TonProviderError extends Error {
 export {
   TonProviderError,
   type TonAccountBalance,
+  type TonAccountStatus,
   type TonDataProvider,
   type TonHistoryAction,
   type TonHistoryEvent,

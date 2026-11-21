@@ -13,7 +13,7 @@ export { createAssetKey, type AssetKeyParts };
 
 export type AssetPreference = 'auto' | 'shown' | 'hidden';
 export type AssetMetadataTrust = 'verified' | 'unverified' | 'missing';
-export type AssetMetadataSource = 'registry' | 'chain' | 'indexer';
+export type AssetMetadataSource = 'registry' | 'chain' | 'indexer' | 'tokenList';
 export type PriceTrust = 'canonicalAsset' | 'curatedGroup' | 'unavailable';
 export type NetworkScanCoverage = 'complete' | 'catalogOnly' | 'limited';
 export type PortfolioMode = 'view' | 'manage';
@@ -128,7 +128,110 @@ export function getCanonicalAssetId(balance: BalanceItem): string {
   );
 }
 
-function findRegistryAsset(network: NetworkJson, balance: BalanceItem): NetworkJson['assets'][number] | undefined {
+/**
+ * The key parts of a balance's row: its network's ecosystem (the relay chain of a network that names none), chain id
+ * and asset id.
+ */
+function balanceKeyParts(network: NetworkJson, balance: BalanceItem, group?: Pick<TokenGroup, 'relayChain'>): AssetKeyParts {
+  return {
+    ecosystem: String(network.ecosystem ?? balance.relayChain ?? group?.relayChain ?? 'unknown').toLowerCase(),
+    chainId: String(network.chainId || network.name),
+    assetId: getPortfolioAssetId(balance),
+  };
+}
+
+/** The price the portfolio trusts for one asset, as its row carries it (`PortfolioAsset`). */
+export interface AssetPriceDecision {
+  priceTrust: PriceTrust;
+  /** The price of one unit; `null` when no price is bound to this exact asset, or the bound price is unknown or 0. */
+  unitPrice: string | null;
+  /** The 24 h change of that price, in percent, when known. */
+  priceChangePercent: string | null;
+}
+
+interface AssetPriceInput {
+  network: NetworkJson;
+  balance: BalanceItem;
+  assetId: string;
+  key: string;
+  registryAsset: NetworkJson['assets'][number] | undefined;
+  prices: Record<string, number>;
+  priceChanges: Record<string, number>;
+  isUntrusted: UntrustedAssetCheck;
+}
+
+function decideAssetPrice({
+  network,
+  balance,
+  assetId,
+  key,
+  registryAsset,
+  prices,
+  priceChanges,
+  isUntrusted,
+}: AssetPriceInput): AssetPriceDecision {
+  // A price contributes to fiat totals only when it is bound to this exact
+  // canonical asset. Legacy group/symbol price ids are intentionally ignored.
+  // An asset on the shared untrusted list has no price, whatever the registry or an indexer says.
+  const untrusted = isUntrusted(network, registryAsset?.id ?? assetId);
+  const hasRegistryPriceBinding = !untrusted && Boolean(registryAsset?.priceId);
+  const hasExplicitAssetKeyPriceBinding =
+    !untrusted &&
+    balance.assetMetadataTrust === 'verified' &&
+    Boolean(balance.priceId) &&
+    balance.priceAssetKey === key;
+  const priceTrust: PriceTrust = hasRegistryPriceBinding || hasExplicitAssetKeyPriceBinding
+    ? 'canonicalAsset'
+    : 'unavailable';
+  const priceId = hasRegistryPriceBinding ? registryAsset?.priceId : hasExplicitAssetKeyPriceBinding ? balance.priceId : undefined;
+  const trustedPrice = priceTrust !== 'unavailable' && priceId ? prices[priceId] : undefined;
+  const unitPrice = Number.isFinite(trustedPrice) && Number(trustedPrice) > 0 ? String(trustedPrice) : null;
+  const priceChange = priceTrust !== 'unavailable' && priceId ? priceChanges[priceId] : undefined;
+  const priceChangePercent = Number.isFinite(priceChange) ? String(priceChange) : null;
+
+  return { priceTrust, unitPrice, priceChangePercent };
+}
+
+export interface BalancePriceInput {
+  network: NetworkJson;
+  balance: BalanceItem;
+  /** The balance's token group, whose relay chain names the ecosystem of a network that has none. */
+  group?: Pick<TokenGroup, 'relayChain'>;
+  prices: Record<string, number>;
+  priceChanges?: Record<string, number>;
+  /** Defaults to the shared `untrustedAssets` list, as in `buildPortfolioSections`. */
+  isUntrusted?: UntrustedAssetCheck;
+}
+
+/**
+ * The price the portfolio trusts for one balance: the decision behind its row's `unitPrice`, `hasPrice` and
+ * `priceTrust`, for a screen that shows one asset and must say what the wallet's list says. An unverified token (a
+ * TON jetton, an SPL token, an ERC-20 token found through the token lists), an asset on the untrusted list and a
+ * registry asset without a price have none, whatever price id their token group carries.
+ */
+export function getBalancePrice({
+  network,
+  balance,
+  group,
+  prices,
+  priceChanges = {},
+  isUntrusted = isUntrustedAsset,
+}: BalancePriceInput): AssetPriceDecision {
+  const keyParts = balanceKeyParts(network, balance, group);
+
+  return decideAssetPrice({
+    network,
+    balance,
+    assetId: keyParts.assetId,
+    key: createAssetKey(keyParts),
+    registryAsset: findRegistryAsset(network, balance),
+    prices,
+    priceChanges,
+    isUntrusted,
+  });
+}
+
+export function findRegistryAsset(network: NetworkJson, balance: BalanceItem): NetworkJson['assets'][number] | undefined {
   const ecosystem = String(network.ecosystem ?? balance.relayChain ?? '').toLowerCase();
   const normalizeId = (value: unknown): string => {
     const id = String(value ?? '').trim();
@@ -228,7 +331,7 @@ function isBalanceUnavailable(balance: BalanceItem): boolean {
  * What the wallet holds on this row: the total balance (free + reserved on Substrate, where staked and locked funds
  * live inside free or reserved). Every other ecosystem reports `total === transferable`.
  */
-function holdingBalance(balance: BalanceItem): string {
+export function holdingBalance(balance: BalanceItem): string {
   return decimalAmount(balance.total ?? balance.free ?? balance.transferable ?? '0');
 }
 
@@ -347,10 +450,8 @@ export function buildPortfolioSections({
       const testnet = isTestnet(network);
       if (testnet && !showTestnets) return;
 
-      const ecosystem = String(network.ecosystem ?? balance.relayChain ?? group.relayChain ?? 'unknown').toLowerCase();
-      const chainId = String(network.chainId || network.name);
-      const assetId = getPortfolioAssetId(balance);
-      const keyParts = { ecosystem, chainId, assetId };
+      const keyParts = balanceKeyParts(network, balance, group);
+      const { ecosystem, chainId, assetId } = keyParts;
       const key = createAssetKey(keyParts);
       const registryAsset = findRegistryAsset(network, balance);
       const verified = balance.assetMetadataTrust === 'verified' || Boolean(registryAsset);
@@ -363,25 +464,17 @@ export function buildPortfolioSections({
 
       const preference = preferences[key] ?? 'auto';
       const hidden = preference === 'hidden';
-      // A price contributes to fiat totals only when it is bound to this exact
-      // canonical asset. Legacy group/symbol price ids are intentionally ignored.
-      // An asset on the shared untrusted list has no price, whatever the registry or an indexer says.
-      const untrusted = isUntrusted(network, registryAsset?.id ?? assetId);
-      const hasRegistryPriceBinding = !untrusted && Boolean(registryAsset?.priceId);
-      const hasExplicitAssetKeyPriceBinding =
-        !untrusted &&
-        balance.assetMetadataTrust === 'verified' &&
-        Boolean(balance.priceId) &&
-        balance.priceAssetKey === key;
-      const priceTrust: PriceTrust = hasRegistryPriceBinding || hasExplicitAssetKeyPriceBinding
-        ? 'canonicalAsset'
-        : 'unavailable';
-      const priceId = hasRegistryPriceBinding ? registryAsset?.priceId : hasExplicitAssetKeyPriceBinding ? balance.priceId : undefined;
-      const trustedPrice = priceTrust !== 'unavailable' && priceId ? prices[priceId] : undefined;
-      const unitPrice = Number.isFinite(trustedPrice) && Number(trustedPrice) > 0 ? String(trustedPrice) : null;
+      const { priceTrust, unitPrice, priceChangePercent } = decideAssetPrice({
+        network,
+        balance,
+        assetId,
+        key,
+        registryAsset,
+        prices,
+        priceChanges,
+        isUntrusted,
+      });
       const fiatValue = unitPrice === null ? null : amount.mul(new FPNumber(unitPrice)).toString();
-      const priceChange = priceTrust !== 'unavailable' && priceId ? priceChanges[priceId] : undefined;
-      const priceChangePercent = Number.isFinite(priceChange) ? String(priceChange) : null;
       const asset: PortfolioAsset = {
         key,
         keyParts,
@@ -541,7 +634,7 @@ export function filterSectionsBySearch(sections: PortfolioNetworkSection[], quer
 const sectionHasBalance = (section: PortfolioNetworkSection): boolean =>
   [...section.assets, ...section.detectedAssets].some(({ hasBalance, balanceUnavailable }) => hasBalance || balanceUnavailable);
 
-/** Funded networks first; networks that only hold zero rows go into the collapsed "N networks · no balance" block. */
+/** Networks that hold something (or whose balance could not be loaded) apart from networks that only hold zero rows. */
 export function splitZeroSections(sections: PortfolioNetworkSection[]): {
   funded: PortfolioNetworkSection[];
   zeroOnly: PortfolioNetworkSection[];
@@ -625,6 +718,11 @@ export interface PortfolioSummary {
   unavailableCount: number;
   /** A counted native holding sits on a network with nomination pools, whose stakes are outside free + reserved. */
   poolStakesExcluded: boolean;
+  /**
+   * Funded tokens the wallet found that are not on the verified list, not hidden and not added by the owner. They are
+   * never counted; the list names how many there are so they can be reviewed (Manage assets, "Found, not verified").
+   */
+  unverifiedHeldCount: number;
 }
 
 export type PortfolioSummaryInput = Omit<
@@ -632,12 +730,39 @@ export type PortfolioSummaryInput = Omit<
   'preferences' | 'mode' | 'hideZero' | 'showHidden' | 'showTestnets' | 'surfaceDiscoveredAssets' | 'isDefaultVisibleAtZero'
 > & { preferences?: Record<string, AssetPreference> };
 
+/** One network's part of the wallet: the network filter offers these first, largest first (`summarizePortfolio`). */
+export interface PortfolioNetworkTotal {
+  name: string;
+  icon: string;
+  /** Fiat of the holdings the total counts on this network. */
+  value: string;
+  /** Verified holdings with a balance here that are not hidden, priced or not. */
+  fundedCount: number;
+  isTestnet: boolean;
+}
+
 /**
  * The wallet-wide value: every verified holding with a balance, independent of the zero rule, Hide zero and the
  * display filters. Hidden assets go to `hiddenValue`, unpriced ones to `unpricedCount`, and testnets are never counted
  * (only how many hold funds, so the list can say they are not shown).
  */
 export function buildPortfolioSummary(input: PortfolioSummaryInput): PortfolioSummary {
+  return summarizePortfolio(input).summary;
+}
+
+const compareNetworkTotals = (left: PortfolioNetworkTotal, right: PortfolioNetworkTotal): number => {
+  const leftValue = new FPNumber(left.value);
+  const rightValue = new FPNumber(right.value);
+  if (!leftValue.eq(rightValue)) return rightValue.gt(leftValue) ? 1 : -1;
+
+  return right.fundedCount - left.fundedCount || left.name.localeCompare(right.name);
+};
+
+/**
+ * The summary and, from the same pass, each network the wallet holds something on with what it is worth: the list's
+ * network filter offers those networks without building the portfolio a second time.
+ */
+export function summarizePortfolio(input: PortfolioSummaryInput): { summary: PortfolioSummary; networks: PortfolioNetworkTotal[] } {
   const networksByChainId = new Map(input.networks.map((network) => [String(network.chainId || network.name), network]));
   const sections = buildPortfolioSections({
     ...input,
@@ -656,16 +781,26 @@ export function buildPortfolioSummary(input: PortfolioSummaryInput): PortfolioSu
   let hiddenTestnetAssetCount = 0;
   let testnetFundedCount = 0;
   let poolStakesExcluded = false;
+  let unverifiedHeldCount = 0;
+
+  const networks: PortfolioNetworkTotal[] = [];
 
   sections.forEach((section) => {
+    let networkValue = FPNumber.ZERO;
+    let fundedCount = 0;
+
     section.assets.forEach((asset) => {
       if (asset.isTestnet) {
         if (asset.hidden) hiddenTestnetAssetCount += 1;
-        else if (asset.trust === 'verified' && asset.hasBalance) testnetFundedCount += 1;
+        else if (asset.trust === 'verified' && asset.hasBalance) {
+          testnetFundedCount += 1;
+          fundedCount += 1;
+        }
         return;
       }
       if (asset.hidden) hiddenAssetCount += 1;
       else if (asset.balanceUnavailable) unavailableCount += 1;
+      else if (asset.trust !== 'verified' && asset.hasBalance && asset.preference !== 'shown') unverifiedHeldCount += 1;
       if (asset.trust !== 'verified' || !asset.hasBalance) return;
 
       if (asset.hidden) {
@@ -673,6 +808,7 @@ export function buildPortfolioSummary(input: PortfolioSummaryInput): PortfolioSu
         if (asset.fiatValue !== null) hiddenValue = hiddenValue.add(new FPNumber(asset.fiatValue));
         return;
       }
+      fundedCount += 1;
       if (asset.isNative || asset.isUtility) {
         poolStakesExcluded ||= Boolean(networksByChainId.get(section.chainId)?.options?.includes('poolStaking'));
       }
@@ -683,10 +819,21 @@ export function buildPortfolioSummary(input: PortfolioSummaryInput): PortfolioSu
 
       const current = new FPNumber(asset.fiatValue);
       total = total.add(current);
+      networkValue = networkValue.add(current);
       const change = new FPNumber(asset.priceChangePercent ?? '0').div(FPNumber.HUNDRED);
       const denominator = FPNumber.ONE.add(change);
       priorTotal = priorTotal.add(denominator.isGreaterThan(FPNumber.ZERO) ? current.div(denominator) : current);
     });
+
+    if (fundedCount > 0) {
+      networks.push({
+        name: section.name,
+        icon: section.icon,
+        value: networkValue.toString(),
+        fundedCount,
+        isTestnet: section.isTestnet,
+      });
+    }
   });
 
   const changeAmount = total.sub(priorTotal);
@@ -695,17 +842,21 @@ export function buildPortfolioSummary(input: PortfolioSummaryInput): PortfolioSu
     : changeAmount.div(priorTotal).mul(FPNumber.HUNDRED);
 
   return {
-    total: total.toString(),
-    changeAmount: changeAmount.toString(),
-    changePercent: changePercent.toString(),
-    hiddenCount: hiddenFundedKeys.length,
-    hiddenValue: hiddenValue.toString(),
-    hiddenFundedKeys: hiddenFundedKeys.sort(),
-    hiddenAssetCount,
-    hiddenTestnetAssetCount,
-    testnetFundedCount,
-    unpricedCount,
-    unavailableCount,
-    poolStakesExcluded,
+    summary: {
+      total: total.toString(),
+      changeAmount: changeAmount.toString(),
+      changePercent: changePercent.toString(),
+      hiddenCount: hiddenFundedKeys.length,
+      hiddenValue: hiddenValue.toString(),
+      hiddenFundedKeys: hiddenFundedKeys.sort(),
+      hiddenAssetCount,
+      hiddenTestnetAssetCount,
+      testnetFundedCount,
+      unpricedCount,
+      unavailableCount,
+      poolStakesExcluded,
+      unverifiedHeldCount,
+    },
+    networks: networks.sort(compareNetworkTotals),
   };
 }

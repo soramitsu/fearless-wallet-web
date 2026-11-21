@@ -8,8 +8,8 @@ export interface MainAccount {
   meta: FWKeyringMeta;
 }
 
-// Lower is preferred. `State.updateCurrentAccount` refuses EVM addresses, so a standalone
-// EVM account is chosen only when nothing else remains.
+// Lower is preferred. A standalone EVM account can be selected, but only the user or a
+// stored selection puts it first: by default it is chosen only when nothing else remains.
 const preference = ({ address, meta }: MainAccount): number => {
   if (isEthereumAddress(address)) return 3;
 

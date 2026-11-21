@@ -6,7 +6,6 @@ import type { CrossChainProps, MakeCrossChainProps } from '@extension-base/api/s
 import type State from '@extension-base/background/handlers/State';
 import type { KeyringPair } from '@subwallet/keyring/types';
 import { FPNumber } from '@/sora/number';
-import { getUtilityProps } from '@/extension/background/extension-base/src/background/handlers/utils';
 import {
   createReviewedCrossChainExtrinsic,
   createReviewedExecutionFingerprint,
@@ -14,11 +13,13 @@ import {
   type ReviewedExecutionApi,
 } from '@/cross-chain/reviewedExecution';
 import { assertReviewedRuntimeAuthority } from '@/cross-chain/reviewedRuntimeAuthority';
+import { assertReviewedFeeAsset } from '@/cross-chain/reviewedRuntimes';
 import { assertOriginExecutes, type DryRunApi } from '@/cross-chain/originDryRun';
 import { validateReviewedCrossChainRequest } from '@/cross-chain/requestValidation';
 import { createCrossChainQuoteFingerprint } from '@/cross-chain/quoteFingerprint';
 import { connectedSubstrateApi } from '@/cross-chain/runtimeConnection';
 import {
+  CROSS_CHAIN_EXTRINSIC_INVALID,
   normalizeExtrinsicHash,
   sendAndTrackExtrinsic,
   type TrackableExtrinsic,
@@ -118,6 +119,11 @@ function assertReviewedRouteAndAccount(props: MakeCrossChainProps, state: State)
   return { apiProps, tokenBalance, validation };
 }
 
+/** The origin fee asset is pinned per reviewed runtime; the registry row of the origin network must agree with it. */
+function reviewedOriginFeeAsset({ execution, originNet }: Pick<CrossChainProps, 'execution' | 'originNet'>, state: State) {
+  return assertReviewedFeeAsset(execution.originChainId, state.networkService.networkMap[originNet]);
+}
+
 function parseExpected(value: string, error: string): FPNumber {
   // FPNumber reads an empty string as zero; a missing confirmation is not a confirmed zero fee.
   if (typeof value !== 'string' || !value.trim()) throw new Error(error);
@@ -148,7 +154,7 @@ function assertConfirmedQuote(props: MakeCrossChainProps, quote: CrossChainQuote
   if (amount.lt(quote.minimum)) throw new Error('cross_chain_amount_below_runtime_minimum');
 
   const substrateAddress = state.keyringService.getSubstrateAddress(props.from);
-  const utility = getUtilityProps(props.originNet, state);
+  const utility = reviewedOriginFeeAsset(props, state);
   const utilityGroup = state.balanceService.getTokenBalance(substrateAddress, utility.id, props.relayChain);
   const rows = utilityGroup?.balances.filter(({ name }) => name.toLowerCase() === props.originNet.toLowerCase()) ?? [];
   if (rows.length !== 1) throw new Error('cross_chain_fee_balance_unavailable');
@@ -188,8 +194,8 @@ export async function estimateCrossChainQuote(props: CrossChainProps, state: Sta
   if (!resolved.extrinsic) throw new Error('cross_chain_runtime_execution_drift');
   await assertOriginExecutes(execution, originApi as unknown as DryRunApi, resolved.extrinsic, substrateAddress);
 
+  const utility = reviewedOriginFeeAsset(props, state);
   const paymentInfo = await resolved.extrinsic.paymentInfo(substrateAddress);
-  const utility = getUtilityProps(originNet, state);
   const originFee = FPNumber.fromCodecValue(paymentInfo.partialFee.toString(), utility.precision);
   if (!originFee.isFinity() || !originFee.isGteZero()) throw new Error('cross_chain_fee_unavailable');
 
@@ -256,6 +262,22 @@ export async function assertCrossChainSendAvailable(
 
 type SignedExtrinsic = CrossChainQuote['extrinsic'];
 
+/** The current head of the origin chain, read twice at most. */
+async function originHead(api: CrossChainSendResolutionApi): Promise<number> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const head = (await api.rpc.chain.getHeader()).number.toNumber();
+      if (Number.isSafeInteger(head) && head >= 0) return head;
+    } catch {
+      // Read it once more below.
+    }
+  }
+
+  // Recorded without its expiry, a mortal extrinsic that never lands would keep the route blocked until the account
+  // sends something else on this chain. Nothing has been sent yet, so the send stops here instead.
+  throw new Error('cross_chain_send_record_unavailable');
+}
+
 async function sendRecordFor(
   props: MakeCrossChainProps,
   address: string,
@@ -265,13 +287,8 @@ async function sendRecordFor(
   let expiresAtBlock: number | null = null;
 
   if (extrinsic.era.isMortalEra) {
-    try {
-      // The signing header is at or before this head, so the extrinsic dies no later than one period after it.
-      const head = (await api.rpc.chain.getHeader()).number.toNumber();
-      expiresAtBlock = head + extrinsic.era.asMortalEra.period.toNumber();
-    } catch {
-      // Without a head the record is resolved by the nonce alone.
-    }
+    // The signing header is at or before this head, so the extrinsic dies no later than one period after it.
+    expiresAtBlock = (await originHead(api)) + extrinsic.era.asMortalEra.period.toNumber();
   }
 
   return {
@@ -283,6 +300,15 @@ async function sendRecordFor(
     expiresAtBlock,
     recordedAt: Date.now(),
   };
+}
+
+/**
+ * Whether an outcome settles the journal record: the extrinsic reached a block, or the node refused it outright. An
+ * unknown outcome does not, and neither does a pool `Invalid` (CROSS_CHAIN_EXTRINSIC_INVALID): the record stays until
+ * the nonce moves or the mortality passes, at most one mortal period.
+ */
+export function settlesCrossChainSendRecord(outcome: TrackedSendOutcome): boolean {
+  return outcome.kind === 'included' || (outcome.kind === 'failed' && outcome.reason !== CROSS_CHAIN_EXTRINSIC_INVALID);
 }
 
 export function crossChainSendResponse(outcome: TrackedSendOutcome): BasicTxResponse {
@@ -372,14 +398,24 @@ async function signAndTrackCrossChain(
   syncFinalGuard();
 
   const { extrinsic } = finalQuote;
-  await signExtrinsic({ address, apiProps: initial.apiProps, extrinsic, isMobile, finalGuard: syncFinalGuard }, state);
+  await signExtrinsic(
+    {
+      address,
+      apiProps: initial.apiProps,
+      chainId: props.execution.originChainId,
+      extrinsic,
+      isMobile,
+      finalGuard: syncFinalGuard,
+    },
+    state
+  );
 
   // Written before the extrinsic leaves the wallet; without it the send does not happen.
   const record = await sendRecordFor(props, address, extrinsic, initial.apiProps.api as unknown as CrossChainSendResolutionApi);
   await ledger.record(record);
 
   const outcome = await sendAndTrackExtrinsic(extrinsic as unknown as TrackableExtrinsic);
-  if (outcome.kind !== 'unknown') {
+  if (settlesCrossChainSendRecord(outcome)) {
     await ledger.clear(address, props.routeId, record.hash).catch((error: unknown) => {
       // The record stays and is resolved from the chain on the next send of this route.
       console.warn('Unable to clear a resolved cross-chain send record', error);

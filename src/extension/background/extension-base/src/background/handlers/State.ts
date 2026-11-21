@@ -35,6 +35,7 @@ import {
   WorkerSleepService,
 } from '@extension-base/services';
 import { storage } from '@extension-base/stores/Storage';
+import { TonConnectService } from '@extension-base/services/ton-connect-service';
 import { EXTENSION_HOSTNAME, EXTENSION_ID } from '@extension-base/const';
 import { KeyringLockService } from '@extension-base/services/keyring-service/KeyringLock';
 import { balanceServiceFundsProbe } from '@extension-base/services/keyring-service/UniversalWalletPassword';
@@ -116,6 +117,7 @@ export default class State {
   requestService = new RequestService(this.keyringService, this);
   walletConnectService = new WalletConnectService(this, this.requestService);
   walletConnectDappService = new WalletConnectDAppService(this);
+  tonConnectService = new TonConnectService(this);
   irohaConnectService = new IrohaConnectService(this, {
     onStateChange: (snapshot, previous) => {
       const isApproval = snapshot.phase === 'session-approval' || snapshot.phase === 'request-approval';

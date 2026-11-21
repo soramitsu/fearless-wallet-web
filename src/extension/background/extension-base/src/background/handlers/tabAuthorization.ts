@@ -12,6 +12,12 @@ const AUTHORIZATION_BOOTSTRAP_MESSAGES = new Set<MessageTypes>([
   'iroha(accounts)',
   'iroha(disconnect)',
   'iroha(events.subscribe)',
+  // TON Connect binds each page to its own session and asks for nothing else.
+  'ton(connect)',
+  'ton(restoreConnection)',
+  'ton(send)',
+  'ton(disconnect)',
+  'ton(events.subscribe)',
 ]);
 
 function requiresGenericUrlAuthorization(type: MessageTypes): boolean {

@@ -11,6 +11,7 @@ import {
 } from '@extension-base/page';
 import { eip6963ProviderInfo } from '@extension-base/const';
 import { registerSolanaWalletStandard } from '@extension-base/page/FearlessWalletSolanaProvider';
+import { createTonConnectBridge } from '@extension-base/page/FearlessWalletTonConnect';
 import { createSubstrateProvider } from './substrateProvider';
 import type { FWEvmProvider } from '@extension-base/page/types';
 import type { Message } from '@extension-base/types';
@@ -179,6 +180,7 @@ class Page {
     this.injectEvm();
     this.injectIroha();
     this.injectSolana();
+    this.injectTonConnect();
   }
 
   static injectEvm(): void {
@@ -207,6 +209,13 @@ class Page {
     registerSolanaWalletStandard(solanaProvider);
 
     if (!windowInject.solana) windowInject.solana = solanaProvider;
+  }
+
+  // The TON Connect JS bridge, at the key the iOS in-app browser also uses.
+  static injectTonConnect(): void {
+    const windowInject = window as Window & InjectedWindow;
+
+    windowInject.Fearless = { ...(windowInject.Fearless ?? {}), tonconnect: createTonConnectBridge() };
   }
 
   static injectIroha(): void {

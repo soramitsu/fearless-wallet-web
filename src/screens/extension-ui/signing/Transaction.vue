@@ -259,7 +259,12 @@ const approveTestId = computed(() => (props.walletConnect ? 'approveWalletConnec
 const request = computed<ReviewRequest | undefined>(() => {
   if (props.walletConnect) return wcReview.value?.request;
   const queues = extensionStore.signAllRequests;
-  return queues.substrate[0] ?? Object.values(queues.evm)[0] ?? Object.values(queues.solana)[0];
+  return (
+    queues.substrate[0] ??
+    Object.values(queues.evm)[0] ??
+    Object.values(queues.solana)[0] ??
+    Object.values(queues.ton ?? {})[0]
+  );
 });
 const review = computed(() =>
   props.walletConnect
@@ -381,7 +386,10 @@ const act = async (action: 'approve' | 'reject') => {
   const signer = request.value.account.address;
   const key = requestKey.value;
   const site = origin.value;
-  const submits = review.value?.method === 'eth_sendTransaction' || review.value?.method === 'signAndSendTransaction';
+  const submits =
+    review.value?.method === 'eth_sendTransaction' ||
+    review.value?.method === 'signAndSendTransaction' ||
+    review.value?.method === 'sendTransaction';
   pending.value = action;
   actionError.value = false;
   try {

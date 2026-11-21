@@ -171,4 +171,5 @@ export * from '@/extension/messaging/legacy-exposure';
 export * from '@/extension/messaging/common';
 export * from '@/extension/messaging/wallet-connect-requests';
 export * from '@/extension/messaging/iroha-connect-requests';
+export * from '@/extension/messaging/ton-connect';
 export * from '@/extension/messaging/pools';

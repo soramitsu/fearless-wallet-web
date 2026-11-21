@@ -218,16 +218,14 @@ const groups = computed<SettingsGroup[]>(() => [
         icon: 'wallet-connect',
         open: open(Components.WalletConnectInitAuth),
       },
-      ...(hasTonAccount.value
+      ...(IS_EXTENSION && hasTonAccount.value
         ? [
             {
               id: 'ton-connect',
-              label: 'TonConnect',
+              label: 'TON Connect',
               description: t('settingsPage.tonConnectDescription'),
               icon: 'ton',
-              open: () => undefined,
-              disabled: true,
-              status: t('settingsPage.buildUnavailable'),
+              open: open(Components.TonConnectSessions),
             },
           ]
         : []),

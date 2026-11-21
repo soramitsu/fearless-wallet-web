@@ -122,7 +122,10 @@ import type {
   EvmRequestsSubjectPayload,
   SolanaRequests,
   SolanaRequestsSubjectPayload,
+  TonRequests,
+  TonRequestsSubjectPayload,
 } from '@extension-base/services/request-service/types';
+import type { TonConnectApprovalRequest, TonConnectSessionView } from '@extension-base/services/ton-connect-service';
 import type {
   AccountAuthType,
   RequestUpdateMeta,
@@ -165,6 +168,9 @@ import type {
   RequestSigningApprove,
   RequestSigningApproveSignature,
   RequestSigningCancel,
+  RequestTonConnectApprove,
+  RequestTonConnectDisconnect,
+  RequestTonConnectReject,
   RequestTypes,
   RequestUpdateAuthorizedAccounts,
   ResponseAuthorizeList,
@@ -262,23 +268,27 @@ import { validateAuthoritativePolkaswapExecution, validatePolkaswapExecution } f
 import { isSameString, isTonNetwork } from '@/helpers';
 import { deriveTonImportCandidates } from '@/util/tonKeyring';
 
-function isEvmSignRequest(
-  value: SignRequest | EvmRequestsSubjectPayload | SolanaRequestsSubjectPayload
-): value is EvmRequestsSubjectPayload {
+type QueuedSignRequest = SignRequest | EvmRequestsSubjectPayload | SolanaRequestsSubjectPayload | TonRequestsSubjectPayload;
+
+function isEvmSignRequest(value: QueuedSignRequest): value is EvmRequestsSubjectPayload {
   return 'data' in value;
 }
 
-function isSolanaSignRequest(
-  value: SignRequest | EvmRequestsSubjectPayload | SolanaRequestsSubjectPayload
-): value is SolanaRequestsSubjectPayload {
+function isSolanaSignRequest(value: QueuedSignRequest): value is SolanaRequestsSubjectPayload {
   return 'ecosystem' in value && value.ecosystem === 'solana';
+}
+
+function isTonSignRequest(value: QueuedSignRequest): value is TonRequestsSubjectPayload {
+  return 'ecosystem' in value && value.ecosystem === 'ton';
 }
 
 // The queue a request was admitted to, by the same shapes the popup reads to show it.
 function signingKindOf(value: object): SigningRequestKind {
   if ('data' in value) return 'evm';
 
-  return 'ecosystem' in value && (value as { ecosystem?: unknown }).ecosystem === 'solana' ? 'solana' : 'substrate';
+  const ecosystem = 'ecosystem' in value ? (value as { ecosystem?: unknown }).ecosystem : undefined;
+
+  return ecosystem === 'solana' ? 'solana' : ecosystem === 'ton' ? 'ton' : 'substrate';
 }
 
 function formatSoraAddress(address: string): string {
@@ -439,6 +449,8 @@ export default class Extension extends FWExtensionBase {
 
       try { await this.state.keyringService.forgetAccount(address, beforeRemoval, assertCurrent); }
       catch (error) { console.error(error); return false; }
+      // Pages connected to a removed TON wallet hear a disconnect.
+      await this.state.tonConnectService?.forgetAddress(address).catch(console.error);
     } else {
       if (typeof topic === 'string') await this.state.walletConnectDappService.disconnect(topic);
       try { await this.state.keyringService.forgetAddress(address, beforeRemoval, assertCurrent); }
@@ -962,6 +974,67 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
+  /** A TON Connect transaction or signData request the popup showed. The page must still be connected to its wallet. */
+  async signTonApprove({ id }: RequestSigningApprove): Promise<boolean> {
+    const request = this.state.requestService.getSignRequest(id, 'ton') as TonRequestsSubjectPayload | undefined;
+
+    assert(request, 'Unable to find request');
+    this.assertNormalWalletUse(request.account.address);
+    if (this.pendingSiteApprovals.has(request)) throw new Error('Signing approval already pending');
+    this.pendingSiteApprovals.add(request);
+
+    try {
+      await this.assertSigningSiteAllowed(request);
+      await this.assertDappSigningAllowed('ton', request);
+      this.assertSigningRequestCurrent(request);
+
+      const response = await this.state.tonConnectService.approveSigning(request, () => this.assertSigningRequestCurrent(request));
+
+      request.resolve(response);
+
+      return true;
+    } catch (error) {
+      if (this.state.requestService.getSignRequest(id, 'ton') === request)
+        request.reject(error instanceof Error ? error : new Error('Unable to sign TON request'));
+      if (error instanceof DappSigningPausedError) throw error;
+
+      return false;
+    } finally {
+      this.pendingSiteApprovals.delete(request);
+    }
+  }
+
+  signingTonSubscribe(id: string, port?: Port): TonRequests {
+    const cb = this.state.subscriptionService.createSubscription<'pri(signing.tonRequests)'>(id, port);
+    const subscription = this.state.requestService.signTonSubject.subscribe((requests: TonRequests): void => cb(requests));
+
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe(), port);
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
+
+    return this.state.requestService.signTonSubject.value;
+  }
+
+  tonConnectRequestsSubscribe(id: string, port?: Port): TonConnectApprovalRequest[] {
+    const cb = this.state.subscriptionService.createSubscription<'pri(tonConnect.requests)'>(id, port);
+    const subscription = this.state.tonConnectService.connectRequestsSubject.subscribe(cb);
+
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe(), port);
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
+
+    return this.state.tonConnectService.connectRequestsSubject.value;
+  }
+
+  async tonConnectSessionsSubscribe(id: string, port?: Port): Promise<TonConnectSessionView[]> {
+    const cb = this.state.subscriptionService.createSubscription<'pri(tonConnect.sessions)'>(id, port);
+    const sessions = await this.state.tonConnectService.listSessions();
+    const subscription = this.state.tonConnectService.sessionsSubject.subscribe(cb);
+
+    this.state.subscriptionService.setUnsubscriptionHandle(id, () => subscription.unsubscribe(), port);
+    port?.onDisconnect.addListener(() => this.cancelSubscription(id, port));
+
+    return sessions;
+  }
+
   // The popup names the queue of the request it shows (`kind`): an approval only reaches that request.
   async signingApprove({ id, kind }: RequestSigningApprove): Promise<boolean> {
     const queued = this.state.requestService.getSignRequest(id, kind);
@@ -969,6 +1042,7 @@ export default class Extension extends FWExtensionBase {
     assert(queued, 'Unable to find request');
 
     if (isSolanaSignRequest(queued)) return this.signSolanaApprove({ id });
+    if (isTonSignRequest(queued)) return this.signTonApprove({ id });
     if (isEvmSignRequest(queued)) return this.signEvmApprove({ id }); // sign evm requests
 
     this.assertNormalWalletUse(queued.account.address);
@@ -1028,6 +1102,12 @@ export default class Extension extends FWExtensionBase {
 
     assert(queued, 'Unable to find request');
 
+    if (isTonSignRequest(queued)) {
+      queued.reject(new Error('External signature approval is not supported for TON'));
+
+      return false;
+    }
+
     this.assertNormalWalletUse(isEvmSignRequest(queued)
       ? queued.account.address
       : isSolanaSignRequest(queued) ? queued.account.publicKey : queued.account.address);
@@ -1076,6 +1156,8 @@ export default class Extension extends FWExtensionBase {
     // Cancelled, which it could answer by asking the user to pay again.
     if (isSolanaSignRequest(queued)) {
       if (queued.method === 'signAndSendTransaction' && this.pendingSiteApprovals.has(queued)) return false;
+    } else if (isTonSignRequest(queued)) {
+      if (queued.method === 'sendTransaction' && this.pendingSiteApprovals.has(queued)) return false;
     } else if (isEvmSignRequest(queued) && queued.method === EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION) {
       const handler = this.state.requestService.evmRequestHandler;
 
@@ -2785,6 +2867,7 @@ export default class Extension extends FWExtensionBase {
       case 'pri(keyring.reset)':
         return this.state.keyringService.resetWallet(async () => {
           await this.state.requestService.resetWallet();
+          await this.state.tonConnectService?.resetWallet();
           await this.state.walletConnectDappService.resetWallet();
           await this.state.walletConnectService.resetWallet();
           await this.state.setCurrentAccount(null);
@@ -3088,6 +3171,28 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(signing.solanaRequests)':
         return this.signingSolanaSubscribe(id, port);
+
+      case 'pri(signing.tonRequests)':
+        return this.signingTonSubscribe(id, port);
+
+      // TON Connect
+      case 'pri(tonConnect.requests)':
+        return this.tonConnectRequestsSubscribe(id, port);
+
+      case 'pri(tonConnect.approve)': {
+        const { id: requestId, address } = request as RequestTonConnectApprove;
+
+        return this.state.tonConnectService.approveConnect(requestId, address);
+      }
+
+      case 'pri(tonConnect.reject)':
+        return this.state.tonConnectService.rejectConnect((request as RequestTonConnectReject).id);
+
+      case 'pri(tonConnect.sessions)':
+        return this.tonConnectSessionsSubscribe(id, port);
+
+      case 'pri(tonConnect.disconnect)':
+        return this.state.tonConnectService.disconnectSession((request as RequestTonConnectDisconnect).origin);
 
       // google
       case 'pri(google.get.files)':

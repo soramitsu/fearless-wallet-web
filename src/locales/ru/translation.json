@@ -349,7 +349,7 @@
     "networksAssetsDescription": "Фильтры отображения, узлы и настройки активов",
     "irohaConnectDescription": "Сеансы кошелька SORA 3 для Uranai и Iroha dApps",
     "walletConnectDescription": "Сеансы WalletConnect для совместимых экосистем",
-    "tonConnectDescription": "Сеансы TonConnect пока не поддерживаются в этой сборке.",
+    "tonConnectDescription": "Сайты, подключённые к вашим TON-кошелькам",
     "buildUnavailable": "Недоступно в сборке",
     "connectedDapps": "Подключенные dApps",
     "connectedDappsDescription": "Разрешения Substrate и EVM",
@@ -435,6 +435,11 @@
     "invalidUrl": "Недопустимый URL",
     "actionFailed": "IrohaConnect не смог завершить это действие.",
     "clipboardUnavailable": "Буфер обмена недоступен. Вставьте ссылку в поле."
+  },
+  "tonConnect": {
+    "connectDescription": "Этот сайт увидит адрес вашего TON-кошелька. Fearless спрашивает вас перед каждой подписью.",
+    "proofNotice": "Сайт также просит подпись, подтверждающую, что этот кошелёк ваш, для {domain}. Она не может переводить средства.",
+    "manifestMismatch": "Данные этого приложения принадлежат {app}, а не {site}. Подключайтесь, только если доверяете {site}."
   },
   "crossChainPage": {
     "title": "Межсетевой перевод",

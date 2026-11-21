@@ -10,8 +10,7 @@
  * Never read or write a key named `dapp_enabled`: the production feature toggle already holds it as `false`, a
  * legacy key that would pause every family at once.
  *
- * The extension has no TON dApp surface (TonConnect is not supported in this build), so the TON switch is read and
- * remembered but nothing checks it yet.
+ * The TON switch pauses TON Connect: `sendTransaction`, `signData`, and a connect that asks for a `ton_proof`.
  */
 
 import type { SigningRequestKind } from '@extension-base/services/request-service/signingRequestId';

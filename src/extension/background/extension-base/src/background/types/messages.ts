@@ -1,6 +1,12 @@
 import type { RecoveryRecordSummary } from '@extension-base/stores/WalletRecoveryRecords';
 import type { NetworkMapEdit } from '@extension-base/services/network-service/preferences';
-import type { EvmRequests, SolanaRequests } from '@extension-base/services/request-service/types';
+import type { EvmRequests, SolanaRequests, TonRequests } from '@extension-base/services/request-service/types';
+import type {
+  TonConnectApprovalRequest,
+  TonConnectEvent,
+  TonConnectSessionView,
+  TonConnectWalletResponse,
+} from '@extension-base/services/ton-connect-service';
 import type { AccountLiquidity } from '@/sora/types';
 import type { RequestArguments } from '@extension-base/utils/jsonRpc';
 import type {
@@ -106,6 +112,11 @@ import type {
   RequestSigningApprove,
   RequestSigningApproveSignature,
   RequestSigningCancel,
+  RequestTonConnectApprove,
+  RequestTonConnectConnect,
+  RequestTonConnectDisconnect,
+  RequestTonConnectEvents,
+  RequestTonConnectReject,
   GoogleFileId,
   ActiveTabAuthorizeStatus,
   RequestCheckTransfer,
@@ -288,6 +299,14 @@ export interface RequestSignatures {
   'pri(signing.cancel)': [RequestSigningCancel, boolean];
   'pri(signing.requests)': [null, SigningRequest[], SigningRequest[]];
   'pri(signing.solanaRequests)': [null, SolanaRequests, SolanaRequests];
+  'pri(signing.tonRequests)': [null, TonRequests, TonRequests];
+
+  // TON Connect: connect prompts and connected pages
+  'pri(tonConnect.requests)': [null, TonConnectApprovalRequest[], TonConnectApprovalRequest[]];
+  'pri(tonConnect.approve)': [RequestTonConnectApprove, boolean];
+  'pri(tonConnect.reject)': [RequestTonConnectReject, boolean];
+  'pri(tonConnect.sessions)': [null, TonConnectSessionView[], TonConnectSessionView[]];
+  'pri(tonConnect.disconnect)': [RequestTonConnectDisconnect, TonConnectSessionView[]];
 
   'pri(window.open)': [string, boolean];
   'pri(google.auth)': [GoogleAuthTypes, void];
@@ -372,6 +391,13 @@ export interface RequestSignatures {
   'solana(signTransaction)': [SolanaSignTransactionRequest, SolanaSignTransactionResponse];
   'solana(signAndSendTransaction)': [SolanaSignAndSendTransactionRequest, SolanaSignAndSendTransactionResponse];
   'solana(signAllTransactions)': [SolanaSignAllTransactionsRequest, SolanaSignAllTransactionsResponse];
+
+  // TON Connect JS bridge (window.Fearless.tonconnect)
+  'ton(connect)': [RequestTonConnectConnect, TonConnectEvent];
+  'ton(restoreConnection)': [null, TonConnectEvent];
+  'ton(send)': [unknown, TonConnectWalletResponse];
+  'ton(disconnect)': [null, boolean];
+  'ton(events.subscribe)': [RequestTonConnectEvents, boolean, TonConnectEvent];
 
   // Iroha/Nexus dApp provider
   'iroha(authorizeUrl)': [IrohaConnectRequest, IrohaConnectResponse];

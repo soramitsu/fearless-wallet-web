@@ -16,7 +16,8 @@ const haveAuthRequests = (extensionStore: ExtensionStore): number => extensionSt
 const haveSignRequests = (extensionStore: ExtensionStore): number =>
   extensionStore.signRequests.length ||
   Object.keys(extensionStore.signEvmRequests).length ||
-  Object.keys(extensionStore.signSolanaRequests).length;
+  Object.keys(extensionStore.signSolanaRequests).length ||
+  Object.keys(extensionStore.signTonRequests ?? {}).length;
 const haveMetaRequests = (extensionStore: ExtensionStore): number => extensionStore.metaRequests.length;
 const getStakingNetwork = async (stakingStore: StakingStore, network: NetworkName): Promise<NetworkParams> =>
   await new Promise((res) => setTimeout(() => res(stakingStore.getStakingNetwork(network)), 100));

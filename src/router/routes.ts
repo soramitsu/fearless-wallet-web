@@ -39,6 +39,8 @@ const ManageAuths = () => import('@/screens/extension-ui/ManageAuths.vue');
 const DAppDetails = () => import('@/screens/extension-ui/DAppDetails.vue');
 
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
+const TonConnectApprove = () => import('@/screens/extension-ui/tonConnect/TonConnectApprove.vue');
+const TonConnectSessions = () => import('@/screens/extension-ui/tonConnect/TonConnectSessions.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
 const WalletConnectAuthDetails = () => import('@/screens/walletConnect/WalletConnectAuthDetails.vue');
 const WalletConnectInitAuth = () => import('@/screens/walletConnect/WalletConnectInitAuth.vue');
@@ -145,6 +147,8 @@ export enum Components {
   AccountAccessRecovery = 'AccountAccessRecovery',
   StorageRecovery = 'StorageRecovery',
   IrohaConnect = 'IrohaConnect',
+  TonConnectApprove = 'TonConnectApprove',
+  TonConnectSessions = 'TonConnectSessions',
   AssetHistory = 'AssetHistory',
   AssetNetworks = 'AssetNetworks',
   WalletConnectInitAuth = 'WalletConnectInitAuth',
@@ -331,6 +335,19 @@ const routes: Array<RouteRecordRaw> = [
     },
   },
   {
+    path: '/ton-connect',
+    name: Components.TonConnectApprove,
+    component: TonConnectApprove,
+    meta: {
+      title: 'authorize',
+      calm: true,
+    },
+    beforeEnter: (to, from, next) => {
+      if (useExtensionStore().tonConnectRequests?.length) next();
+      else next({ name: Components.Wallet });
+    },
+  },
+  {
     path: '/wc-authorize',
     name: Components.WalletConnectAuthConfirmation,
     component: WalletConnectAuthConfirmation,
@@ -483,6 +500,10 @@ const routes: Array<RouteRecordRaw> = [
           // currently being viewed in the portfolio.
           if (haveAuthRequests(extensionStore)) {
             next({ name: Components.Authorize });
+            return;
+          }
+          if (extensionStore.tonConnectRequests?.length) {
+            next({ name: Components.TonConnectApprove });
             return;
           }
           // Signing also belongs to the queued account. The background checks that signer,
@@ -715,6 +736,12 @@ const routes: Array<RouteRecordRaw> = [
         component: IrohaConnect,
         meta: { title: 'settings', primaryNavigation: 'settings' },
         beforeEnter: createIrohaConnectRouteGuard(Components.Settings),
+      },
+      {
+        path: 'settings/ton-connect',
+        name: Components.TonConnectSessions,
+        component: TonConnectSessions,
+        meta: { title: 'settings', primaryNavigation: 'settings' },
       },
       {
         path: 'settings/wallet-connect',

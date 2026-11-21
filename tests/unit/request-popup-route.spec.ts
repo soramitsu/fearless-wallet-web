@@ -51,6 +51,8 @@ const requestCount = (phase: string): number => {
     numSignWCRequests: 0,
     numEvmSignRequests: 0,
     numSolanaSignRequests: 0,
+    numTonSignRequests: 0,
+    numTonConnectRequests: 0,
   };
   const numStandardRequests = Object.getOwnPropertyDescriptor(
     RequestService.prototype,

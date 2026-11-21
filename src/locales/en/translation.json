@@ -243,7 +243,7 @@
     "networksAssetsDescription": "Display filters, nodes, and asset preferences",
     "irohaConnectDescription": "SORA 3 wallet sessions for Uranai and Iroha dApps",
     "walletConnectDescription": "WalletConnect sessions for compatible ecosystems",
-    "tonConnectDescription": "TonConnect sessions are not supported in this build yet.",
+    "tonConnectDescription": "Sites connected to your TON wallets",
     "buildUnavailable": "Build unavailable",
     "connectedDapps": "Connected dApps",
     "connectedDappsDescription": "Substrate and EVM permissions",
@@ -329,6 +329,11 @@
     "invalidUrl": "Invalid URL",
     "actionFailed": "IrohaConnect could not complete that action.",
     "clipboardUnavailable": "Clipboard access is unavailable. Paste the link into the field."
+  },
+  "tonConnect": {
+    "connectDescription": "This site will see your TON wallet address. Fearless asks you before every signature.",
+    "proofNotice": "This site also asks for a signature proving this wallet is yours, for {domain}. It cannot move funds.",
+    "manifestMismatch": "This app's details belong to {app}, not {site}. Connect only if you trust {site}."
   },
   "crossChainPage": {
     "title": "Transfer between networks",

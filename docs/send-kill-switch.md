@@ -57,7 +57,7 @@ network family at a time. The keys match the mobile apps':
 | Polkadot | `polkadotDappSigning` | `polkadot_dapp_signing_enabled` | polkadot-js `signPayload`/`signRaw`, WalletConnect `polkadot_*` |
 | EVM      | `evmDappSigning`      | `evm_dapp_signing_enabled`      | injected and WalletConnect `eth_*`, `personal_sign`             |
 | Solana   | `solanaDappSigning`   | `solana_dapp_signing_enabled`   | every Solana provider request, sign-only ones included          |
-| TON      | `tonDappSigning`      | `ton_dapp_signing_enabled`      | nothing yet: this build has no TonConnect                       |
+| TON      | `tonDappSigning`      | `ton_dapp_signing_enabled`      | TON Connect `sendTransaction`, `signData`, and `ton_proof`      |
 
 The background checks the switch when the person approves a request, once the
 phishing-list lookup has answered and before any key is used, a paired mobile

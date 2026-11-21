@@ -226,7 +226,7 @@
     "networksAssetsDescription": "𓁹 𓋴𓏏𓊪 · 𓅓𓈖𓈖𓅱 𓏥 · 𓎛𓈖𓂝 𓐍𓏏𓏥 𓅓𓂋𓇌𓏥",
     "irohaConnectDescription": "SORA 3 𓉒 𓋴𓊪𓏥 𓈖 𓄡𓈖𓅓 𓈖 Uranai 𓎛𓈖𓂝 Iroha dApps",
     "walletConnectDescription": "WalletConnect 𓋴𓊪𓏥 𓈖 𓄡𓈖𓅓 𓈖 𓐙 𓄡𓈖𓅓𓏥",
-    "tonConnectDescription": "TonConnect 𓋴𓊪𓏥 𓈖 𓄡𓈖𓅓 𓈖𓈖 𓋴𓄿𓅱 𓅓 𓊪𓈖 𓁹𓏏 𓅓𓇋𓈖 ·",
+    "tonConnectDescription": "𓊨𓏥 𓄡𓈖𓅓 𓂋 𓉒𓏥 𓈖𓏏𓎡 𓈖 TON",
     "buildUnavailable": "𓁹𓏏 𓈖𓈖 𓃹𓈖",
     "connectedDapps": "𓄡𓈖𓅓 DApps",
     "connectedDappsDescription": "Substrate 𓎛𓈖𓂝 EVM 𓅱𓂧𓏥",
@@ -560,6 +560,11 @@
     "invalidUrl": "𓈖 𓐙 URL",
     "actionFailed": "IrohaConnect 𓅓𓂧𓅱 𓈖𓈖 𓊪𓎛 𓅓𓂧𓅱 𓁹𓏏 𓈖 𓋴𓍿𓄿 ·",
     "clipboardUnavailable": "𓅓𓂧𓅱 𓂝𓎡 𓈖𓈖 𓃹𓈖 · 𓅱𓄿𓎛 𓅓𓂧𓅱 𓎛𓈖𓎡 𓂋 𓐍𓈖𓅱 𓊨 ·"
+  },
+  "tonConnect": {
+    "connectDescription": "𓊪𓈖 𓊨 𓅓𓄿𓄿 𓊨 𓈖 𓂋𓈖 𓈖 𓉒 𓈖𓏏𓎡 𓈖 TON · Fearless 𓅓𓂧𓅱 𓄂 𓎟 𓋴𓈙 𓈖 𓂋𓈖 ·",
+    "proofNotice": "𓊪𓈖 𓊨 𓂧𓃀𓎛 𓋴𓈙 𓈖 𓂋𓈖 𓈖 {domain} · 𓉒 𓊪𓈖 𓈖𓏏𓎡 · 𓈖 𓋴𓍿𓄿 𓋴𓈙 𓊪𓈖 𓐍𓏏𓏥 ·",
+    "manifestMismatch": "𓅓𓆓𓄿𓏏 𓈖 𓉐 𓈖 𓂓𓏏 𓈖 {app} · 𓈖𓈖 𓈖 {site} · 𓏤 𓄡𓈖𓅓 𓇋𓂋 𓅓𓎛 𓇋𓃀𓎡 𓅓 {site} ·"
   },
   "crossChainPage": {
     "title": "𓅱𓄿𓏏 𓅓 𓄡𓈖𓅓𓏥 𓂋 𓄡𓈖𓅓𓏥",

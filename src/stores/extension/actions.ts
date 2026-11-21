@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { resolveActionCapabilities, failClosedActionCapabilities, isActionCapabilityConfigFresh, type MutableAction } from '@extension-base/services/action-capability-service';
 import type { HexString } from '@polkadot/util/types';
-import type { EvmRequests, SolanaRequests } from '@extension-base/services/request-service/types';
+import type { EvmRequests, SolanaRequests, TonRequests } from '@extension-base/services/request-service/types';
+import type { TonConnectApprovalRequest, TonConnectSessionView } from '@extension-base/services/ton-connect-service';
 import type { SigningRequestKind } from '@extension-base/services/request-service/signingRequestId';
 import type { RequestsPayload } from './types';
 import type { ExtensionStore } from '.';
@@ -39,6 +40,12 @@ import {
   subscribeWalletConnectRequest,
   subscribeEvmSigningRequests,
   subscribeSolanaSigningRequests,
+  subscribeTonSigningRequests,
+  subscribeTonConnectRequests,
+  approveTonConnectRequest,
+  rejectTonConnectRequest,
+  subscribeTonConnectSessions,
+  disconnectTonConnectSession,
   approveSign,
   approveSignSignature,
   // approveWalletConnectSession,
@@ -94,12 +101,13 @@ export type ApprovePayload = {
   kind: SigningRequestKind;
 };
 
-type SigningQueue = 'signRequests' | 'signEvmRequests' | 'signSolanaRequests';
+type SigningQueue = 'signRequests' | 'signEvmRequests' | 'signSolanaRequests' | 'signTonRequests';
 
 const SIGNING_QUEUES: Readonly<Record<SigningRequestKind, SigningQueue>> = Object.freeze({
   substrate: 'signRequests',
   evm: 'signEvmRequests',
   solana: 'signSolanaRequests',
+  ton: 'signTonRequests',
 });
 
 const removeSigningRequest = (store: ExtensionStore, queue: SigningQueue | undefined, id: string) => {
@@ -116,7 +124,8 @@ const routeSigningRequests = (store: ExtensionStore, incomingRequests = false) =
   const pending =
     store.signRequests.length +
     Object.keys(store.signEvmRequests).length +
-    Object.keys(store.signSolanaRequests).length;
+    Object.keys(store.signSolanaRequests).length +
+    Object.keys(store.signTonRequests ?? {}).length;
   const onSigningScreen = router.currentRoute.value.name === Components.Transaction;
 
   if (!pending && onSigningScreen) void router.push({ name: Components.Wallet });
@@ -144,6 +153,12 @@ type Actions = {
   subscribeSignRequests(this: ExtensionStore): Promise<SigningRequest[]>;
   subscribeEvmSignRequests(this: ExtensionStore): Promise<EvmRequests>;
   subscribeSolanaSignRequests(this: ExtensionStore): Promise<SolanaRequests>;
+  subscribeTonSignRequests(this: ExtensionStore): Promise<TonRequests>;
+  subscribeTonConnectRequests(this: ExtensionStore): Promise<TonConnectApprovalRequest[]>;
+  approveTonConnect(this: ExtensionStore, payload: { id: string; address: string }): Promise<boolean>;
+  rejectTonConnect(this: ExtensionStore, id: string): Promise<boolean>;
+  subscribeTonConnectSessions(this: ExtensionStore): Promise<TonConnectSessionView[]>;
+  disconnectTonConnectSession(this: ExtensionStore, origin: string): Promise<void>;
   signCancel(this: ExtensionStore, payload: ApprovePayload): Promise<void>;
   approveSign(this: ExtensionStore, payload: ApprovePayload): Promise<boolean>;
   subscribeExtensionRequests(this: ExtensionStore): Promise<boolean>;
@@ -179,6 +194,12 @@ export const actions: Actions = {
     if (type === 'signEvmRequests') this.signEvmRequests = requests;
 
     if (type === 'signSolanaRequests') this.signSolanaRequests = requests;
+
+    if (type === 'signTonRequests') this.signTonRequests = requests;
+
+    if (type === 'tonConnectRequests') this.tonConnectRequests = requests;
+
+    if (type === 'tonConnectSessions') this.tonConnectSessions = requests;
 
     if (type === 'wcConnectRequests') this.wcConnectRequests = requests;
 
@@ -312,6 +333,45 @@ export const actions: Actions = {
     return subscribeSolanaSigningRequests(callback);
   },
 
+  async subscribeTonSignRequests() {
+    const callback = (requests: TonRequests) => {
+      this.setRequest({ type: 'signTonRequests', requests });
+
+      routeSigningRequests(this, Object.keys(requests).length > 0);
+    };
+
+    return subscribeTonSigningRequests(callback);
+  },
+
+  async subscribeTonConnectRequests() {
+    const callback = (requests: TonConnectApprovalRequest[]) => {
+      this.setRequest({ type: 'tonConnectRequests', requests });
+
+      const onScreen = router.currentRoute.value.name === Components.TonConnectApprove;
+
+      if (requests.length && !onScreen) void router.push({ name: Components.TonConnectApprove });
+      else if (!requests.length && onScreen) void router.push({ name: Components.Wallet });
+    };
+
+    return subscribeTonConnectRequests(callback);
+  },
+
+  async approveTonConnect({ id, address }) {
+    return approveTonConnectRequest(id, address);
+  },
+
+  async rejectTonConnect(id) {
+    return rejectTonConnectRequest(id);
+  },
+
+  async subscribeTonConnectSessions() {
+    return subscribeTonConnectSessions((sessions) => this.setRequest({ type: 'tonConnectSessions', requests: sessions }));
+  },
+
+  async disconnectTonConnectSession(origin) {
+    this.setRequest({ type: 'tonConnectSessions', requests: await disconnectTonConnectSession(origin) });
+  },
+
   async approveSign({ id, kind }) {
     const queue = SIGNING_QUEUES[kind];
     const signed = await approveSign(id, kind);
@@ -346,6 +406,8 @@ export const actions: Actions = {
   async subscribeExtensionRequests() {
     const signEvm = this.subscribeEvmSignRequests();
     const signSolana = this.subscribeSolanaSignRequests();
+    const signTon = this.subscribeTonSignRequests();
+    const tonConnect = this.subscribeTonConnectRequests();
     const auth = this.subscribeAuthRequests();
     const sign = this.subscribeSignRequests();
     const meta = this.subscribeMetaRequests();
@@ -353,9 +415,16 @@ export const actions: Actions = {
     const wcSessions = this.subscribeWcSessions();
     const wcRequests = this.subscribeWcRequests();
 
+    const [tonRequests, tonConnectRequests] = await Promise.all([signTon, tonConnect]);
     const promises = await Promise.all([wcSessions, signEvm, signSolana, auth, sign, meta, wcConnectRequests, wcRequests]);
 
-    return !!Object.keys(promises[1]).length || !!Object.keys(promises[2]).length || !!promises.slice(3).flat().length;
+    return (
+      !!Object.keys(promises[1]).length ||
+      !!Object.keys(promises[2]).length ||
+      !!Object.keys(tonRequests).length ||
+      !!tonConnectRequests.length ||
+      !!promises.slice(3).flat().length
+    );
   },
 
   async fetchTabStatus() {

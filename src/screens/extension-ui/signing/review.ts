@@ -1,7 +1,7 @@
 import { formatUnits, getBytes, isAddress, toUtf8String } from 'ethers';
 import { toRaw } from 'vue';
 import type { SigningRequest } from '@extension-base/background/types/types';
-import type { EvmRequestPayload, SolanaRequestPayload } from '@extension-base/services/request-service/types';
+import type { EvmRequestPayload, SolanaRequestPayload, TonRequestPayload } from '@extension-base/services/request-service/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { SigningRequestKind } from '@extension-base/services/request-service/signingRequestId';
 import type { CrossChainCallAsset, CrossChainCallDestination } from '@/cross-chain/dappCrossChainCalls';
@@ -11,7 +11,7 @@ import { evmTransaction } from '@/util/evmTransaction';
 import { evmTypedData } from '@/util/evmTypedData';
 import { parseSolanaSerializedTransaction } from '@/util/solanaTransaction';
 
-export type ReviewRequest = SigningRequest | EvmRequestPayload | SolanaRequestPayload;
+export type ReviewRequest = SigningRequest | EvmRequestPayload | SolanaRequestPayload | TonRequestPayload;
 export type ReviewAction = {
   transactionIndex?: number;
   kind: 'message' | 'transfer' | 'typedData' | 'unknown' | 'crossChain';
@@ -29,7 +29,7 @@ export type ReviewAction = {
   refusal?: RetiredDestinationCode;
 };
 export type SigningReview = {
-  protocol: 'Ethereum' | 'Solana' | 'Substrate';
+  protocol: 'Ethereum' | 'Solana' | 'Substrate' | 'TON';
   method: string;
   network?: string;
   networkIdentity?: string;
@@ -222,13 +222,81 @@ function solanaReview(request: SolanaRequestPayload, result: SigningReview): voi
   result.blind = result.actions.some((action) => action.kind === 'unknown');
 }
 
+const TON_ACTIONS_THAT_SHOW_EVERYTHING = new Set(['transfer', 'comment']);
+const tonAmount = (nanotons: string): string => `${formatUnits(BigInt(nanotons), 9)} TON`;
+
+function tonReview(request: TonRequestPayload, result: SigningReview): void {
+  result.network = 'TON Mainnet';
+  result.networkIdentity = '-239';
+  if (request.method === 'signData') {
+    const data = request.signData;
+    if (!data) throw new Error('Missing sign data');
+    if (data.type === 'text') {
+      const text = visibleText(new TextEncoder().encode(data.text));
+      result.actions = [{ kind: text === undefined ? 'unknown' : 'message', text }];
+      result.blind = text === undefined;
+    } else {
+      // Binary data and cells cannot be shown as what they mean; the spec asks for an unknown-content warning.
+      result.actions = [
+        {
+          kind: 'unknown',
+          text: data.type === 'binary' ? `${data.byteLength} bytes: ${data.bytesHex}` : `TL-B: ${data.schema}`,
+        },
+      ];
+      result.blind = true;
+    }
+    return;
+  }
+  if (request.method !== 'sendTransaction' || !request.messages?.length) throw new Error('Missing transaction');
+  // Fees are paid separately from the amounts and are not estimated before the network runs the messages.
+  result.feeKind = 'unavailable';
+  result.actions = request.messages.flatMap((message): ReviewAction[] => {
+    const value = tonAmount(message.amount);
+    const actions: ReviewAction[] = [];
+    if (message.kind === 'jettonTransfer' && message.jetton) {
+      actions.push(
+        { kind: 'transfer', from: request.account.address, to: message.jetton.destination, amount: message.jetton.amount, asset: message.to },
+        { kind: 'transfer', from: request.account.address, to: message.to, amount: value }
+      );
+      if (message.jetton.forwardComment) actions.push({ kind: 'message', text: message.jetton.forwardComment });
+    } else if (message.kind === 'nftTransfer' && message.nft) {
+      actions.push({ kind: 'transfer', from: request.account.address, to: message.nft.newOwner, asset: message.to, amount: value });
+    } else {
+      actions.push({
+        kind: message.kind === 'unknown' ? 'unknown' : 'transfer',
+        from: request.account.address,
+        to: message.to,
+        amount: value,
+        text: message.kind === 'unknown' && message.opcode ? `op ${message.opcode}` : undefined,
+      });
+      if (message.kind === 'comment') actions.push({ kind: 'message', text: message.comment });
+    }
+    if (message.deploysContract) actions.push({ kind: 'unknown', to: message.to });
+    return actions;
+  });
+  // A jetton amount is in units whose decimals the request does not carry, and other bodies run contract code: only
+  // plain transfers and comments show everything the transaction does.
+  result.blind = request.messages.some(
+    (message) => !TON_ACTIONS_THAT_SHOW_EVERYTHING.has(message.kind) || message.deploysContract
+  );
+}
+
 /** The queue a shown request came from, which approving or rejecting it names. */
 export function signingRequestKind(request: ReviewRequest): SigningRequestKind {
-  return 'ecosystem' in request ? 'solana' : 'data' in request ? 'evm' : 'substrate';
+  if ('ecosystem' in request) return request.ecosystem === 'ton' ? 'ton' : 'solana';
+
+  return 'data' in request ? 'evm' : 'substrate';
 }
 
 export function signingReview(request: ReviewRequest, _networks: NetworkJson[] = []): SigningReview {
-  const protocol = 'ecosystem' in request ? 'Solana' : 'data' in request ? 'Ethereum' : 'Substrate';
+  const protocol =
+    'ecosystem' in request
+      ? request.ecosystem === 'ton'
+        ? 'TON'
+        : 'Solana'
+      : 'data' in request
+        ? 'Ethereum'
+        : 'Substrate';
   const result: SigningReview = {
     protocol,
     method: 'method' in request ? request.method : 'signPayload',
@@ -245,6 +313,7 @@ export function signingReview(request: ReviewRequest, _networks: NetworkJson[] =
       'request' in request ? request.request.payload : 'data' in request ? request.data : request
     );
     if ('data' in request) evmReview(request, result);
+    else if ('ecosystem' in request && request.ecosystem === 'ton') tonReview(request, result);
     else if ('ecosystem' in request) solanaReview(request, result);
     else {
       const payload = request.request.payload;

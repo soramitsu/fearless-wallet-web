@@ -33,6 +33,8 @@ import type {
   RequestRpcSend,
   RequestRpcSubscribe,
   RequestRpcUnsubscribe,
+  RequestTonConnectConnect,
+  RequestTonConnectEvents,
   RequestTypes,
   ResponseRpcListProviders,
   ResponseSigning,
@@ -71,6 +73,8 @@ const PAGE_REQUEST_MESSAGES = new Set<MessageTypes>([
   'solana(signAndSendTransaction)',
   'solana(signAllTransactions)',
   'iroha(authorizeUrl)',
+  'ton(connect)',
+  'ton(send)',
 ]);
 
 export default class Tabs {
@@ -490,6 +494,16 @@ export default class Tabs {
     return this.state.rpcUnsubscribe(request, port);
   }
 
+  tonConnectSubscribeEvents(url: string, request: RequestTonConnectEvents | null, id: string, port: Port): boolean {
+    const cb = this.state.subscriptionService.createSubscription<'ton(events.subscribe)'>(id, port);
+    const unsubscribe = this.state.tonConnectService.subscribe(url, request?.connected === true, cb);
+
+    this.state.subscriptionService.setUnsubscriptionHandle(id, unsubscribe, port);
+    port.onDisconnect.addListener(() => this.state.subscriptionService.cancelSubscription(id, port));
+
+    return true;
+  }
+
   async redirectIfPhishing(url: string): Promise<boolean> {
     return await checkIfDenied(url);
   }
@@ -638,6 +652,25 @@ export default class Tabs {
 
       case 'iroha(events.subscribe)':
         return this.irohaSubscribeAccounts(url, request as IrohaConnectRequest | null, id, port);
+
+      // TON Connect
+      case 'ton(connect)': {
+        const { protocolVersion, request: connectRequest } = (request ?? {}) as RequestTonConnectConnect;
+
+        return this.state.tonConnectService.connect(url, protocolVersion, connectRequest, signal);
+      }
+
+      case 'ton(restoreConnection)':
+        return this.state.tonConnectService.restoreConnection(url);
+
+      case 'ton(send)':
+        return this.state.tonConnectService.send(url, request, signal);
+
+      case 'ton(disconnect)':
+        return this.state.tonConnectService.disconnectPage(url);
+
+      case 'ton(events.subscribe)':
+        return this.tonConnectSubscribeEvents(url, request as RequestTonConnectEvents | null, id, port);
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

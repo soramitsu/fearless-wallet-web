@@ -17,6 +17,7 @@ const SUBSCRIPTION_MESSAGES = new Set<string>([
   'evm(events.subscribe)',
   'solana(events.subscribe)',
   'iroha(events.subscribe)',
+  'ton(events.subscribe)',
   'pub(accounts.subscribe)',
 ]);
 // Subscriptions the wallet accepted, by request id. The wallet stops its worker when nothing needs it, which closes the

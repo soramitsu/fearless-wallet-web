@@ -840,6 +840,30 @@ export interface RequestSigningCancel {
   kind?: SigningRequestKind;
 }
 
+export interface RequestTonConnectApprove {
+  id: string;
+  address: string;
+}
+
+export interface RequestTonConnectReject {
+  id: string;
+}
+
+export interface RequestTonConnectDisconnect {
+  origin: string;
+}
+
+/** What the page bridge sends to connect: the protocol version and the dApp's ConnectRequest, both unchecked. */
+export interface RequestTonConnectConnect {
+  protocolVersion: unknown;
+  request: unknown;
+}
+
+export interface RequestTonConnectEvents {
+  /** The page holds a connection, so a session that ended while it could not hear is reported at once. */
+  connected: boolean;
+}
+
 // Responses
 export type ResponseTypes = {
   [MessageType in MessageTypes]: RequestSignatures[MessageType][1];

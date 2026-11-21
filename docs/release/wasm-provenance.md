@@ -65,8 +65,50 @@ The last command uses the installed loader itself (`base64Decode` with `lenIn`, 
 - **Encoding control:** Recompressing the *published decoded WASM* with fflate 0.8.2 at level 9 exactly reproduces its zlib bytes and, using the release year 2025, the complete JS carrier. The packer uses the wall-clock year; the 2026 header is an additional JS difference, not the reason for the WASM mismatch.
 - **Translation control:** Feeding *published* optimized WASM to the upstream macOS Binaryen 105 `wasm2js` and the three sequential `sed` transformations yields `d3b58bb52276c8a14893f16494c88ae8862f8234e4f3a586de760ecdb0d89640`, still not the npm asm.js. The first differing lines assign heap loads to different local variables; subsequent instructions differ too. This isolates a downstream difference but does not establish nondeterminism or a behavioural defect.
 
-### Disposition: F02 remains open
+### Disposition after the macOS experiment (superseded for Polkadot)
 
 Do not patch Yarn to use this Mac artifact. It would replace executable signing and key-derivation code and change the declared WASM feature contract, not merely substitute a different wrapper. Matching imports and exports is not cryptographic equivalence. A repeatable replacement would also need a pinned builder and a verified clean rebuild; the vendored locked Rust dependencies alone occupied 139 MiB in this experiment. No package override, runtime change, lockfile change, or hash-only “provenance passed” gate was added.
 
-**Shortest path to closure:** obtain the original Linux builder manifest/image digest (including Ubuntu Clang `18.1.3 (1ubuntu1)`, Xargo, and the Linux bindgen/Binaryen archives) and compare stage hashes with the recipe above, or obtain a verifiable publisher attestation covering the exact module hash, source revision and build inputs. If an independently maintained replacement is chosen instead, pin its entire source/build closure, verify a second clean rebuild, and run the signing, derivation, recovery and historical-wallet browser vectors before adopting it. Bitcoin requires independent evidence for its own module. The asm.js discrepancy is not a blocker for this particular Chrome ZIP unless its import graph changes.
+### Linux result: F02 closed by reproduction for both Polkadot payloads
+
+On 21 November 2026, a clean export of `f55a3e75a2ab5408f6bf947f2ec9b294daef432d` produced the exact 335277 bytes returned by the installed npm loader. Linux `wasm2js` also reproduced the entire published fallback, independently confirmed by feeding it the decoded npm module. No wallet dependency, runtime, or lockfile changed. **Bitcoin's `tiny-secp256k1@2.2.5` is independently open:** its upstream builder requires a different Rust, Clang, and Binaryen; it was not rebuilt here. These results do not approve a wallet release.
+
+| Stage | Linux SHA-256 | Comparison with npm |
+| --- | --- | --- |
+| Rust (418632 bytes) | `b7bfb994c980c181b43fd68396daf7084705912873765c9d0be70045622b8662` | No published intermediate |
+| Bindgen (381949 bytes) | `607e718d6f33ca84f9d92ab3b695d1639e8f79f018795aebed1ee72a54163d8a` | No published intermediate |
+| Optimized WASM | `7edb3158a3ec97e5bd72f35476128a1c09273a109887fd445b366ad1ebc21b06` | Identical, including `producers`, `target_features`, code and data |
+| zlib (168782 bytes) | `15cd110a8ab8aa7e5801440b4afb3dd9c56c07c2369f9f8a39b788ccca0456e9` | Identical |
+| `cjs/bytes.js`, generated in 2026 | `bd134204f971ce054a6031717ecbd71236df6f98430ae8b05ecd412f720b9583` | Differs only in copyright year |
+| `cjs/bytes.js`, year restored to 2025 | `f000922c66d9b5b2bece78a96785b60cb53c4a46545ad55c8373e30c9a2f0d07` | Identical |
+| `cjs/data.js`, upstream `wasm2js -Oz` and CommonJS transform | `71d5cb82afcfbfe28dcbcde570d102a52aaaaa2802cc905b251ad710fdfa9b1f` | Identical; not shipped in this Chrome ZIP |
+
+**Builder.** Ubuntu 24.04.5 amd64 under Rosetta, OCI index `sha256:9c7f200c07e3d4a03e7249d2c16bf66a51120fb876aa2242cf31451412543289`, amd64 manifest `sha256:9a04f13b3f80ef056361e30868593b1cfd2279fe19e4081cb93a90bf56819d6a`. This is a sufficient builder, not a claim about the historical runner image digest. Both `clang-18` and `llvm-18` are `1:18.1.3-1ubuntu1`; `clang --version` reported `Ubuntu clang version 18.1.3 (1ubuntu1)`. Xargo 0.3.26, rustc `43347397f`, bindgen 0.2.79 Linux musl, Binaryen 105 Linux, fflate 0.8.2. `cc` 1.0.73 invoked `clang -Oz -ffunction-sections -fdata-sections -fPIC --target=wasm32-unknown-unknown` for secp256k1, then GNU `ar cq` and `ar s`; no custom `CC`, `AR`, `CFLAGS` or `RUSTFLAGS`. No alternative point release or Xargo was needed.
+
+**Scope and inputs.** The experiment ran upstream `scripts/install-build-deps.sh` (including `rust-version.sh`) and `PKG_NAME=wasm-crypto ../scripts/build-wasm.sh`. It staged the two verified Linux tool archives and the packer's JS dependencies; it did not run upstream publication, Rollup or unrelated JS tests. The disposable VM's requested scratch bind mount appeared empty, so inputs were streamed to the named container. `wasm-builder/` contains SHA-256 inventories for the 99 apt archives, Cargo archives, Rust components, and downloaded tools. `tools.sha256` records executables from the first build; host tool hashes are observations, not substitutes for comparing payloads. The recipe pins Xargo and its dependencies rather than installing an unbounded future crates.io version.
+
+**Repeat the source comparison** from the wallet checkout with its locked JS dependencies installed, Docker pointed at the intended engine, and a local `polkadot-js/wasm` checkout containing the recorded commit:
+
+```sh
+bash docs/release/wasm-builder/rebuild.sh /path/to/polkadot-js/wasm
+```
+
+The script exports the named Git object, not the upstream working tree. It copies only the wallet JS packages used for number formatting, runs a fresh `linux/amd64` container and removes it on exit. The builder downloads hash-pinned inputs; alternatively set `F02_DOWNLOAD_CACHE` to a directory of raw archives named by SHA-256. Only manifest-listed cache entries are transferred and every one is checked before use. A pass requires all four comparisons in `payloads.sha256`, not just a successful Rust build.
+
+The final recipe was exercised in a second clean container with a partially warm download cache: no compiled Rust objects, Xargo sysroot or generated JS were reused. Both unpublished intermediate hashes matched the first experiment, and all four published comparisons passed. During recipe preparation, an apt local-file install failed, an incomplete vendor directory lacked `hermit-abi`, and apt's HTTPS helper escaped a literal `+` in a crate URL and received HTTP 403. These were real setup errors, fixed and retried, not evidence of a module difference or a load timeout.
+
+**Offline wallet verification:** `corepack yarn verify:polkadot-wasm` checks the package version and hashes the bytes returned by its own loader. `corepack yarn test:crypto-dependency-shims` also runs the installed-module and one-byte tamper test. Neither requires Docker, Rust or network. The check covers the installed module, not the entire Chrome ZIP or the independent Bitcoin module.
+
+**Wallet validation (21 November 2026).** Wallet code `d8f19c4531989c9adafaa838b83426dc9191756c`, Node 24.19.0, Yarn 4.17.0. The initial Yarn invocations rejected the inherited legacy `YARN_CHILD_CONCURRENCY` before running any checks; after `unset YARN_CHILD_CONCURRENCY` all of these exited 0:
+
+```sh
+corepack yarn typecheck
+corepack yarn lint:check                         # 0 errors, 37 warnings
+corepack yarn verify:polkadot-wasm
+node --test scripts/test-polkadot-wasm-provenance.mjs
+corepack yarn test:crypto-dependency-shims
+corepack yarn build:extension:zip
+corepack yarn audit:chrome-release
+```
+
+The audited Chrome 4.2.10 ZIP contains 328 files, 9967069 bytes; SHA-256 `b5ddf998f4a79da7f36020fbc47426ac6cec7e252ffae8196050032e34d4f847`. The first post-build zlib inspection failed because Node treated the generated CommonJS `bytes.js` as ESM outside the packaged CJS directory; copying it unchanged to `/tmp/bytes.cjs` and decoding its base64 gave the matching stream hash in the table. Neither that inspection error nor a setup failure was counted as a payload mismatch.

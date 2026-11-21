@@ -7,6 +7,7 @@ repo=${1:?usage: bash rebuild.sh /path/to/bitcoinjs/tiny-secp256k1}
 revision=aab0155201a66f84297f75edd2fbde6013f37b38
 image=ubuntu@sha256:9a04f13b3f80ef056361e30868593b1cfd2279fe19e4081cb93a90bf56819d6a
 expected=d5238297a4dc75c761f0cf0057d3f55e014ea84992d935869a46ad4f0df31ada
+upstream_ci=8c11a74b3f15a0ca502f2415646e17f9e32451bdb35b7f6fe788af4a177df48e
 installed="$wallet/node_modules/tiny-secp256k1/lib/secp256k1.wasm"
 : "${DOCKER_HOST:?point DOCKER_HOST at the intended local Docker engine}"
 unset DOCKER_CONTEXT
@@ -46,7 +47,9 @@ docker cp "$recipe/build.sh" "$container:/recipe/build.sh"
 docker cp "$recipe/../vendor-checksums.mjs" "$container:/recipe/vendor-checksums.mjs"
 git -C "$repo" archive "$revision" | docker exec -i "$container" tar xf - -C /src
 docker exec "$container" bash /recipe/build.sh
-docker cp "$container:/src/lib/secp256k1.wasm" "$stage/rebuilt.wasm"
-shasum -a 256 "$stage/rebuilt.wasm" "$installed"
-printf '%s  %s\n' "$expected" "$stage/rebuilt.wasm" | shasum -a 256 --check
-cmp "$stage/rebuilt.wasm" "$installed"
+docker cp "$container:/out/linux-host.wasm" "$stage/linux-host.wasm"
+docker cp "$container:/out/apple-host.wasm" "$stage/apple-host.wasm"
+shasum -a 256 "$stage/linux-host.wasm" "$stage/apple-host.wasm" "$installed"
+# Linux-hosted Rust gives upstream's CI artifact; Cargo seeing the publisher's macOS host line gives the npm module.
+printf '%s  %s\n' "$upstream_ci" "$stage/linux-host.wasm" "$expected" "$stage/apple-host.wasm" | shasum -a 256 --check
+cmp "$stage/apple-host.wasm" "$installed"

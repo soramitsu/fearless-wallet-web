@@ -1,9 +1,9 @@
-import type { SignClientTypes } from '@walletconnect/types';
+import type { WcSessionRequestEvent } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type { WalletConnectService } from './index';
 
 export function assertWalletConnectRequestActive(
   service: WalletConnectService,
-  event: SignClientTypes.EventArguments['session_request']
+  event: WcSessionRequestEvent
 ): void {
   const deadline = event.params.request.expiryTimestamp;
   if (

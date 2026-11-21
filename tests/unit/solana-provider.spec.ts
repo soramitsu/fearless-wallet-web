@@ -22,6 +22,8 @@ const response = (id: string, body: SolanaConnectResponse) => {
 const bytesBase64 = (bytes: Uint8Array): string => btoa(String.fromCharCode(...bytes));
 
 async function connectProvider(provider: FearlessWalletSolanaProvider, postedMessages: PostedMessage[]): Promise<void> {
+  // The page's first use starts the account refresh and subscription.
+  expect(provider.connected).toBe(false);
   response(postedMessages[0].id, { accounts: [] });
   handleResponse({ id: postedMessages[1].id, response: true } as never);
 
@@ -52,6 +54,8 @@ describe('FearlessWalletSolanaProvider', () => {
   it('uses Solana-scoped background messages for connect, account refresh, and disconnect', async () => {
     const provider = new FearlessWalletSolanaProvider();
 
+    expect(postedMessages).toEqual([]);
+    expect(provider.accounts).toEqual([]);
     expect(postedMessages[0]).toMatchObject({ message: 'solana(accounts)' });
     expect(postedMessages[1]).toMatchObject({ message: 'solana(events.subscribe)' });
 
@@ -87,6 +91,80 @@ describe('FearlessWalletSolanaProvider', () => {
 
     expect(provider.connected).toBe(false);
     expect(provider.publicKey).toBeNull();
+  });
+
+  it('sends nothing until the page uses it, then asks for the accounts and subscribes once', () => {
+    const provider = new FearlessWalletSolanaProvider();
+
+    registerSolanaWalletStandard(provider);
+    void provider.features;
+    expect(postedMessages).toEqual([]);
+
+    expect(provider.accounts).toEqual([]);
+    expect(provider.publicKey).toBeNull();
+    expect(provider.connected).toBe(false);
+    expect(provider.isConnected).toBe(false);
+    provider.on('change', () => undefined);
+
+    expect(postedMessages.map(({ message }) => message)).toEqual(['solana(accounts)', 'solana(events.subscribe)']);
+  });
+
+  it.each([
+    ['on', (provider: FearlessWalletSolanaProvider, listener: () => void) => provider.on('change', listener)],
+    ['once', (provider: FearlessWalletSolanaProvider, listener: () => void) => provider.once('change', listener)],
+    ['addListener', (provider: FearlessWalletSolanaProvider, listener: () => void) => provider.addListener('change', listener)],
+    [
+      'the Wallet Standard events feature',
+      (provider: FearlessWalletSolanaProvider, listener: () => void) =>
+        (provider.features['standard:events'] as { on: (event: 'change', listener: () => void) => () => void }).on(
+          'change',
+          listener
+        ),
+    ],
+  ])('gives a listener added with %s the accounts once the subscription answers', (_label, listen) => {
+    const provider = new FearlessWalletSolanaProvider();
+    const changed = vi.fn();
+
+    listen(provider, changed);
+
+    expect(postedMessages.map(({ message }) => message)).toEqual(['solana(accounts)', 'solana(events.subscribe)']);
+
+    const account = { address: SOLANA_ADDRESS, publicKey: SOLANA_ADDRESS, name: 'Universal' };
+
+    handleResponse({ id: postedMessages[1].id, subscription: { accounts: [account] } } as never);
+
+    expect(changed).toHaveBeenCalledExactlyOnceWith({ accounts: [expect.objectContaining({ address: SOLANA_ADDRESS })] });
+    expect(provider.accounts.map(({ address }) => address)).toEqual([SOLANA_ADDRESS]);
+    expect(provider.publicKey?.toBase58()).toBe(SOLANA_ADDRESS);
+    expect(postedMessages).toHaveLength(2);
+  });
+
+  it('connects on a first connect() call, silent or not', async () => {
+    const account = { address: SOLANA_ADDRESS, publicKey: SOLANA_ADDRESS, name: 'Universal' };
+    const trusted = new FearlessWalletSolanaProvider();
+    const silent = trusted.connect({ onlyIfTrusted: true });
+
+    expect(postedMessages.map(({ message }) => message)).toEqual([
+      'solana(accounts)',
+      'solana(events.subscribe)',
+      'solana(accounts)',
+    ]);
+    response(postedMessages[2].id, { accounts: [account] });
+    await expect(silent).resolves.toEqual({ accounts: [account] });
+    expect(trusted.publicKey?.toBase58()).toBe(SOLANA_ADDRESS);
+
+    postedMessages.length = 0;
+    const provider = new FearlessWalletSolanaProvider();
+    const connect = provider.connect();
+
+    expect(postedMessages.map(({ message }) => message)).toEqual([
+      'solana(accounts)',
+      'solana(events.subscribe)',
+      'solana(authorizeUrl)',
+    ]);
+    response(postedMessages[2].id, { accounts: [account] });
+    await expect(connect).resolves.toEqual({ accounts: [account] });
+    expect(provider.connected).toBe(true);
   });
 
   it('registers with Wallet Standard without replacing the wallet object', () => {

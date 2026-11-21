@@ -1,20 +1,22 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { decodeAddress, encodeAddress } from '@polkadot/util-crypto';
-import { u8aToHex } from '@polkadot/util';
 import { FPNumber } from './number';
 import { amount, codec, slippageFactor, text, unwrap, XOR, VAL, type Runtime } from './runtime';
 export { amount, codec, observe, slippageFactor, text, unwrap, XOR, VAL, type Runtime } from './runtime';
-import { Operation, SubNetworkId, type Asset, type AccountAsset, type NetworkFeesObject } from './types';
+import { Operation, type Asset, type AccountAsset, type NetworkFeesObject } from './types';
 import { SoraPools } from './pools';
 import { SoraStaking } from './staking';
 import { SoraSubmissionUnknownError } from './submission';
 import schema from './schema/types.json';
 import type { ApiInterfaceEvents } from '@polkadot/api/types';
 import type { KeyringPair } from '@polkadot/keyring/types';
+import type { HexString } from '@polkadot/util/types';
 import { isDefiniteSubstratePoolRejection } from '@/util/substratePoolRejection';
 
 export class SoraClient {
   api: Runtime = null;
+  /** The registry chainId (genesis hash without 0x) of the SORA network this client connects to. */
+  chainId?: string;
   provider: WsProvider | null = null;
   account: { json: unknown; pair: KeyringPair } | null = null;
   shouldPairBeLocked = false;
@@ -46,6 +48,13 @@ export class SoraClient {
     this.dex.ids = ids;
     this.dex.baseAssetsIds = [...ids.keys()];
   }
+  private servesNetwork(): boolean {
+    let genesisHash: string | undefined;
+    try {
+      genesisHash = this.api?.genesisHash?.toHex().toLowerCase();
+    } catch { /* The node has not reported it yet. */ }
+    return /^[0-9a-f]{64}$/i.test(this.chainId ?? '') && genesisHash === `0x${this.chainId!.toLowerCase()}`;
+  }
   async fee(extrinsic: Runtime): Promise<string> {
     const address = this.account?.pair?.address ?? encodeAddress(new Uint8Array(32), 69);
     return codec((await extrinsic.paymentInfo(address)).partialFee);
@@ -53,6 +62,9 @@ export class SoraClient {
   async submit(extrinsic: Runtime, expectedPair = this.account?.pair): Promise<void> {
     if (!expectedPair || expectedPair !== this.account?.pair || expectedPair.isLocked) throw new Error('SORA signer changed or is locked');
     if (!this.connected) throw new Error('SORA is disconnected');
+    // The extrinsic is signed for the genesis of the node it was built with. A node of another chain (a wrong custom or
+    // registry node) would have it move that chain's funds.
+    if (!this.servesNetwork()) throw new Error('substrate_network_genesis_mismatch');
     if (extrinsic.registry !== this.api.registry) throw new Error('SORA runtime changed; review the transaction again');
     // No mnemonic export, account enumeration, or HTTP request is involved in signing.
     await new Promise<void>((resolve, reject) => {
@@ -160,29 +172,6 @@ export class SoraClient {
       await this.submit(this.api.tx.liquidityProxy.swap(dexId, a.address, b.address, variant, source ? [source] : [], source ? 'AllowSelected' : 'Disabled'));
     },
   };
-  bridgeProxy = { sub: {
-    account: null as { json: unknown; pair: KeyringPair } | null,
-    getNetworkFee: async (asset: Asset, network: SubNetworkId) => this.fee(this.bridgeExtrinsic(asset, encodeAddress(new Uint8Array(32), 69), '0', network)),
-    transfer: async (asset: Asset, recipient: string, value: string, network: SubNetworkId) => {
-      amount(value, asset.decimals);
-      await this.submit(this.bridgeExtrinsic(asset, recipient, value, network));
-    },
-  } };
-  private bridgeExtrinsic(asset: Asset, recipient: string, value: string, network: SubNetworkId): Runtime {
-    const id = u8aToHex(decodeAddress(recipient));
-    const parachains: Partial<Record<SubNetworkId, number>> = { [SubNetworkId.PolkadotAcala]: 2000, [SubNetworkId.PolkadotAstar]: 2006 };
-    let destination: Runtime;
-    let relay = network;
-    if (network === SubNetworkId.Liberland) destination = { Liberland: id };
-    else {
-      const paraId = parachains[network];
-      if (paraId) relay = SubNetworkId.Polkadot;
-      if (![SubNetworkId.Polkadot, SubNetworkId.Kusama, SubNetworkId.Rococo].includes(relay)) throw new Error('Unsupported SORA bridge destination');
-      const account = { AccountId32: { network: null, id } };
-      destination = { Parachain: { V3: { parents: 1, interior: paraId ? { X2: [{ Parachain: paraId }, account] } : { X1: account } } } };
-    }
-    return this.api.tx.bridgeProxy.burn({ Sub: relay }, asset.address, destination, new FPNumber(value, asset.decimals).toCodecString());
-  }
   async calcStaticNetworkFees(): Promise<void> {
     const api = this.api;
     const registry = api.registry;
@@ -219,13 +208,19 @@ export class SoraClient {
   }
 }
 
-export type SoraConnectionOptions = { autoConnectMs?: number; eventListeners?: [ApiInterfaceEvents, (...args: Runtime[]) => void][] };
+export type SoraConnectionOptions = {
+  autoConnectMs?: number;
+  eventListeners?: [ApiInterfaceEvents, (...args: Runtime[]) => void][];
+  /** Saved runtime metadata by `${genesisHash}-${specVersion}` (SubstrateMetadataCache), filled in as the socket opens. */
+  metadata?: Record<string, HexString>;
+};
 
 /** Each endpoint owns its API/provider; delayed cleanup never mutates a replacement. */
 export function createConnection(endpoint: string, options: SoraConnectionOptions = {}) {
   if (!/^wss?:\/\//.test(endpoint)) throw new Error('Invalid SORA WebSocket endpoint');
   const provider = new WsProvider(endpoint, options.autoConnectMs);
-  const connectedApi = new ApiPromise({ provider, types: schema as Runtime, signedExtensions: { ChargeTransactionPayment2: { extrinsic: { charge_fee_info: 'ChargeFeeInfo' }, payload: {} } } });
+  const connectedApi = new ApiPromise({ provider, types: schema as Runtime, signedExtensions: { ChargeTransactionPayment2: { extrinsic: { charge_fee_info: 'ChargeFeeInfo' }, payload: {} } },
+    ...(options.metadata ? { metadata: options.metadata } : {}) });
   for (const [event, callback] of options.eventListeners ?? []) connectedApi.on(event, callback);
   return { api: connectedApi, provider };
 }

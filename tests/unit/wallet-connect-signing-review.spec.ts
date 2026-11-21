@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   deny: vi.fn(),
 }));
 vi.mock('@/stores/extension', () => ({ useExtensionStore: () => mocks.store }));
+vi.mock('@/stores/dappSigningKillSwitch', () => ({ useDappSigningKillSwitchStore: () => ({ vetoes: {} }) }));
 vi.mock('@/stores/accounts', () => ({ useAccountsStore: () => ({ accounts: [] }) }));
 vi.mock('@/stores/networks', () => ({
   useNetworksStore: () => ({ allNetworks: [], getNetwork: () => ({ name: 'Current unrelated network' }) }),

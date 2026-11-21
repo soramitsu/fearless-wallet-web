@@ -1,0 +1,33 @@
+{
+  "braces": {
+    "copies": {
+      "vendor/braces": "3.0.3"
+    },
+    "reviewedAdvisories": [
+      "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm"
+    ],
+    "guardedFiles": {
+      "vendor/braces/index.js": "332ea07c7b006361aad12aa994ca75dc1db8e8382b884909e2f38f10b85c88a4",
+      "vendor/braces/lib/compile.js": "ef2b5dd70332dff9daa1a64d7c0b18dd27922b271bf9cb97b926934b28a816c3",
+      "vendor/braces/lib/constants.js": "c18ac5adb57308f1ce42a28552da3a31f5d83709743ebd9a636336813a744d4b",
+      "vendor/braces/lib/depth-guard.js": "14c920a5d56d87a034c1a11c8aa14127019bc38c6d850794f3ec2cbe0b9e8f15",
+      "vendor/braces/lib/expand.js": "7131e90c032905a988231f08fd71f6e34a3cc6d56ae7ef0585725287823ba88d",
+      "vendor/braces/lib/parse.js": "4f284d5ef7d3091f6da3420a5365d30c44b525b7e0f2ea46165d2f748d2cbc3d",
+      "vendor/braces/lib/stringify.js": "4dccaada8ed212832366c3da2073210ae4e3a03404c303792629bc0101dd8d04",
+      "vendor/braces/lib/utils.js": "b5a7596aa67730412b3c029ef09e84e6b67b8e445cffd35d1d295549c89066c7"
+    }
+  },
+  "picomatch": {
+    "copies": {
+      "vendor/picomatch-2": "2.3.2",
+      "vendor/picomatch-4": "4.0.7"
+    },
+    "reviewedAdvisories": [
+      "https://github.com/advisories/GHSA-fc5q-39xc-vjpf"
+    ],
+    "guardedFiles": {
+      "vendor/picomatch-2/lib/parse.js": "4ad13a16ca3d65f7095d96158865cc461c4be5fb19b60a8d096e464b5462bd81",
+      "vendor/picomatch-4/lib/parse.js": "87574581c403dee9b80bc4c8438f271c9479410fc42bd5daa7a7e23170b56d7c"
+    }
+  }
+}

@@ -501,7 +501,7 @@ const buttonClasses = computed(() => {
     background: var(--fw-fill) !important;
     border-color: var(--fw-fill-top) !important;
     color: var(--fw-on-accent) !important;
-    box-shadow: 0 0 16px rgb(255 0 154 / 0.4);
+    box-shadow: 0 0 16px $fw-primary-glow;
 
     html[data-fw-effects='reduced'] &,
     .fw-calm & {

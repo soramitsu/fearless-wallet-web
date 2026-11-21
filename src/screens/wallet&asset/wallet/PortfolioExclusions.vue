@@ -1,11 +1,21 @@
 <template>
   <footer
-    v-if="hiddenCount || unpricedCount || poolStakesExcluded || testnetCount"
+    v-if="hiddenCount || unpricedCount || poolStakesExcluded || testnetCount || unverifiedCount"
     class="portfolio-exclusions"
     data-testid="portfolioExclusions"
   >
     <button v-if="hiddenCount" class="exclusion manage-link" type="button" data-testid="hiddenNotIncluded" @click="$emit('manageHidden')">
       {{ tc('portfolioPage.hiddenNotIncluded', hiddenCount, { count: hiddenCount }) }}
+    </button>
+    <!-- Held tokens that are not on the verified list stay off the list, and are never counted, until reviewed. -->
+    <button
+      v-if="unverifiedCount"
+      class="exclusion manage-link"
+      type="button"
+      data-testid="unverifiedNotListed"
+      @click="$emit('reviewUnverified')"
+    >
+      {{ tc('balanceStatus.foundNotVerified', unverifiedCount, { count: unverifiedCount }) }}
     </button>
     <button v-if="testnetCount" class="exclusion manage-link" type="button" data-testid="testnetsNotShown" @click="$emit('showTestnets')">
       {{ tc('portfolioPage.testnetsNotShown', testnetCount, { count: testnetCount }) }}
@@ -28,9 +38,11 @@ defineProps<{
   poolStakesExcluded: boolean;
   /** Funded test-network assets the Testnets switch keeps out of the list. */
   testnetCount?: number;
+  /** Funded tokens found that are not on the verified list and not listed. */
+  unverifiedCount?: number;
 }>();
 
-defineEmits<{ (event: 'manageHidden'): void; (event: 'showTestnets'): void }>();
+defineEmits<{ (event: 'manageHidden'): void; (event: 'showTestnets'): void; (event: 'reviewUnverified'): void }>();
 
 const { t, tc } = useI18n();
 </script>

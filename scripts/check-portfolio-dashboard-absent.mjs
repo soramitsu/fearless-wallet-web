@@ -10,18 +10,19 @@ import { fileURLToPath } from 'node:url';
 /** Text that exists only in the dashboard's screens, styles and storage. */
 export const DASHBOARD_MARKERS = [
   'How we count your balance',
-  'Winged sun with your allocation',
+  'Sun crow with your allocation',
   'Where it lives and where it can go',
   'Route to Polkaswap',
   '--fw-chart-1',
   'dashboard-v1',
   'allWalletsPanel',
   'portfolioOrbit',
+  'portfolioAllocation',
+  'walletChooser',
 ];
-/** File names of its screens and of the four layers of the winged sun it draws. */
+/** File names of its screens. The sky draws the shared crest badge, so it has no art of its own to look for. */
 export const DASHBOARD_FILE_PATTERNS = [
-  /(Portfolio(Dashboard|Hero|Sky|AllWallets|ScopeRow|CountingSheet|SyncSheet|Sheet|Orbit|ReadinessChip|RouteCard|Breakdown|CheckList|SwapSheet|MoveSheet)|TokenLocations)/,
-  /(^|\/)(wings|uraeus-left|uraeus-right|sun-disc)(-[\w-]+)?\.svg$/,
+  /(Portfolio(Dashboard|Hero|Sky|AllWallets|ScopeRow|CountingSheet|SyncSheet|Sheet|Orbit|ReadinessChip|RouteCard|Breakdown|CheckList|SwapSheet|MoveSheet|Allocation)|TokenLocations|AssetPickerSheet)/,
 ];
 
 async function* files(directory) {

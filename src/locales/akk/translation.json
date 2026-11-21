@@ -64,14 +64,15 @@
     "backupNonDigital": "𒈾𒍝𒊏𒄠 𒊭 𒆷 𒈪𒈾𒀀𒋾𒅎 𒂊𒁍𒍑. 𒄿𒈾 𒌅𒌒𒉿𒅎 𒋗𒌅𒌨 𒌑 𒄿𒈾 𒋛𒉺𒅈𒊑𒅎 𒄷𒊒𒍑; 𒌑𒍪𒌨𒋗, 𒀀 𒄿𒄩𒀠𒇷𒅅.",
     "backupPassphrase": "𒀀𒉿𒀜 𒄩𒊓𒋛𒅎 𒊭 𒆠𒄑𒅗 𒌍𒅆𒅎 𒌑𒍪𒌨",
     "confirmPassphrase": "𒀀𒉿𒀜 𒄩𒊓𒋛𒅎 𒆪𒌦",
-    "selectPassphraseWords": "𒀀𒉿𒋾𒅎 𒄿𒈾 𒋛𒁲𒅕𒋾 𒆠𒈾𒋾𒅎 𒇷𒆥:",
+    "selectPassphraseWords": "𒀀𒉿𒀜 𒄩𒊓𒋛𒅎 𒀀𒈬𒌨. 3 𒀀𒉿𒋾𒅎 𒇷𒆥.",
+    "wordNumber": "𒀀𒉿𒌅𒌝 {position}",
+    "tryAnotherWord": "𒀀𒉿𒀜 𒄩𒊓𒋛𒅎 𒀀𒈬𒌨. 𒊭𒉌𒅖 𒇷𒆥.",
     "advancedSettings": "𒅆𒈠𒀜 𒈾𒍝𒊑𒅎 𒁕𒀭𒈾𒌅𒌝",
     "advanced": "𒁕𒀭𒈾𒌅𒌝",
     "recommended": "𒊭 𒈪𒅋𒆠 𒁉𒊑",
     "alternative": "𒊭𒉡𒌑𒌝",
     "btcEthCompatible": "BTC/ETH 𒈠𒄴𒊒𒌝",
     "example": "𒈠𒊭𒇻𒌝: {example} ",
-    "securityWritten": "𒈠𒊍𒍝𒅈𒌅𒌝 𒀀𒈾 𒆠𒉌𒅎 𒆠𒈠 𒋫𒀸𒌅𒌨",
     "importAccount": "𒋗𒊑𒅁 𒌅𒌒𒉺𒄠 𒊭 𒋗𒈪𒅎 {type}",
     "importWallet": "𒋗𒊑𒅁 𒆠𒊓𒄠",
     "enterPassphrase": "𒀀𒉿𒀜 𒄩𒊓𒋛𒅎 𒋗𒆪𒌦",
@@ -98,10 +99,6 @@
     "ethereumDP": "𒄩𒅈𒊏𒉡𒌝 𒊭 𒉺𒆷𒀝 𒍣𒅕 𒉿𒊑𒅖𒋾𒅎 Ethereum",
     "ethereumCryptoType": "𒍣𒅎 𒈾𒄠𒍝𒆠 𒋫𒁍𒋾𒅎 𒊭 𒉿𒊑𒅖𒋾𒅎 ETHEREUM",
     "warningMessages": {
-      "mnemonicSequence": {
-        "text": "𒀀𒉿𒀜 𒄩𒊓𒋛𒅎 𒆷 𒆠𒈾𒀜",
-        "subtext": "𒋛𒁲𒅕𒌅𒌝 𒊭 𒀀𒉿𒀜 𒄩𒊓𒋛𒅎 𒆷 𒆠𒈾𒀜; 𒊭𒉌𒅖 𒂊𒁍𒍑"
-      },
       "mnemonic": {
         "text": "𒀀𒉿𒀜 𒄩𒊓𒋛𒅎 𒆷 𒆠𒈾𒀜",
         "subtext": "12 𒌑 24 𒀀𒉿𒋾𒅎 𒋗𒆪𒌦"
@@ -1416,6 +1413,7 @@
     "tonAddressAsTypedDescription": "𒉿𒍣𒅁𒌅𒌝 𒊭 𒅁𒅆𒅎 𒊭 Fearless 𒊭 Android 𒀀𒉿𒀜 𒄩𒊓𒋛𒅎 𒊭 TON 𒊭𒋾𒅕𒋫𒄠 𒀉𒋾 𒀸𒊑𒊭 𒊑𒆪𒋾𒅎 𒌑 𒅆𒉺𒋾𒊭 𒂊𒇷𒄿𒋾𒅎 𒄑𒍪𒌨. 𒀭𒈾𒀀𒄠 𒇷𒆥 𒋗𒌝𒈠 𒀀𒉿𒀜 𒄩𒊓𒋛𒅗 𒅖𒌅 𒀸𒊑𒅎 𒋗𒀀𒋾 𒅋𒆷𒀝.",
     "tonAddressInWallet": "𒄿𒈾 𒆠𒋛𒅗 𒅖𒌅 𒉺𒉌𒅎 𒄿𒁀𒀸𒅆",
     "tonPhraseAsTyped": "𒀀𒉿𒀜 𒄩𒊓𒋛𒅎 𒀭𒉌𒌅𒌝 𒊭 TON 𒆷 𒄿𒁉𒀉𒋾 𒋗𒌝𒈠 𒆠𒈠 𒈾𒊍𒊏𒌅 𒆠𒈾𒄠 𒆷 𒋫𒊭𒀝𒅗𒀭𒅆, 𒀉𒋾 𒀸𒊑𒊭 𒊑𒆪𒋾𒅎 𒌑 𒅆𒉺𒋾𒊭 𒂊𒇷𒄿𒋾𒅎. 𒀀𒈾 𒈾𒍝𒊑𒊭 𒆠𒈾𒄠 𒀀𒈾 𒌅𒌒𒉿 𒋡𒋾𒅎 𒈾𒊍𒄩𒄠 𒋗𒆪𒌦.",
+    "universalWalletPasswordBackup": "𒆠𒄑𒅗 𒀭𒉌𒄿𒅎 𒀀𒉿𒀜 𒉿𒊑𒅖𒋾𒅎 𒄿𒁀𒀸𒅆 (/// 𒀀𒉿𒀜 𒉿𒊑𒅖𒋾𒅎). Bitcoin, Solana, TON 𒌑 Taira 𒀀𒉿𒀜 𒉿𒊑𒅖𒋾𒅎 𒌑 𒀀𒉿𒀜 𒄩𒊓𒋛𒅎 𒄿𒁀𒀸𒅆.",
     "tonAddressUnchecked": "𒀸𒊑 𒀭𒉡𒌑𒋾𒅎 𒄿𒈾𒀭𒈾 𒀀𒈠𒊏𒄠 𒆷 𒉌𒇷𒀪𒀪, 𒀸𒋗𒌝 𒋗𒀀𒋾 𒀸𒊒𒌝 𒈠𒄴𒊒𒌑𒌝 𒇷𒆪𒌑𒌝. 𒋗𒌝𒈠 𒀀𒉿𒀜 𒄩𒊓𒋛𒅎 𒀭𒉌𒌅𒌝 𒅖𒌅 𒉿𒍣𒅁𒋾𒅎 𒊭 𒅁𒅆𒅎 𒆷𒁉𒅕𒋾𒅎 𒊭 Fearless 𒅋𒆷𒀝, 𒀸𒊏𒄠 𒊭 𒉿𒍣𒅁𒌅𒌝 𒅆 𒄿𒁍𒋗 𒇷𒆥.",
     "tonAddressBothHint": "𒆷 𒋾𒁲 𒆠𒈾𒄠? 𒄿𒈾 𒇷𒆥𒂊 𒀸𒊑𒅎 𒈪𒅎𒈠 𒅖𒌅 𒇷𒅁𒁉𒋗𒉡 𒈪𒅎𒈠 𒆷 𒄿𒄩𒀠𒇷𒅅. 𒉿𒅈𒆠𒅖 𒀀𒉿𒀜 𒄩𒊓𒋛𒅎 𒀭𒉌𒋫𒄠 𒊭𒉌𒅖 𒋗𒊒𒁀𒄠 𒋼𒇷𒀪𒀪 𒀀𒈾 𒊒𒌓𒁲𒄿 𒀸𒊑𒅎 𒊭𒉌𒄿𒅎.",
     "storageUnavailable": "𒌅𒌒𒁍 𒊭 𒆠𒋛𒅗 𒌌 𒅔𒈾𒄠𒊒. 𒈪𒅎𒈠 𒌌 𒅖𒉌. 𒊭𒉌𒅖 𒂊𒁍𒍑."
@@ -1436,7 +1434,19 @@
     "flagged": "𒆠𒈠 𒍣𒁲𒅎 𒄿𒈾 𒊓𒅈𒊏𒋾𒅎 𒊭𒋾𒅕",
     "checking": "𒂊𒊑𒊭𒄠 𒉌𒈠𒅈…",
     "signed": "𒀸𒋗𒌝 {origin} 𒅗𒉌𒅅",
-    "submitted": "𒀸𒋗𒌝 {origin} 𒈾𒁲𒅔"
+    "submitted": "𒀸𒋗𒌝 {origin} 𒈾𒁲𒅔",
+    "crossChainTitle": "𒋗𒁍𒇻𒌝 𒀀𒈾 𒊑𒅅𒋛𒅎 𒊭𒉌𒄿𒅎",
+    "crossChainNotice": "𒀭𒉡𒌑𒌝 𒈠𒀝𒆪𒊏𒄠 𒀀𒈾 𒊑𒅅𒋛𒅎 𒊭𒉌𒄿𒅎 𒌑𒊭𒀊𒁀𒀠.",
+    "crossChainParachain": "𒊑𒅅𒋢𒌝 𒊏𒀝𒋢𒌝 {paraId}",
+    "crossChainHighRisk": "Fearless 𒋼𒅎 𒍣𒅎𒁕𒋾𒅎 𒀭𒉌𒋾𒅎 𒄿𒈾 𒊑𒅅𒋛𒅎 𒊭𒉌𒄿𒅎 𒆷𒈠𒁕𒄠 𒌌 𒄿𒇷𒀪𒀪𒂊. 𒉿𒋡𒀜 𒈠𒀝𒆪𒊏𒄠 𒅗𒆷𒀀𒋗 𒅖𒌅 𒌅𒌒𒉿𒅎 𒊭 𒋗𒈪𒅎 𒀭𒉌𒄿𒅎 𒌅𒊭𒀊𒁀𒀠.",
+    "crossChainHighRiskAcknowledge": "𒀀𒈾𒆪 𒆠𒈠 𒍣𒅎𒁕𒌅𒌝 𒀭𒉌𒌅𒌝 𒉿𒋡𒀜 𒈠𒀝𒆪𒊏𒄠 𒀀𒈾 𒊑𒅅𒋛𒅎 𒊭𒉌𒄿𒅎 𒌅𒊭𒀊𒁀𒀠 𒄿𒁲.",
+    "crossChainRefused": "Fearless 𒁀𒀪𒋫𒄠 𒀭𒉌𒋫𒄠 𒌌 𒄿𒅗𒀭𒈾𒀝: 𒈠𒀝𒆪𒊒𒌝 𒀀𒈾 𒋡𒋾 𒌌 𒄿𒅗𒀸𒊭𒀜. 𒂊 𒋫𒈠𒄴𒄩𒅈𒅆.",
+    "crossChainReason": {
+      "retiredChain": "𒊑𒅅𒋢𒌝 𒊭 𒀀𒊭𒅈 𒀀𒆷𒆠𒅎 𒊭𒉌𒅖 𒌌 𒄿𒁀𒀸𒅆.",
+      "soraParachainHalted": "𒊑𒅅𒋢 𒊏𒀝𒋢𒌅𒌝 𒊭 SORA 𒌅𒌒𒉿 𒌌 𒄿𒁀𒀭𒉡𒌑; 𒋗𒁍𒇻𒌝 𒀭𒉡𒌑𒌝 𒀀𒈾 𒋡𒋾 𒌌 𒄿𒅗𒀸𒊭𒀜.",
+      "soraToLiberlandStalled": "𒋗𒁍𒆷𒌅𒌝 𒅖𒌅 SORA 𒀀𒈾 𒊑𒅅𒋛𒅎 𒀭𒉌𒄿𒅎 𒀀𒈾 𒋡𒋾 𒌌 𒄿𒅗𒀸𒊭𒁕.",
+      "assetHubMigration": "𒅗𒊍𒁍𒌝 𒊭 𒊑𒅅𒋛 𒊏𒁍𒌑𒋾𒅎 𒀀𒈾 𒊑𒅅𒋛𒅎 𒊭𒉌𒄿𒅎 𒀉𒋫𒆷𒀝; 𒋗𒁍𒇻𒌝 𒀭𒉡𒌑𒌝 𒀀𒈾 𒋡𒋾 𒌌 𒄿𒅗𒀸𒊭𒀜."
+    }
   },
   "accountAccess": {
     "title": "𒁉𒌅𒌑 𒌅𒌒𒉺𒀜 𒋗𒈪𒅎",
@@ -1542,5 +1552,9 @@
       "allMoved": "𒀀𒈾 𒅗𒀠 𒆠𒊓𒋾𒅎 𒆷𒁉𒊏𒋾𒅎 𒀉𒌅𒌝 𒊭 𒋗𒁍𒇷𒅎 𒊭𒀝𒈾𒀜. 𒄿𒈾 𒋛𒁲𒅕𒋾𒅎 𒅆𒈾𒋾 𒌑𒍪𒌨 𒀀𒁲 𒆠𒈠 𒈪𒅎𒈠 𒄿𒈾 𒇷𒅁𒁉𒅆𒈾 𒆷 𒄿𒁀𒀸𒅆 𒆠𒉌𒅖 𒋾𒁲: 𒈾𒁕𒈾𒌅𒌝 𒅈𒅗𒀀𒌅𒌝 𒀀𒈾 𒀸𒊑 𒆷𒁉𒊒𒋾𒅎 𒀀𒁲𒉌 𒅗𒊭𒁕𒄠 𒄿𒇷𒀪𒀪𒀀.",
       "later": "𒀀𒈾 𒆠𒋛𒅎 𒉺𒈾𒄠 𒀀𒇷𒅅"
     }
+  },
+  "brand": {
+    "playCall": "𒊑𒄀𒅎 𒀀𒊑𒁉 𒋗𒍑𒈪",
+    "callSound": "𒊑𒄀𒅎 𒀀𒊑𒁉"
   }
 }

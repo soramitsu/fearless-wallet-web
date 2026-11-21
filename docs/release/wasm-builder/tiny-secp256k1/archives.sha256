@@ -1,0 +1,7 @@
+988a4e4cdecebe4f4a0c52ec4ade5a5bfc58d6958969f5b1e8aac033bda2613e  https://static.rust-lang.org/dist/2024-09-05/rustc-1.81.0-x86_64-unknown-linux-gnu.tar.xz
+c50ee4b1ae8695461930e36d5465dddb7c7a0e0f0aa6cbd60de120b17c38b841  https://static.rust-lang.org/dist/2024-09-05/cargo-1.81.0-x86_64-unknown-linux-gnu.tar.xz
+6ddf80f254e8eea9956308ba89fd68e1ac7885853df9239b07bbc9f047b7562f  https://static.rust-lang.org/dist/2024-09-05/rust-std-1.81.0-x86_64-unknown-linux-gnu.tar.xz
+9477ea9c64466d41b9928b7cfc1f974c912c5d2ebd0c0a9348fd02dbd19d004c  https://static.rust-lang.org/dist/2024-09-05/rust-std-1.81.0-wasm32-unknown-unknown.tar.xz
+0a2c3c22bdb4d017f0cf2cefb3635b616c4802e6e5dc84c82fdfe4dee42fe7b7  https://github.com/WebAssembly/binaryen/releases/download/version_114/binaryen-version_114-x86_64-linux.tar.gz
+79c2681d6594606957bbb8631c4b90a7fcaaa72cdb714743a437b156d6a7eedd  https://static.crates.io/crates/cc/cc-1.0.71.crate
+70a129b9e9efbfb223753b9163c4ab3b13cff7fd9c7f010fbac25ab4099fa07e  https://static.crates.io/crates/secp256k1-sys/secp256k1-sys-0.8.1.crate

@@ -6,6 +6,7 @@ import { getId } from '@extension-base/utils';
 import { type RequestService } from '@extension-base/services';
 import { extractMetadata } from '@extension-base/services/request-service/helper';
 import type { MetaRequest, Resolver, MetadataRequest } from '@extension-base/background/types/types';
+import type { HexString } from '@polkadot/util/types';
 
 export class MetadataRequestHandler {
   private readonly requestService: RequestService;
@@ -36,9 +37,20 @@ export class MetadataRequestHandler {
   }
 
   public saveMetadata(meta: MetadataDef): void {
-    this.metaStore.set(meta.genesisHash, meta);
+    const genesisHash = meta.genesisHash.toLowerCase() as HexString;
+    const definition = { ...meta, genesisHash };
 
-    addMetadata(meta);
+    // One entry per chain. One kept under another letter case is removed from storage; the chains registry cannot
+    // drop it, so until the next start it holds the approved definition too.
+    for (const { genesisHash: key } of knownMetadata()) {
+      if (key === genesisHash || key.toLowerCase() !== genesisHash) continue;
+      this.metaStore.remove(key);
+      addMetadata({ ...definition, genesisHash: key });
+    }
+
+    this.metaStore.set(genesisHash, definition);
+
+    addMetadata(definition);
   }
 
   private updateIconMeta(shouldClose?: boolean): void {
@@ -70,12 +82,16 @@ export class MetadataRequestHandler {
 
   public injectMetadata(url: string, request: MetadataDef): Promise<boolean> {
     return new Promise((resolve, reject): void => {
+      // Signing matches a genesis hash in any letter case, so metadata is kept under the lower-case one.
+      if (typeof request?.genesisHash !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(request.genesisHash))
+        throw new Error('Invalid metadata genesis hash');
+
       const id = getId();
 
       this.metaRequests[id] = {
         ...this.metaComplete(id, resolve, reject),
         id,
-        request,
+        request: { ...request, genesisHash: request.genesisHash.toLowerCase() as HexString },
         url,
       };
 

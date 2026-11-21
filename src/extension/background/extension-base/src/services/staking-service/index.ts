@@ -60,7 +60,6 @@ export class StakingService {
   public async getStakingParams(params: StakingParamsRequest): Promise<StakingParamsResponse> {
     const { networks } = params;
 
-    // TODO use networks
     const promises: Promise<StakingParams>[] = networks.map(async (network) => {
       const apiProps = this.state.getSubstrateApiMap[network.toLowerCase()];
       const isReady = await apiProps?.api?.isReady;
@@ -81,6 +80,7 @@ export class StakingService {
         validators,
         apy,
         unbondPeriod: this.getUnbondPeriod(),
+        eraHours: apiSora.staking.getEraHours(),
         maxNominations: this.getMaxNominations(),
         maxNominatorRewardedPerValidator: this.maxNominatorRewardedPerValidator(),
         minBond,
@@ -162,7 +162,7 @@ export class StakingService {
         const isWaiting = validatorsStatuses.validatorsWaiting.includes(info.address);
         const isOversubscribed = validatorsStatuses.validatorsOversubscribed.includes(info.address);
 
-        const status = isActive ? 'active' : isInactive ? 'inactive' : isWaiting ? 'waiting' : 'oversubscribed ';
+        const status = isActive ? 'active' : isInactive ? 'inactive' : isWaiting ? 'waiting' : 'oversubscribed';
 
         return { ...info, isActive, isInactive, isWaiting, isOversubscribed, status };
       }),
@@ -192,7 +192,7 @@ export class StakingService {
       .map((exposure) => {
         if (!max) return null;
 
-        const others = exposure.others.sort((a, b) => +(b.value ?? 0) - +(a.value ?? 0));
+        const others = [...exposure.others].sort((a, b) => +(b.value ?? 0) - +(a.value ?? 0));
 
         if (max > others.map(({ who }) => who.toString()).indexOf(address)) return null;
 
@@ -201,28 +201,18 @@ export class StakingService {
       .filter((validator): validator is string => !!validator); // && !nomsChilled.includes(nominee)
 
     // first a blanket find of nominations not in the active set
-    const allValidatorsInactive = electedValidators
-      .map((exposure) => {
-        if (exposure.others.some(({ who }) => isSameString(who, address))) return null;
+    const allValidatorsInactive = myValidators.filter((validator) => {
+      const exposure = electedValidators.find((entry) => isSameString(entry.address, validator));
+      return !exposure?.others.some(({ who }) => isSameString(who, address));
+    });
 
-        return myValidators.find((address) => isSameString(address, exposure.address));
-      })
-      .filter((validator): validator is string => !!validator);
-
-    // waiting if validator is inactive or we have not submitted long enough ago
-    const validatorsWaiting = electedValidators
-      .map((exposure) => {
-        const validatorAddress = myValidators.find((address) => isSameString(address, exposure.address));
-
-        if (exposure.total === '0') return validatorAddress;
-
-        if (allValidatorsInactive.includes(validatorAddress!) && (submittedIn ?? 0) >= +activeEra)
-          return validatorAddress;
-
-        return null;
-      })
-      .filter((validator): validator is string => !!validator)
-      .filter((validator) => !validatorsOversubscribed.includes(validator)); // && !nomsChilled.includes(nominee)
+    // Nominations outside the elected set cannot be active. A newly submitted
+    // nomination is still waiting until the next era, even without an exposure.
+    const validatorsWaiting = allValidatorsInactive.filter((validator) => {
+      if (validatorsOversubscribed.includes(validator)) return false;
+      const exposure = electedValidators.find((entry) => isSameString(entry.address, validator));
+      return exposure?.total === '0' || (submittedIn ?? 0) >= +activeEra;
+    });
 
     // filter based on all inactives
     const validatorsActive = myValidators.filter(
@@ -338,7 +328,9 @@ export class StakingService {
   public async getMinNominatorBond(validators: FWValidatorInfoFull[], networkName: NetworkName) {
     const haveFreeValidators = validators.some(({ isOversubscribed }) => !isOversubscribed);
 
-    if (haveFreeValidators) return await apiSora.staking.getMinNominatorBond();
+    if (haveFreeValidators || !validators.length || validators.some(({ nominators }) => !nominators.length)) {
+      return await apiSora.staking.getMinNominatorBond();
+    }
 
     const lastNominators = validators.map(({ nominators }) => +nominators[nominators.length - 1].value);
     const min = Math.min(...lastNominators);

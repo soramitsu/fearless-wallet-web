@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-16",
+  "referenceSourceCommit": "2af46cd20630c35d67627038a99eaf3edcdd70bf",
+  "referenceSourceTree": "3891b782773a2ad9bfd57bdaa6accbd5a67a745f",
+  "applicationSourceTree": "5b7a7c1f08baccf387aadcf3d502031782193dae",
+  "applicationSource": "The seven commits before this record, on 2af46cd2: restored wallets show their Bitcoin, Solana, TON and Taira accounts; JSON and Google Drive restores ask for the derivation path; Substrate path passwords derived with NFKD; an import can open the account an earlier web version made; the shared veto-only switch rules; remote kill switches for dApp signing; \"Price unavailable\" in Send. Their tree is given because the commit ids change when the series is applied.",
+  "toolchain": {
+    "node": "24.19.0",
+    "webExt": "10.6.0"
+  },
+  "summary": "Review and refresh the keyless Firefox warning baseline for the seven commits. The same 36 warnings remain: 35 DANGEROUS_EVAL and one UNSAFE_VAR_ASSIGNMENT, at the same sites (code, file with its content hash removed, message) as the reference build; zero errors or notices. Only artifact digests and one vendor chunk's name change. The store baseline was not re-recorded.",
+  "comparison": {
+    "method": "The keyless build of the reference and of the application source linted with web-ext, compared by code, file (content hash removed) and message, then by 60 characters of minified code each side of every warning (warnings of one file, code and message paired in source order).",
+    "keyless": {
+      "reference": 36,
+      "head": 36,
+      "siteDifferences": 0,
+      "sameContext": 34,
+      "contextDifferences": 2
+    },
+    "contextDifferences": [
+      {
+        "code": "DANGEROUS_EVAL",
+        "file": "chunks/mountApp.js",
+        "message": "The Function constructor is eval.",
+        "finding": "lodash root lookup (Function(`return this`)()), a reviewed site; only minified names changed (fx/ux/dx to Rx/Ix/Lx). mountApp.js, the popup's main chunk, now also carries the dApp signing pause and the restored wallet's path notice."
+      },
+      {
+        "code": "UNSAFE_VAR_ASSIGNMENT",
+        "file": "chunks/SendForm.js",
+        "message": "Unsafe assignment to innerHTML",
+        "finding": "Vue runtime-dom static-content insert, a reviewed site; only minified names changed (jt/Dt to Mt/Ot). SendForm.js is the send popup chunk, which now prices by the portfolio's decision."
+      }
+    ],
+    "renamedArtifact": {
+      "from": "chunks/background-vendor/subwallet-keyring-BDV_5sZ2.js",
+      "to": "chunks/background-vendor/subwallet-keyring-DqCYaCGD.js",
+      "finding": "Same size (881,333 bytes), same export count and same warning with the same context. Only the minified names of its imported bindings changed (its import lines and their uses), because the shared chunks it imports from were renumbered when the background's new SubstratePassword.ts started using more of the keyring."
+    }
+  },
+  "configurations": {
+    "keyless": {
+      "baseline": "config/firefox-webext-warning-baseline-ci.json",
+      "previousBaselineSha256": "a084f93842bcd9cd0c418527df3501f8e45c157f711d2b4e510fb402f3809bc6",
+      "previousWarningSetSha256": "4283a5c83f33679bf164707bdbfc20c862715eb6df0e240ad20ffb9e83f7e2b0",
+      "baselineSha256": "4ba2feb1cc08404250e8eec7d0a2f147ce9caa355452daafbe1c5520a934fc15",
+      "warningSetSha256": "2250b8f6e5745be9b93e795e023c73c8d52c991b54533b38682a20dd88083d41",
+      "comparisonReportSha256": "16bf89d274f7eedd9b00a4d45492f3aa842f2b63fc6ee370fe1696dea8db88c1",
+      "summary": {
+        "errors": 0,
+        "notices": 0,
+        "warnings": 36
+      },
+      "artifacts": {
+        "chunks/background-vendor/subwallet-keyring-DqCYaCGD.js": "4a43812f77d3989ff89726b6de3a4c634dab6bba2b5113de1372f7e8615aaca5",
+        "chunks/mountApp.js": "605fc02dd81753d97ae06d0fd4b3223c07757b60e58dddaae85803d011df160d",
+        "chunks/SendForm.js": "ad4b9199dda6c835b62a7c3edcda3a7e5bc7a6bfb085b6f9c905f3d4dec550f1"
+      }
+    },
+    "store": {
+      "baseline": "config/firefox-webext-warning-baseline.json",
+      "baselineSha256": "5f8518db458bd524fffdc7324532f75a0dbdb6492cb1cc87ef4bbe29981a6f8a",
+      "reRecorded": false,
+      "reason": "The store build needs the release provider configuration, which this review did not use. The file is unchanged and still describes 2af46cd2's keyed build. It pins the same three artifacts, so a keyed build of this source is expected to fail it until it is rebuilt with the release configuration, compared with a keyed 2af46cd2 build the same way and re-pinned."
+    }
+  },
+  "review": [
+    "The reference 2af46cd2 was built first with the same toolchain: its keyless build passed the committed --ci baseline and printed it byte for byte, so the toolchain reproduces it.",
+    "The keyless build is CI's recipe (the Firefox extension production build with no NODE_ENV and no provider keys).",
+    "The application source's keyless build failed the committed --ci baseline only on warningFiles (the renamed vendor chunk); it has the same 36 warnings at the same sites, and the minified code around 34 of them is identical. The other two are the reviewed lodash and Vue sites above, with only identifier names changed.",
+    "The strict warning verifier and both warning policies are unchanged, and their self-tests pass. New warnings, errors, notices, fingerprint drift and warning-bearing artifact drift remain blocking. The ci-named file is the local keyless-build fixture; no hosted CI was required or modified."
+  ],
+  "evidenceDirectory": "../build/web-1117-landing-20261116/logs"
+}

@@ -1,6 +1,7 @@
 <template>
   <div :class="popupBackgroundClasses" :style="popupBackgroundStyles" @click="backgroundClick">
-    <FCorners size="big" :topLeftCorner="showBorder" :bottomRightCorner="showBorder" :style="popupContainerStyle">
+    <!-- Brand kit v4: a dialog arrives from a little depth (scale 0.88 to 1 in 255 ms). -->
+    <FCorners class="popup-arrive" size="big" :topLeftCorner="showBorder" :bottomRightCorner="showBorder" :style="popupContainerStyle">
       <div
         ref="dialog"
         :class="popupContainerClasses"
@@ -367,6 +368,27 @@ const backgroundClick = (event: CustomEvent) => {
 
 .popup-background-animation {
   @include opacity;
+}
+
+.popup-arrive {
+  animation: popup-arrive 255ms var(--fw-ease-expand) both;
+}
+
+@keyframes popup-arrive {
+  from {
+    opacity: 0;
+    scale: 0.88;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popup-arrive {
+    animation: none;
+  }
+}
+
+html[data-fw-effects='reduced'] .popup-arrive {
+  animation: none;
 }
 
 .popup-background-horizontal-placement-left {

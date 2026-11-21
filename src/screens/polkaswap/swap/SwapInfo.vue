@@ -20,7 +20,7 @@
     <InfoRow
       text="assets.networkFee"
       :value="fee ? `${$n(fee, 'price')} ${soraMainAsset}` : undefined"
-      :price="`${accountsStore.fiatSymbol} ${feePrice}`"
+      :price="feePrice"
       icon="info"
       :isLoading="isLoadingFee"
       :iconClasses="['network-fee']"
@@ -34,7 +34,6 @@
 import { computed } from 'vue';
 import { firstCharToUp } from '@/helpers';
 import { SORA_UTILITY_ASSET } from '@/consts/sora';
-import { useAccountsStore } from '@/stores/accounts';
 
 type Props = {
   marketType?: string;
@@ -46,6 +45,7 @@ type Props = {
   minMaxAmount?: string;
   minMaxAmountPrice?: string;
   fee?: string;
+  /** The fee's fiat value as shown, with its currency symbol, or "Price unavailable". */
   feePrice?: string;
   sendAssetUP?: string;
   receiveAssetUP?: string;
@@ -70,8 +70,6 @@ const props = withDefaults(defineProps<Props>(), {
   route: '',
   showSwapInfo: true,
 });
-
-const accountsStore = useAccountsStore();
 
 const soraMainAsset = SORA_UTILITY_ASSET.toUpperCase();
 

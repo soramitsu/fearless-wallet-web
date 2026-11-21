@@ -4,6 +4,7 @@
       text="assets.sendButtonText"
       :totalAmount="transferableAmount1"
       :value="value1"
+      :priceUnavailable="assetPrice1 === null"
       :asset="asset1"
       :assetId="assetId1"
       :amount="syncedAmount1"
@@ -19,6 +20,7 @@
       text="assets.receiveButtonText"
       :totalAmount="transferableAmount2"
       :value="value2"
+      :priceUnavailable="assetPrice2 === null"
       :asset="asset2"
       :assetId="assetId2"
       :amount="syncedAmount2"
@@ -49,7 +51,7 @@
 import { defineComponent } from 'vue';
 
 import { FPNumber } from '@/sora/number';
-import { calcTransferableSendMinusFee } from '@/helpers/currencies';
+import { calcTransferableSendMinusFee, getTransferAssetPrice } from '@/helpers/currencies';
 
 import { getCostOfAssets } from '@/helpers/transfers';
 import { getAmountPoolValue } from '@/extension/messaging';
@@ -70,6 +72,8 @@ export default defineComponent({ name: 'InputsForm' ,
     return {
       networksStore: useNetworksStore(),
       percent: 0,
+      quoteRequest: 0,
+      disposed: false,
       isPercentChanging: false,
     };
   },
@@ -102,20 +106,25 @@ export default defineComponent({ name: 'InputsForm' ,
     asset2() {
       return this.poolParams.asset2.name;
     },
-    assetPrice1() {
-      const priceId = this.poolParams.asset1.priceId;
-
-          return this.networksStore.getAssetPrice(priceId).price;
+    poolNetwork() {
+      return this.networksStore.getNetwork(this.poolParams.network);
     },
-    assetPrice2() {
-      const priceId = this.poolParams.asset2.priceId;
-
-          return this.networksStore.getAssetPrice(priceId).price;
+    // The portfolio's trusted price of each pool asset on the pool's network (getTransferAssetPrice), or `null`: the
+    // input then says "Price unavailable". A token group's price id is never lent to an asset the portfolio does not trust.
+    assetPrice1(): number | null {
+      return getTransferAssetPrice(this.currency1, this.poolNetwork, this.networksStore.assetsPrice?.tokenPriceMap ?? {});
+    },
+    assetPrice2(): number | null {
+      return getTransferAssetPrice(this.currency2, this.poolNetwork, this.networksStore.assetsPrice?.tokenPriceMap ?? {});
     },
     value1() {
+      if (this.assetPrice1 === null) return '';
+
       return getCostOfAssets(+(this.syncedAmount1 ?? 0), this.assetPrice1);
     },
     value2() {
+      if (this.assetPrice2 === null) return '';
+
       return getCostOfAssets(+(this.syncedAmount2 ?? 0), this.assetPrice2);
     },
     percentIsMax() {
@@ -163,6 +172,7 @@ export default defineComponent({ name: 'InputsForm' ,
     "syncedAmount1": 'watcherAmount1',
     "syncedAmount2": 'watcherAmount2',
   },
+  beforeUnmount() { this.disposed = true; this.quoteRequest += 1; },
   methods: {
     watcherTransferable() {
       if (this.isPercentChanging) this.setMaxLiquidity();
@@ -190,13 +200,7 @@ export default defineComponent({ name: 'InputsForm' ,
               .div(new FPNumber(this.poolParams.asset1.reserve))
               .toString();
           } else {
-            this.syncedAmount2 = await getAmountPoolValue(this.poolValueParams);
-
-            const percent = Math.round(
-              new FPNumber(this.syncedAmount1 || '0').div(new FPNumber(this.transferableAmount1)).mul(FPNumber.HUNDRED).toNumber()
-            );
-
-            this.percent = Math.min(percent, 100);
+            await this.quoteWithdrawal(false);
           }
     },
     async watcherAmount2() {
@@ -210,16 +214,32 @@ export default defineComponent({ name: 'InputsForm' ,
               .div(new FPNumber(this.poolParams.asset2.reserve))
               .toString();
           } else {
-            this.syncedAmount1 = await getAmountPoolValue(this.poolValueParams);
-
-            const percent = Math.round(
-              new FPNumber(this.syncedAmount2 || '0').div(new FPNumber(this.transferableAmount2)).mul(FPNumber.HUNDRED).toNumber()
-            );
-
-            this.percent = Math.min(percent, 100);
+            await this.quoteWithdrawal(true);
           }
     },
+    async quoteWithdrawal(isExchangeB: boolean) {
+      const request = ++this.quoteRequest;
+      const params = this.poolValueParams;
+      const current = () => !this.disposed && request === this.quoteRequest && !this.isPercentChanging &&
+        this.syncedIsExchangeB === isExchangeB && JSON.stringify(this.poolValueParams) === JSON.stringify(params);
+      try {
+        const value = await getAmountPoolValue(params);
+        if (!current()) return;
+        if (isExchangeB) this.syncedAmount1 = value;
+        else this.syncedAmount2 = value;
+        const amount = new FPNumber((isExchangeB ? params.amount2 : params.amount1) || '0');
+        const balance = new FPNumber(isExchangeB ? this.transferableAmount2 : this.transferableAmount1);
+        const percent = balance.isGreaterThan(FPNumber.ZERO) ? amount.div(balance).mul(FPNumber.HUNDRED).toNumber() : 0;
+        this.percent = Number.isFinite(percent) ? Math.max(0, Math.min(Math.round(percent), 100)) : 0;
+      } catch {
+        if (!current()) return;
+        if (isExchangeB) this.syncedAmount1 = '';
+        else this.syncedAmount2 = '';
+        this.percent = 0;
+      }
+    },
     updateAmount1(value: string) {
+      this.quoteRequest += 1;
       const isOverValue = FPNumber.gt(new FPNumber(value), new FPNumber(this.transferableAmount1));
 
           if (this.isRemoveLiquidity && isOverValue) {
@@ -235,6 +255,7 @@ export default defineComponent({ name: 'InputsForm' ,
           this.isPercentChanging = false;
     },
     updateAmount2(value: string) {
+      this.quoteRequest += 1;
       const isOverValue = FPNumber.gt(new FPNumber(value), new FPNumber(this.transferableAmount2));
 
           if (this.isRemoveLiquidity && isOverValue) {
@@ -265,9 +286,11 @@ export default defineComponent({ name: 'InputsForm' ,
           }
     },
     updatePercent(percent = 100) {
-      this.percent = percent;
+      this.quoteRequest += 1;
+      this.percent = Number.isFinite(percent) ? Math.max(0, Math.min(percent, 100)) : 0;
           this.isPercentChanging = true;
           this.syncedIsExchangeB = false;
+          this.setMaxLiquidity();
     },
   },
 });

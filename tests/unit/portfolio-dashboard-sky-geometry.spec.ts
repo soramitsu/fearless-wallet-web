@@ -1,19 +1,13 @@
-import wingsSvg from '@/assets/brand/portfolio-sun/wings.svg?raw';
 import { RAY_COUNT, type AllocationGroup } from '@/portfolio/dashboard/allocation';
 import {
   POPUP_SKY,
   chartColour,
+  crestPlacement,
   layoutRays,
-  logoPlacement,
   rayAngle,
   rayIndexAt,
   rayLine,
-  skyReach,
   skyStars,
-  wingPaths,
-  wingStretch,
-  wingsLayer,
-  wingsVeil,
 } from '@/portfolio/dashboard/skyGeometry';
 
 const group = (key: string, rays: number, slot: number): AllocationGroup => ({ key, name: key, value: rays, share: rays, rays, slot });
@@ -64,92 +58,26 @@ describe('sky hit test', () => {
   });
 });
 
-describe('logo placement', () => {
-  it('puts the disc centre of the master on the sky disc centre', () => {
-    const { left, top, width, height } = logoPlacement();
+describe('crest placement', () => {
+  it('centres the sun-crow badge on the disc centre, its rim one pixel inside the rays', () => {
+    const { left, top, size } = crestPlacement();
 
-    expect(left + (width * 501) / 1002).toBeCloseTo(POPUP_SKY.cx, 1);
-    expect(top + (height * 107) / 206).toBeCloseTo(POPUP_SKY.cy, 1);
-    expect(width / height).toBeCloseTo(1002 / 206, 1);
-  });
-});
-
-describe('wings', () => {
-  const xs = (d: string): number[] =>
-    Array.from(d.matchAll(/([MLHV])([^MLHVZ]+)/g)).flatMap(([, command, args]) => {
-      const values = args.trim().split(/ +/).map(Number);
-
-      if (command === 'V') return [];
-
-      return command === 'H' ? values : values.filter((_, index) => index % 2 === 0);
-    });
-  const paths = wingPaths(wingsSvg);
-  const master = paths.flatMap(({ d }) => xs(d));
-  const scale = POPUP_SKY.logoW / 1002;
-
-  it('read the nine wing paths of the approved layer, which draw with moves and lines only', () => {
-    expect(paths).toHaveLength(9);
-    expect(Math.min(...master)).toBeCloseTo(9.9, 1);
-    expect(Math.max(...master)).toBeCloseTo(992.1, 1);
-    expect(() => wingPaths('<path d="M0 0C1 1 2 2 3 3Z" fill="#000"/>')).toThrow();
+    expect(left + size / 2).toBe(POPUP_SKY.cx);
+    expect(top + size / 2).toBe(POPUP_SKY.cy);
+    expect(size / 2).toBe(POPUP_SKY.r0 - 1);
+    // Small enough that the brand's small crest is the one drawn (under 64 px).
+    expect(size).toBeLessThan(64);
   });
 
-  it('stay the master while its own tip runs off the edge', () => {
-    const stretch = wingStretch(441);
+  it('keeps the heart of the badge out of the hit test; only its rim borders the wider band of the rays', () => {
+    const { left, top, size } = crestPlacement();
+    const cx = left + size / 2;
+    const cy = top + size / 2;
 
-    [0, 160, 300, 491.1].forEach((distance) => expect(stretch(distance)).toBe(distance));
-  });
-
-  it('stretch only past the shoulder, smoothly, until the tip runs off the edge', () => {
-    const stretch = wingStretch(1226);
-    const step = (distance: number) => stretch(distance + 0.5) - stretch(distance - 0.5);
-
-    [0, 100, 151, 160].forEach((distance) => expect(stretch(distance)).toBe(distance));
-    for (let distance = 160; distance < 491; distance += 1) expect(stretch(distance + 1)).toBeGreaterThan(stretch(distance));
-    // No bend where the stretch starts or where it stops easing in.
-    expect(step(160.5)).toBeCloseTo(1, 1);
-    expect(step(160 + 0.35 * 331.1)).toBeCloseTo(step(160 + 0.35 * 331.1 + 1), 2);
-    // The edge cuts the stretched wing at 85% of its length past the shoulder.
-    expect(stretch(491.1)).toBeCloseTo(160 + (1226 - 160) / 0.85, 6);
-  });
-
-  it('fill the sky alone and draw the master there until the card is measured', () => {
-    const layer = wingsLayer(paths, skyReach());
-
-    expect([layer.left, layer.width]).toEqual([0, POPUP_SKY.w]);
-    expect(layer.top).toBe(logoPlacement().top);
-    expect(layer.paths.map(({ fill }) => fill)).toEqual(paths.map(({ fill }) => fill));
-    layer.paths.flatMap(({ d }) => xs(d)).forEach((x, index) => expect(x).toBeCloseTo(master[index], 1));
-  });
-
-  it('run from one card edge to the other, each tip past its own edge', () => {
-    const reach = { left: 389, right: 131 };
-    const layer = wingsLayer(paths, reach);
-    const [viewLeft, , viewWidth] = layer.viewBox.split(' ').map(Number);
-    const drawn = layer.paths.flatMap(({ d }) => xs(d));
-
-    expect([layer.left, layer.width]).toEqual([POPUP_SKY.cx - 389, 389 + 131]);
-    expect(viewLeft).toBeCloseTo(501 - 389 / scale, 1);
-    expect(viewWidth).toBeCloseTo((389 + 131) / scale, 1);
-    // Both tips run off: past the left edge, and the right one as drawn in the master.
-    expect(Math.min(...drawn)).toBeLessThan(viewLeft);
-    expect(Math.max(...drawn)).toBeCloseTo(992.1, 1);
-    expect(Math.max(...drawn)).toBeGreaterThan(viewLeft + viewWidth);
-    // The sun's side of each wing is the master.
-    drawn.forEach((x, index) => {
-      if (Math.abs(master[index] - 501) <= 160) expect(x).toBeCloseTo(master[index], 1);
-    });
-  });
-
-  it('are veiled wherever they leave the sky, fading in only inside it', () => {
-    const veil = 'rgb(0 0 0 / var(--sky-veil, 1))';
-
-    // Popup: the sky at the card's right edge, the text to its left.
-    expect(wingsVeil({ left: POPUP_SKY.cx - 389, width: 520 })).toBe(`linear-gradient(to right, ${veil} 258px, #000 318px, #000 100%)`);
-    // Stacked: the sun centred, a wing past each side of the sky.
-    expect(wingsVeil({ left: -49, width: 360 })).toBe(`linear-gradient(to right, ${veil} 49px, #000 109px, #000 251px, ${veil} 311px)`);
-    // Before the card is measured the wings stay in the sky, and nothing is veiled.
-    expect(wingsVeil({ left: 0, width: POPUP_SKY.w })).toBe('linear-gradient(to right, #000 0, #000 100%)');
+    // The band reaches 8 px inside the rays so a pointer need not hit a hairline: within that, the badge is no ray.
+    for (const [dx, dy] of [[0, 0], [0, -(POPUP_SKY.r0 - 9)], [POPUP_SKY.r0 - 9, 0], [-12, -12]])
+      expect(rayIndexAt(cx + dx, cy + dy)).toBeNull();
+    expect(rayIndexAt(cx, cy - (POPUP_SKY.r0 - 2))).not.toBeNull();
   });
 });
 

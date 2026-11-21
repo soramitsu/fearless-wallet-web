@@ -43,7 +43,7 @@ wallet and clears open pages, the panel included.
 
 Narrow-column styles with a breakpoint above 561px use `@include column-max-width(...)` (`src/styles/common.scss`)
 instead of a viewport query. The extension's column never grows past 561px, so they always apply there: a panel dragged
-wide or a full tab lays out the By network rows, the amount input and the Polkaswap header as the popup does. The web
+wide or a full tab lays out the network sections (detected tokens), the amount input and the Polkaswap header as the popup does. The web
 app keeps its viewport queries.
 
 dApp requests still open their own approval window. Like a full tab, an open panel also shows the request.

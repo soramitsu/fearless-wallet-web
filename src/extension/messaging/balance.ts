@@ -11,6 +11,11 @@ export function getBalance(): Promise<BalanceJson> {
   return sendMessage('pri(balance)');
 }
 
+/** Reads the selected wallet's balances again now. Resolves once the networks that are polled have answered. */
+export function refreshWalletBalances(): Promise<boolean> {
+  return sendMessage('pri(balance.refresh)');
+}
+
 export function fetchEvmBalance(assetId?: string, ethereumAddress?: string): Promise<void> {
   return sendMessage('pri(fetch.evm.balance)', { assetId, ethereumAddress });
 }

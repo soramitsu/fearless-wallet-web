@@ -2,8 +2,10 @@ import axios from 'axios';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ActionCapabilityService, resolveActionCapabilities, type ActionCapabilityConfig } from '@extension-base/services/action-capability-service';
 import { SendKillSwitchService } from '@extension-base/services/send-kill-switch-service';
-import { REMOTE_CONFIG_TIMEOUT_MS } from '@/util/remoteConfig';
+import { DappSigningKillSwitchService } from '@extension-base/services/dapp-signing-kill-switch-service';
+import { REMOTE_CONFIG_TIMEOUT_MS, fetchRemoteFeatureConfig } from '@/util/remoteConfig';
 import { emptySendKillSwitchState, type SendKillSwitchState } from '@/util/sendKillSwitch';
+import { emptyDappSigningKillSwitchState, type DappSigningKillSwitchState } from '@/util/dappSigningKillSwitch';
 
 vi.mock('axios', () => ({ default: { get: vi.fn() } }));
 
@@ -65,5 +67,47 @@ describe('a stalled remote configuration host', () => {
     expect(write).not.toHaveBeenCalled();
     await expect(service.isSendEnabled('bitcoinSend')).resolves.toBe(false);
     await expect(service.isSendEnabled('solanaSend')).resolves.toBe(true);
+  });
+
+  it('releases the dApp signing kill switch after the timeout, keeping a remembered pause, with one request for all three', async () => {
+    const remembered: DappSigningKillSwitchState = {
+      ...emptyDappSigningKillSwitchState(),
+      updatedAt: 1,
+      vetoes: { ...emptyDappSigningKillSwitchState().vetoes, evm: true },
+    };
+    const write = vi.fn(async () => undefined);
+    const dappSigning = new DappSigningKillSwitchService({ read: async () => remembered, write });
+    const send = new SendKillSwitchService({ read: async () => undefined, write: vi.fn(async () => undefined) });
+    const actions = new ActionCapabilityService({ read: async () => undefined, write: async () => undefined });
+
+    await settlesAtTimeout(Promise.all([dappSigning.init(), send.init(), actions.init()]));
+
+    // The worker's start-up readers share one request to the configuration host.
+    expect(axios.get).toHaveBeenCalledOnce();
+    expect(write).not.toHaveBeenCalled();
+    await expect(dappSigning.isSigningAllowed('evm')).resolves.toBe(false);
+    await expect(dappSigning.isSigningAllowed('polkadot')).resolves.toBe(true);
+  });
+});
+
+describe('remote configuration requests', () => {
+  it('shares a request only while it is under way', async () => {
+    vi.mocked(axios.get).mockResolvedValue({ data: { actions: { solanaSend: false } } });
+
+    const [first, second] = await Promise.all([fetchRemoteFeatureConfig(), fetchRemoteFeatureConfig()]);
+    expect(first).toEqual({ actions: { solanaSend: false } });
+    expect(second).toBe(first);
+    expect(axios.get).toHaveBeenCalledOnce();
+
+    await fetchRemoteFeatureConfig();
+    expect(axios.get).toHaveBeenCalledTimes(2);
+  });
+
+  it('lets the next caller retry after a failed request', async () => {
+    vi.mocked(axios.get).mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ data: {} });
+
+    await expect(fetchRemoteFeatureConfig()).rejects.toThrow('offline');
+    await expect(fetchRemoteFeatureConfig()).resolves.toEqual({});
+    expect(axios.get).toHaveBeenCalledTimes(2);
   });
 });

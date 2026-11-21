@@ -27,9 +27,10 @@ export async function upgradePasswordVerifier(password: string, assertCurrent: (
   const previous = IS_EXTENSION ? snapshot[passwordKey] as KeyringPasswordJson | undefined
     : decodeWebPassword(validateWebPasswordRecord(snapshot[passwordKey]).serialized);
   if (!previous || typeof previous.passwordHash !== 'string' ||
-    !/^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(previous.passwordHash) ||
-    !compareSync(password, previous.passwordHash)) throw new Error('Wallet password changed. Unlock and retry.');
+    !/^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(previous.passwordHash)) throw new Error('Wallet password changed. Unlock and retry.');
+  // Nothing is written then. The keyring has checked the password; a second bcrypt here cost ~250 ms per unlock.
   if (getRounds(previous.passwordHash) >= PASSWORD_VERIFIER_COST) return;
+  if (!compareSync(password, previous.passwordHash)) throw new Error('Wallet password changed. Unlock and retry.');
   const next = { ...previous, ...createPasswordVerifier(password) };
   assertCurrent();
   await store.mutateRecordsAndWait([passwordKey], current => {

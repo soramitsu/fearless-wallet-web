@@ -25,7 +25,7 @@
           </button>
 
           <div v-else class="icon">
-            <img :src="sunBadge" class="logo" alt="" />
+            <img :src="crestBadge" class="logo" alt="" />
           </div>
         </div>
 
@@ -66,7 +66,7 @@ import { computed, ref } from 'vue';
 import { useModalFocus } from './useModalFocus';
 import type { ComponentText } from '@/interfaces';
 import { useI18n } from '@/locales/useI18n';
-import sunBadge from '@/assets/brand/winged-sun-badge-lines.svg';
+import crestBadge from '@/assets/brand/crest-badge-small.svg';
 
 type Props = {
   header?: ComponentText;

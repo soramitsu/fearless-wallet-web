@@ -31,7 +31,7 @@ vi.mock('@/stores/accounts', () => ({
   }),
 }));
 vi.mock('@/stores/networks', () => ({
-  useNetworksStore: () => ({ getNetwork: () => ({ assets: [] }), getAssetPrice: () => ({ price: 0 }) }),
+  useNetworksStore: () => ({ getNetwork: (name: string) => ({ name, ecosystem: 'substrate', addressPrefix: 0, assets: [] }), getAssetPrice: () => ({ price: 0 }) }),
 }));
 vi.mock('@/consts/global', async (importOriginal) => ({ ...(await importOriginal<object>()), IS_EXTENSION: false }));
 vi.mock('@/screens/wallet&asset/TransferForm.vue', () => ({

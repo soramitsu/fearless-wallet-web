@@ -114,6 +114,30 @@ the suite on every machine.
 Scenario R1 in `tests/upgrade/README.md`: a 3.0.5 profile goes to 4.2.0, which re-encrypts keys in every way it
 does, then back to the clean 3.0.6 (`hotfix/3.0.6`) and forward again.
 
+## JSON backups of path and password wallets: `json-backups/`
+
+Backups as Export → JSON saves them, which is also the file a Google Drive backup holds (`pri(accounts.export.json)`
+with the master password). Each build imported the same three wallets the way `AddWallet.vue` (`saveKeypairFromSeed`)
+sends a phrase with a path under Advanced, with the public phrases of `docs/universal-wallet-v2-vectors.json`:
+
+| Wallet           | Phrase      | Substrate path                 | Ethereum path        |
+| ---------------- | ----------- | ------------------------------ | -------------------- |
+| Password wallet  | `import12`  | `//polkadot///TREZOR`          | `/m/44'/60'/0'/0/0`  |
+| Staking          | `default24` | `//staking`                    |                      |
+| Unicode password | `default24` | `//unicode///pässwörd ＦＷ`    |                      |
+| Plain            | `default24` |                                | `/m/44'/60'/0'/0/0`  |
+
+| File | Written by |
+| ---- | ---------- |
+| `3.0.6-path-wallets.json` | the cached 3.0.6 build (`build-legacy.mjs 3.0.6`): the published 3.0.5 keyring code, the Web Store rollback target |
+| `4.2.2-path-wallets.json` | 4.2.2 (`v4.2.2`, the version the Web Store serves), built from an export of its source with its own `yarn.lock` |
+| `4.2.2-restored-3.0.6-backups.json` | 4.2.2 restoring the 3.0.6 backups (the Ethereum file first, as Google Drive restore does): its `chrome.storage.local` afterwards, with every key but Plain's Substrate key `isMnemonicUnverified` and no Universal Wallet accounts |
+
+`node scripts/upgrade-e2e/capture-json-backups.mjs <version> <build> <ext dir> <profile dir> <out> [--restore <capture>]`
+drives the build in Chrome for Testing as the other captures do; `provenance` in each file records the commit,
+lockfile, build and browser. Only the account records, `fw:keyring`, the current account and `legacyExposure` are kept
+from the restore dump (`omittedKeys`). Used by `tests/unit/universal-wallet-json-restore.spec.ts`.
+
 ## `chrome.storage.local` dumps: `*.storage.json`
 
 Each `*.storage.json` file is the `chrome.storage.local` content a released

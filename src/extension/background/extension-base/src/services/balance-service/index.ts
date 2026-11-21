@@ -1,7 +1,9 @@
 import { APIItemState } from '@extension-base/api/types/networks';
+import { BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS } from '@extension-base/services/balance-service/publishTiming';
 import { storage } from '@extension-base/stores/Storage';
 import { Subject } from 'rxjs';
 import { PREP_NETWORKS_NAME } from '@extension-base/const/networks';
+import { getAssetOptions } from '@extension-base/api/substrate';
 import { type GetBalancesProps } from '../subscription-service';
 import { TonBalance } from '../ton-balance/TonBalance';
 import SubstrateBalanceService from './SubstrateBalanceService';
@@ -11,9 +13,11 @@ import BitcoinBalanceService from './BitcoinBalanceService';
 import IrohaBalanceService from './IrohaBalanceService';
 import type State from '@extension-base/background/handlers/State';
 import type { BalanceItem, NetworkScanState } from '@extension-base/api/evm/types';
+import type { NetworkJson } from '@extension-base/types';
 import type {
   BalanceMap,
   BalanceJson,
+  IState,
   RequestTotalBalances,
   ResponseTotalBalances,
   RequestPortfolioHoldings,
@@ -49,6 +53,18 @@ interface NetworkBalanceRefresh {
   unknownFailure?: boolean;
 }
 
+type BalanceStorage = Pick<IState, 'assetBalances' | 'networkScanStates'>;
+
+interface BalanceStorageMutation {
+  /** Applies one change to the copy read for this write and names the keys it changed. */
+  apply: (stored: BalanceStorage) => (keyof BalanceStorage)[];
+  resolve: () => void;
+  reject: (error: unknown) => void;
+}
+
+// Balance changes this close together share one read and one write of the cache, which holds every wallet's assets.
+export const BALANCE_STORAGE_WRITE_DELAY_MS = 200;
+
 export default class BalanceService {
   substrateBalanceService: SubstrateBalanceService;
   evmBalanceService: EvmBalanceService;
@@ -60,6 +76,8 @@ export default class BalanceService {
   networkScanStates: Record<string, Record<string, NetworkScanState>> = {};
   balanceSubject = new Subject<BalanceJson>();
   private balanceStorageMutation = Promise.resolve();
+  private pendingBalanceStorageMutations: BalanceStorageMutation[] = [];
+  private balanceStorageWriteTimer?: ReturnType<typeof setTimeout>;
   private networkRefreshQueue = new Map<string, Promise<unknown>>();
   private activeNetworkRefreshes = new Map<string, NetworkBalanceRefresh>();
 
@@ -85,7 +103,7 @@ export default class BalanceService {
         if (!cachedItem?.id || !cachedItem.chain || cachedItem.state !== APIItemState.READY) return;
         if (storedKey !== this.getStorageAssetKey(cachedItem.chain, cachedItem)) return;
 
-        const item = this.withRegistryPriceId(cachedItem);
+        const item = this.withRegistryPriceId(this.asRegistryBalanceIfListed(cachedItem));
         const group = this.balanceMap[address].find(({ balances }) =>
           balances.some(
             (balance) =>
@@ -121,7 +139,7 @@ export default class BalanceService {
           providers: [],
           relayChain: item.relayChain as RelayChainName,
           symbol: item.symbol,
-          tokenName: item.symbol,
+          tokenName: item.tokenName || item.symbol,
         });
       });
     });
@@ -129,6 +147,22 @@ export default class BalanceService {
 
   getAccountBalance(address: string) {
     return this.balanceMap[address];
+  }
+
+  /** Lower-case names of the networks where the wallet's balances hold something, saved ones included. */
+  fundedNetworks(address?: string): Set<string> {
+    const funded = new Set<string>();
+    const holds = (amount?: string) => typeof amount === 'string' && /[1-9]/.test(amount);
+
+    for (const { balances } of (address && this.balanceMap[address]) || []) {
+      for (const balance of balances) {
+        if ([balance.total, balance.transferable, balance.free, balance.reserved, balance.locked, balance.frozen].some(holds)) {
+          funded.add(balance.name.toLowerCase());
+        }
+      }
+    }
+
+    return funded;
   }
 
   deleteBalance(address: string) {
@@ -140,10 +174,17 @@ export default class BalanceService {
 
   public updateBalanceStore(networkKey: string, item: BalanceItem, address: string) {
     const itemSnapshot = { ...item };
+    const scan = this.activeNetworkRefreshes.get(JSON.stringify([address, networkKey]));
+    // Preserve the read outcome before touching storage: a failed cache read must not hide an RPC failure.
+    if (scan && itemSnapshot.state === APIItemState.ERROR) scan.failed = true;
 
-    return this.enqueueBalanceStorageMutation(() =>
-      this.updateBalanceStorage(networkKey, address, itemSnapshot)
-    ).catch((e) => console.warn(e));
+    return this.enqueueBalanceStorageMutation((stored) =>
+      this.updateBalanceStorage(networkKey, address, itemSnapshot, stored)
+    ).catch((e) => {
+      // This scan cannot confirm its saved balances if an intermediate cache update was lost.
+      if (scan) scan.failed = true;
+      console.warn(e);
+    });
   }
 
   public async refreshNetworkBalances<T>(
@@ -163,7 +204,7 @@ export default class BalanceService {
       } finally {
         try {
           // Asset writes are queued synchronously by setBalanceItem. Finish only after all of them persist.
-          await this.enqueueBalanceStorageMutation(() => this.finishNetworkRefresh(chain, address, scan));
+          await this.enqueueBalanceStorageMutation((stored) => this.finishNetworkRefresh(chain, address, scan, stored));
         } finally {
           this.activeNetworkRefreshes.delete(key);
         }
@@ -178,12 +219,15 @@ export default class BalanceService {
     }
   }
 
-  private async finishNetworkRefresh(chain: string, address: string, scan: NetworkBalanceRefresh): Promise<void> {
-    const { networkScanStates } = await storage.get(['networkScanStates']);
-    const accountScanStates = { ...(networkScanStates?.[address] ?? {}) };
+  private finishNetworkRefresh(
+    chain: string, address: string, scan: NetworkBalanceRefresh, stored: BalanceStorage
+  ): (keyof BalanceStorage)[] {
+    const accountScanStates = { ...(stored.networkScanStates[address] ?? {}) };
     const previous = accountScanStates[chain];
-    const failed = scan.failed || Boolean(previous?.failedAssetKeys?.length) ||
-      (!scan.coversNetwork && Boolean(scan.unknownFailure));
+    // A refresh of the whole network that failed nowhere read every asset the network lists. A failure still on record
+    // belongs to an asset it has dropped, which nothing would ever read again to clear it.
+    const failed = scan.failed ||
+      (!scan.coversNetwork && (Boolean(previous?.failedAssetKeys?.length) || Boolean(scan.unknownFailure)));
     const now = Date.now();
     accountScanStates[chain] = {
       lastAttempt: now,
@@ -192,9 +236,11 @@ export default class BalanceService {
       coverage: previous?.coverage ?? 'limited',
       ...(failed ? { error: 'balance_scan_failed', failedAssetKeys: previous?.failedAssetKeys } : {}),
     };
-    await storage.set({ networkScanStates: { ...(networkScanStates ?? {}), [address]: accountScanStates } });
+    stored.networkScanStates[address] = accountScanStates;
     this.networkScanStates[address] = accountScanStates;
-    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 500);
+    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
+
+    return ['networkScanStates'];
   }
 
   public deleteBalanceStore(
@@ -203,45 +249,88 @@ export default class BalanceService {
     address: string
   ) {
     const identitySnapshot = { ...identity };
-    return this.enqueueBalanceStorageMutation(() =>
-      this.deleteBalanceStorage(networkKey, identitySnapshot, address)
+    return this.enqueueBalanceStorageMutation((stored) =>
+      this.deleteBalanceStorage(networkKey, identitySnapshot, address, stored)
     );
   }
 
-  private enqueueBalanceStorageMutation(mutation: () => Promise<void>): Promise<void> {
-    const pending = this.balanceStorageMutation.then(mutation);
-
-    this.balanceStorageMutation = pending.catch(() => undefined);
-
-    return pending;
+  /** Resolves once the change is written, together with every other change made within the write delay. */
+  private enqueueBalanceStorageMutation(apply: BalanceStorageMutation['apply']): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.pendingBalanceStorageMutations.push({ apply, resolve, reject });
+      this.balanceStorageWriteTimer ??= setTimeout(() => {
+        this.balanceStorageWriteTimer = undefined;
+        this.balanceStorageMutation = this.balanceStorageMutation.then(() => this.writeBalanceStorage());
+      }, BALANCE_STORAGE_WRITE_DELAY_MS);
+    });
   }
 
-  private async deleteBalanceStorage(
+  /**
+   * Reads the cache once, applies the queued changes in the order they were made and writes the changed keys once.
+   * Reading first keeps what other wallets and earlier writes stored.
+   */
+  private async writeBalanceStorage(): Promise<void> {
+    const mutations = this.pendingBalanceStorageMutations.splice(0);
+
+    if (!mutations.length) return;
+
+    try {
+      const { assetBalances, networkScanStates } = await storage.get(['assetBalances', 'networkScanStates']);
+      const stored: BalanceStorage = {
+        assetBalances: { ...(assetBalances ?? {}) },
+        networkScanStates: { ...(networkScanStates ?? {}) },
+      };
+      const changed = new Set<keyof BalanceStorage>();
+      const failures = mutations.map(({ apply }) => {
+        try {
+          apply(stored).forEach((key) => changed.add(key));
+
+          return undefined;
+        } catch (error) {
+          return { error };
+        }
+      });
+      const write: Partial<BalanceStorage> = {};
+
+      if (changed.has('assetBalances')) write.assetBalances = stored.assetBalances;
+      if (changed.has('networkScanStates')) write.networkScanStates = stored.networkScanStates;
+      if (changed.size) await storage.set(write);
+
+      mutations.forEach(({ resolve, reject }, index) => {
+        const failure = failures[index];
+
+        if (failure) reject(failure.error);
+        else resolve();
+      });
+    } catch (error) {
+      mutations.forEach(({ reject }) => reject(error));
+    }
+  }
+
+  private deleteBalanceStorage(
     chain: string,
     identity: Pick<BalanceItem, 'id'> & Partial<BalanceItem>,
-    address: string
-  ) {
-    const { assetBalances } = await storage.get(['assetBalances']);
-    const copyAssetBalances = { ...(assetBalances ?? {}) };
-    const canonicalForAccount = { ...(copyAssetBalances[address] ?? {}) };
+    address: string,
+    stored: BalanceStorage
+  ): (keyof BalanceStorage)[] {
+    const canonicalForAccount = { ...(stored.assetBalances[address] ?? {}) };
     const canonicalKey = this.getStorageAssetKey(chain, identity);
 
-    if (!canonicalForAccount[canonicalKey]) return;
+    if (!canonicalForAccount[canonicalKey]) return [];
 
     delete canonicalForAccount[canonicalKey];
-    if (Object.keys(canonicalForAccount).length) copyAssetBalances[address] = canonicalForAccount;
-    else delete copyAssetBalances[address];
+    if (Object.keys(canonicalForAccount).length) stored.assetBalances[address] = canonicalForAccount;
+    else delete stored.assetBalances[address];
 
-    await storage.set({ assetBalances: copyAssetBalances });
+    return ['assetBalances'];
   }
 
-  private async updateBalanceStorage(chain: string, address: string, item: BalanceItem) {
-    if (item.state !== APIItemState.READY && item.state !== APIItemState.ERROR) return;
+  private updateBalanceStorage(
+    chain: string, address: string, item: BalanceItem, stored: BalanceStorage
+  ): (keyof BalanceStorage)[] {
+    if (item.state !== APIItemState.READY && item.state !== APIItemState.ERROR) return [];
 
-    const { assetBalances, networkScanStates } = await storage.get(['assetBalances', 'networkScanStates']);
-    const copyAssetBalances = { ...(assetBalances ?? {}) };
-    const copyScanStates = { ...(networkScanStates ?? {}) };
-    const accountScanStates = { ...(copyScanStates[address] ?? {}) };
+    const accountScanStates = { ...(stored.networkScanStates[address] ?? {}) };
     const previousScan = accountScanStates[chain];
     const now = Date.now();
     const coverage = item.scanCoverage ?? previousScan?.coverage ?? 'limited';
@@ -266,20 +355,17 @@ export default class BalanceService {
       ...(failed ? { error: 'balance_scan_failed' } : {}),
       ...(failedAssetKeys.size ? { failedAssetKeys: [...failedAssetKeys] } : {}),
     };
-    copyScanStates[address] = accountScanStates;
+    stored.networkScanStates[address] = accountScanStates;
     this.networkScanStates[address] = accountScanStates;
 
-    if (item.state === APIItemState.ERROR) {
-      await storage.set({ networkScanStates: copyScanStates });
-      return;
-    }
+    if (item.state === APIItemState.ERROR) return ['networkScanStates'];
 
-    copyAssetBalances[address] = {
-      ...(copyAssetBalances[address] ?? {}),
+    stored.assetBalances[address] = {
+      ...(stored.assetBalances[address] ?? {}),
       [canonicalKey]: { chain, ...item } as BalanceItem & { chain: NetworkName },
     };
 
-    await storage.set({ assetBalances: copyAssetBalances, networkScanStates: copyScanStates });
+    return ['assetBalances', 'networkScanStates'];
   }
 
   /**
@@ -296,6 +382,32 @@ export default class BalanceService {
     const assetId = getPortfolioAssetId(item);
 
     return createAssetKey({ ecosystem, chainId, assetId });
+  }
+
+  /**
+   * A cached ERC-20 token found through the token lists that the registry lists today is restored as the registry's
+   * asset, under the registry's id: the registry path reads it from now on and finds it by that id.
+   */
+  private asRegistryBalanceIfListed<T extends BalanceItem & { chain: string }>(item: T): T {
+    if (item.assetMetadataSource !== 'tokenList') return item;
+
+    const registryAsset = this.findRegistryEvmAsset(item.chain, item.id);
+
+    if (!registryAsset) return item;
+
+    const restored: T = { ...item, id: registryAsset.id, assetMetadataTrust: 'verified', assetMetadataSource: 'registry' };
+
+    delete restored.tokenName;
+
+    return restored;
+  }
+
+  private findRegistryEvmAsset(networkKey: string, contract: string) {
+    const network = this.state.networkService?.networkValues?.find(({ name }) => isSameString(name, networkKey));
+
+    return network?.ecosystem === 'ethereum'
+      ? network.assets?.find(({ id }) => isSameString(id, contract))
+      : undefined;
   }
 
   /**
@@ -330,6 +442,54 @@ export default class BalanceService {
       this.balanceMap[address][currencyIndex].balances[index].existentialDeposit =
         existentialDeposit?.toString() ?? '0';
     });
+  }
+
+  /**
+   * The minimum balance (pallet-assets `min_balance`) of each assets-pallet token of a network, such as Asset Hub USDT,
+   * which the registry does not list. A balance sent below it is removed, so the Send screen asks first, as it does
+   * for the native existential deposit.
+   */
+  public async updateAssetMinimums(networkName: NetworkName): Promise<void> {
+    const network = Object.values(this.state.networkService.networkMap).find(({ name }) => isSameString(name, networkName));
+    const assetDetails = this.state.networkService.substrateApiHandler.api[networkName]?.api?.query?.assets?.asset;
+    const assets = network?.assets.filter(({ type, existentialDeposit }) => type === 'assets' && !existentialDeposit) ?? [];
+
+    if (!network || !assetDetails || !assets.length) return;
+
+    const minimums = new Map<string, string>();
+
+    await Promise.all(
+      assets.map(async ({ id }) => {
+        try {
+          const details = (await assetDetails(getAssetOptions(id, this.state.networkService.assetsMap))) as unknown as {
+            isSome: boolean;
+            unwrap: () => { minBalance: { toString: () => string } };
+          };
+
+          if (details.isSome) minimums.set(id, details.unwrap().minBalance.toString());
+        } catch (error) {
+          console.warn(`[Balances] ${network.name}: could not read the minimum balance of ${id}`, error);
+        }
+      })
+    );
+
+    let changed = false;
+
+    Object.values(this.balanceMap).forEach((groups) =>
+      groups.forEach(({ balances }) =>
+        balances.forEach((item) => {
+          const minimum = minimums.get(item.id);
+
+          if (minimum === undefined || !isSameString(PREP_NETWORKS_NAME[item.name] ?? item.name, network.name)) return;
+          if (item.existentialDeposit === minimum) return;
+
+          item.existentialDeposit = minimum;
+          changed = true;
+        })
+      )
+    );
+
+    if (changed) this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
   }
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
@@ -381,7 +541,7 @@ export default class BalanceService {
 
     this.updateBalanceStore(networkKey, mergedBalance, address);
 
-    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 500);
+    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
   }
 
   public setJettonBalanceItem(networkKey: string, item: Partial<BalanceItem>, accountAddress: string) {
@@ -424,13 +584,185 @@ export default class BalanceService {
 
     this.updateBalanceStore(networkKey, balance, accountAddress);
 
-    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), 500);
+    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
+  }
+
+  /** The ERC-20 tokens found outside the registry for this wallet on this network (docs/evm-token-discovery.md). */
+  public getEvmTokenBalances(address: string, networkKey: string): BalanceItem[] {
+    return (this.balanceMap[address] ?? []).flatMap(({ balances }) =>
+      balances.filter(({ assetMetadataSource, name }) => assetMetadataSource === 'tokenList' && isSameString(name, networkKey))
+    );
+  }
+
+  private findEvmTokenBalance(address: string, networkKey: string, contract: string) {
+    for (const group of this.balanceMap[address] ?? []) {
+      const index = group.balances.findIndex(
+        ({ assetMetadataSource, id, name }) =>
+          assetMetadataSource === 'tokenList' && isSameString(id, contract) && isSameString(name, networkKey)
+      );
+
+      if (index >= 0) return { group, index };
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Adds or updates an ERC-20 token found outside the registry. It is never verified: no price, never counted, listed
+   * under "Found, not verified" until the owner shows it. A token is added only with a balance above zero; a failed
+   * read keeps the amount last read, as for registry tokens.
+   */
+  public setEvmTokenBalanceItem(
+    networkKey: string,
+    item: Pick<BalanceItem, 'id' | 'symbol' | 'precision' | 'state'> & Pick<Partial<BalanceItem>, 'total' | 'tokenName'>,
+    address: string
+  ): void {
+    if (!this.state.keyringService.getAllMainAccounts().some((account) => account.address === address)) return;
+
+    const accountAddress = this.state.keyringService.getSubstrateAddress(address);
+    const existing = this.findEvmTokenBalance(accountAddress, networkKey, item.id);
+    const amount = item.total ?? '0';
+    let balance: BalanceItem;
+
+    if (existing) {
+      const current = existing.group.balances[existing.index];
+
+      balance =
+        item.state === APIItemState.ERROR
+          ? { ...current, state: APIItemState.ERROR }
+          : {
+              ...current,
+              state: APIItemState.READY,
+              free: amount,
+              total: amount,
+              transferable: amount,
+              timestamp: Date.now(),
+            };
+      existing.group.balances[existing.index] = balance;
+    } else {
+      if (item.state !== APIItemState.READY || !/[1-9]/u.test(amount)) return;
+
+      const network = this.state.networkService.networkValues.find(({ name }) => isSameString(name, networkKey));
+      const tokenName = item.tokenName || item.symbol;
+
+      balance = {
+        address: accountAddress,
+        assetIcon: '',
+        icon: network?.icon ?? '',
+        id: item.id,
+        name: networkKey,
+        mainNetwork: networkKey,
+        precision: item.precision,
+        relayChain: 'ethereum',
+        symbol: item.symbol,
+        tokenName,
+        type: 'erc20',
+        state: APIItemState.READY,
+        isNative: false,
+        isUtility: false,
+        free: amount,
+        total: amount,
+        transferable: amount,
+        reserved: '0',
+        frozen: '0',
+        locked: '0',
+        timestamp: Date.now(),
+        assetMetadataTrust: 'unverified',
+        assetMetadataSource: 'tokenList',
+        scanCoverage: 'catalogOnly',
+      };
+      (this.balanceMap[accountAddress] ??= []).push({
+        balances: [balance],
+        groupId: item.id,
+        // No logo: showing a found token never contacts another host.
+        icon: '',
+        mainNetwork: networkKey,
+        providers: [],
+        relayChain: 'ethereum',
+        symbol: item.symbol,
+        tokenName,
+      });
+    }
+
+    this.updateBalanceStore(networkKey, balance, accountAddress);
+    this.schedulePublish();
+  }
+
+  /**
+   * A found token that the registry lists now becomes the registry's asset. When the wallet already has the registry's
+   * row for it, the found row goes. Otherwise the found row becomes that row, under the registry's id and verified, so
+   * the registry path finds it and the holding stays on screen.
+   */
+  public adoptEvmTokenAsRegistryAsset(
+    networkKey: string,
+    registryAsset: Pick<NetworkJson['assets'][number], 'id' | 'symbol' | 'name' | 'priceId' | 'icon'>,
+    address: string
+  ): void {
+    const accountAddress = this.state.keyringService.getSubstrateAddress(address);
+    const existing = this.findEvmTokenBalance(accountAddress, networkKey, registryAsset.id);
+
+    if (!existing) return;
+
+    const hasRegistryRow = (this.balanceMap[accountAddress] ?? []).some(({ balances }) =>
+      balances.some(
+        ({ assetMetadataSource, id, name }) =>
+          assetMetadataSource !== 'tokenList' && id === registryAsset.id && isSameString(name, networkKey)
+      )
+    );
+
+    if (hasRegistryRow) {
+      this.removeEvmTokenBalanceItem(networkKey, registryAsset.id, address);
+      return;
+    }
+
+    const adopted: BalanceItem = {
+      ...existing.group.balances[existing.index],
+      id: registryAsset.id,
+      symbol: registryAsset.symbol,
+      priceId: registryAsset.priceId || undefined,
+      assetMetadataTrust: 'verified',
+      assetMetadataSource: 'registry',
+    };
+
+    delete adopted.tokenName;
+    existing.group.balances[existing.index] = adopted;
+    Object.assign(existing.group, {
+      groupId: registryAsset.id,
+      icon: registryAsset.icon || existing.group.icon,
+      priceId: registryAsset.priceId || undefined,
+      symbol: registryAsset.symbol,
+      tokenName: registryAsset.name || registryAsset.symbol,
+    });
+    this.updateBalanceStore(networkKey, adopted, accountAddress);
+    this.schedulePublish();
+  }
+
+  /** Removes a found token: the wallet no longer holds it, or the registry lists it now. */
+  public removeEvmTokenBalanceItem(networkKey: string, contract: string, address: string): void {
+    const accountAddress = this.state.keyringService.getSubstrateAddress(address);
+    const existing = this.findEvmTokenBalance(accountAddress, networkKey, contract);
+
+    if (!existing) return;
+
+    const [removed] = existing.group.balances.splice(existing.index, 1);
+
+    if (!existing.group.balances.length) {
+      this.balanceMap[accountAddress] = this.balanceMap[accountAddress].filter((group) => group !== existing.group);
+    }
+
+    void this.deleteBalanceStore(networkKey, removed, accountAddress).catch((error) => console.warn(error));
+    this.schedulePublish();
   }
 
   public async publishBalance() {
     const balance = await this.getBalance();
 
     return this.balanceSubject.next(balance);
+  }
+
+  /** Sends the open pages the selected wallet's balances once the changes made around now are in. */
+  public schedulePublish() {
+    this.state.timeoutService.lazyNext('setBalanceItem', () => this.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
   }
 
   /**
@@ -517,14 +849,14 @@ export default class BalanceService {
 
   public async getBalance(): Promise<BalanceJson> {
     const account = this.state.currentAccount;
+    const discovery = this.state.assetDiscoverySweepService?.getProgress?.();
 
     if (account) {
-      return new Promise((resolve) => {
-        resolve({
-          details: this.balanceMap[account.address] ?? [],
-          scanStates: this.networkScanStates[account.address] ?? {},
-        });
-      });
+      return {
+        details: this.balanceMap[account.address] ?? [],
+        scanStates: this.networkScanStates[account.address] ?? {},
+        ...(discovery ? { discovery } : {}),
+      };
     }
 
     return { details: [] };
@@ -604,7 +936,12 @@ export default class BalanceService {
     bitcoinTestnetAddress,
     irohaAddress,
     walletEcosystem,
+    only,
+    force,
   }: GetBalancesProps): Promise<ResponseBalanceRequest[]> {
+    // Every ecosystem of the wallet, or only those asked for. A service that is not called reads nothing: an empty
+    // network list would make the Solana, Bitcoin and Iroha services read their default network.
+    const wants = (ecosystem: WalletEcosystem) => !only || only.has(ecosystem);
     const account = this.state.keyringService?.getAllMainAccounts?.().find(({ address: accountAddress }) =>
       isSameString(accountAddress, address)
     );
@@ -620,30 +957,31 @@ export default class BalanceService {
         )?.address;
       const tasks: Promise<ResponseBalanceRequest[]>[] = [];
 
-      if (ecosystems.has(WalletEcosystem.Substrate)) {
+      if (ecosystems.has(WalletEcosystem.Substrate) && wants(WalletEcosystem.Substrate)) {
         tasks.push(this.substrateBalanceService.fetchBalance({
           address: publicAddress(WalletEcosystem.Substrate) ?? address,
           networks: substrateNetworks,
           ethereumAddress: ethereumAddress ?? publicAddress(WalletEcosystem.Evm),
         }));
       }
-      if (ecosystems.has(WalletEcosystem.Evm)) {
+      if (ecosystems.has(WalletEcosystem.Evm) && wants(WalletEcosystem.Evm)) {
         tasks.push(this.evmBalanceService.fetchBalance({
           networks: evmNetworks,
           ethereumAddress: ethereumAddress || publicAddress(WalletEcosystem.Evm),
+          force,
         }));
       }
-      if (ecosystems.has(WalletEcosystem.Ton)) {
+      if (ecosystems.has(WalletEcosystem.Ton) && wants(WalletEcosystem.Ton)) {
         tasks.push(this.tonBalanceService.fetchBalance(address, tonNetworks));
       }
-      if (ecosystems.has(WalletEcosystem.Solana)) {
+      if (ecosystems.has(WalletEcosystem.Solana) && wants(WalletEcosystem.Solana)) {
         tasks.push(this.solanaBalanceService.fetchBalance({
           address,
           solanaAddress: solanaAddress ?? publicAddress(WalletEcosystem.Solana),
           networks: solanaNetworks,
         }));
       }
-      if (ecosystems.has(WalletEcosystem.Bitcoin)) {
+      if (ecosystems.has(WalletEcosystem.Bitcoin) && wants(WalletEcosystem.Bitcoin)) {
         tasks.push(this.bitcoinBalanceService.fetchBalance({
           address,
           bitcoinAddress: bitcoinAddress ?? publicAddress(WalletEcosystem.Bitcoin, 'mainnet'),
@@ -651,7 +989,7 @@ export default class BalanceService {
           networks: bitcoinNetworks,
         }));
       }
-      if (ecosystems.has(WalletEcosystem.Iroha)) {
+      if (ecosystems.has(WalletEcosystem.Iroha) && wants(WalletEcosystem.Iroha)) {
         tasks.push(this.irohaBalanceService.fetchBalance({
           address,
           irohaAddress: irohaAddress ?? publicAddress(WalletEcosystem.Iroha, 'taira'),
@@ -662,26 +1000,28 @@ export default class BalanceService {
       return (await Promise.all(tasks)).flat();
     }
 
-    if (walletEcosystem === WalletEcosystem.Ton) return this.tonBalanceService.fetchBalance(address, tonNetworks);
+    if (walletEcosystem === WalletEcosystem.Ton)
+      return wants(WalletEcosystem.Ton) ? this.tonBalanceService.fetchBalance(address, tonNetworks) : [];
     if (walletEcosystem === WalletEcosystem.Solana)
-      return this.solanaBalanceService.fetchBalance({ address, solanaAddress, networks: solanaNetworks });
+      return wants(WalletEcosystem.Solana)
+        ? this.solanaBalanceService.fetchBalance({ address, solanaAddress, networks: solanaNetworks })
+        : [];
     if (walletEcosystem === WalletEcosystem.Bitcoin)
-      return this.bitcoinBalanceService.fetchBalance({
-        address,
-        bitcoinAddress,
-        bitcoinTestnetAddress,
-        networks: bitcoinNetworks,
-      });
+      return wants(WalletEcosystem.Bitcoin)
+        ? this.bitcoinBalanceService.fetchBalance({ address, bitcoinAddress, bitcoinTestnetAddress, networks: bitcoinNetworks })
+        : [];
     if (walletEcosystem === WalletEcosystem.Iroha)
-      return this.irohaBalanceService.fetchBalance({ address, irohaAddress, networks: irohaNetworks });
+      return wants(WalletEcosystem.Iroha)
+        ? this.irohaBalanceService.fetchBalance({ address, irohaAddress, networks: irohaNetworks })
+        : [];
 
-    const evmBalances = await this.evmBalanceService.fetchBalance({ networks: evmNetworks, ethereumAddress });
-
-    const substrateBalances = await this.substrateBalanceService.fetchBalance({
-      address,
-      networks: substrateNetworks,
-      ethereumAddress,
-    });
+    // Read together: the slower of the two no longer holds the other back.
+    const [evmBalances, substrateBalances] = await Promise.all([
+      wants(WalletEcosystem.Evm) ? this.evmBalanceService.fetchBalance({ networks: evmNetworks, ethereumAddress, force }) : [],
+      wants(WalletEcosystem.Substrate)
+        ? this.substrateBalanceService.fetchBalance({ address, networks: substrateNetworks, ethereumAddress })
+        : [],
+    ]);
 
     return [...substrateBalances, ...evmBalances];
   }

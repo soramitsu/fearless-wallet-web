@@ -11,9 +11,9 @@ import { isTestnetNetwork } from '@/portfolio/zeroRule';
 export const PORTFOLIO_FIRST_LOAD_TIMEOUT_MS = 20_000;
 
 /**
- * - `loading`: nothing the wallet holds has arrived yet and its networks are still answering. An empty list or a
- *   $0.00 total would be a guess, so neither is shown.
- * - `syncing`: holdings are shown, or the wait is over, while some networks have not answered yet.
+ * - `loading`: nothing the wallet holds has arrived yet, nothing was saved from an earlier visit, and its networks are
+ *   still answering. An empty list or a $0.00 total would be a guess, so neither is shown.
+ * - `syncing`: holdings or saved balances are shown, or the wait is over, while some networks have not answered yet.
  * - `settled`: every network of the wallet that is being loaded has answered (or failed) at least once.
  */
 export type PortfolioLoadState = 'loading' | 'syncing' | 'settled';
@@ -22,6 +22,18 @@ export interface PortfolioLoadStatus {
   state: PortfolioLoadState;
   /** Networks of this wallet that are being loaded and have not answered once. */
   pendingCount: number;
+  /** Their names, in the registry's order. */
+  pendingNetworks: string[];
+  /**
+   * Networks of this wallet that have answered at least once, now or in an earlier visit. With `pendingCount` it is
+   * how many networks the wallet reads: the sync dial's lit share (brand kit v4).
+   */
+  answeredCount: number;
+  /**
+   * Whether the first-load wait is still running. Within it a network that has not answered is still being checked;
+   * after it, one that has not answered is not responding.
+   */
+  waiting: boolean;
 }
 
 export interface PortfolioLoadInput {
@@ -32,7 +44,15 @@ export interface PortfolioLoadInput {
   isTestnet?: (network: NetworkJson) => boolean;
   /** The first-load wait (`PORTFOLIO_FIRST_LOAD_TIMEOUT_MS` since the popup opened or the wallet changed) is over. */
   timedOut?: boolean;
+  /**
+   * When this load started. A network that answered before it answered in an earlier visit: the wallet has a saved
+   * picture, which is shown while the networks answer again instead of a loader.
+   */
+  startedAt?: number;
 }
+
+/** Balance times are seconds from some providers and milliseconds from others. */
+const toMilliseconds = (timestamp: number): number => (timestamp < 10_000_000_000 ? timestamp * 1000 : timestamp);
 
 const hasAmount = (value: unknown): boolean => {
   try {
@@ -58,11 +78,13 @@ export function getPortfolioLoadStatus({
   walletScope = () => true,
   isTestnet = (network) => isTestnetNetwork(network),
   timedOut = false,
+  startedAt,
 }: PortfolioLoadInput): PortfolioLoadStatus {
   const networkByName = new Map(networks.map((network) => [network.name.toLowerCase(), network]));
   const answered = new Set<string>();
   const waiting = new Set<string>();
   let hasHoldings = false;
+  let hasSavedPicture = false;
 
   groups.forEach(({ balances }) =>
     balances.forEach((balance) => {
@@ -71,6 +93,9 @@ export function getPortfolioLoadStatus({
 
       hasHoldings ||= hasAmount(balance.total ?? balance.free ?? balance.transferable);
 
+      if (startedAt !== undefined && balance.timestamp !== undefined && toMilliseconds(balance.timestamp) < startedAt) {
+        hasSavedPicture = true;
+      }
       if (balance.state !== APIItemState.PENDING || balance.timestamp !== undefined) answered.add(network.name);
       else if (
         walletScope(network) &&
@@ -82,11 +107,14 @@ export function getPortfolioLoadStatus({
     })
   );
 
-  const pendingCount = [...waiting].filter((name) => !answered.has(name)).length;
+  const pendingNetworks = networks.map(({ name }) => name).filter((name) => waiting.has(name) && !answered.has(name));
+  const pendingCount = pendingNetworks.length;
+  const answeredCount = networks.filter((network) => answered.has(network.name) && walletScope(network) && network.active !== false).length;
   // Before the first balance message, or before the network list, nothing is known either way.
   const unknown = groups.length === 0 || networks.length === 0;
+  const status = { pendingCount, pendingNetworks, answeredCount, waiting: !timedOut };
 
-  if (!hasHoldings && !timedOut && (unknown || pendingCount > 0)) return { state: 'loading', pendingCount };
+  if (!hasHoldings && !hasSavedPicture && !timedOut && (unknown || pendingCount > 0)) return { state: 'loading', ...status };
 
-  return { state: pendingCount > 0 ? 'syncing' : 'settled', pendingCount };
+  return { state: pendingCount > 0 ? 'syncing' : 'settled', ...status };
 }

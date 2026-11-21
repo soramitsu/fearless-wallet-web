@@ -138,6 +138,8 @@ export async function makeTransfer({
     {
       isMobile,
       apiProps,
+      // Signing refuses a node whose genesis is not this network's.
+      chainId: state.networkService.getNetworkJson(networkKey)?.chainId,
       callback,
       extrinsic,
       txState,

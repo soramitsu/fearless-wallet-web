@@ -1,4 +1,5 @@
 import type { ApiInterfaceEvents } from '@polkadot/api/types';
+import type { HexString } from '@polkadot/util/types';
 import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import type { SoraFees } from '@/interfaces';
 import type State from '@extension-base/background/handlers/State';
@@ -12,11 +13,16 @@ type Connection = ReturnType<typeof createConnection>;
 export class SoraApiHandler {
   private static current?: { connection: Connection; listeners: Listeners };
 
-  static initApi(currentProvider: string, eventListeners: Listeners) {
+  /**
+   * `chainId` is the registry chainId of the SORA network: SORA signs only through a node of that genesis. `metadata` is
+   * the ApiPromise option the saved runtime is put in (SubstrateApiHandler.supplyCachedMetadata).
+   */
+  static initApi(currentProvider: string, eventListeners: Listeners, chainId?: string, metadata?: Record<string, HexString>) {
     const previous = this.current;
-    const connection = createConnection(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });
+    const connection = createConnection(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners, metadata });
     this.current = { connection, listeners: eventListeners };
     apiSora.api = connection.api;
+    apiSora.chainId = chainId;
     apiSora.provider = connection.provider;
     // Invalidate old quotes/fees while the replacement node initializes.
     apiSora.dex = { baseAssetsIds: [], ids: new Map() };
@@ -27,6 +33,17 @@ export class SoraApiHandler {
       void oldApi.disconnect().catch((error) => console.warn('Previous SORA connection could not close', error));
     }
     void connection.api.isReadyOrError.catch((error) => console.warn('SORA connection not ready', error));
+  }
+
+  /** Closes the SORA connection as the wallet goes quiet. The next initApi opens a new one. */
+  static disconnect() {
+    const previous = this.current;
+
+    this.current = undefined;
+    if (!previous) return;
+    const oldApi = previous.connection.api;
+    previous.listeners.forEach(([event, callback]) => oldApi.off(event, callback));
+    void oldApi.disconnect().catch((error) => console.warn('SORA connection could not close', error));
   }
 
   static getApiInstance() {

@@ -1,4 +1,5 @@
-.fearless-notify {
+// Element Plus loads after this file and sets its own white overlay colour on .el-notification: the two classes win.
+.el-notification.fearless-notify {
   // position: relative;
   background-color: palette(#1d1d1d, var(--fw-raised-2));
   border-color: palette($default-background-color, var(--fw-stroke-strong));

@@ -4,6 +4,7 @@ import Foundation
 import Security
 import CryptoKit
 import Darwin
+import LocalAuthentication
 
 let itemID = "nhlnehondigmgckngjomcpcefcdplmgc"
 let keyTag = "jp.co.soramitsu.fearless.chrome-upload.\(itemID).v1"
@@ -60,6 +61,28 @@ func spki(_ key: SecKey) throws -> Data {
 
 func fingerprint(_ bytes: Data) -> String {
     SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
+}
+
+// The Keychain lets this helper use the key without asking, so any process running as this user could have it
+// sign a package. Every upload signature therefore needs the owner's Touch ID or login password, and the dialog
+// names the package. With nobody to answer (locked screen, no login session), signing fails.
+func requireOwner(_ reason: String) throws {
+    let context = LAContext()
+    var unavailable: NSError?
+    guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &unavailable) else {
+        throw Failure("Owner confirmation unavailable: \(unavailable?.localizedDescription ?? "no authentication method")")
+    }
+    let finished = DispatchSemaphore(value: 0)
+    var approved = false
+    var refusal: Error?
+    context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, error in
+        approved = success
+        refusal = error
+        finished.signal()
+    }
+    finished.wait()
+    context.invalidate()
+    guard approved else { throw Failure("Owner confirmation refused: \(refusal?.localizedDescription ?? "cancelled")") }
 }
 
 func sign(_ input: Data, _ key: SecKey) throws -> Data {
@@ -259,6 +282,9 @@ do {
               input[expectedPrefix.count..<expectedPrefix.count + 4] == Data([0x50, 0x4b, 3, 4]) else {
             throw Failure("Only CRX3 payloads for this upload key can be signed")
         }
+        // The archive's SHA-256 is the ZIP hash in the release records, so the owner can match what they approve.
+        let archive = fingerprint(input.suffix(from: input.startIndex + expectedPrefix.count))
+        try requireOwner("sign Fearless Wallet ZIP \(archive.prefix(16))… for the Chrome Web Store")
         try writeExclusive(sign(input, key), URL(fileURLWithPath: arguments[2]))
         print("CRX3 payload signed with local Keychain key; signature verified")
     default: throw Failure("Usage: chrome-upload-keychain self-test|initialize|verify-backup|sign INPUT OUTPUT")

@@ -13,6 +13,7 @@ import type {
   HistoryElement,
   HistoryServiceType,
   NetworkName,
+  EthereumHistoryData,
   EthereumHistoryResponse,
   EthereumTokenHistoryData,
   SoraHistoryElement,
@@ -38,6 +39,9 @@ type BitcoinParsedOutput = {
 };
 
 type IrohaNetworkKind = 'taira' | 'nexus';
+
+// txlist says whether a transaction failed; tokentx lists only transfers that happened and has neither field.
+type EthereumHistoryRow = EthereumTokenHistoryData & Partial<Pick<EthereumHistoryData, 'isError' | 'txreceipt_status'>>;
 
 const BITCOIN_ESPLORA_HISTORY_PAGE_SIZE = 25;
 const BITCOIN_HISTORY_ADDRESS_CONCURRENCY = 8;
@@ -122,7 +126,7 @@ async function fetchEthereumHistory(url: string, address: string, contractAddres
     params.apikey = apikey;
   }
 
-  const res = await axios.get<EthereumHistoryResponse<EthereumTokenHistoryData>>(url, {
+  const res = await axios.get<EthereumHistoryResponse<EthereumHistoryRow>>(url, {
     ...dataApiRequestConfig(url),
     params,
     signal,
@@ -134,7 +138,8 @@ async function fetchEthereumHistory(url: string, address: string, contractAddres
     return [];
   }
 
-  return res.data.result.map(({ timeStamp, value: amount, gasUsed: fee, gasPrice, from, to, hash }, index) => {
+  return res.data.result.map((row, index) => {
+    const { timeStamp, value: amount, gasUsed: fee, gasPrice, from, to, hash, isError, txreceipt_status } = row;
     const calcFee = new FPNumber(formatUnits(fee, 'gwei'))
       .mul(new FPNumber(formatUnits(gasPrice, 'gwei')))
       .toCodecString();
@@ -143,7 +148,8 @@ async function fetchEthereumHistory(url: string, address: string, contractAddres
       address,
       id: String(index),
       timestamp: (+timeStamp * SEC1).toString(),
-      success: true,
+      // A transaction that reverted is listed too: it paid its fee and moved nothing.
+      success: (isError ?? '0') === '0' && txreceipt_status !== '0',
       blockHash: hash,
       transfer: {
         amount,

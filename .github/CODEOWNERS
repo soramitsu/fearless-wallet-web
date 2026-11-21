@@ -9,6 +9,12 @@
 /docs/rollback-checklist.md @soramitsu/fearless @soramitsu/devops-team
 /scripts/audit-public-artifacts.sh @soramitsu/fearless @soramitsu/devops-team @soramitsu/security
 
+# Installed builds fetch the production chain list and capability config from master with no release, so these
+# files are a trust root: the RPC node of every network and the capability vetoes. GitHub accepts a review from any
+# one listed owner, so the security team is the only owner here.
+/remote-config/production/chains/ @soramitsu/security
+/remote-config/production/appConfigs/ @soramitsu/security
+
 /src/ @soramitsu/fearless @soramitsu/frontend @soramitsu/webdev
 /src/consts/ @soramitsu/fearless @soramitsu/frontend @soramitsu/security
 /src/extension/ @soramitsu/fearless @soramitsu/frontend @soramitsu/webdev @soramitsu/security

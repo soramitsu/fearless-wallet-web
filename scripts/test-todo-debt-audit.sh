@@ -48,6 +48,9 @@ pass_root="$tmp_dir/pass"
 make_fixture_root "$pass_root"
 printf '%s\n' 'export const existing = true; // TODO existing baseline marker' > "$pass_root/src/existing.ts"
 printf '%s\t%s\n' 'src/existing.ts' 'export const existing = true; // TODO existing baseline marker' > "$pass_root/config/todo-debt-baseline.tsv"
+mkdir -p "$pass_root/output/archived-release" "$pass_root/tools/release-readiness/output"
+printf '%s\n' 'throw new Error("TODO from a historical dependency bundle");' > "$pass_root/output/archived-release/service-worker.js"
+printf '%s\n' '// FIXME generated evidence fixture' > "$pass_root/tools/release-readiness/output/evidence.js"
 run_audit "$pass_root" >/dev/null
 TODO_AUDIT_FORCE_GREP=1 run_audit "$pass_root" >/dev/null
 
@@ -57,6 +60,7 @@ printf '%s\n' 'export const existing = true; // TODO existing baseline marker' >
 printf '%s\n' 'export const next = true; // FIXME new marker must fail' > "$new_root/src/new.ts"
 printf '%s\t%s\n' 'src/existing.ts' 'export const existing = true; // TODO existing baseline marker' > "$new_root/config/todo-debt-baseline.tsv"
 expect_failure "new marker fixture" "$new_root" "New TODO/FIXME/STOPSHIP markers"
+TODO_AUDIT_FORCE_GREP=1 expect_failure "fallback new marker fixture" "$new_root" "New TODO/FIXME/STOPSHIP markers"
 
 stale_root="$tmp_dir/stale-baseline"
 make_fixture_root "$stale_root"
@@ -78,5 +82,6 @@ make_fixture_root "$crash_root"
 printf '%s\n' 'export function crash() { throw new Error("TODO wire implementation"); }' > "$crash_root/src/crash.ts"
 printf '%s\t%s\n' 'src/crash.ts' 'export function crash() { throw new Error("TODO wire implementation"); }' > "$crash_root/config/todo-debt-baseline.tsv"
 expect_failure "crashing placeholder fixture" "$crash_root" "Crashing TODO/FIXME placeholders are forbidden"
+TODO_AUDIT_FORCE_GREP=1 expect_failure "fallback crashing placeholder fixture" "$crash_root" "Crashing TODO/FIXME placeholders are forbidden"
 
 echo "[todo-audit-test] all tests passed"

@@ -55,7 +55,7 @@ const section = (overrides: Partial<NetworkSection> = {}): NetworkSection => ({
   subtotal: '1234.5', hasPricedAssets: true, isTestnet: false, latestTimestamp: Date.now(), stale: false, coverage: 'catalogOnly',
   assets: [asset], detectedAssets: [], ...overrides,
 });
-const render = (network = section(), props: { manage?: boolean; forceExpanded?: boolean; search?: string } = {}) => mount(PortfolioNetworkSection, {
+const render = (network = section(), props: { forceExpanded?: boolean; search?: string } = {}) => mount(PortfolioNetworkSection, {
   props: { section: network, ...props },
   global: { stubs: { ExternalLogo: true, Icon: true, Switcher: true } },
 });
@@ -117,10 +117,10 @@ describe('Portfolio network header', () => {
     await runNavigationAndReview(wrapperAgain);
   });
 
-  it('shows hidden rows in Manage with a badge, and says when the hide came from the previous version', () => {
+  it('shows a hidden row a search found with a badge, and says when the hide came from the previous version', () => {
     const hidden: PortfolioAsset = { ...asset, key: 'evm:1:usdt', symbol: 'USDT', hidden: true, preference: 'hidden', preferenceSource: 'explicit' };
     const legacy: PortfolioAsset = { ...asset, key: 'evm:1:dai', symbol: 'DAI', hidden: true, preference: 'hidden', preferenceSource: 'legacy305' };
-    const wrapper = render(section({ assets: [asset, hidden, legacy] }), { manage: true });
+    const wrapper = render(section({ assets: [asset, hidden, legacy] }), { search: 'usdt' });
     const rows = wrapper.findAll('.asset-row');
 
     expect(rows.map((row) => row.find('[data-testid="hiddenBadge"]').exists())).toEqual([false, true, true]);
@@ -171,18 +171,16 @@ describe('Portfolio network header', () => {
   });
 
   it.each([
-    ['ETH', false, true],
-    ['', false, false],
-    ['ETH', true, false],
-  ])('only restores a hidden asset when opening a search result (search %s, manage %s)', async (search, manage, restores) => {
+    ['ETH', true],
+    ['', false],
+  ])('only restores a hidden asset when opening a search result (search %s)', async (search, restores) => {
     const hidden: PortfolioAsset = { ...asset, hidden: true, preference: 'hidden' };
-    const wrapper = render(section({ assets: [hidden] }), { search, manage });
+    const wrapper = render(section({ assets: [hidden] }), { search });
     expect(mocks.setAssetPreference).not.toHaveBeenCalled();
     await wrapper.get('.asset-row').trigger('click');
     expect(mocks.setAssetPreference).toHaveBeenCalledTimes(restores ? 1 : 0);
     if (restores) expect(mocks.setAssetPreference).toHaveBeenCalledWith({ key: asset.key, preference: 'auto' });
-    expect(mocks.push).toHaveBeenCalledTimes(manage ? 0 : 1);
-    if (!manage) expect(mocks.push).toHaveBeenCalledWith({ name: 'AssetHistory', params: { assetId: 'eth', selectedNetwork: 'Ethereum' } });
+    expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'AssetHistory', params: { assetId: 'eth', selectedNetwork: 'Ethereum' } });
     wrapper.unmount();
   });
 });

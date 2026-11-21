@@ -1,5 +1,5 @@
 import type { SignerPayloadJSON } from '@polkadot/types/types';
-import type { EngineTypes, SignClientTypes, SessionTypes } from '@walletconnect/types';
+import type { WcApproveParams, WcSession, WcSessionProposalEvent, WcSessionRequestEvent } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type { EvmSendTransactionParams } from '@extension-base/api/evm/types';
 import type { EvmSigningContext } from '@extension-base/services/request-service/types';
 import type { Resolver } from '@extension-base/background/types/types';
@@ -12,21 +12,21 @@ type BaseWalletConnectSessionRequest = {
 };
 
 export interface WalletConnectSessionRequest extends BaseWalletConnectSessionRequest {
-  request: SignClientTypes.EventArguments['session_proposal'];
+  request: WcSessionProposalEvent;
   isPasswordRequired?: boolean;
 }
 
-export type WalletConnectSessions = SessionTypes.Struct[];
+export type WalletConnectSessions = WcSession[];
 
 export interface WalletConnectNotSupportRequest extends BaseWalletConnectSessionRequest {
-  request: SignClientTypes.EventArguments['session_request'];
+  request: WcSessionRequestEvent;
 }
 export type WalletConnectSigningContext = Omit<EvmSigningContext, 'network' | 'authorizationRevision'> & {
   session: { topic: string; peerPublicKey: string; origin: string; revision: number };
   network: EvmSigningContext['network'] & { provider?: string };
 };
 
-export type WalletConnectTransactionRequest = SignClientTypes.EventArguments['session_request'] & {
+export type WalletConnectTransactionRequest = WcSessionRequestEvent & {
   // Internal approval identity; a dApp's topic/request ID may be reused later.
   approvalId: string;
   // Older or unqualified queued data may be displayed, but cannot be approved.
@@ -68,7 +68,7 @@ export interface RequestRejectWalletConnectNotSupport {
 export interface RequestApproveWalletConnectNotSupport {
   id: string;
 }
-export type ResultApproveWalletConnectSession = EngineTypes.ApproveParams;
+export type ResultApproveWalletConnectSession = WcApproveParams;
 export interface RequestWalletConnectSession extends WalletConnectSessionRequest, Resolver<void> {}
 export interface RequestWalletConnectNotSupport extends WalletConnectNotSupportRequest, Resolver<void> {}
 
@@ -128,7 +128,7 @@ export type WalletConnectParamMap = {
 
 export type AppSessionInitResponse = {
   uri?: string;
-  approval: () => Promise<SessionTypes.Struct>;
+  approval: () => Promise<WcSession>;
 };
 
 export type PairingSubjectType = {

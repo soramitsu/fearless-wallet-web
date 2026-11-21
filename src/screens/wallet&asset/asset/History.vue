@@ -71,9 +71,15 @@ export default defineComponent({ name: 'History', components: { HistoryItem } ,
       filterHistoryValue: 'all',
       showLoader: false,
       refreshTimeout: 30000,
+      historyRequest: 0,
+      historyTimer: undefined as ReturnType<typeof setTimeout> | undefined,
+      disposed: false,
     };
   },
   computed: {
+    historyTarget() {
+      return `${this.selectedNetwork}:${this.assetId}:${this.accountsStore.selectedWallet.address}:${this.isMainNetwork}`;
+    },
     historyDropdownOption() {
       const options = [
             { label: 'assets.all', value: 'all' },
@@ -113,7 +119,7 @@ export default defineComponent({ name: 'History', components: { HistoryItem } ,
 
           const network = this.networksStore.getNetwork(this.selectedNetwork);
 
-          return BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, network.addressPrefix);
+          return network ? BaseApi.encodeAddress(this.accountsStore.selectedWallet.address, network.addressPrefix) : '';
     },
     historyTimestamp() {
       if (!this.history) return Number.MIN_VALUE;
@@ -157,9 +163,8 @@ export default defineComponent({ name: 'History', components: { HistoryItem } ,
     isMainNetwork() {
       if (this.selectedNetwork === '' || this.accountsStore.balances.length === 0) return false;
 
-          const { groupId } = getUtilityAsset(this.accountsStore.balances, this.selectedNetwork);
-
-          return this.assetId === groupId;
+          const utilityAsset = getUtilityAsset(this.accountsStore.balances, this.selectedNetwork);
+          return Boolean(utilityAsset && this.assetId === utilityAsset.groupId);
     },
     isEthereumNativeNetwork() {
       return BaseApi.isEthereumNativeNetwork(this.selectedNetwork);
@@ -180,29 +185,33 @@ export default defineComponent({ name: 'History', components: { HistoryItem } ,
     },
   },
   watch: {
-    "selectedNetwork": 'watchSelectedNetwork',
-    "selectedWallet": 'watchSelectedNetwork',
-    "isMainNetwork": 'watchSelectedNetwork',
+    historyTarget: 'watchSelectedNetwork',
   },
   mounted() {
-    setTimeout(() => this.loadHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
+    this.historyTimer = setTimeout(() => this.loadHistory(), 300);
+  },
+  beforeUnmount() {
+    this.disposed = true;
+    this.historyRequest += 1;
+    clearTimeout(this.historyTimer);
   },
   methods: {
     async watchSelectedNetwork() {
       this.loadHistory();
     },
     async loadHistory() {
-      if (this.historyTimestamp + this.refreshTimeout > Date.now()) return false;
-
-          if (!this.isSora && !this.isTonWallet && !this.isEthereumNativeNetwork && !this.isMainNetwork) return;
-
-          if (this.historyItems.length === 0) this.showLoader = true;
-
-          const options = { networkName: this.selectedNetwork, assetId: this.assetId };
-
-          this.networksStore.fetchHistory(options).finally(() => {
-            this.showLoader = false;
-          });
+      const request = ++this.historyRequest;
+      this.showLoader = false;
+      if (this.disposed || this.historyTimestamp + this.refreshTimeout > Date.now()) return false;
+      if (!this.isSora && !this.isTonWallet && !this.isEthereumNativeNetwork && !this.isMainNetwork) return;
+      if (this.historyItems.length === 0) this.showLoader = true;
+      try {
+        await this.networksStore.fetchHistory({ networkName: this.selectedNetwork, assetId: this.assetId });
+      } catch {
+        // Keep cached rows visible and allow the next refresh to retry.
+      } finally {
+        if (!this.disposed && request === this.historyRequest) this.showLoader = false;
+      }
     },
     filterHistoryValueUpdate(name: FilterHistory) {
       this.filterHistoryValue = name;

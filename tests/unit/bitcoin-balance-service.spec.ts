@@ -591,3 +591,27 @@ describe('BitcoinBalanceService', () => {
     expect(clientFactory).not.toHaveBeenCalled();
   });
 });
+
+describe('BitcoinBalanceService funds probe (Universal Wallet password)', () => {
+  it('reads every discovered address, says empty only after a full read, and unknown on any failure', async () => {
+    const mainnet = bitcoinNetwork('Bitcoin', 'bitcoin:mainnet');
+    const { state, updateBalanceStore } = createState([mainnet]);
+    const change = deriveBitcoinReceiveAddress({ mnemonicOrSeed: MNEMONIC, path: getBitcoinReceivePath('mainnet', 1, 1) });
+    const client = {
+      getBalance: vi.fn(),
+      getAddress: vi.fn(async (address: string) => addressStats(address, address === change ? 1 : 0, address === change ? 4_200 : 0)),
+    };
+    const service = new BitcoinBalanceService(state, vi.fn(() => client), { gapLimit: 2, maxLookahead: 20 });
+
+    // Funds on a change address count: the probe walks both chains as the balance does.
+    await expect(service.probeAccountFunds(MNEMONIC, 'mainnet')).resolves.toBe('funded');
+    client.getAddress.mockImplementation(async (address: string) => addressStats(address));
+    await expect(service.probeAccountFunds(MNEMONIC, 'mainnet')).resolves.toBe('empty');
+    client.getAddress.mockRejectedValue(new Error('esplora unavailable'));
+    await expect(service.probeAccountFunds(MNEMONIC, 'mainnet')).resolves.toBe('unknown');
+    // No network configured for the asked chain: nothing is guessed.
+    await expect(service.probeAccountFunds(MNEMONIC, 'testnet')).resolves.toBe('unknown');
+    expect(updateBalanceStore).not.toHaveBeenCalled();
+    expect(client.getBalance).not.toHaveBeenCalled();
+  });
+});

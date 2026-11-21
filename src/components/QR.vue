@@ -81,11 +81,11 @@ watch(
     border-radius: 24px;
   }
 
+  // The round Yatagarasu badge, small enough for the code's error correction to read straight through it.
   .logo-qr {
     position: absolute;
-    color: $pink-color;
-    width: 65px;
-    height: 30px;
+    width: 44px;
+    height: 44px;
   }
 }
 </style>

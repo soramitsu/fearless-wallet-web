@@ -3,6 +3,7 @@ import { sha256 } from '@noble/hashes/sha256';
 import { base64Decode, base64Encode } from '@polkadot/util-crypto';
 import { BehaviorSubject } from 'rxjs';
 import { transformIrohaAccounts } from '@extension-base/background/helpers/accounts';
+import { exportUniversalWalletSecret } from '@extension-base/services/keyring-service/UniversalWalletPassword';
 import {
   buildLegacyIrohaConnectApprovalPreimage,
   buildLegacyIrohaConnectWebSocket,
@@ -620,13 +621,15 @@ export class IrohaConnectService {
     const meta = keyringAccount.meta as FWKeyringMeta;
     if (IS_EXTENSION && isRecoveryOnlyWallet(meta)) throw new Error(WALLET_RECOVERY_ONLY_ERROR);
     if (!meta.walletEcosystem) throw new Error('The selected account cannot export Iroha signing material.');
-    const { seed } = this.state.keyringService.exportMnemonic({
-      address: keyringAccount.address,
-      walletEcosystem: meta.walletEcosystem,
-    });
+    const { seed, passphrase } = exportUniversalWalletSecret(
+      this.state.keyringService,
+      { address: keyringAccount.address, walletEcosystem: meta.walletEcosystem },
+      'iroha',
+      meta
+    );
     if (!seed) throw new Error('The selected account cannot be unlocked for signing.');
 
-    const derived = deriveIrohaSigningKey({ mnemonic: seed });
+    const derived = deriveIrohaSigningKey({ mnemonic: seed, passphrase });
     try {
       const publicKeyHex = normalizePublicKey(derived.publicKeyHex);
       if (publicKeyHex !== expectedPublicKey || encodeIrohaI105Address(publicKeyHex, network) !== accountId) {

@@ -144,6 +144,7 @@ const createTonState = (balanceMap: Record<string, TokenGroup[]> = {}) => {
     },
     networkService: {
       networksGithub: [tonNetwork],
+      networkValues: [tonNetwork],
     },
     pricesService: {
       fiatSymbol: 'USD',

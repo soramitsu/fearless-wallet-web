@@ -16,13 +16,13 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import type { SessionTypes } from '@walletconnect/types';
+import type { WcSession } from '@extension-base/services/wallet-connect-service/protocol/types';
 import { stripUrl } from '@/extension/background/extension-base/src/background/helpers';
 import { Components } from '@/router/routes';
 import Favicon from '@/components/Favicon.vue';
 
 type Props = {
-  request: SessionTypes.Struct;
+  request: WcSession;
   to?: {
     name: typeof Components;
     params: Record<string, string>;

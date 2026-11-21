@@ -34,6 +34,7 @@ import { getNftSubscribe } from '@/extension/messaging/nfts';
 import { getPopupIds } from '@/extension/messaging/popup';
 import { markAccountsReady } from '@/bootstrap/accountsReady';
 import { watchWalletLock } from '@/bootstrap/walletLock';
+import { clearCopiedSecret } from '@/util/clipboardSecret';
 
 export default defineComponent({
   name: 'App',
@@ -65,6 +66,8 @@ export default defineComponent({
     },
   },
   async created() {
+    // A phrase or key copied before the wallet last closed leaves the clipboard now (src/util/clipboardSecret.ts).
+    void clearCopiedSecret();
     if (!IS_EXTENSION && (await getAccessStatus()).storageRecoveryOnly) {
       // The recovery screen reads its own inventory; normal startup requests can
       // mutate selection or settings and are deliberately unavailable here.
@@ -141,7 +144,7 @@ export default defineComponent({
 
       this.networksStore.setNetworks({ networks: Object.values(nets) });
 
-      await subscribeSelectedNetworks((network) => this.accountsStore.setSelectedNetwork(network));
+      await subscribeSelectedNetworks((network) => this.accountsStore.seedSelectedNetwork(network));
     },
     async setupPrice() {
       const prices = await subscribePrice((priceUpdates) => {
@@ -171,7 +174,7 @@ export default defineComponent({
 
       if (selectedAccount) {
         this.accountsStore.setSelectedWallet(selectedAccount);
-        this.accountsStore.setSelectedNetwork(selectedAccount?.network ?? ALL_NETWORKS);
+        this.accountsStore.seedSelectedNetwork(selectedAccount?.network ?? ALL_NETWORKS);
       }
       markAccountsReady();
     },

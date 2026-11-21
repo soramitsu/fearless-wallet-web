@@ -53,7 +53,9 @@ export default defineComponent({ name: 'Tooltip' ,
             delay: [this.delay, 0],
             duration: 0,
             maxWidth: this.maxWidth,
-            allowHTML: true,
+            // Text only: tooltips show chain data such as a validator's self-written identity, which must never
+            // become markup (a form or a style) inside the wallet's own page.
+            allowHTML: false,
             onShow(instance) {
               if (this.trigger === 'click')
                 setTimeout(() => {
@@ -82,5 +84,10 @@ export default defineComponent({ name: 'Tooltip' ,
     border-radius: 8px;
     font: 400 0.8125rem/1.5 var(--fw-font-body);
   }
+}
+
+// Multi-line tooltips (staking unbond details) break at "\n".
+.tippy-content {
+  white-space: pre-line;
 }
 </style>

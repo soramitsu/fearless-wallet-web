@@ -1,3 +1,4 @@
+import type { NetworkJson } from '@extension-base/types';
 import type { ReviewedRuntimeCall } from '@/cross-chain/reviewedRoutes';
 
 /**
@@ -12,6 +13,10 @@ import type { ReviewedRuntimeCall } from '@/cross-chain/reviewedRoutes';
  * Read from the live chains on 2026-10-24; `tests/fixtures/contracts/cross-chain-runtime-calls-v1.json` records the
  * same metadata facts. Chains whose routes are retired keep their entry so the retained builders stay testable;
  * their routes are still refused by the route table.
+ *
+ * The fee asset is the one each runtime charges its transaction fee in, with the registry id and precision of the
+ * production registry on 2026-10-29. The quote converts the live fee with this precision and checks it against this
+ * asset's balance, so the remote registry may confirm it but cannot choose it.
  */
 
 export type ReviewedRuntimeCallIndex = Readonly<{
@@ -28,6 +33,8 @@ export type ReviewedRuntime = Readonly<{
   /** Inclusive range of reviewed spec versions. */
   specVersions: Readonly<{ min: number; max: number }>;
   calls: readonly ReviewedRuntimeCallIndex[];
+  /** The asset transaction fees are paid in: its registry id, ticker and precision. */
+  feeAsset: Readonly<{ id: string; symbol: string; precision: number }>;
 }>;
 
 const reviewedRuntime = (runtime: ReviewedRuntime): ReviewedRuntime =>
@@ -35,6 +42,7 @@ const reviewedRuntime = (runtime: ReviewedRuntime): ReviewedRuntime =>
     ...runtime,
     specVersions: Object.freeze({ ...runtime.specVersions }),
     calls: Object.freeze(runtime.calls.map((call) => Object.freeze({ ...call }))),
+    feeAsset: Object.freeze({ ...runtime.feeAsset }),
   });
 
 export const REVIEWED_RUNTIMES: readonly ReviewedRuntime[] = Object.freeze([
@@ -44,6 +52,7 @@ export const REVIEWED_RUNTIMES: readonly ReviewedRuntime[] = Object.freeze([
     specName: 'polkadot',
     specVersions: { min: 2005000, max: 2005000 },
     calls: [{ pallet: 'xcmPallet', call: 'limitedTeleportAssets', palletIndex: 99, callIndex: 9 }],
+    feeAsset: { id: '887a17c7-1370-4de0-97dd-5422e294fa75', symbol: 'DOT', precision: 10 },
   }),
   reviewedRuntime({
     name: 'Kusama',
@@ -51,6 +60,7 @@ export const REVIEWED_RUNTIMES: readonly ReviewedRuntime[] = Object.freeze([
     specName: 'kusama',
     specVersions: { min: 2003002, max: 2003002 },
     calls: [{ pallet: 'xcmPallet', call: 'limitedTeleportAssets', palletIndex: 99, callIndex: 9 }],
+    feeAsset: { id: '1e0c2ec6-935f-49bd-a854-5e12ee6c9f1b', symbol: 'KSM', precision: 12 },
   }),
   reviewedRuntime({
     name: 'Liberland',
@@ -58,6 +68,7 @@ export const REVIEWED_RUNTIMES: readonly ReviewedRuntime[] = Object.freeze([
     specName: 'Liberland',
     specVersions: { min: 34, max: 34 },
     calls: [{ pallet: 'soraBridgeApp', call: 'burn', palletIndex: 81, callIndex: 3 }],
+    feeAsset: { id: 'a6b83d39-a488-4b34-8352-280705a792ea', symbol: 'LLD', precision: 12 },
   }),
   reviewedRuntime({
     name: 'SORA Mainnet',
@@ -65,6 +76,7 @@ export const REVIEWED_RUNTIMES: readonly ReviewedRuntime[] = Object.freeze([
     specName: 'sora-substrate',
     specVersions: { min: 134, max: 134 },
     calls: [{ pallet: 'bridgeProxy', call: 'burn', palletIndex: 103, callIndex: 0 }],
+    feeAsset: { id: 'b774c386-5cce-454a-a845-1ec0381538ec', symbol: 'XOR', precision: 18 },
   }),
   reviewedRuntime({
     name: 'Acala',
@@ -72,6 +84,7 @@ export const REVIEWED_RUNTIMES: readonly ReviewedRuntime[] = Object.freeze([
     specName: 'acala',
     specVersions: { min: 2370, max: 2370 },
     calls: [{ pallet: 'xTokens', call: 'transfer', palletIndex: 54, callIndex: 0 }],
+    feeAsset: { id: 'c801d6c1-3edf-41a9-9aea-da705eab249b', symbol: 'ACA', precision: 12 },
   }),
   reviewedRuntime({
     name: 'Astar',
@@ -79,6 +92,8 @@ export const REVIEWED_RUNTIMES: readonly ReviewedRuntime[] = Object.freeze([
     specName: 'astar',
     specVersions: { min: 2500, max: 2500 },
     calls: [{ pallet: 'polkadotXcm', call: 'reserveTransferAssets', palletIndex: 51, callIndex: 2 }],
+    // The registry id of ASTR is one character short of a UUID; it is copied as is so the registry must agree exactly.
+    feeAsset: { id: '5ab1e8d-81ed-4130-9d29-55b549cc6bab', symbol: 'ASTR', precision: 18 },
   }),
 ]);
 
@@ -130,4 +145,31 @@ export function assertReviewedCallIndex(
   ) {
     throw new Error('cross_chain_runtime_call_index_mismatch');
   }
+}
+
+/**
+ * The fee asset of a reviewed runtime, confirmed by the registry row of its network: the wallet reads a network's first
+ * asset as its fee asset, so that row must belong to the same chain and name the pinned asset with the pinned
+ * precision. A missing, reordered or edited registry fails closed instead of misstating the fee or checking it
+ * against another balance.
+ */
+export function assertReviewedFeeAsset(
+  chainId: string,
+  network: Pick<NetworkJson, 'chainId' | 'assets'> | undefined,
+  runtimes: readonly ReviewedRuntime[] = REVIEWED_RUNTIMES
+): ReviewedRuntime['feeAsset'] {
+  const runtime = runtimes.find((candidate) => candidate.chainId === chainId);
+  const registryAsset = network && String(network.chainId) === chainId ? network.assets?.[0] : undefined;
+
+  if (
+    !runtime ||
+    !registryAsset ||
+    registryAsset.id !== runtime.feeAsset.id ||
+    registryAsset.precision !== runtime.feeAsset.precision ||
+    String(registryAsset.symbol).toUpperCase() !== runtime.feeAsset.symbol
+  ) {
+    throw new Error('cross_chain_fee_asset_unavailable');
+  }
+
+  return runtime.feeAsset;
 }

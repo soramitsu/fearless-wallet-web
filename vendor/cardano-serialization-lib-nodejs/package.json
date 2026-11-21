@@ -1,0 +1,18 @@
+{
+  "name": "@emurgo/cardano-serialization-lib-nodejs",
+  "version": "13.2.1",
+  "private": true,
+  "type": "module",
+  "description": "Fearless fail-closed stub: Cardano is not supported, so no Cardano code or WebAssembly ships",
+  "main": "./index.cjs",
+  "module": "./cardano_serialization_lib.js",
+  "exports": {
+    ".": {
+      "import": "./cardano_serialization_lib.js",
+      "require": "./index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "license": "Apache-2.0"
+}

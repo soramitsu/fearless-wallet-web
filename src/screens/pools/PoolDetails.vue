@@ -62,8 +62,8 @@
               :asset2="asset2"
               :amount1="amount1"
               :amount2="amount2"
-              :priceId1="poolParams?.asset1.priceId"
-              :priceId2="poolParams?.asset2.priceId"
+              :value1="amount1Value"
+              :value2="amount2Value"
               :icon="extrinsicType === 'removeLiquidity' ? 'unbond' : 'plus-pink'"
             />
 
@@ -127,7 +127,8 @@
       v-if="showConfirmationPasswordPopup && (!recoveryOnly || extrinsicType === 'removeLiquidity')"
       :currency="currency1"
       :amount="amount1"
-      :value="amount1Value"
+      :value="amount1Value ?? ''"
+      :priceUnavailable="amount1AssetPrice === null || utilityAssetPrice === null"
       :fee="fee"
       :feeValue="feeValue"
       :firstIcon="icon1"
@@ -147,7 +148,7 @@ import PoolHeader from '@/screens/pools/PoolHeader.vue';
 import InputsForm from '@/screens/pools/InputsForm.vue';
 import { type RequestPool } from '@/extension/background/extension-base/src/services/pools-service/types';
 import { getCostOfAssets } from '@/helpers/transfers';
-import { getUtilityAsset, getXORCurrency, isValidAmountAsset } from '@/helpers/currencies';
+import { getTransferAssetPrice, getUtilityAsset, getXORCurrency, isValidAmountAsset } from '@/helpers/currencies';
 import PolkaswapSettingsHeader from '@/screens/polkaswap/PolkaswapSettingsHeader.vue';
 import PolkaswapSettings from '@/screens/polkaswap/PolkaswapSettings.vue';
 import PolkaswapAlert from '@/screens/polkaswap/PolkaswapAlert.vue';
@@ -241,12 +242,22 @@ export default defineComponent({ name: 'PoolDetails',
     utilityCurrency() {
       return getUtilityAsset(this.accountsStore.balances, this.network);
     },
-    utilityAssetPrice() {
-      const priceId = this.utilityCurrency?.priceId ?? '';
-
-          return this.networksStore.getAssetPrice(priceId).price;
+    poolNetwork() {
+      return this.network ? this.networksStore.getNetwork(this.network) : undefined;
     },
+    tokenPrices(): Record<string, number> {
+      return this.networksStore.assetsPrice?.tokenPriceMap ?? {};
+    },
+    // The fee is paid in the network's utility asset, priced by its own decision, or `null`.
+    utilityAssetPrice(): number | null {
+      return getTransferAssetPrice(this.utilityCurrency, this.poolNetwork, this.tokenPrices, ({ isUtility }) =>
+        Boolean(isUtility)
+      );
+    },
+    // '' without a trusted price for the fee asset.
     feeValue() {
+      if (this.utilityAssetPrice === null) return '';
+
       return getCostOfAssets(this.fee, this.utilityAssetPrice).toString();
     },
     currency1() {
@@ -255,13 +266,24 @@ export default defineComponent({ name: 'PoolDetails',
     currency2() {
       return this.accountsStore.balances.find(({ groupId }) => isSameString(groupId, this.poolParams?.asset2.id));
     },
-    amount1AssetPrice() {
-      const priceId = this.poolParams?.asset1.priceId ?? '';
-
-          return this.networksStore.getAssetPrice(priceId).price;
+    // The portfolio's trusted price of each pool asset on the pool's network (getTransferAssetPrice), or `null`. A
+    // token group's price id is never lent to an asset the portfolio does not trust.
+    amount1AssetPrice(): number | null {
+      return getTransferAssetPrice(this.currency1, this.poolNetwork, this.tokenPrices);
     },
-    amount1Value() {
+    amount2AssetPrice(): number | null {
+      return getTransferAssetPrice(this.currency2, this.poolNetwork, this.tokenPrices);
+    },
+    // The fiat value of each amount, or `null` without a trusted price: the review then says "Price unavailable".
+    amount1Value(): string | null {
+      if (this.amount1AssetPrice === null) return null;
+
       return getCostOfAssets(this.amount1, this.amount1AssetPrice).toString();
+    },
+    amount2Value(): string | null {
+      if (this.amount2AssetPrice === null) return null;
+
+      return getCostOfAssets(this.amount2, this.amount2AssetPrice).toString();
     },
     currencyXOR() {
       return getXORCurrency(this.accountsStore.balances);

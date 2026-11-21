@@ -98,7 +98,9 @@ async function startBitcoind(dataDir) {
   const rpcUrl = `http://127.0.0.1:${rpcPort}`;
   const rpc = createBitcoindRpc({ password, url: rpcUrl, user });
 
-  await waitForBitcoind(rpc, { checkRunning: owned.assertRunning });
+  // Match Solana's bounded startup allowance on a busy build host. Individual
+  // RPC deadlines and early child-exit checks still apply.
+  await waitForBitcoind(rpc, { timeoutMs: 90_000, checkRunning: owned.assertRunning });
 
   return { password, rpc, rpcUrl, user };
 }

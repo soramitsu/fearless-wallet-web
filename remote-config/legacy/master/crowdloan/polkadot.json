@@ -11,8 +11,6 @@
       "data": {
         "devApiUrl": "https://crowdloan.aca-dev.network",
         "prodApiUrl": "https://crowdloan.aca-api.network",
-        "devApiKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiZmVhcmVsZXNzd2FsbGV0IiwiaWF0IjoxNjM0MDg1OTg0fQ.3joSiklSRDNrCtVMQc6ReRnEgtp65QOzRt8IPA4bMtw",
-        "prodApiKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiZmVhcmVsZXNzd2FsbGV0IiwiaWF0IjoxNjM0Nzg2MDc3fQ.zwz3BSD68AKjo1BySkzrh7SfzO8yF-8YBhgiKZyE5lQ",
         "bonusUrl": "https://wiki.acala.network/acala/acala-crowdloan/crowdloan-rewards",
         "termsUrl": "https://acala.network/acala/terms",
         "crowdloanInfoUrl": "https://wiki.acala.network/acala/acala-crowdloan/faq",
@@ -33,8 +31,6 @@
          "data": {
              "devApiUrl": "https://wallet-test.api.purestake.xyz",
              "prodApiUrl": "https://yy9252r9jh.api.purestake.io",
-             "devApiKey": "JbykAAZTUa8MTggXlb4k03yAW9Ur2DFU1T0rm2Th",
-             "prodApiKey": "oueZPaKtwAEAooqpdafr33i6yqPgU804E06CqeGb",
              "termsUrl": "https://raw.githubusercontent.com/moonbeam-foundation/crowdloan-self-attestation/main/moonbeam/README.md",
              "crowdloanInfoUrl": "https://moonbeam.foundation/moonbeam-crowdloan/"
          }
@@ -52,8 +48,6 @@
                "data": {
                    "devApiUrl": "",
                    "prodApiUrl": "",
-                   "devApiKey": "",
-                   "prodApiKey": "",
                    "termsUrl": "",
                    "fearlessReferral": "14Q22opa2mR3SsCZkHbDoSkN6iQpJPk6dDYwaQibufh41g3k",
                    "bonusRate": 0,

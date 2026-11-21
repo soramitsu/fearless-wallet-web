@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise remote data boundaries using isolated configuration documents."""
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -12,6 +13,16 @@ spec.loader.exec_module(check)
 
 
 class ConfigTests(unittest.TestCase):
+    def test_owned_crowdloan_import(self):
+        root = Path(__file__).resolve().parents[1]
+        relative = 'legacy/master/crowdloan/polkadot.json'
+        mirror = (root / 'remote-config' / relative).read_bytes()
+        pins = json.loads((root / 'config/remote-config-imports.json').read_text())['sources']
+        self.assertEqual([pin['ownedSha256'] for pin in pins if pin['path'] == relative], [hashlib.sha256(mirror).hexdigest()])
+        for entry in json.loads(mirror):
+            fields = entry.get('flow', {}).get('data', {})
+            self.assertFalse({'devApiKey', 'prodApiKey'} & fields.keys())
+
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)

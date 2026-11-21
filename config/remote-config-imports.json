@@ -3120,7 +3120,7 @@
       "commit": "64a624bc52d17d6af92a096a96a5d989c6d9fa7c",
       "sourcePath": "crowdloan/polkadot.json",
       "upstreamSha256": "114f1868030e300ecc6bdf72a08dc23e9daff947221e88254d07fa64f25d3700",
-      "ownedSha256": "2419c9ec49af023d7830229d0d7d82e06e09c764cba8d3dec8b28c864b3108d4"
+      "ownedSha256": "b581744180364d0a17c4d1630522ec097716e8377e2a6d0ec46b9956455dbdb0"
     },
     {
       "path": "legacy/master/crowdloan/westend.json",

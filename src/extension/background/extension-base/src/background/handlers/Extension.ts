@@ -67,7 +67,7 @@ import {
 import {
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,
-  WALLET_CONNECT_SUPPORTED_METHODS,
+  walletConnectNamespaceMethods,
 } from '@extension-base/services/wallet-connect-service/consts';
 import {
   resolveSolanaSignAndSendTransaction,
@@ -2414,10 +2414,10 @@ export default class Extension extends FWExtensionBase {
 
       namespaces[key] = {
         accounts,
-        methods:
-          key === WALLET_CONNECT_EIP155_NAMESPACE
-            ? [...WALLET_CONNECT_SUPPORTED_METHODS, ...namespace.methods]
-            : namespace.methods,
+        // The namespace's own methods, never another namespace's or an optional one the wallet does not answer (the
+        // dApp's provider would send it here instead of answering it). A dApp's SDK refuses a session that leaves out
+        // a required method, so those stay; the approval screen warned about them.
+        methods: uniqueStringArray([...walletConnectNamespaceMethods(key), ...(requiredNamespaces[key]?.methods ?? [])]),
         events: namespace.events,
         chains: chains,
       };

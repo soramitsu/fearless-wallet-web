@@ -55,6 +55,11 @@ describe('WalletConnect proposal approval UI', () => {
     const wrapper = form(); await approve(wrapper).trigger('click'); expect(boundary.approve).not.toHaveBeenCalled();
     wrapper.getComponent({ name: 'NotificationPopup' }).vm.$emit('handlerAccept'); await flushPromises(); expect(boundary.approve).toHaveBeenCalledOnce();
   });
+  it('counts a method as supported only in its own namespace', async () => {
+    boundary.extension.wcConnectRequests[0].request.params.requiredNamespaces.eip155.methods = ['personal_sign', 'polkadot_signMessage'];
+    const wrapper = form(); await approve(wrapper).trigger('click'); expect(boundary.approve).not.toHaveBeenCalled();
+    expect(wrapper.findComponent({ name: 'NotificationPopup' }).exists()).toBe(true);
+  });
   it('ignores the methods of optional namespaces the wallet does not approve', async () => {
     Object.assign(boundary.extension.wcConnectRequests[0].request.params, { requiredNamespaces: {}, optionalNamespaces: {
       eip155: { chains: ['eip155:1'], methods: ['personal_sign'], events: [] },

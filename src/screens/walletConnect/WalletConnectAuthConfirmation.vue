@@ -84,7 +84,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { WALLET_CONNECT_SUPPORTED_METHODS } from '@extension-base/services/wallet-connect-service/consts';
+import { walletConnectNamespaceMethods } from '@extension-base/services/wallet-connect-service/consts';
 import WalletConnectHeader from './WalletConnectHeader.vue';
 import WalletChooseForm from './WalletChooseForm.vue';
 import type { ChainData } from '@/interfaces/walletconnect';
@@ -140,13 +140,15 @@ const showWalletSelect = ref(false);
 const isSupportAllMethods = computed(() => {
   const requiredNamespaces = request.value?.request.params.requiredNamespaces ?? {};
   const optionalNamespaces = request.value?.request.params.optionalNamespaces ?? {};
-  const approvedOptionalNamespaces = Object.keys(optionalNamespaces)
-    .filter((key) => chainNamesFromRequest(optionalNamespaces, key, false).length !== 0)
-    .map((key) => optionalNamespaces[key]);
+  const approvedOptionalNamespaces = Object.entries(optionalNamespaces).filter(
+    ([key]) => chainNamesFromRequest(optionalNamespaces, key, false).length !== 0
+  );
 
-  for (const namespace of [...Object.values(requiredNamespaces), ...approvedOptionalNamespaces]) {
+  for (const [key, namespace] of [...Object.entries(requiredNamespaces), ...approvedOptionalNamespaces]) {
+    const supported = walletConnectNamespaceMethods(key);
+
     for (const method of namespace.methods) {
-      if (!WALLET_CONNECT_SUPPORTED_METHODS.some((el) => el === method)) return false;
+      if (!supported.includes(method)) return false;
     }
   }
 

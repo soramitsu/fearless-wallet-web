@@ -1,4 +1,4 @@
-/* global Buffer, clearTimeout, console, process, setTimeout, structuredClone */
+/* global Buffer, clearTimeout, console, process, setTimeout */
 // Real-Chrome check that the wallet pairs with a dApp. The dApp is the in-repo WalletConnect client, or, with
 // WALLETCONNECT_REFERENCE_SDK, the SDK most dApps ship (installed outside this repository; scripts/walletconnect-peer.mjs).
 // Current dApps send a proposal's deadline only as expiryTimestamp, never expiry, and move requiredNamespaces into
@@ -366,6 +366,10 @@ async function main() {
     const accounts = session.namespaces.eip155?.accounts ?? [];
     step('dApp got the session', { topic: session.topic, accounts, methods: session.namespaces.eip155?.methods });
     assert(accounts.some((item) => item.toLowerCase() === `eip155:1:${account.ethereumAddress}`.toLowerCase()), 'The session does not name the wallet\'s Ethereum account');
+    // A dApp's provider sends the wallet every method the session lists, so the list holds only EVM methods, once each.
+    const sessionMethods = session.namespaces.eip155?.methods ?? [];
+    assert(new Set(sessionMethods).size === sessionMethods.length, `The session lists a method twice: ${sessionMethods.join(', ')}`);
+    assert(!sessionMethods.some((method) => !method.startsWith('eth_') && method !== 'personal_sign'), `The session lists a method that is not an EVM signing method: ${sessionMethods.join(', ')}`);
     // The wallet signs only in a session the dApp has acknowledged. Its session list is not published again when that
     // happens, so read it afresh.
     let listed = [];
@@ -429,13 +433,15 @@ async function main() {
     }, 'the wallet to drop the session the dApp disconnected', RELAY_MS, 1_000);
     step('wallet dropped the disconnected session', { sessions: remaining.length });
 
-    // 6. A proposal that also asks for a method the wallet does not support, which the dApp's SDK sends as optional.
-    //    The approval screen warns before approving. The session approved through the warning lists the method, and
-    //    the wallet answers a request for it with an error.
+    // 6. A proposal that also asks for a method the wallet does not support. The approval screen warns before approving.
+    //    The dApp's SDK sends it as optional, and the session leaves it out, so the dApp's provider answers it itself
+    //    instead of sending it to the wallet. A dApp that still requires it (the in-repo peer) gets it in the session,
+    //    which its SDK needs, and the wallet answers a request for it with an error.
     const extra = await dapp.client.connect({ requiredNamespaces: UNSUPPORTED_METHOD_NAMESPACES });
     const extraApproved = extra.approval();
     extraApproved.catch(() => undefined);
-    await nextProposal(cdp, wallet, extra.uri, [proposal.id, secondProposal.id, unsupportedProposal.id]);
+    const extraProposal = await nextProposal(cdp, wallet, extra.uri, [proposal.id, secondProposal.id, unsupportedProposal.id]);
+    const extraRequired = Object.values(extraProposal.request.params.requiredNamespaces ?? {}).some((namespace) => namespace.methods?.includes(UNSUPPORTED_METHOD));
     const popup = await openWalletPage(cdp, extensionId);
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 561, height: 600, deviceScaleFactor: 1, mobile: false }, popup.sessionId);
     const approveButton = `[...document.querySelectorAll('.controls button')].find((button) => button.innerText.trim() === 'Approve' && !button.disabled)`;
@@ -453,14 +459,20 @@ async function main() {
     const extraSession = await within(extraApproved, RELAY_MS);
     assert(extraSession, 'The dApp got no session after the warning was accepted');
     const extraMethods = extraSession.namespaces.eip155?.methods ?? [];
-    const extraCall = await within(dapp.client.request({
-      topic: extraSession.topic,
-      chainId: 'eip155:1',
-      request: { method: UNSUPPORTED_METHOD, params: [{ chainId: '0x1' }] },
-    }).then((result) => ({ result }), (error) => ({ error: error?.message ?? String(error) })), RELAY_MS);
-    step('session approved through the warning', { methods: extraMethods, unsupportedMethodAnswer: extraCall ?? 'no answer' });
-    assert(extraMethods.includes(UNSUPPORTED_METHOD), `The session does not list ${UNSUPPORTED_METHOD}`);
-    assert(extraCall?.error, `The wallet did not answer ${UNSUPPORTED_METHOD} with an error`);
+    if (extraRequired) {
+      const extraCall = await within(dapp.client.request({
+        topic: extraSession.topic,
+        chainId: 'eip155:1',
+        request: { method: UNSUPPORTED_METHOD, params: [{ chainId: '0x1' }] },
+      }).then((result) => ({ result }), (error) => ({ error: error?.message ?? String(error) })), RELAY_MS);
+      step('session approved through the warning', { required: true, methods: extraMethods, unsupportedMethodAnswer: extraCall ?? 'no answer' });
+      assert(extraMethods.includes(UNSUPPORTED_METHOD), `The session does not list the required ${UNSUPPORTED_METHOD}`);
+      assert(extraCall?.error, `The wallet did not answer ${UNSUPPORTED_METHOD} with an error`);
+    } else {
+      step('session approved through the warning', { required: false, methods: extraMethods });
+      assert(!extraMethods.includes(UNSUPPORTED_METHOD), `The session lists the optional ${UNSUPPORTED_METHOD}, which the wallet does not answer`);
+      assert(extraMethods.includes('personal_sign'), 'The session does not list personal_sign');
+    }
     report.result = 'passed';
   } catch (error) {
     report.result = 'failed';

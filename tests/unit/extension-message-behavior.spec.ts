@@ -177,6 +177,21 @@ describe('WalletConnect connection approval', () => {
     expect(await call('pri(walletConnect.session.approve)', { id: 'proposal', accounts: ['alice'] })).toMatchObject({ status: true });
     expect(state.walletConnectService.approveSession).toHaveBeenCalledWith({ id: 17, relayProtocol: 'irn', namespaces: { eip155: { accounts: ['eip155:1:alice'], chains: ['eip155:1'], methods: expect.arrayContaining(['personal_sign']), events: ['accountsChanged'] } } }); expect(request.resolve).toHaveBeenCalledOnce();
   });
+  // The wallet's EVM methods, in the order the session lists them.
+  const evmMethods = ['eth_sendTransaction', 'personal_sign', 'eth_sign', 'eth_signTypedData', 'eth_signTypedData_v1', 'eth_signTypedData_v3', 'eth_signTypedData_v4'];
+  // What an AppKit dApp (@reown/appkit-controllers 2.0.0) asks for, all optional.
+  const appKitMethods = ['eth_accounts', 'eth_requestAccounts', 'eth_sendRawTransaction', 'eth_sign', 'eth_signTransaction', 'eth_signTypedData', 'eth_signTypedData_v3', 'eth_signTypedData_v4', 'eth_sendTransaction', 'personal_sign', 'wallet_switchEthereumChain', 'wallet_addEthereumChain', 'wallet_getPermissions', 'wallet_requestPermissions', 'wallet_registerOnboarding', 'wallet_watchAsset', 'wallet_scanQRCode', 'wallet_getCallsStatus', 'wallet_showCallsStatus', 'wallet_sendCalls', 'wallet_getCapabilities', 'wallet_grantPermissions', 'wallet_revokePermissions', 'wallet_getAssets'];
+  it('approves only the EVM methods the wallet answers when an AppKit dApp asks for more, so its provider answers the rest itself', async () => {
+    proposal({ expiry: undefined, expiryTimestamp: Math.floor(Date.now() / 1000) + 300, requiredNamespaces: {}, optionalNamespaces: { eip155: { chains: ['eip155:1', 'eip155:8453'], methods: appKitMethods, events: ['chainChanged', 'accountsChanged'] } } });
+    expect(await call('pri(walletConnect.session.approve)', { id: 'proposal', accounts: ['alice'] })).toMatchObject({ status: true });
+    expect(state.walletConnectService.approveSession).toHaveBeenCalledWith({ id: 17, relayProtocol: 'irn', namespaces: { eip155: { accounts: ['eip155:1:alice'], chains: ['eip155:1'], methods: evmMethods, events: ['chainChanged', 'accountsChanged'] } } });
+  });
+  it('keeps a method a dApp requires, which its SDK needs in the session, without repeating methods or adding Polkadot ones', async () => {
+    proposal({ requiredNamespaces: { eip155: { chains: ['eip155:1'], methods: ['personal_sign', 'wallet_switchEthereumChain'], events: ['accountsChanged'] } }, optionalNamespaces: { eip155: { chains: ['eip155:1'], methods: ['wallet_watchAsset', 'polkadot_signMessage'], events: [] } } });
+    expect(await call('pri(walletConnect.session.approve)', { id: 'proposal', accounts: ['alice'] })).toMatchObject({ status: true });
+    const { methods } = state.walletConnectService.approveSession.mock.calls[0][0].namespaces.eip155;
+    expect(methods).toEqual([...evmMethods, 'wallet_switchEthereumChain']);
+  });
   it.each([
     [{ expiry: 1 }, undefined], [{ requiredNamespaces: { unknown: { chains: ['unknown:1'], methods: [], events: [] } } }, 'UNSUPPORTED_NAMESPACE_KEY'],
     [{ requiredNamespaces: { eip155: { chains: ['eip155:999'], methods: [], events: [] } } }, 'UNSUPPORTED_CHAINS'],

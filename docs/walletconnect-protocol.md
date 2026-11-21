@@ -15,6 +15,13 @@ The client plays both of Fearless's roles with one relay connection and one stor
 A session in which Fearless is the controller is a wallet session. The client refuses signing requests in any other
 session, and namespace updates or extensions from a peer that is not the controller.
 
+A wallet session lists, for each namespace, only the methods Fearless answers there (`walletConnectNamespaceMethods`
+in `consts.ts`), plus any method a dApp still sends as required, which its SDK needs in the session. A dApp's provider
+sends the wallet every method the session lists and answers the others itself or from its node, so an optional method
+Fearless cannot answer stays out: AppKit dApps ask for 24 EVM methods, among them `wallet_getCapabilities`,
+`wallet_watchAsset` and `eth_sendRawTransaction`. The approval screen still warns about every requested method the
+wallet does not answer.
+
 ## Files
 
 | File | What it does |

@@ -22,21 +22,33 @@ export const DEFAULT_WALLET_CONNECT_OPTIONS = {
   metadata: WALLET_CONNECT_METADATA,
 };
 
-export const WALLET_CONNECT_SUPPORTED_METHODS: WalletConnectSigningMethod[] = [
-  POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_MESSAGE,
-  POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_TRANSACTION,
-  EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION,
-  EIP155_SIGNING_METHODS.PERSONAL_SIGN,
-  EIP155_SIGNING_METHODS.ETH_SIGN,
-  EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA,
-  EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V1,
-  EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3,
-  EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4,
-];
-
 export const WALLET_CONNECT_REQUEST_KEY = 'wallet-connect';
 export const WALLET_CONNECT_EIP155_NAMESPACE = 'eip155';
 export const WALLET_CONNECT_POLKADOT_NAMESPACE = 'polkadot';
+
+// The methods the wallet answers, by namespace (Eip155Handler and evmSigningAddress; PolkadotHandler). A session lists
+// only these, plus any a dApp still sends as required. A dApp's provider sends every listed method to the wallet and
+// answers the rest itself or from its node, so an unsupported method listed here would fail where the dApp could have
+// answered it: current AppKit dApps ask for 24, such as wallet_getCapabilities, wallet_watchAsset and
+// eth_sendRawTransaction.
+const WALLET_CONNECT_NAMESPACE_METHODS: Readonly<Record<string, readonly WalletConnectSigningMethod[]>> = {
+  [WALLET_CONNECT_EIP155_NAMESPACE]: [
+    EIP155_SIGNING_METHODS.ETH_SEND_TRANSACTION,
+    EIP155_SIGNING_METHODS.PERSONAL_SIGN,
+    EIP155_SIGNING_METHODS.ETH_SIGN,
+    EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA,
+    EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V1,
+    EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V3,
+    EIP155_SIGNING_METHODS.ETH_SIGN_TYPED_DATA_V4,
+  ],
+  [WALLET_CONNECT_POLKADOT_NAMESPACE]: [
+    POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_MESSAGE,
+    POLKADOT_SIGNING_METHODS.POLKADOT_SIGN_TRANSACTION,
+  ],
+};
+
+export const walletConnectNamespaceMethods = (namespace: string): readonly string[] =>
+  WALLET_CONNECT_NAMESPACE_METHODS[namespace] ?? [];
 export const WALLET_CONNECT_SUPPORT_NAMESPACES: string[] = [
   WALLET_CONNECT_EIP155_NAMESPACE,
   WALLET_CONNECT_POLKADOT_NAMESPACE,

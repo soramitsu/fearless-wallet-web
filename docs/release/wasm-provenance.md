@@ -18,9 +18,41 @@ tiny-secp256k1               10/b404bdf54bd023954a5ae5ef22f88e3833227ee217bfa37c
 
 Scanned unpackaged files under `dist/extension/chrome` for binary WASM v1 magic, base64 strings (including after zlib/gzip inflation), asm module signatures and WebAssembly instantiation sites. Compared the asm.js carrier's 71 long base64 data segments with all shipped JS: no matches. The two embedded Polkadot copies inflate to identical bytes. The two `.wasm` files in `node_modules/@subwallet/keyring` and the toolchain WASMs in `@swc/wasm` and `@one-ini/wasm` are not additional modules in this ZIP. A `WebAssembly.Module` type check is not a module.
 
-## Bitcoin build inputs
+## Bitcoin source comparison (F02 remains open)
 
-The npm `gitHead` matches the peeled `v2.2.5` tag: `aab0155201a66f84297f75edd2fbde6013f37b38`. The tag does not contain `lib/secp256k1.wasm`. The upstream `Makefile` target `make build-wasm` uses the checked-in `Cargo.lock`, Rust 1.81.0, `wasm32-unknown-unknown`, `RUSTFLAGS="-C link-args=-zstack-size=655360"` and Binaryen 114 `wasm-opt -O4 --strip-debug --strip-producers`; the Dockerfile specifies Clang 12. Match the Linux builder and C toolchain as well as Rust (`secp256k1-sys` compiles C). No source rebuild or signed binary-to-source attestation verified here. This requires a separate builder, not the legacy Polkadot toolchain.
+**The tagged source reproduced upstream's CI artifact. The npm module used for Bitcoin signing still differs.** SHA-256 values below cover the Rust output and optimized module.
+
+| Builder | Rust output before wasm-opt | Optimized WASM |
+| --- | --- | --- |
+| Debian Buster, Clang 12.0.1, Rust GNU | `aaf933ddc6b3f539e958a54a9c2ae50141db3543c43c6d5d5def26c161a969c6` (1,278,025 bytes) | `2dac7a0d7fbdc940bf02ff02a9ee4bd3eabfda3e090acf7bf3b46eb08a61a295` (1,258,834 bytes) |
+| Ubuntu 24.04, Clang 18.1.3, Rust GNU | `8e0d0cf76f0a23c4617656be474d1b2eb8da3887324890c89a47f78d62d3cb42` (1,261,311 bytes) | `8c11a74b3f15a0ca502f2415646e17f9e32451bdb35b7f6fe788af4a177df48e` (1,242,474 bytes), identical to upstream CI |
+| Same Ubuntu and Clang, Rust musl | `9d7dd223349f284c35782881e4672946a1c7c6a53caec84f065f331fc3833c56` (1,261,311 bytes) | `6730acb543a800a0a3868f1e3222c94d069025101467d8cac8fbc4ca4e2fb854` (1,242,474 bytes) |
+| npm 2.2.5, installed package and Chrome ZIP member | Unpublished | `d5238297a4dc75c761f0cf0057d3f55e014ea84992d935869a46ad4f0df31ada` (1,242,474 bytes) |
+
+The npm version record gives `gitHead` `aab0155201a66f84297f75edd2fbde6013f37b38`, the commit at the peeled `v2.2.5` tag. The tracked source tree is `d20dc9b331167ddba99af5071b5a9d02ef3ebdf9`. Its `Cargo.lock` (SHA-256 `dabb6bed278e321ffbce2a6b5a04cb1735178aa1f12a88325d3ec137bbc414ea`) pins cc 1.0.71 and secp256k1-sys 0.8.1. The latter compiles its bundled Bitcoin Core C sources. The published npm tarball (SHA-256 `f1b3668a9aab00e90b7eae9ef13c3e74186a7031cdf7f5fc8d02e27ec42c5a0a`) supplies the optimized WASM. The tag contains no compiled module and npm supplies no pre-optimization reference. [Tagged build files](https://github.com/bitcoinjs/tiny-secp256k1/tree/aab0155201a66f84297f75edd2fbde6013f37b38) · [npm version record](https://registry.npmjs.org/tiny-secp256k1/2.2.5)
+
+The Makefile sets `RUSTFLAGS="-C link-args=-zstack-size=655360"` for `cargo build --target wasm32-unknown-unknown --release`, then calls `wasm-opt -O4 --strip-debug --strip-producers`. The tag pins Rust 1.81.0 in `rust-toolchain.toml`. The Dockerfile builds Binaryen 114 from source on Debian Buster with Clang 12 installed. The separate packaging workflow takes WASM built on `ubuntu-latest` with the official Linux Binaryen 114 binary and transfers it into `npm pack`. It has no publish step. The same-tree master run started at 17:57 UTC on 26 October 2026, after the 16:05 UTC npm publication. The run’s `wasm` artifact ZIP (SHA-256 `f604c092e5422f7471fd01089dd4738edc38aa59ddf619d86714d8e2cb4e4e5a`) contains the Clang 18 GNU result in the table. [Packaging workflow](https://github.com/bitcoinjs/tiny-secp256k1/blob/aab0155201a66f84297f75edd2fbde6013f37b38/.github/workflows/ci.yaml) · [Workflow run](https://github.com/bitcoinjs/tiny-secp256k1/actions/runs/40373492920) · [Registry publication time](https://registry.npmjs.org/tiny-secp256k1)
+
+### Comparing the executable sections
+
+With Ubuntu and the GNU-hosted Rust distribution, `make build-wasm` produced the exact upstream Actions module. Its type, import, function, table, memory, global, export, element and data sections match npm byte-for-byte. Both strip `producers` and retain only `mutable-globals` and `sign-ext` in `target_features`. Of 69 defined function bodies, 67 occupy identical slots. The 289- and 311-byte bodies of two Rust `core::fmt::Debug` integer formatters occupy opposite slots (defined-function indices 0 and 3). That accounts for all 1,184 differing byte positions in the 125,832-byte code section. Code-section SHA-256 is `2b6324be02785171c9445b42433bb6b38e6c8a2de1ca89a6a2f8620d40b8184e` in the GNU build and `975becd30a4b5a8d54804c176bc27d47849be85a82f6ba1485dc8000d1d66f5e` in npm. Rebuilding at the README's `/tiny-secp256k1` path gave the same raw and optimized hashes. Setting `BINARYEN_CORES` to 1 or 2 also preserved the optimized hash.
+
+The musl-hosted Rust build produced the same code section as the GNU build and exchanged the first two function indices in the element table (1, 4 became 4, 1). Its data and all other sections match npm. This demonstrates sensitivity to the Rust host distribution. The historical setting that produced npm's formatter order remains unverified.
+
+With Clang 12, code grew to 142,115 bytes and data to 1,115,711 bytes (npm has 1,115,631 data bytes). The type, import, function, global and element sections also differ. The table, memory, export and target-feature sections match. Compiling Binaryen 114 from its tagged source with Buster GCC 8 (`cmake -DBUILD_TESTS=OFF . && make -j6 wasm-opt`) produced the same optimized bytes as the official Binaryen executable for **both** the Buster and Ubuntu GNU Rust inputs. This rules out that optimizer substitution as the cause of either mismatch.
+
+### Replay the closest build
+
+All local source builds used linux/amd64 under Rosetta in the designated Colima VM. Each used the unchanged upstream Make target and the two hash-checked crate archives. Buster base manifest `sha256:2a0c1b9175adf759420fe0fbd7f5b449038319171eb76554bb76cbe172b62b42` (index `sha256:58ce6f1271ae1c8a2006ff7d3e54e9874d839f573d8009c20154ad0f2fb0a225`) supplied Debian 10.13. The archived apt.llvm.org Clang 12.0.1 identifies commit `fed41342a82f`. Ubuntu used the same 24.04 amd64 manifest and Clang 18.1.3 packages as the Polkadot experiment below. Rust identified commit `eeb90cda1969383f56a2637cbd3037bdf598841c`, LLVM 18.1.7.
+
+The replay exports the pinned Git object, verifies all download hashes, and compiles in a new container with networking disabled. The Cargo crates and the official Rust components are installed from checked archives. The Rust release manifest SHA-256 is `5596679723faf7e63772bacb1d0c898abaa51eb4ed193b328929d907c8c4bd5a`. The additional Buster and musl inputs are recorded separately. [Replay script](wasm-builder/tiny-secp256k1/rebuild.sh) · [Rust, Binaryen and crate archives](wasm-builder/tiny-secp256k1/archives.sha256) · [Ubuntu packages](wasm-builder/ubuntu-archives.sha256) · [Comparison inputs](wasm-builder/tiny-secp256k1/comparison-archives.sha256)
+
+```sh
+export DOCKER_HOST="unix://$HOME/.colima/fearless-f02-20261120/docker.sock"
+bash docs/release/wasm-builder/tiny-secp256k1/rebuild.sh ../f02-src/tiny-secp
+```
+
+Set `F02_DOWNLOAD_CACHE` to reuse raw archives named by SHA-256. The script compares against the published digest and installed file. The GNU build currently fails the published-digest check. The wallet's offline provenance gate continues to cover Polkadot only.
 
 ## Polkadot source and experiment
 
@@ -71,7 +103,7 @@ Do not patch Yarn to use this Mac artifact. It would replace executable signing 
 
 ### Linux result: F02 closed by reproduction for both Polkadot payloads
 
-On 21 November 2026, a clean export of `f55a3e75a2ab5408f6bf947f2ec9b294daef432d` produced the exact 335277 bytes returned by the installed npm loader. Linux `wasm2js` also reproduced the entire published fallback, independently confirmed by feeding it the decoded npm module. No wallet dependency, runtime, or lockfile changed. **Bitcoin's `tiny-secp256k1@2.2.5` is independently open:** its upstream builder requires a different Rust, Clang, and Binaryen; it was not rebuilt here. These results do not approve a wallet release.
+On 21 November 2026, a clean export of `f55a3e75a2ab5408f6bf947f2ec9b294daef432d` produced the exact 335277 bytes returned by the installed npm loader. Linux `wasm2js` also reproduced the entire published fallback, independently confirmed by feeding it the decoded npm module. No wallet dependency, runtime, or lockfile changed. The separate Bitcoin experiment above records the remaining F02 difference. These results do not approve a wallet release.
 
 | Stage | Linux SHA-256 | Comparison with npm |
 | --- | --- | --- |

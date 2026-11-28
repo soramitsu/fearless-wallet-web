@@ -74,12 +74,12 @@ describe('extension manifest generation', () => {
     expect(manifest.permissions).not.toContain('sidePanel');
   });
 
-  it('ships the 4.2.10 release version to Chrome and Firefox', () => {
+  it('ships the 4.2.11 release version to Chrome and Firefox', () => {
     // Chrome only offers the update when the version is above the published
     // store item; both stores must receive the same release number.
-    expect(packageJson.version).toBe('4.2.10');
-    expect(makeManifest('chrome').version).toBe('4.2.10');
-    expect(makeManifest('firefox').version).toBe('4.2.10');
+    expect(packageJson.version).toBe('4.2.11');
+    expect(makeManifest('chrome').version).toBe('4.2.11');
+    expect(makeManifest('firefox').version).toBe('4.2.11');
   });
 
   it('omits private chromium credentials for local open-source builds', () => {

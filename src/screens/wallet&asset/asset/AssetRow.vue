@@ -49,5 +49,10 @@ export default defineComponent({ name: 'AssetRow',
   cursor: pointer;
   min-height: 56px;
   text-transform: capitalize;
+
+  // Network names are capitalized; the value under the amount ("Price unavailable") reads as written.
+  :deep(.price) {
+    text-transform: none;
+  }
 }
 </style>

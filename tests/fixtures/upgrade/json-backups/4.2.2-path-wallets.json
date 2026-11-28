@@ -1,0 +1,691 @@
+{
+  "provenance": {
+    "scenario": "JSON backups (Export → JSON, the same file a Google Drive backup holds) of wallets imported with a derivation path, written by 4.2.2",
+    "writtenBy": "the Fearless Wallet 4.2.2 Chrome extension (v4.2.2, the version the Chrome Web Store serves), built from source and driven in a real browser",
+    "commit": "25b301de14cbafa7fd94ad5f67de55af039b98bd",
+    "yarnLockSha256": "51da8777581fdd83b79888a02140edcafb18bef89fdca71a614ec45d013cee38",
+    "build": "git archive v4.2.2, the node_modules of a local install of the same yarn.lock (Yarn 4.17.0 is not installed here), then `yarn build:extension` run directly with NODE_ENV=production, the test manifest key and the test OAuth client id, on Node 26.13.0",
+    "keyringLibraries": "@subwallet/ui-keyring 0.1.14, @subwallet/keyring 0.1.14, @polkadot/util-crypto 14.0.3",
+    "chrome": "Google Chrome for Testing 153.0.8010.12 (headless, every host name unresolvable)",
+    "harness": "tests/fixtures/upgrade/README.md",
+    "capturedAt": "2026-10-31",
+    "syntheticSecretsOnly": true,
+    "phrases": "docs/universal-wallet-v2-vectors.json (import12, default24) with the passphrases of docs/universal-wallet-v2-passphrase-vectors.json",
+    "extensionId": "plnlnnlkcnkiokjgpefakfhgngpbnaec",
+    "capture": "node scripts/upgrade-e2e/capture-json-backups.mjs 4.2.2 <build> <ext dir> <profile dir> <out>",
+    "masterPassword": "Master password for JSON backups"
+  },
+  "masterPassword": "Master password for JSON backups",
+  "wallets": [
+    {
+      "name": "Password wallet",
+      "vectorId": "import12",
+      "substratePath": "//polkadot///TREZOR",
+      "ethereumPath": "/m/44'/60'/0'/0/0",
+      "address": "5Eqf3HjMyuHLhjZEk8uizmmF2zTsPqZy3XJENDTJuRdjMe7N",
+      "ethereumAddress": "0x9858EfFD232B4033E47d90003D41EC34EcaEda94",
+      "backup": {
+        "encoded": "IzMtx3hlPdESpFQp6K9+BmC4EIyOrZ3GXW4fDkPig18AgAAAAQAAAAgAAADmQoQYY8Gpgp7wVU/Fk1J12RipWBfpz8Rl8JPdTxAmuV6ImeTN1LeykwqpT2Jw8Zq+8TCfa8fohXmB3EvblLkTjb+S50y/EBcFYsvSDnnusI6L9bT+K5RC20pHfYhr3UR1CLNNzA0gLXgLRQ5kaTy0Wni9F1MrthrquSDjvquMUHO2rtewvekyOBWm+Z6dLZvQjYFVz+GZhq8lB+PjZOnBb7Gvxjq1LySaz6gOUfqg/Tsq",
+        "encoding": {
+          "content": [
+            "pkcs8",
+            "sr25519"
+          ],
+          "type": [
+            "scrypt",
+            "xsalsa20-poly1305"
+          ],
+          "version": "3"
+        },
+        "address": "5Eqf3HjMyuHLhjZEk8uizmmF2zTsPqZy3XJENDTJuRdjMe7N",
+        "meta": {
+          "name": "Password wallet",
+          "ethereumAddress": "0x9858EfFD232B4033E47d90003D41EC34EcaEda94",
+          "walletEcosystem": "substrate",
+          "bitcoinAddress": "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu",
+          "bitcoinTestnetAddress": "tb1q6rz28mcfaxtmd6v789l9rrlrusdprr9pqcpvkl",
+          "solanaAddress": "HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk",
+          "tonAddress": "UQDxAUFadQXDd3EXGa3TLF_EF66gMc9h3_aZ0j0zXNoIYUCc",
+          "tonPublicKeyHex": "3b5dd9de5a5a4f6b17ecec17135772bea6b132ecaa9413d930aa0dcc75d29fa6",
+          "irohaAddress": "testuﾛ1Pcﾅ2ﾗtﾉaﾘLﾕｽ2MヱﾐﾎｳﾓヱｷﾆｲMﾒSﾏｱヱｷJヱFmJﾇMs6YN687Y",
+          "irohaPublicKeyHex": "8dea60946dd00558e61254c7aadeccabd1e39d5b9a12a45b678e22209f19426f",
+          "isMobile": false,
+          "isMasterAccount": true,
+          "genesisHash": "",
+          "whenCreated": 1793443826147,
+          "universalWallet": {
+            "metaVersion": 2,
+            "schemaVersion": 2,
+            "walletId": "uw2_5Eqf3HjMyuHLhjZEk8uizmmF2zTsPqZy3XJENDTJuRdjMe7Nmvwa5crn0000",
+            "displayName": "Password wallet",
+            "source": "created-24-word",
+            "status": "active",
+            "primaryEcosystem": "substrate",
+            "publicAccounts": [
+              {
+                "accountId": "substrate-default",
+                "ecosystem": "substrate",
+                "address": "5Eqf3HjMyuHLhjZEk8uizmmF2zTsPqZy3XJENDTJuRdjMe7N",
+                "isDefault": true
+              },
+              {
+                "accountId": "evm-default",
+                "ecosystem": "evm",
+                "address": "0x9858EfFD232B4033E47d90003D41EC34EcaEda94",
+                "chainId": "eip155:1",
+                "derivationPath": "m/44'/60'/0'/0/0",
+                "isDefault": true
+              },
+              {
+                "accountId": "bitcoin-mainnet",
+                "ecosystem": "bitcoin",
+                "address": "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu",
+                "chainId": "bitcoin:mainnet",
+                "derivationPath": "m/84'/0'/0'/0/0",
+                "isDefault": true
+              },
+              {
+                "accountId": "bitcoin-testnet",
+                "ecosystem": "bitcoin",
+                "address": "tb1q6rz28mcfaxtmd6v789l9rrlrusdprr9pqcpvkl",
+                "chainId": "bitcoin:testnet",
+                "derivationPath": "m/84'/1'/0'/0/0",
+                "isDefault": false
+              },
+              {
+                "accountId": "solana-mainnet",
+                "ecosystem": "solana",
+                "address": "HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk",
+                "chainId": "solana:mainnet",
+                "derivationPath": "m/44'/501'/0'/0'",
+                "isDefault": true
+              },
+              {
+                "accountId": "ton-mainnet",
+                "ecosystem": "ton",
+                "address": "UQDxAUFadQXDd3EXGa3TLF_EF66gMc9h3_aZ0j0zXNoIYUCc",
+                "chainId": "ton:mainnet",
+                "derivationPath": "m/44'/607'/0'/0'/0'",
+                "publicKeyHex": "3b5dd9de5a5a4f6b17ecec17135772bea6b132ecaa9413d930aa0dcc75d29fa6",
+                "isDefault": true
+              },
+              {
+                "accountId": "iroha-taira",
+                "ecosystem": "iroha",
+                "address": "testuﾛ1Pcﾅ2ﾗtﾉaﾘLﾕｽ2MヱﾐﾎｳﾓヱｷﾆｲMﾒSﾏｱヱｷJヱFmJﾇMs6YN687Y",
+                "chainId": "fc56984b-2be7-431d-840e-21514d1883f0",
+                "derivationPath": "m/44'/617'/0'/0'",
+                "publicKeyHex": "8dea60946dd00558e61254c7aadeccabd1e39d5b9a12a45b678e22209f19426f",
+                "isDefault": true
+              },
+              {
+                "accountId": "iroha-nexus",
+                "ecosystem": "iroha",
+                "address": "sorauﾛ1Pcﾅ2ﾗtﾉaﾘLﾕｽ2MヱﾐﾎｳﾓヱｷﾆｲMﾒSﾏｱヱｷJヱFmJﾇMs6YN687Y",
+                "chainId": "sora:nexus:global",
+                "derivationPath": "m/44'/617'/0'/0'",
+                "publicKeyHex": "8dea60946dd00558e61254c7aadeccabd1e39d5b9a12a45b678e22209f19426f",
+                "isDefault": false
+              }
+            ],
+            "createdAtMillis": 1793443826147,
+            "updatedAtMillis": 1793443826147
+          },
+          "isMasterPassword": true,
+          "isSubWallet": true
+        }
+      },
+      "ethereumBackup": {
+        "encoded": "Alz8Ru0BbEEW+PdLDipzk31/vTKXpjd5JHK/h25/2t8AgAAAAQAAAAgAAABFku7UuP8B3evnFmu6NWqoJdQdboyI1gOBcI35Gp2wO1Ezv02o1alDdyzNfFbqHV0p5l6OE2lUyfIpWhwS7Bwi6OxFQi2nuXlLs4OY+HeP9JFnREltIw6RXEVdbp+lphHvqNixhJ+tCwkp5sVm6vKuEHoGR+voW9WA3e0tMAzKM20/XwvXSDVmuheJT0XieEykp1Q=",
+        "encoding": {
+          "content": [
+            "pkcs8",
+            "ethereum"
+          ],
+          "type": [
+            "scrypt",
+            "xsalsa20-poly1305"
+          ],
+          "version": "3"
+        },
+        "address": "0x0237b0bb7a8288d38ed49a524b5dc98cff3eb5ca824c9f9dc0dfdb3d9cd600f299",
+        "meta": {
+          "name": "Password wallet",
+          "ethereumAddress": "",
+          "walletEcosystem": "evm",
+          "bitcoinAddress": "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu",
+          "bitcoinTestnetAddress": "tb1q6rz28mcfaxtmd6v789l9rrlrusdprr9pqcpvkl",
+          "solanaAddress": "HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk",
+          "tonAddress": "UQDxAUFadQXDd3EXGa3TLF_EF66gMc9h3_aZ0j0zXNoIYUCc",
+          "tonPublicKeyHex": "3b5dd9de5a5a4f6b17ecec17135772bea6b132ecaa9413d930aa0dcc75d29fa6",
+          "irohaAddress": "testuﾛ1Pcﾅ2ﾗtﾉaﾘLﾕｽ2MヱﾐﾎｳﾓヱｷﾆｲMﾒSﾏｱヱｷJヱFmJﾇMs6YN687Y",
+          "irohaPublicKeyHex": "8dea60946dd00558e61254c7aadeccabd1e39d5b9a12a45b678e22209f19426f",
+          "isMobile": false,
+          "isMasterAccount": true,
+          "genesisHash": "",
+          "whenCreated": 1793443825920,
+          "universalWallet": {
+            "metaVersion": 2,
+            "schemaVersion": 2,
+            "walletId": "uw2_0x9858EfFD232B4033E47d90003D41EC34EcaEda94mvwa5clc0000000000",
+            "displayName": "Password wallet",
+            "source": "created-24-word",
+            "status": "migration-required",
+            "primaryEcosystem": "evm",
+            "publicAccounts": [
+              {
+                "accountId": "evm-default",
+                "ecosystem": "evm",
+                "address": "0x9858EfFD232B4033E47d90003D41EC34EcaEda94",
+                "chainId": "eip155:1",
+                "derivationPath": "m/44'/60'/0'/0/0",
+                "isDefault": true
+              },
+              {
+                "accountId": "bitcoin-mainnet",
+                "ecosystem": "bitcoin",
+                "address": "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu",
+                "chainId": "bitcoin:mainnet",
+                "derivationPath": "m/84'/0'/0'/0/0",
+                "isDefault": true
+              },
+              {
+                "accountId": "bitcoin-testnet",
+                "ecosystem": "bitcoin",
+                "address": "tb1q6rz28mcfaxtmd6v789l9rrlrusdprr9pqcpvkl",
+                "chainId": "bitcoin:testnet",
+                "derivationPath": "m/84'/1'/0'/0/0",
+                "isDefault": false
+              },
+              {
+                "accountId": "solana-mainnet",
+                "ecosystem": "solana",
+                "address": "HAgk14JpMQLgt6rVgv7cBQFJWFto5Dqxi472uT3DKpqk",
+                "chainId": "solana:mainnet",
+                "derivationPath": "m/44'/501'/0'/0'",
+                "isDefault": true
+              },
+              {
+                "accountId": "ton-mainnet",
+                "ecosystem": "ton",
+                "address": "UQDxAUFadQXDd3EXGa3TLF_EF66gMc9h3_aZ0j0zXNoIYUCc",
+                "chainId": "ton:mainnet",
+                "derivationPath": "m/44'/607'/0'/0'/0'",
+                "publicKeyHex": "3b5dd9de5a5a4f6b17ecec17135772bea6b132ecaa9413d930aa0dcc75d29fa6",
+                "isDefault": true
+              },
+              {
+                "accountId": "iroha-taira",
+                "ecosystem": "iroha",
+                "address": "testuﾛ1Pcﾅ2ﾗtﾉaﾘLﾕｽ2MヱﾐﾎｳﾓヱｷﾆｲMﾒSﾏｱヱｷJヱFmJﾇMs6YN687Y",
+                "chainId": "fc56984b-2be7-431d-840e-21514d1883f0",
+                "derivationPath": "m/44'/617'/0'/0'",
+                "publicKeyHex": "8dea60946dd00558e61254c7aadeccabd1e39d5b9a12a45b678e22209f19426f",
+                "isDefault": true
+              },
+              {
+                "accountId": "iroha-nexus",
+                "ecosystem": "iroha",
+                "address": "sorauﾛ1Pcﾅ2ﾗtﾉaﾘLﾕｽ2MヱﾐﾎｳﾓヱｷﾆｲMﾒSﾏｱヱｷJヱFmJﾇMs6YN687Y",
+                "chainId": "sora:nexus:global",
+                "derivationPath": "m/44'/617'/0'/0'",
+                "publicKeyHex": "8dea60946dd00558e61254c7aadeccabd1e39d5b9a12a45b678e22209f19426f",
+                "isDefault": false
+              }
+            ],
+            "createdAtMillis": 1793443825920,
+            "updatedAtMillis": 1793443825920
+          },
+          "isMasterPassword": true,
+          "isSubWallet": true
+        }
+      }
+    },
+    {
+      "name": "Staking",
+      "vectorId": "default24",
+      "substratePath": "//staking",
+      "ethereumPath": "",
+      "address": "5FESUFR5DHi72NZ226yDsf5CM8kW7fdEFEMzGpKboaf6DSZJ",
+      "ethereumAddress": "",
+      "backup": {
+        "encoded": "52iuSQf7Lwf52WNMjscUfFLsejXi22mddrS9PTf7dtUAgAAAAQAAAAgAAAAL1yTGfj8NtIerfcnVA7BDKtZM5+ZlzG7wENg+NCU8aUBbJ3QmE+f9NKQhYP92HakVuJNmgq2KEBvXcb6tRbETwSGnPdqbNm71DnioopyJ0Pznhfn3beGQb9o5GT3sUYWW/4eH5UNUESREzmNV5otdNDO+GJk2zjeMRjlj1CY5NhGlg0sPGiIJ3DMZ4HP/oLV9hLdd+oSygmkDhdbCox+T8+eV0Evgd0Gcot3+NTBDiFnUm8WPWkB30P6ralLLIcWemg==",
+        "encoding": {
+          "content": [
+            "pkcs8",
+            "sr25519"
+          ],
+          "type": [
+            "scrypt",
+            "xsalsa20-poly1305"
+          ],
+          "version": "3"
+        },
+        "address": "5FESUFR5DHi72NZ226yDsf5CM8kW7fdEFEMzGpKboaf6DSZJ",
+        "meta": {
+          "name": "Staking",
+          "ethereumAddress": "",
+          "walletEcosystem": "substrate",
+          "bitcoinAddress": "bc1qslk39wvggqa0vl8nd6jckaz54dw3vk45c5w60m",
+          "bitcoinTestnetAddress": "tb1q2mhcnxyddvq4vxja3mg5t73uknyppfx2u4k54f",
+          "solanaAddress": "5Pobwp6d9ihN9Nz38f87gVCEBFMgipFiSM2VtUhVit6w",
+          "tonAddress": "UQAXzfXU_vaoDQkasgmNRC2gG0cU0bS83sV4bEXVswywW980",
+          "tonPublicKeyHex": "c1f91bfd0283d9c25f14488d8d252c8ce74fe05edcaf4f5c2f647f92a08af09c",
+          "irohaAddress": "testuﾛ1Pn4Z3ﾁeｸZzXmﾆWdhﾌyｾﾓTﾐTﾆaUﾚSﾙ1ｶﾛｹCｷe8ｳﾋ154C93",
+          "irohaPublicKeyHex": "9a676c350154f7b7183c5b2f44a49f926a75967260840f43062afdcf4259b995",
+          "isMobile": false,
+          "isMasterAccount": true,
+          "genesisHash": "",
+          "whenCreated": 1793443827114,
+          "universalWallet": {
+            "metaVersion": 2,
+            "schemaVersion": 2,
+            "walletId": "uw2_5FESUFR5DHi72NZ226yDsf5CM8kW7fdEFEMzGpKboaf6DSZJmvwa5dii0000",
+            "displayName": "Staking",
+            "source": "created-24-word",
+            "status": "migration-required",
+            "primaryEcosystem": "substrate",
+            "publicAccounts": [
+              {
+                "accountId": "substrate-default",
+                "ecosystem": "substrate",
+                "address": "5FESUFR5DHi72NZ226yDsf5CM8kW7fdEFEMzGpKboaf6DSZJ",
+                "isDefault": true
+              },
+              {
+                "accountId": "bitcoin-mainnet",
+                "ecosystem": "bitcoin",
+                "address": "bc1qslk39wvggqa0vl8nd6jckaz54dw3vk45c5w60m",
+                "chainId": "bitcoin:mainnet",
+                "derivationPath": "m/84'/0'/0'/0/0",
+                "isDefault": true
+              },
+              {
+                "accountId": "bitcoin-testnet",
+                "ecosystem": "bitcoin",
+                "address": "tb1q2mhcnxyddvq4vxja3mg5t73uknyppfx2u4k54f",
+                "chainId": "bitcoin:testnet",
+                "derivationPath": "m/84'/1'/0'/0/0",
+                "isDefault": false
+              },
+              {
+                "accountId": "solana-mainnet",
+                "ecosystem": "solana",
+                "address": "5Pobwp6d9ihN9Nz38f87gVCEBFMgipFiSM2VtUhVit6w",
+                "chainId": "solana:mainnet",
+                "derivationPath": "m/44'/501'/0'/0'",
+                "isDefault": true
+              },
+              {
+                "accountId": "ton-mainnet",
+                "ecosystem": "ton",
+                "address": "UQAXzfXU_vaoDQkasgmNRC2gG0cU0bS83sV4bEXVswywW980",
+                "chainId": "ton:mainnet",
+                "derivationPath": "m/44'/607'/0'/0'/0'",
+                "publicKeyHex": "c1f91bfd0283d9c25f14488d8d252c8ce74fe05edcaf4f5c2f647f92a08af09c",
+                "isDefault": true
+              },
+              {
+                "accountId": "iroha-taira",
+                "ecosystem": "iroha",
+                "address": "testuﾛ1Pn4Z3ﾁeｸZzXmﾆWdhﾌyｾﾓTﾐTﾆaUﾚSﾙ1ｶﾛｹCｷe8ｳﾋ154C93",
+                "chainId": "fc56984b-2be7-431d-840e-21514d1883f0",
+                "derivationPath": "m/44'/617'/0'/0'",
+                "publicKeyHex": "9a676c350154f7b7183c5b2f44a49f926a75967260840f43062afdcf4259b995",
+                "isDefault": true
+              },
+              {
+                "accountId": "iroha-nexus",
+                "ecosystem": "iroha",
+                "address": "sorauﾛ1Pn4Z3ﾁeｸZzXmﾆWdhﾌyｾﾓTﾐTﾆaUﾚSﾙ1ｶﾛｹCｷe8ｳﾋ154C93",
+                "chainId": "sora:nexus:global",
+                "derivationPath": "m/44'/617'/0'/0'",
+                "publicKeyHex": "9a676c350154f7b7183c5b2f44a49f926a75967260840f43062afdcf4259b995",
+                "isDefault": false
+              }
+            ],
+            "createdAtMillis": 1793443827114,
+            "updatedAtMillis": 1793443827114
+          },
+          "isMasterPassword": true,
+          "isSubWallet": true
+        }
+      }
+    },
+    {
+      "name": "Unicode password",
+      "vectorId": "default24",
+      "substratePath": "//unicode///pässwörd ＦＷ",
+      "ethereumPath": "",
+      "address": "5DFfYd6KVpYF37Kwvs1Z9i4XVEV32C4mtwGARMURScrHm2kS",
+      "ethereumAddress": "",
+      "backup": {
+        "encoded": "4e28CIf7zpvfK1F0mdpx1UEUPlIbPg69pS2XQQA5p68AgAAAAQAAAAgAAACaHmoKm2fi9o9eSsZRp9z157cIxaUpIMRUTQOz+LopzWC9B/fxY7GoLmoRCBM7k2LSMG2h4sU9k0ggT4CQT/cyxjRic0azwokzUHqflaO23Ko7CH0BLrzDQFQJ3GSiKwgQGfI4wlWuGsnlvYkOM5G0TZSqwtJs22paDMFR7uXv+1IuNMI56cy01x8MNKtiyVDfNBgO6QM3FIjvDZ16AUALtriSg0k+Q0KNooTx4NaJC7aPRp0U5Nn26CgmFDxby2+zzA==",
+        "encoding": {
+          "content": [
+            "pkcs8",
+            "sr25519"
+          ],
+          "type": [
+            "scrypt",
+            "xsalsa20-poly1305"
+          ],
+          "version": "3"
+        },
+        "address": "5DFfYd6KVpYF37Kwvs1Z9i4XVEV32C4mtwGARMURScrHm2kS",
+        "meta": {
+          "name": "Unicode password",
+          "ethereumAddress": "",
+          "walletEcosystem": "substrate",
+          "bitcoinAddress": "bc1qslk39wvggqa0vl8nd6jckaz54dw3vk45c5w60m",
+          "bitcoinTestnetAddress": "tb1q2mhcnxyddvq4vxja3mg5t73uknyppfx2u4k54f",
+          "solanaAddress": "5Pobwp6d9ihN9Nz38f87gVCEBFMgipFiSM2VtUhVit6w",
+          "tonAddress": "UQAXzfXU_vaoDQkasgmNRC2gG0cU0bS83sV4bEXVswywW980",
+          "tonPublicKeyHex": "c1f91bfd0283d9c25f14488d8d252c8ce74fe05edcaf4f5c2f647f92a08af09c",
+          "irohaAddress": "testuﾛ1Pn4Z3ﾁeｸZzXmﾆWdhﾌyｾﾓTﾐTﾆaUﾚSﾙ1ｶﾛｹCｷe8ｳﾋ154C93",
+          "irohaPublicKeyHex": "9a676c350154f7b7183c5b2f44a49f926a75967260840f43062afdcf4259b995",
+          "isMobile": false,
+          "isMasterAccount": true,
+          "genesisHash": "",
+          "whenCreated": 1793443827876,
+          "universalWallet": {
+            "metaVersion": 2,
+            "schemaVersion": 2,
+            "walletId": "uw2_5DFfYd6KVpYF37Kwvs1Z9i4XVEV32C4mtwGARMURScrHm2kSmvwa5e3o0000",
+            "displayName": "Unicode password",
+            "source": "created-24-word",
+            "status": "migration-required",
+            "primaryEcosystem": "substrate",
+            "publicAccounts": [
+              {
+                "accountId": "substrate-default",
+                "ecosystem": "substrate",
+                "address": "5DFfYd6KVpYF37Kwvs1Z9i4XVEV32C4mtwGARMURScrHm2kS",
+                "isDefault": true
+              },
+              {
+                "accountId": "bitcoin-mainnet",
+                "ecosystem": "bitcoin",
+                "address": "bc1qslk39wvggqa0vl8nd6jckaz54dw3vk45c5w60m",
+                "chainId": "bitcoin:mainnet",
+                "derivationPath": "m/84'/0'/0'/0/0",
+                "isDefault": true
+              },
+              {
+                "accountId": "bitcoin-testnet",
+                "ecosystem": "bitcoin",
+                "address": "tb1q2mhcnxyddvq4vxja3mg5t73uknyppfx2u4k54f",
+                "chainId": "bitcoin:testnet",
+                "derivationPath": "m/84'/1'/0'/0/0",
+                "isDefault": false
+              },
+              {
+                "accountId": "solana-mainnet",
+                "ecosystem": "solana",
+                "address": "5Pobwp6d9ihN9Nz38f87gVCEBFMgipFiSM2VtUhVit6w",
+                "chainId": "solana:mainnet",
+                "derivationPath": "m/44'/501'/0'/0'",
+                "isDefault": true
+              },
+              {
+                "accountId": "ton-mainnet",
+                "ecosystem": "ton",
+                "address": "UQAXzfXU_vaoDQkasgmNRC2gG0cU0bS83sV4bEXVswywW980",
+                "chainId": "ton:mainnet",
+                "derivationPath": "m/44'/607'/0'/0'/0'",
+                "publicKeyHex": "c1f91bfd0283d9c25f14488d8d252c8ce74fe05edcaf4f5c2f647f92a08af09c",
+                "isDefault": true
+              },
+              {
+                "accountId": "iroha-taira",
+                "ecosystem": "iroha",
+                "address": "testuﾛ1Pn4Z3ﾁeｸZzXmﾆWdhﾌyｾﾓTﾐTﾆaUﾚSﾙ1ｶﾛｹCｷe8ｳﾋ154C93",
+                "chainId": "fc56984b-2be7-431d-840e-21514d1883f0",
+                "derivationPath": "m/44'/617'/0'/0'",
+                "publicKeyHex": "9a676c350154f7b7183c5b2f44a49f926a75967260840f43062afdcf4259b995",
+                "isDefault": true
+              },
+              {
+                "accountId": "iroha-nexus",
+                "ecosystem": "iroha",
+                "address": "sorauﾛ1Pn4Z3ﾁeｸZzXmﾆWdhﾌyｾﾓTﾐTﾆaUﾚSﾙ1ｶﾛｹCｷe8ｳﾋ154C93",
+                "chainId": "sora:nexus:global",
+                "derivationPath": "m/44'/617'/0'/0'",
+                "publicKeyHex": "9a676c350154f7b7183c5b2f44a49f926a75967260840f43062afdcf4259b995",
+                "isDefault": false
+              }
+            ],
+            "createdAtMillis": 1793443827876,
+            "updatedAtMillis": 1793443827876
+          },
+          "isMasterPassword": true,
+          "isSubWallet": true
+        }
+      }
+    },
+    {
+      "name": "Plain",
+      "vectorId": "default24",
+      "substratePath": "",
+      "ethereumPath": "/m/44'/60'/0'/0/0",
+      "address": "5Dk9MxUvnUi9b3RpXZSj3q6FGbVskBxrKzLF1LkU5uBD4Nd8",
+      "ethereumAddress": "0xF9297b542BDb5DA50C364f9AE4Cbe1F3933bA40F",
+      "backup": {
+        "encoded": "3q5j+BRVFxKXbSFOnZ6io38SVe+9RSnH1GvWoLMem3sAgAAAAQAAAAgAAAAKpDMhljzSRltZhhPcbo3mwQTXWTffBIHsSTE8aXKoMAvpa3VKOHTvZ7j8srk0ynLbcLSe2PqbHgGPJW5T3i8P+B+DzbMXgSbqppyrKWl6oDFLvz8JTo35TT7I1E89Ty/0u87VTRlW5cUN3Mq/4lYZa8lAnWWsbINEhXXRTRYnVxiOUQWXA+KBtQeQiniYrNCzjDBde0mApHCI+9v2IKV4tvOnvm9TGWH+3rya3vs4hT1AWoQG83OmQEG0nJ6P5UAb0Q==",
+        "encoding": {
+          "content": [
+            "pkcs8",
+            "sr25519"
+          ],
+          "type": [
+            "scrypt",
+            "xsalsa20-poly1305"
+          ],
+          "version": "3"
+        },
+        "address": "5Dk9MxUvnUi9b3RpXZSj3q6FGbVskBxrKzLF1LkU5uBD4Nd8",
+        "meta": {
+          "name": "Plain",
+          "ethereumAddress": "0xF9297b542BDb5DA50C364f9AE4Cbe1F3933bA40F",
+          "walletEcosystem": "substrate",
+          "bitcoinAddress": "bc1qslk39wvggqa0vl8nd6jckaz54dw3vk45c5w60m",
+          "bitcoinTestnetAddress": "tb1q2mhcnxyddvq4vxja3mg5t73uknyppfx2u4k54f",
+          "solanaAddress": "5Pobwp6d9ihN9Nz38f87gVCEBFMgipFiSM2VtUhVit6w",
+          "tonAddress": "UQAXzfXU_vaoDQkasgmNRC2gG0cU0bS83sV4bEXVswywW980",
+          "tonPublicKeyHex": "c1f91bfd0283d9c25f14488d8d252c8ce74fe05edcaf4f5c2f647f92a08af09c",
+          "irohaAddress": "testuﾛ1Pn4Z3ﾁeｸZzXmﾆWdhﾌyｾﾓTﾐTﾆaUﾚSﾙ1ｶﾛｹCｷe8ｳﾋ154C93",
+          "irohaPublicKeyHex": "9a676c350154f7b7183c5b2f44a49f926a75967260840f43062afdcf4259b995",
+          "isMobile": false,
+          "isMasterAccount": true,
+          "genesisHash": "",
+          "whenCreated": 1793443829048,
+          "universalWallet": {
+            "metaVersion": 2,
+            "schemaVersion": 2,
+            "walletId": "uw2_5Dk9MxUvnUi9b3RpXZSj3q6FGbVskBxrKzLF1LkU5uBD4Nd8mvwa5f080000",
+            "displayName": "Plain",
+            "source": "created-24-word",
+            "status": "active",
+            "primaryEcosystem": "substrate",
+            "publicAccounts": [
+              {
+                "accountId": "substrate-default",
+                "ecosystem": "substrate",
+                "address": "5Dk9MxUvnUi9b3RpXZSj3q6FGbVskBxrKzLF1LkU5uBD4Nd8",
+                "isDefault": true
+              },
+              {
+                "accountId": "evm-default",
+                "ecosystem": "evm",
+                "address": "0xF9297b542BDb5DA50C364f9AE4Cbe1F3933bA40F",
+                "chainId": "eip155:1",
+                "derivationPath": "m/44'/60'/0'/0/0",
+                "isDefault": true
+              },
+              {
+                "accountId": "bitcoin-mainnet",
+                "ecosystem": "bitcoin",
+                "address": "bc1qslk39wvggqa0vl8nd6jckaz54dw3vk45c5w60m",
+                "chainId": "bitcoin:mainnet",
+                "derivationPath": "m/84'/0'/0'/0/0",
+                "isDefault": true
+              },
+              {
+                "accountId": "bitcoin-testnet",
+                "ecosystem": "bitcoin",
+                "address": "tb1q2mhcnxyddvq4vxja3mg5t73uknyppfx2u4k54f",
+                "chainId": "bitcoin:testnet",
+                "derivationPath": "m/84'/1'/0'/0/0",
+                "isDefault": false
+              },
+              {
+                "accountId": "solana-mainnet",
+                "ecosystem": "solana",
+                "address": "5Pobwp6d9ihN9Nz38f87gVCEBFMgipFiSM2VtUhVit6w",
+                "chainId": "solana:mainnet",
+                "derivationPath": "m/44'/501'/0'/0'",
+                "isDefault": true
+              },
+              {
+                "accountId": "ton-mainnet",
+                "ecosystem": "ton",
+                "address": "UQAXzfXU_vaoDQkasgmNRC2gG0cU0bS83sV4bEXVswywW980",
+                "chainId": "ton:mainnet",
+                "derivationPath": "m/44'/607'/0'/0'/0'",
+                "publicKeyHex": "c1f91bfd0283d9c25f14488d8d252c8ce74fe05edcaf4f5c2f647f92a08af09c",
+                "isDefault": true
+              },
+              {
+                "accountId": "iroha-taira",
+                "ecosystem": "iroha",
+                "address": "testuﾛ1Pn4Z3ﾁeｸZzXmﾆWdhﾌyｾﾓTﾐTﾆaUﾚSﾙ1ｶﾛｹCｷe8ｳﾋ154C93",
+                "chainId": "fc56984b-2be7-431d-840e-21514d1883f0",
+                "derivationPath": "m/44'/617'/0'/0'",
+                "publicKeyHex": "9a676c350154f7b7183c5b2f44a49f926a75967260840f43062afdcf4259b995",
+                "isDefault": true
+              },
+              {
+                "accountId": "iroha-nexus",
+                "ecosystem": "iroha",
+                "address": "sorauﾛ1Pn4Z3ﾁeｸZzXmﾆWdhﾌyｾﾓTﾐTﾆaUﾚSﾙ1ｶﾛｹCｷe8ｳﾋ154C93",
+                "chainId": "sora:nexus:global",
+                "derivationPath": "m/44'/617'/0'/0'",
+                "publicKeyHex": "9a676c350154f7b7183c5b2f44a49f926a75967260840f43062afdcf4259b995",
+                "isDefault": false
+              }
+            ],
+            "createdAtMillis": 1793443829048,
+            "updatedAtMillis": 1793443829048
+          },
+          "isMasterPassword": true,
+          "isSubWallet": true
+        }
+      },
+      "ethereumBackup": {
+        "encoded": "U5wf4S7ahhDY87l9sVXs6vnsvKBZkqteJzF2GLLUVc8AgAAAAQAAAAgAAAA9bfym/SJnnA6AUpYkQVgRwduw7zq3zPCrY38OJL4/4phnsl0ZkmZQ1DNpN8bVg92JhX1splX44j5Ji5+MoSLMjq+rInluwmmizuAcUaSytmpJjPwS2PNkC35kNrswkaUHhsMhuDdePgJUnPwGI/YtYT2+0daoDvhJPF4HXtPjHdDUoVwsEb8N6npAEHNwzhdBGHIG+kgVb/UmvmVrE91bLWL2",
+        "encoding": {
+          "content": [
+            "pkcs8",
+            "ethereum"
+          ],
+          "type": [
+            "scrypt",
+            "xsalsa20-poly1305"
+          ],
+          "version": "3"
+        },
+        "address": "0x036fa76e9b04454619d94f15cc0ea3b9df3c5b76f077186ea59bb638095f6ecaea",
+        "meta": {
+          "name": "Plain",
+          "ethereumAddress": "",
+          "walletEcosystem": "evm",
+          "bitcoinAddress": "bc1qslk39wvggqa0vl8nd6jckaz54dw3vk45c5w60m",
+          "bitcoinTestnetAddress": "tb1q2mhcnxyddvq4vxja3mg5t73uknyppfx2u4k54f",
+          "solanaAddress": "5Pobwp6d9ihN9Nz38f87gVCEBFMgipFiSM2VtUhVit6w",
+          "tonAddress": "UQAXzfXU_vaoDQkasgmNRC2gG0cU0bS83sV4bEXVswywW980",
+          "tonPublicKeyHex": "c1f91bfd0283d9c25f14488d8d252c8ce74fe05edcaf4f5c2f647f92a08af09c",
+          "irohaAddress": "testuﾛ1Pn4Z3ﾁeｸZzXmﾆWdhﾌyｾﾓTﾐTﾆaUﾚSﾙ1ｶﾛｹCｷe8ｳﾋ154C93",
+          "irohaPublicKeyHex": "9a676c350154f7b7183c5b2f44a49f926a75967260840f43062afdcf4259b995",
+          "isMobile": false,
+          "isMasterAccount": true,
+          "genesisHash": "",
+          "whenCreated": 1793443828749,
+          "universalWallet": {
+            "metaVersion": 2,
+            "schemaVersion": 2,
+            "walletId": "uw2_0xF9297b542BDb5DA50C364f9AE4Cbe1F3933bA40Fmvwa5erx0000000000",
+            "displayName": "Plain",
+            "source": "created-24-word",
+            "status": "migration-required",
+            "primaryEcosystem": "evm",
+            "publicAccounts": [
+              {
+                "accountId": "evm-default",
+                "ecosystem": "evm",
+                "address": "0xF9297b542BDb5DA50C364f9AE4Cbe1F3933bA40F",
+                "chainId": "eip155:1",
+                "derivationPath": "m/44'/60'/0'/0/0",
+                "isDefault": true
+              },
+              {
+                "accountId": "bitcoin-mainnet",
+                "ecosystem": "bitcoin",
+                "address": "bc1qslk39wvggqa0vl8nd6jckaz54dw3vk45c5w60m",
+                "chainId": "bitcoin:mainnet",
+                "derivationPath": "m/84'/0'/0'/0/0",
+                "isDefault": true
+              },
+              {
+                "accountId": "bitcoin-testnet",
+                "ecosystem": "bitcoin",
+                "address": "tb1q2mhcnxyddvq4vxja3mg5t73uknyppfx2u4k54f",
+                "chainId": "bitcoin:testnet",
+                "derivationPath": "m/84'/1'/0'/0/0",
+                "isDefault": false
+              },
+              {
+                "accountId": "solana-mainnet",
+                "ecosystem": "solana",
+                "address": "5Pobwp6d9ihN9Nz38f87gVCEBFMgipFiSM2VtUhVit6w",
+                "chainId": "solana:mainnet",
+                "derivationPath": "m/44'/501'/0'/0'",
+                "isDefault": true
+              },
+              {
+                "accountId": "ton-mainnet",
+                "ecosystem": "ton",
+                "address": "UQAXzfXU_vaoDQkasgmNRC2gG0cU0bS83sV4bEXVswywW980",
+                "chainId": "ton:mainnet",
+                "derivationPath": "m/44'/607'/0'/0'/0'",
+                "publicKeyHex": "c1f91bfd0283d9c25f14488d8d252c8ce74fe05edcaf4f5c2f647f92a08af09c",
+                "isDefault": true
+              },
+              {
+                "accountId": "iroha-taira",
+                "ecosystem": "iroha",
+                "address": "testuﾛ1Pn4Z3ﾁeｸZzXmﾆWdhﾌyｾﾓTﾐTﾆaUﾚSﾙ1ｶﾛｹCｷe8ｳﾋ154C93",
+                "chainId": "fc56984b-2be7-431d-840e-21514d1883f0",
+                "derivationPath": "m/44'/617'/0'/0'",
+                "publicKeyHex": "9a676c350154f7b7183c5b2f44a49f926a75967260840f43062afdcf4259b995",
+                "isDefault": true
+              },
+              {
+                "accountId": "iroha-nexus",
+                "ecosystem": "iroha",
+                "address": "sorauﾛ1Pn4Z3ﾁeｸZzXmﾆWdhﾌyｾﾓTﾐTﾆaUﾚSﾙ1ｶﾛｹCｷe8ｳﾋ154C93",
+                "chainId": "sora:nexus:global",
+                "derivationPath": "m/44'/617'/0'/0'",
+                "publicKeyHex": "9a676c350154f7b7183c5b2f44a49f926a75967260840f43062afdcf4259b995",
+                "isDefault": false
+              }
+            ],
+            "createdAtMillis": 1793443828749,
+            "updatedAtMillis": 1793443828749
+          },
+          "isMasterPassword": true,
+          "isSubWallet": true
+        }
+      }
+    }
+  ]
+}

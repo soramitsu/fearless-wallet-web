@@ -1,0 +1,16 @@
+{
+  "format": "fearless-evm-token-list",
+  "version": 1,
+  "chainId": "7000",
+  "network": "ZetaChain Mainnet",
+  "tokens": [
+    ["0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0","USDC.BSC","ZetaChain ZRC20 USDC on BSC",18],
+    ["0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a","USDC.ETH","ZetaChain ZRC20 USDC on ETH",6],
+    ["0x13A0c5930C028511Dc02665E7285134B6d11A5f4","BTC.BTC","ZetaChain ZRC20 BTC-btc_mainnet",8],
+    ["0x45334a5B0a01cE6C260f2B570EC941C680EA62c0","stZETA","Staked ZETA",18],
+    ["0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf","WZETA","Wrapped Zeta",18],
+    ["0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7","USDT.ETH","ZetaChain ZRC20 USDT on ETH",6],
+    ["0x91d4F0D54090Df2D81e834c3c8CE71C6c865e79F","USDT.BSC","ZetaChain ZRC20 USDT on BSC",18],
+    ["0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891","ETH.ETH","ZetaChain ZRC20 ETH-eth_mainnet",18]
+  ]
+}

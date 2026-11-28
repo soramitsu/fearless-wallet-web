@@ -43,7 +43,6 @@ import { defineComponent } from 'vue';
 
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
-import { EXPLORERS_BASE_URLS } from '@/consts/networks';
 import { setClipboard } from '@/helpers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
@@ -73,24 +72,33 @@ export default defineComponent({ name: 'AccountSettingsPopup' ,
     networkProps() {
       return this.networksStore.getNetwork(this.selectedNetwork);
     },
-    explorerType() {
-      return this.networkProps?.externalApi?.history?.type;
+    explorer() {
+      return this.networkProps?.externalApi?.explorers?.[0];
     },
     haveExplorers() {
       return this.explorerUrl !== '';
     },
-    explorerUrl() {
-      if (this.networkProps.externalApi?.explorers) return this.networkProps?.externalApi?.explorers[0].url;
+    // The account page from the registry's explorer template, as the history details build a transaction's page.
+    explorerUrl(): string {
+      const explorer = this.explorer;
 
-          return '';
+      if (!explorer?.url || !this.addressByNetwork) return '';
+      // Tonviewer shows an account at its own path, without a type segment.
+      if (explorer.types?.includes('tonAccount')) return explorer.url.replace('{type}/', '').replace('{value}', this.addressByNetwork);
+
+      const type = explorer.types?.find((name) => name === 'account' || name === 'address');
+
+      return type ? explorer.url.replace('{type}', type).replace('{value}', this.addressByNetwork) : '';
     },
     buttonText() {
       const explorer =
-            this.explorerType === 'etherscan'
+            this.explorer?.type === 'etherscan'
               ? 'accounts.etherscan'
-              : this.explorerType === 'ton'
+              : this.explorer?.type === 'tonviewer'
               ? 'accounts.tonviewer'
-              : 'accounts.subscan';
+              : this.explorer?.type === 'subscan'
+              ? 'accounts.subscan'
+              : 'ux.openExplorer';
 
           return this.$t(explorer);
     },
@@ -104,12 +112,6 @@ export default defineComponent({ name: 'AccountSettingsPopup' ,
     addressByNetwork() {
       return BaseApi.formatAddress(this.accountsStore.selectedWallet, this.selectedNetwork);
     },
-    lowerCaseSelectedNetwork() {
-      return this.selectedNetwork.toLowerCase();
-    },
-    substrateExplorerByNetwork() {
-      return EXPLORERS_BASE_URLS[this.lowerCaseSelectedNetwork] ?? this.selectedNetwork;
-    },
   },
   methods: {
     copyAddress() {
@@ -117,17 +119,8 @@ export default defineComponent({ name: 'AccountSettingsPopup' ,
 
           this.close();
     },
-    openEvmExplorer() {
-      const hostname = new URL(this.explorerUrl).hostname;
-
-          window.open(`https://${hostname}/address/${this.addressByNetwork}`);
-    },
-    openSubscan() {
-      window.open(`https://${this.substrateExplorerByNetwork}.subscan.io/account/${this.addressByNetwork}`);
-    },
     openExplorer() {
-      if (this.explorerType === 'etherscan') return this.openEvmExplorer();
-          else this.openSubscan();
+      window.open(this.explorerUrl);
 
           this.close();
     },

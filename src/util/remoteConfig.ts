@@ -15,7 +15,21 @@ export class RemoteConfigTimeoutError extends Error {
   }
 }
 
-export async function fetchRemoteFeatureConfig(): Promise<unknown> {
+let pending: Promise<unknown> | undefined;
+
+/**
+ * The worker's start-up readers (action capabilities and the send and dApp-signing kill switches) all read this file
+ * at once. A caller that asks while a fetch is under way shares it, so a start costs one request.
+ */
+export function fetchRemoteFeatureConfig(): Promise<unknown> {
+  pending ??= fetchOnce().finally(() => {
+    pending = undefined;
+  });
+
+  return pending;
+}
+
+async function fetchOnce(): Promise<unknown> {
   // Axios aborts its own request at the timeout; the race also bounds an adapter that does not.
   const request = axios.get<unknown>(URLS.FEATURES, { timeout: REMOTE_CONFIG_TIMEOUT_MS });
 

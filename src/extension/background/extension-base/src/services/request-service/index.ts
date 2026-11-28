@@ -9,6 +9,7 @@ import {
   MetadataRequestHandler,
   SubstrateRequestHandler,
   SolanaRequestHandler,
+  TonRequestHandler,
 } from '@extension-base/services/request-service/handlers';
 import { type KeyringService } from '@extension-base/services';
 import { assert } from '@polkadot/util';
@@ -46,6 +47,7 @@ export class RequestService {
   readonly substrateRequestHandler: SubstrateRequestHandler;
   readonly evmRequestHandler: EvmRequestHandler;
   readonly solanaRequestHandler: SolanaRequestHandler;
+  readonly tonRequestHandler: TonRequestHandler;
 
   constructor(
     readonly keyringService: KeyringService,
@@ -59,10 +61,13 @@ export class RequestService {
     this.substrateRequestHandler = new SubstrateRequestHandler(this, this.state);
     this.evmRequestHandler = new EvmRequestHandler(this);
     this.solanaRequestHandler = new SolanaRequestHandler(this);
+    this.tonRequestHandler = new TonRequestHandler(this);
   }
 
+  // Called whenever a queue changes. A request waiting for the person keeps the node connections open.
   public updateIcon(shouldClose?: boolean): void {
     this.popupHandler.updateIcon(shouldClose);
+    this.state?.workerSleepService?.refresh();
   }
 
   public async resetWallet(): Promise<void> {
@@ -72,6 +77,7 @@ export class RequestService {
     this.substrateRequestHandler.resetWallet();
     this.evmRequestHandler.resetWallet();
     this.solanaRequestHandler.resetWallet();
+    this.tonRequestHandler?.resetWallet();
     this.metadataRequestHandler.resetWallet();
     this.connectWCRequestHandler.resetWallet();
     this.notSupportWCRequestHandler.resetWallet();
@@ -85,6 +91,8 @@ export class RequestService {
     this.substrateRequestHandler.cancelPending(error);
     this.evmRequestHandler.cancelPending(error);
     this.solanaRequestHandler.cancelPending(error);
+    this.tonRequestHandler?.cancelPending(error);
+    this.state?.tonConnectService?.cancelPending(error);
   }
 
   // Popup
@@ -156,8 +164,8 @@ export class RequestService {
     return this.authRequestHandler.mutateAuthorizations(update);
   }
 
-  public authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<boolean> {
-    return this.authRequestHandler.authorizeUrl(url, request);
+  public authorizeUrl(url: string, request: RequestAuthorizeTab, signal?: AbortSignal): Promise<boolean> {
+    return this.authRequestHandler.authorizeUrl(url, request, signal);
   }
 
   public getAuthRequest(id: string): AuthRequest {
@@ -206,11 +214,13 @@ export class RequestService {
   public getSignRequest(id: string, kind?: SigningRequestKind) {
     if (kind === 'evm') return this.evmRequestHandler?.getEvmSignRequest(id);
     if (kind === 'solana') return this.solanaRequestHandler?.getSolanaSignRequest(id);
+    if (kind === 'ton') return this.tonRequestHandler?.getTonSignRequest(id);
     if (kind === 'substrate') return this.substrateRequestHandler?.getSignRequest(id);
 
     const found = [
       this.evmRequestHandler?.getEvmSignRequest(id),
       this.solanaRequestHandler?.getSolanaSignRequest(id),
+      this.tonRequestHandler?.getTonSignRequest(id),
       this.substrateRequestHandler?.getSignRequest(id),
     ].filter((request) => request !== undefined);
 
@@ -224,6 +234,7 @@ export class RequestService {
     return (
       this.evmRequestHandler?.getEvmSignRequest(id) !== undefined ||
       this.solanaRequestHandler?.getSolanaSignRequest(id) !== undefined ||
+      this.tonRequestHandler?.getTonSignRequest(id) !== undefined ||
       this.substrateRequestHandler?.getSignRequest(id) !== undefined
     );
   }
@@ -239,6 +250,10 @@ export class RequestService {
 
   public get signSolanaSubject() {
     return this.solanaRequestHandler.signSolanaSubject;
+  }
+
+  public get signTonSubject() {
+    return this.tonRequestHandler.signTonSubject;
   }
 
   public signWcRequest(approvalId: string): WCSignRequest | undefined {
@@ -276,6 +291,14 @@ export class RequestService {
 
   public get numSolanaSignRequests(): number {
     return this.solanaRequestHandler.numSolanaSignRequest;
+  }
+
+  public get numTonSignRequests(): number {
+    return this.tonRequestHandler?.numTonSignRequest ?? 0;
+  }
+
+  public get numTonConnectRequests(): number {
+    return this.state?.tonConnectService?.numConnectRequests ?? 0;
   }
 
   public addConnectWCRequest(request: WalletConnectSessionRequest): void {
@@ -321,7 +344,9 @@ export class RequestService {
       this.numNotSupportWCRequests +
       this.numSignWCRequests +
       this.numEvmSignRequests +
-      this.numSolanaSignRequests
+      this.numSolanaSignRequests +
+      this.numTonSignRequests +
+      this.numTonConnectRequests
     );
   }
 

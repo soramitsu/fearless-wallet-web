@@ -2,7 +2,7 @@ import { decodeAddress, isEthereumAddress } from '@polkadot/util-crypto';
 import { u8aToHex } from '@polkadot/util';
 import { captureSessionSigningContext } from './sessionSigningContext';
 import type { NetworkJson } from '@extension-base/types';
-import type { SessionTypes, EngineTypes } from '@walletconnect/types';
+import type { WcConnectParams, WcSession } from '@extension-base/services/wallet-connect-service/protocol/types';
 
 const methods = {
   polkadot: ['polkadot_signTransaction', 'polkadot_signMessage'],
@@ -16,7 +16,7 @@ const methods = {
   ],
 };
 
-export function mobilePairingProposal(networks: NetworkJson[]): EngineTypes.ConnectParams {
+export function mobilePairingProposal(networks: NetworkJson[]): WcConnectParams {
   const chains = { polkadot: new Set<string>(), eip155: new Set<string>() };
   for (const network of networks) {
     if (network.disabled) continue;
@@ -31,7 +31,7 @@ export function mobilePairingProposal(networks: NetworkJson[]): EngineTypes.Conn
     }
   }
   if (!chains.polkadot.size) throw new Error('No supported mobile Substrate network is available');
-  const optionalNamespaces: EngineTypes.ConnectParams['optionalNamespaces'] = {};
+  const optionalNamespaces: WcConnectParams['optionalNamespaces'] = {};
   for (const namespace of ['polkadot', 'eip155'] as const) {
     if (chains[namespace].size)
       optionalNamespaces[namespace] = {
@@ -43,10 +43,10 @@ export function mobilePairingProposal(networks: NetworkJson[]): EngineTypes.Conn
   return { requiredNamespaces: {}, optionalNamespaces };
 }
 
-type Reader = { getSession(topic: string): SessionTypes.Struct; getSessionRevision(topic: string): number };
-export function captureMobilePairingAccount(reader: Reader, approved: SessionTypes.Struct) {
+type Reader = { getSession(topic: string): WcSession; getSessionRevision(topic: string): number };
+export function captureMobilePairingAccount(reader: Reader, approved: WcSession) {
   const live = reader.getSession(approved.topic);
-  const snapshot = (session: SessionTypes.Struct) =>
+  const snapshot = (session: WcSession) =>
     JSON.stringify({
       topic: session.topic,
       acknowledged: session.acknowledged,

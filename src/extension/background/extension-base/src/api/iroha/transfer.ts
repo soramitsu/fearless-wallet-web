@@ -1,5 +1,6 @@
 import { type BasicTxResponse } from '@extension-base/background/types/types';
 import { IrohaToriiWalletClient } from '@extension-base/services/iroha-torii-service';
+import { exportUniversalWalletSecret } from '@extension-base/services/keyring-service/UniversalWalletPassword';
 import type State from '@extension-base/background/handlers/State';
 import type { FWKeyringMeta, NetworkJson } from '@extension-base/types';
 import {
@@ -46,6 +47,8 @@ type IrohaTransferSource = {
   derivationPath: string;
   irohaAddress: string;
   mnemonicOrSeed: string;
+  /** The wallet password when it opens this account; '' for every account the words alone open. */
+  passphrase: string;
   publicKeyHex: string;
   walletEcosystem?: WalletEcosystem;
 };
@@ -60,6 +63,7 @@ type IrohaTransferCodecInput = {
   maxFee: string;
   mnemonicOrSeed: string;
   networkId: string;
+  passphrase?: string;
   networkPrefix: number;
   signingPublicKeyHex: string;
   sourceAssetId: string;
@@ -184,6 +188,7 @@ async function makeIrohaTransfer(
     ...transferPayloadInput(prepared, quote, creationTimeMs),
     derivationPath: prepared.source.derivationPath,
     mnemonicOrSeed: prepared.source.mnemonicOrSeed,
+    passphrase: prepared.source.passphrase,
   });
   const hash = normalizeSignedTransactionHash(result.signedTransactionHashHex);
 
@@ -406,10 +411,12 @@ function resolveIrohaTransferSource(state: State, from: string, network: IrohaNe
   const meta = account.meta as FWKeyringMeta;
   const irohaAddress = resolveIrohaAccountAddress(meta, account.address, network);
   const details = parseIrohaI105Address(irohaAddress, network);
-  const { seed } = state.keyringService.exportMnemonic({
-    address: account.address,
-    walletEcosystem: meta.walletEcosystem,
-  });
+  const { seed, passphrase } = exportUniversalWalletSecret(
+    state.keyringService,
+    { address: account.address, walletEcosystem: meta.walletEcosystem },
+    'iroha',
+    meta
+  );
 
   if (!seed) throw new Error('iroha_mnemonic_unavailable');
 
@@ -418,6 +425,7 @@ function resolveIrohaTransferSource(state: State, from: string, network: IrohaNe
     derivationPath: UNIVERSAL_WALLET_DERIVATION_PATHS.irohaDefault,
     irohaAddress: details.i105,
     mnemonicOrSeed: seed,
+    passphrase,
     publicKeyHex: details.publicKeyHex,
     walletEcosystem: meta.walletEcosystem,
   };

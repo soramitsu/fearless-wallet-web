@@ -35,12 +35,11 @@ import { Components } from '@/router/routes';
 export default defineComponent({ name: 'AddEthereumAccountPopup' ,
   methods: {
     openAddWalletPage(type: string) {
+      // The add-wallet path has no segment for the flag, so the router would drop it as a param.
       this.$router.push({
             name: Components.AddWallet,
-            params: {
-              type,
-              onlyEthereumAccount: '',
-            },
+            params: { type },
+            query: { onlyEthereumAccount: 'true' },
           });
     },
   },

@@ -1,27 +1,10 @@
 <template>
-  <Icon icon="loading" className="spinner" />
+  <MirrorLoader class="spinner" :size="width" tone="current" />
 </template>
 
 <script lang="ts" setup>
-const props = withDefaults(defineProps<{ width?: number }>(), { width: 21 });
+// A small loader inside a line or a control: the mirror's three comets (brand kit v4) in the text colour around it.
+import MirrorLoader from '@/components/MirrorLoader.vue';
 
-const prepSize = `${props.width}px`;
+withDefaults(defineProps<{ width?: number }>(), { width: 21 });
 </script>
-
-<style lang="scss" scoped>
-.spinner {
-  animation: spin-animation 1.5s infinite;
-  display: inline-block;
-  width: v-bind(prepSize);
-  height: v-bind(prepSize);
-}
-
-@keyframes spin-animation {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-</style>

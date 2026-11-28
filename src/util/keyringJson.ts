@@ -8,6 +8,11 @@ export function decodeMnemonicFromJsonBackup(json: KeyringPair$Json, password: s
   if (json.meta?.isMnemonicUnverified) {
     throw new Error('This backup does not establish a recovery phrase for this account. Use its encrypted JSON backup.');
   }
+  return decodeStoredPhraseFromJsonBackup(json, password, expectedPublicKey);
+}
+
+/** The words stored with a key, also when nothing has shown yet that they open it (a restored path wallet). */
+export function decodeStoredPhraseFromJsonBackup(json: KeyringPair$Json, password: string, expectedPublicKey?: Uint8Array): string {
   const encoded = isHex(json.encoded) ? hexToU8a(json.encoded) : base64Decode(json.encoded);
   const decoded = decodePair(password, encoded, json.encoding.type);
 

@@ -43,6 +43,7 @@
               text="assets.sendButtonText"
               :totalAmount="transferableSendAmount"
               :value="sendValue"
+              :priceUnavailable="sendAssetPrice === null"
               :asset="sendAssetName"
               :assetId="sendAssetId"
               :amount="sendAmount"
@@ -58,6 +59,7 @@
               text="assets.receiveButtonText"
               :totalAmount="transferableReceiveAmount"
               :value="receiveValue"
+              :priceUnavailable="receiveAssetPrice === null"
               :asset="receiveAssetName"
               :assetId="receiveAssetId"
               :amount="receiveAmount"
@@ -118,6 +120,8 @@
             :receiveAmount="receiveAmount"
             :sendValue="sendValue"
             :receiveValue="receiveValue"
+            :sendPriceUnavailable="sendAssetPrice === null"
+            :receivePriceUnavailable="receiveAssetPrice === null"
             :minMaxAmount="minMaxAmountCut"
             :minMaxAmountPrice="minMaxAmountPrice"
             :fee="fee"
@@ -182,6 +186,7 @@
       :currency="sendCurrency"
       :amount="sendAmount"
       :value="sendValue"
+      :priceUnavailable="sendAssetPrice === null"
       :firstIcon="sendAssetId"
       :secondIcon="receiveAssetId"
       :tx="tx"
@@ -208,6 +213,7 @@ import PoolsBanner from '@/screens/pools/PoolsBanner.vue';
 import { checkSwap } from '@/extension/messaging';
 import {
   getCurrencyOptions,
+  getTransferAssetPrice,
   getXORCurrency,
   calcTransferableSendMinusFee,
   isValidAmountAsset,
@@ -263,6 +269,12 @@ export default defineComponent({ name: 'SwapForm',
       isExchangeB: false,
       tx: {} as SwapOptions,
       swapInterval: undefined as ReturnType<typeof setInterval> | undefined,
+      quoteGeneration: 0,
+      quoteRequestId: 0,
+      quotePending: false,
+      quoteReady: false,
+      quoteError: false,
+      quoteActive: true,
     };
   },
   computed: {
@@ -343,15 +355,21 @@ export default defineComponent({ name: 'SwapForm',
 
           return this.step !== 1;
     },
-    sendAssetPrice() {
-      const priceId = this.sendCurrency?.priceId ?? '';
-
-          return this.networksStore.getAssetPrice(priceId).price;
+    tokenPrices(): Record<string, number> {
+      return this.networksStore.assetsPrice?.tokenPriceMap ?? {};
     },
-    receiveAssetPrice() {
-      const priceId = this.receiveCurrency?.priceId ?? '';
-
-          return this.networksStore.getAssetPrice(priceId).price;
+    // The portfolio's trusted price (getTransferAssetPrice) of each asset on SORA, or `null`: it then has no fiat value
+    // and the screen says "Price unavailable". A token group's price id is never lent to an asset the portfolio does not
+    // trust, so an unpriced token never shows $ 0.00 or another asset's value.
+    sendAssetPrice(): number | null {
+      return getTransferAssetPrice(this.sendCurrency, this.soraNetwork, this.tokenPrices);
+    },
+    receiveAssetPrice(): number | null {
+      return getTransferAssetPrice(this.receiveCurrency, this.soraNetwork, this.tokenPrices);
+    },
+    // The network fee is paid in XOR, priced by its own decision.
+    feeAssetPrice(): number | null {
+      return getTransferAssetPrice(this.currencyXOR, this.soraNetwork, this.tokenPrices);
     },
     classesSwapIcon() {
       return ['swap-icon', { 'swap-icon-disable': this.receiveAssetId === '' }];
@@ -360,22 +378,24 @@ export default defineComponent({ name: 'SwapForm',
       return getXORCurrency(this.accountsStore.balances);
     },
     feePrice() {
-      const fee = this.fee ?? 0;
-          const balance = this.networksStore.getAssetPrice(this.currencyXOR?.priceId ?? '').price * +fee;
+      if (this.feeAssetPrice === null) return this.$t('portfolioPage.priceUnavailable');
 
-          return this.$n(+balance, 'price');
+      const balance = getCostOfAssets(this.fee ?? 0, this.feeAssetPrice) as number;
+
+      return `${this.accountsStore.fiatSymbol} ${this.$n(balance, 'price')}`;
     },
     soraMainAssetUpper() {
       return SORA_UTILITY_ASSET.toUpperCase();
     },
+    // The most sold (exact receive) or the least received (exact send), priced like that asset.
     minMaxAmountPrice() {
-      const price = (
-            this.isExchangeB
-              ? getCostOfAssets(+this.minMaxAmount, this.networksStore.getAssetPrice(this.sendAssetId).price)
-              : getCostOfAssets(+this.minMaxAmount, this.networksStore.getAssetPrice(this.receiveAssetId).price)
-          ) as number;
+      const assetPrice = this.isExchangeB ? this.sendAssetPrice : this.receiveAssetPrice;
 
-          return `${this.accountsStore.fiatSymbol} ${this.$n(price ?? 0, 'price')}`;
+      if (assetPrice === null) return this.$t('portfolioPage.priceUnavailable');
+
+      const price = getCostOfAssets(+this.minMaxAmount, assetPrice) as number;
+
+      return `${this.accountsStore.fiatSymbol} ${this.$n(price ?? 0, 'price')}`;
     },
     minMaxAmountCut() {
       return `${this.$n(+this.minMaxAmount, 'decimal')} ${this.minMaxAssetName}`;
@@ -394,12 +414,16 @@ export default defineComponent({ name: 'SwapForm',
           return `${value} ${this.sendAssetUP}`;
     },
     AToBValueCut() {
+      if (this.sendAssetPrice === null) return this.$t('portfolioPage.priceUnavailable');
+
       const cost = (getCostOfAssets(this.transferableSendAmount, this.sendAssetPrice) as number) ?? 0;
           const value = this.$n(cost, 'price') || '0';
 
           return `${this.accountsStore.fiatSymbol} ${value}`;
     },
     BToAValueCut() {
+      if (this.receiveAssetPrice === null) return this.$t('portfolioPage.priceUnavailable');
+
       const cost = (getCostOfAssets(+this.transferableReceiveAmount, this.receiveAssetPrice) as number) ?? 0;
           const value = this.$n(cost, 'price') || '0';
 
@@ -474,6 +498,8 @@ export default defineComponent({ name: 'SwapForm',
     },
     buttonText() {
       if (this.showSettings) return 'common.save';
+      if (this.quoteError) return 'common.estimateFeeError';
+      if (this.quotePending) return 'assets.calculateFee';
 
           if (this.sendAmount !== '' && this.receiveAmount !== '' && this.fee === '') return 'assets.calculateFee';
 
@@ -482,14 +508,14 @@ export default defineComponent({ name: 'SwapForm',
           if (!this.isValidTransferByXOR)
             return { text: 'assets.insufficientBalance', localeProps: { asset: this.soraMainAssetUpper } };
 
-          if (+this.sendAmount === 0 || +this.receiveAmount === 0) return { text: 'assets.insufficientLiquidity' };
+          if (+this.sendAmount <= 0 || +this.receiveAmount <= 0) return { text: 'assets.insufficientLiquidity' };
 
           return this.step === 1 ? 'assets.preview' : 'common.confirm';
     },
     buttonPreviewDisabled() {
       if (this.showSettings) return false;
 
-      if (!this.canMutate) return true;
+      if (!this.canMutate || !this.quoteReady || this.quotePending) return true;
 
       if (this.step === 2) return false;
 
@@ -497,8 +523,8 @@ export default defineComponent({ name: 'SwapForm',
             this.fee === '' ||
             !this.isValidSendAsset ||
             !this.isValidTransferByXOR ||
-            +this.sendAmount === 0 ||
-            +this.receiveAmount === 0
+            +this.sendAmount <= 0 ||
+            +this.receiveAmount <= 0
           )
             return true;
 
@@ -546,20 +572,52 @@ export default defineComponent({ name: 'SwapForm',
             )?.transferable ?? 0
           );
     },
+    // '' without a trusted price: the inputs, the preview and the confirmation then say "Price unavailable".
     sendValue() {
-      return getCostOfAssets(+(this.sendAmount ?? 0), this.sendAssetPrice, 'string');
+      if (this.sendAssetPrice === null) return '';
+
+      return getCostOfAssets(+(this.sendAmount ?? 0), this.sendAssetPrice, 'string') as string;
     },
     receiveValue() {
-      return getCostOfAssets(+(this.receiveAmount ?? 0), this.receiveAssetPrice, 'string');
+      if (this.receiveAssetPrice === null) return '';
+
+      return getCostOfAssets(+(this.receiveAmount ?? 0), this.receiveAssetPrice, 'string') as string;
     },
+  },
+  watch: {
+    'accountsStore.selectedWallet.address'() {
+      this.clearSwapInterval();
+      this.sendAmount = '';
+      this.receiveAmount = '';
+      this.step = 1;
+      this.showConfirmationPasswordPopup = false;
+    },
+    canMutate(enabled: boolean) {
+      if (!enabled) {
+        this.clearSwapInterval();
+        this.step = 1;
+        this.showConfirmationPasswordPopup = false;
+      } else if (this.quoteActive && this.step === 1) {
+        void this.checkSwap();
+      }
+    },
+  },
+  beforeUnmount() {
+    this.quoteActive = false;
+    this.clearSwapInterval();
   },
   created() {
     this.updateComponentParams();
   },
   activated() {
+    this.quoteActive = true;
     this.updateComponentParams();
+    if (this.canMutate && this.step === 1) void this.checkSwap();
   },
   deactivated() {
+    this.quoteActive = false;
+    this.clearSwapInterval();
+    this.showConfirmationPasswordPopup = false;
     this.selectAssetType = '';
         this.step = 1;
   },
@@ -600,53 +658,79 @@ export default defineComponent({ name: 'SwapForm',
           }
     },
     async checkSwap() {
-      if (!this.runtimeAvailable || !this.hasUsableAssets) return;
+      this.clearSwapInterval();
+      this.quoteError = false;
+      if (!this.quoteActive || !this.runtimeAvailable || !this.hasUsableAssets) return;
 
       if (this.sendAssetId === '' || this.receiveAssetId === '') {
-            if (this.isExchangeB) this.sendAmount = '';
-            else this.receiveAmount = '';
+        if (this.isExchangeB) this.sendAmount = '';
+        else this.receiveAmount = '';
+        return;
+      }
+      if ((this.isExchangeB && this.receiveAmount === '') || (!this.isExchangeB && this.sendAmount === '')) {
+        this.sendAmount = '';
+        this.receiveAmount = '';
+        return;
+      }
 
-            return;
-          }
-
-          if ((this.isExchangeB && this.receiveAmount == '') || (!this.isExchangeB && this.sendAmount === '')) {
-            this.sendAmount = '';
-            this.receiveAmount = '';
-
-            return;
-          }
-
-          const createSwap = async () => {
-            const { amountA, amountB, AToB, BToA, swapOptions, minMaxValue, route } = await checkSwap({
-              network: this.soraNetworkName,
-              amountA: this.sendAmount,
-              amountB: this.receiveAmount,
-              assetAId: this.sendAssetId,
-              assetBId: this.receiveAssetId,
-              slippage: this.slippage,
-              symbolA: this.sendAssetName,
-              symbolB: this.receiveAssetName,
-              isExchangeB: this.isExchangeB,
-              marketType: this.marketType,
-            });
-
-            if (this.isExchangeB) this.sendAmount = amountA;
-            else this.receiveAmount = amountB;
-
-            this.tx = swapOptions!;
-            this.minMaxAmount = minMaxValue;
-            this.AToB = AToB;
-            this.BToA = BToA;
-            this.route = route;
-          };
-
-          this.clearSwapInterval();
-          this.swapInterval = setInterval(createSwap, SWAP_INTERVAL_RECALCULATE);
-
-          createSwap();
+      const generation = this.quoteGeneration;
+      const account = this.accountsStore.selectedWallet.address;
+      const createSwap = async () => {
+        if (generation !== this.quoteGeneration || !this.runtimeAvailable || !this.hasUsableAssets) return;
+        const requestId = ++this.quoteRequestId;
+        const exactOutput = this.isExchangeB;
+        const input = {
+          network: this.soraNetworkName,
+          amountA: this.sendAmount,
+          amountB: this.receiveAmount,
+          assetAId: this.sendAssetId,
+          assetBId: this.receiveAssetId,
+          slippage: this.slippage,
+          symbolA: this.sendAssetName,
+          symbolB: this.receiveAssetName,
+          isExchangeB: exactOutput,
+          marketType: this.marketType,
+        };
+        const isCurrent = () => generation === this.quoteGeneration && requestId === this.quoteRequestId &&
+          account === this.accountsStore.selectedWallet.address && this.runtimeAvailable && this.hasUsableAssets &&
+          input.assetAId === this.sendAssetId && input.assetBId === this.receiveAssetId &&
+          input.isExchangeB === this.isExchangeB && input.slippage === this.slippage && input.marketType === this.marketType &&
+          (exactOutput ? input.amountB === this.receiveAmount : input.amountA === this.sendAmount);
+        this.quotePending = true;
+        this.quoteReady = false;
+        try {
+          const result = await checkSwap(input);
+          if (!isCurrent()) return;
+          if (exactOutput) this.sendAmount = result.amountA;
+          else this.receiveAmount = result.amountB;
+          this.tx = result.swapOptions!;
+          this.minMaxAmount = result.minMaxValue;
+          this.AToB = result.AToB;
+          this.BToA = result.BToA;
+          this.route = result.route;
+          this.quoteError = false;
+          this.quoteReady = Boolean(result.swapOptions);
+        } catch {
+          if (!isCurrent()) return;
+          if (exactOutput) this.sendAmount = '';
+          else this.receiveAmount = '';
+          this.tx = {} as SwapOptions;
+          this.quoteError = true;
+        } finally {
+          if (generation === this.quoteGeneration && requestId === this.quoteRequestId) this.quotePending = false;
+        }
+      };
+      this.swapInterval = setInterval(() => { void createSwap(); }, SWAP_INTERVAL_RECALCULATE);
+      await createSwap();
     },
     clearSwapInterval() {
       clearInterval(this.swapInterval);
+      this.swapInterval = undefined;
+      this.quoteGeneration += 1;
+      this.quoteRequestId += 1;
+      this.quotePending = false;
+      this.quoteReady = false;
+      this.tx = {} as SwapOptions;
     },
     closeForm() {
       if (this.showSettings) {
@@ -662,13 +746,13 @@ export default defineComponent({ name: 'SwapForm',
       this.isExchangeB = false;
           this.sendAmount = value;
 
-          this.checkSwap();
+          await this.checkSwap();
     },
     async updateReceiveAmount(value: string) {
       this.isExchangeB = true;
           this.receiveAmount = value;
 
-          this.checkSwap();
+          await this.checkSwap();
     },
     toggleSelectedAsset(value: string) {
       if (this.isSendAssetType) this.sendAssetId = value;
@@ -704,8 +788,15 @@ export default defineComponent({ name: 'SwapForm',
             this.showSettings = false;
 
             await this.checkSwap();
-          } else if (!this.canMutate) return;
-          else if (this.step === 1) this.step += 1;
+          } else if (this.buttonPreviewDisabled) return;
+          else if (this.step === 1) {
+            // Keep the exact quote the user is reviewing until they return to editing.
+            clearInterval(this.swapInterval);
+            this.swapInterval = undefined;
+            this.quoteGeneration += 1;
+            this.quoteRequestId += 1;
+            this.step += 1;
+          }
           else this.showConfirmationPasswordPopup = true;
     },
     resetSettings() {
@@ -735,7 +826,10 @@ export default defineComponent({ name: 'SwapForm',
     },
     back() {
       if (this.step === 1) this.closeForm();
-          else this.step -= 1;
+          else {
+            this.step -= 1;
+            void this.checkSwap();
+          }
     },
     updateMarketType(value: MarketType) {
       this.temporaryMarketType = value;
@@ -744,11 +838,11 @@ export default defineComponent({ name: 'SwapForm',
       this.temporarySlippage = value;
     },
     calcTransferableXor() {
-      const balance = this.currencyXOR!.balances.find(
+      const balance = this.currencyXOR?.balances.find(
             ({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase()
-          )!;
+          );
 
-          return balance.transferable?.toString() ?? '';
+          return balance?.transferable?.toString() ?? '0';
     },
     calcTransferableSendMinusFee() {
       return calcTransferableSendMinusFee(this.sendCurrency, this.soraNetworkName, this.fee);

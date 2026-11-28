@@ -14,7 +14,7 @@
       <InfoRow
         text="assets.networkFee"
         :value="fee ? `${fee} ${soraMainAsset}` : undefined"
-        :price="`${accountsStore.fiatSymbol} ${feePrice}`"
+        :price="feePrice"
         icon="info"
         :iconClasses="['network-fee']"
       />
@@ -26,7 +26,8 @@
 import { defineComponent } from 'vue';
 
 import { getShareOfPool } from '@/extension/messaging';
-import { getXORCurrency } from '@/helpers/currencies';
+import { getTransferAssetPrice, getXORCurrency } from '@/helpers/currencies';
+import { getCostOfAssets } from '@/helpers/transfers';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
 
@@ -57,11 +58,18 @@ export default defineComponent({ name: 'PoolDescription' ,
     currencyXOR() {
       return getXORCurrency(this.accountsStore.balances);
     },
+    // The fee is paid in XOR, priced by the portfolio's trusted decision for it on the pool's network, or "Price
+    // unavailable".
     feePrice() {
-      const fee = this.fee ?? 0;
-          const balance = this.networksStore.getAssetPrice(this.currencyXOR?.priceId ?? '').price * +fee;
+      const price = getTransferAssetPrice(
+        this.currencyXOR,
+        this.poolParams?.network ? this.networksStore.getNetwork(this.poolParams.network) : undefined,
+        this.networksStore.assetsPrice?.tokenPriceMap ?? {}
+      );
 
-          return this.$n(+balance, 'price');
+      if (price === null) return this.$t('portfolioPage.priceUnavailable');
+
+      return `${this.accountsStore.fiatSymbol} ${this.$n(getCostOfAssets(this.fee ?? 0, price) as number, 'price')}`;
     },
     rewardAsset() {
       return this.poolParams?.rewardAsset;

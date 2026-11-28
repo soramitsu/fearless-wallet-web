@@ -39,6 +39,8 @@ const ManageAuths = () => import('@/screens/extension-ui/ManageAuths.vue');
 const DAppDetails = () => import('@/screens/extension-ui/DAppDetails.vue');
 
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
+const TonConnectApprove = () => import('@/screens/extension-ui/tonConnect/TonConnectApprove.vue');
+const TonConnectSessions = () => import('@/screens/extension-ui/tonConnect/TonConnectSessions.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
 const WalletConnectAuthDetails = () => import('@/screens/walletConnect/WalletConnectAuthDetails.vue');
 const WalletConnectInitAuth = () => import('@/screens/walletConnect/WalletConnectInitAuth.vue');
@@ -50,6 +52,9 @@ const Onboarding = () => import('@/screens/onboarding/Onboarding.vue');
 const SendForm = () => import('@/screens/wallet&asset/SendForm.vue');
 const ReceiveForm = () => import('@/screens/wallet&asset/ReceiveForm.vue');
 const CrossChainForm = () => import('@/screens/wallet&asset/CrossChainForm.vue');
+
+const TokenOverview = () => import('@/screens/portfolio/TokenOverview.vue');
+const ManageAssets = () => import('@/screens/portfolio/ManageAssets.vue');
 
 const AssetNetworks = () =>
   import(/* webpackChunkName: "asset-page" */ '@/screens/wallet&asset/asset/AssetNetworks.vue');
@@ -121,6 +126,9 @@ export enum Components {
   AddFromGoogle = 'AddFromGoogle',
   Polkaswap = 'Polkaswap',
   TokenLocations = 'TokenLocations',
+  TokenOverview = 'TokenOverview',
+  ManageAssets = 'ManageAssets',
+  PortfolioAllocation = 'PortfolioAllocation',
   Polkamarkt = 'Polkamarkt',
   PolkaswapDisclaimer = 'PolkaswapDisclaimer',
   SoraSwap = 'SoraSwap',
@@ -139,6 +147,8 @@ export enum Components {
   AccountAccessRecovery = 'AccountAccessRecovery',
   StorageRecovery = 'StorageRecovery',
   IrohaConnect = 'IrohaConnect',
+  TonConnectApprove = 'TonConnectApprove',
+  TonConnectSessions = 'TonConnectSessions',
   AssetHistory = 'AssetHistory',
   AssetNetworks = 'AssetNetworks',
   WalletConnectInitAuth = 'WalletConnectInitAuth',
@@ -171,6 +181,19 @@ const portfolioDashboardRoutes: RouteRecordRaw[] =
             token: firstQueryValue(route.query.token),
             holding: firstQueryValue(route.query.holding),
           }),
+          meta: { title: 'wallet', primaryNavigation: 'portfolio' },
+        },
+      ]
+    : [];
+
+// The wallet screen's Portfolio view (the sun-crow allocation chart), behind the same flag and folded away with it.
+const portfolioAllocationRoutes: RouteRecordRaw[] =
+  process.env.FW_PORTFOLIO_DASHBOARD === 'true'
+    ? [
+        {
+          path: 'allocation',
+          name: Components.PortfolioAllocation,
+          component: () => import('@/screens/portfolio/PortfolioAllocation.vue'),
           meta: { title: 'wallet', primaryNavigation: 'portfolio' },
         },
       ]
@@ -309,6 +332,19 @@ const routes: Array<RouteRecordRaw> = [
     meta: {
       title: 'authorize',
       calm: true,
+    },
+  },
+  {
+    path: '/ton-connect',
+    name: Components.TonConnectApprove,
+    component: TonConnectApprove,
+    meta: {
+      title: 'authorize',
+      calm: true,
+    },
+    beforeEnter: (to, from, next) => {
+      if (useExtensionStore().tonConnectRequests?.length) next();
+      else next({ name: Components.Wallet });
     },
   },
   {
@@ -466,6 +502,10 @@ const routes: Array<RouteRecordRaw> = [
             next({ name: Components.Authorize });
             return;
           }
+          if (extensionStore.tonConnectRequests?.length) {
+            next({ name: Components.TonConnectApprove });
+            return;
+          }
           // Signing also belongs to the queued account. The background checks that signer,
           // so an unrelated recovery-only portfolio selection must not hide the review.
           if (haveSignRequests(extensionStore)) {
@@ -505,7 +545,24 @@ const routes: Array<RouteRecordRaw> = [
               primaryNavigation: 'portfolio',
             },
           },
+          ...portfolioAllocationRoutes,
         ],
+      },
+      // One token across the networks it is on: the level between the wallet's list and one network's asset page.
+      {
+        path: 'portfolio/token/:token',
+        name: Components.TokenOverview,
+        component: TokenOverview,
+        props: (route) => ({ token: String(route.params.token), search: firstQueryValue(route.query.search) }),
+        meta: { title: 'wallet', primaryNavigation: 'portfolio' },
+      },
+      // Which assets the wallet's list shows: what it holds is found on its own, and any other token can be added.
+      {
+        path: 'portfolio/manage',
+        name: Components.ManageAssets,
+        component: ManageAssets,
+        props: (route) => ({ focus: firstQueryValue(route.query.focus), search: firstQueryValue(route.query.search) }),
+        meta: { title: 'wallet', primaryNavigation: 'portfolio' },
       },
       {
         path: 'portfolio/nfts/:chainId/collection/:contract',
@@ -540,7 +597,7 @@ const routes: Array<RouteRecordRaw> = [
         meta: { title: 'send', primaryNavigation: 'portfolio' },
       },
       {
-        path: 'portfolio/receive/:assetId/:network',
+        path: 'portfolio/receive/:assetId?/:network',
         name: Components.ReceiveForm,
         component: ReceiveForm,
         meta: { title: 'receive', primaryNavigation: 'portfolio' },
@@ -679,6 +736,12 @@ const routes: Array<RouteRecordRaw> = [
         component: IrohaConnect,
         meta: { title: 'settings', primaryNavigation: 'settings' },
         beforeEnter: createIrohaConnectRouteGuard(Components.Settings),
+      },
+      {
+        path: 'settings/ton-connect',
+        name: Components.TonConnectSessions,
+        component: TonConnectSessions,
+        meta: { title: 'settings', primaryNavigation: 'settings' },
       },
       {
         path: 'settings/wallet-connect',

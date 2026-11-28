@@ -1,4 +1,3 @@
-import CryptoJS from 'crypto-js';
 import { stringToU8a, u8aConcat, u8aToString } from '@polkadot/util';
 import { jsonDecrypt, jsonEncryptFormat, naclEncrypt, scryptEncode, scryptToU8a } from '@polkadot/util-crypto';
 import { tonStore } from '../../stores/TonStore';
@@ -8,6 +7,7 @@ import { TON_SEED_VERSION, TON_RECOVERY_VERSION, parseStoredSeed as parseTonSeed
 import type { EncryptedJson } from '@polkadot/util-crypto/types';
 import type { TonStoreAccount } from '../../stores/TonStore';
 import { TonKeyringError, verifyTonPhrase } from '@/util/tonKeyring';
+import { decryptCryptoJsPassphraseText } from '@/util/cryptoJsCompat';
 import { IS_EXTENSION } from '@/consts/global';
 
 type TonSeedAccount = Pick<TonStoreAccount, 'cipherSeed' | 'pendingCipherSeed'> & { publicKey: Uint8Array };
@@ -162,7 +162,7 @@ function openTonSeed(cipherSeed: string, password: string, publicKey: Uint8Array
 
   if (legacy === undefined) throw new Error('TON recovery record does not open');
 
-  return CryptoJS.AES.decrypt(legacy, password).toString(CryptoJS.enc.Utf8);
+  return decryptCryptoJsPassphraseText(legacy, password);
 }
 
 // Version 1 has no integrity check: a wrong password throws 'Malformed UTF-8 data', returns '' or

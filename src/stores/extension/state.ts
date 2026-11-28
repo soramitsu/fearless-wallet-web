@@ -1,4 +1,5 @@
-import type { EvmRequests, SolanaRequests } from '@extension-base/services/request-service/types';
+import type { EvmRequests, SolanaRequests, TonRequests } from '@extension-base/services/request-service/types';
+import type { TonConnectApprovalRequest, TonConnectSessionView } from '@extension-base/services/ton-connect-service';
 import type {
   ActiveTabAuthorizeStatus,
   AuthorizeRequest,
@@ -24,6 +25,9 @@ export type State = {
   wcSessions: WalletConnectSessions;
   signEvmRequests: EvmRequests;
   signSolanaRequests: SolanaRequests;
+  signTonRequests: TonRequests;
+  tonConnectRequests: TonConnectApprovalRequest[];
+  tonConnectSessions: TonConnectSessionView[];
   authList: AuthUrls;
   tabStatus: ActiveTabAuthorizeStatus | null;
   features: Nullable<Features>;
@@ -41,6 +45,9 @@ export const state = (): State => {
     wcSessions: [],
     signEvmRequests: {},
     signSolanaRequests: {},
+    signTonRequests: {},
+    tonConnectRequests: [],
+    tonConnectSessions: [],
     authList: {},
     tabStatus: null,
     features: null,

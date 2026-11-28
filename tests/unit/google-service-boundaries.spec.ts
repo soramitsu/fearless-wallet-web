@@ -25,8 +25,15 @@ const request = () => {
   const [options] = mocks.launch.mock.calls.at(-1)!;
   return { callback: identityFlow.resolve, reject: identityFlow.reject, state: new URL(options.url).searchParams.get('state')! };
 };
-const redirect = (state: string, token = 'public-test-token') =>
-  `https://fixture.chromiumapp.org/welcome#access_token=${encodeURIComponent(token)}&state=${encodeURIComponent(state)}`;
+const redirect = (state: string, token = 'public-test-token', expiresIn = 3599) =>
+  `https://fixture.chromiumapp.org/welcome#access_token=${encodeURIComponent(token)}&expires_in=${expiresIn}&state=${encodeURIComponent(state)}`;
+// Signs in through the identity flow and returns the handle the opened tab's URL carries in place of the token.
+const signedIn = async (service: GoogleService, token = 'public-test-token', expiresIn = 3599) => {
+  mocks.launch.mockImplementationOnce(async ({ url }: { url: string }) => redirect(new URL(url).searchParams.get('state')!, token, expiresIn));
+  await service.authExtension({ type: 'main' });
+  const { url } = mocks.create.mock.calls.at(-1)![0] as { url: string };
+  return decodeURIComponent(url.split('#/google/')[1]);
+};
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -43,7 +50,7 @@ describe('Google Drive transport boundaries', () => {
     const service = new GoogleService();
     const name = '名前 "quoted"\nline';
     const json = JSON.stringify({ encoded: 'public-encrypted-fixture', meta: { name } });
-    await service.createFile({ json, options: { name, address: 'public-address' }, token: 'public-test-token' });
+    await service.createFile({ json, options: { name, address: 'public-address' }, token: await signedIn(service) });
     const [url, body, options] = mocks.post.mock.calls[0];
     expect(url).toBe('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart');
     const boundary = options.headers['Content-Type'].split('boundary=')[1];
@@ -55,34 +62,42 @@ describe('Google Drive transport boundaries', () => {
   });
 
   it('passes token verification through an encoded query parameter', async () => {
+    const service = new GoogleService();
+    const handle = await signedIn(service, 'public-token&extra=value');
     mocks.get.mockResolvedValueOnce({ data: { expires_in: 3600 } });
-    await new GoogleService().verifyToken({ token: 'public-token&extra=value' });
+    await service.verifyToken({ token: handle });
     expect(mocks.get).toHaveBeenCalledExactlyOnceWith('https://www.googleapis.com/oauth2/v1/tokeninfo', { params: { access_token: 'public-token&extra=value' } });
   });
 
   it('collects every page of backup metadata before returning', async () => {
     mocks.get.mockResolvedValueOnce({ data: { files: [{ id: 'first', name: 'First.json' }], nextPageToken: 'public-next' } })
       .mockResolvedValueOnce({ data: { files: [{ id: 'second', name: 'Second.json' }] } });
-    const result = await new GoogleService().getFiles({ token: 'public-test-token' });
+    const service = new GoogleService();
+    const result = await service.getFiles({ token: await signedIn(service) });
     expect(result.files.map((file) => file.id)).toEqual(['first', 'second']);
     expect(mocks.get.mock.calls[1][1].params.pageToken).toBe('public-next');
   });
 
   it('rejects a repeated pagination token instead of silently returning a partial inventory', async () => {
+    const service = new GoogleService();
+    const handle = await signedIn(service);
     mocks.get.mockResolvedValue({ data: { files: [], nextPageToken: 'repeated-public-token' } });
-    await expect(new GoogleService().getFiles({ token: 'public-test-token' })).rejects.toThrow();
+    await expect(service.getFiles({ token: handle })).rejects.toThrow();
   });
 
   it('rejects an upload without an acknowledged file identifier', async () => {
     mocks.post.mockResolvedValue({ data: {} });
-    await expect(new GoogleService().createFile({ json: '{}', options: { name: 'Public', address: 'public-address' }, token: 'public-test-token' })).rejects.toThrow();
+    const service = new GoogleService();
+    await expect(service.createFile({ json: '{}', options: { name: 'Public', address: 'public-address' }, token: await signedIn(service) })).rejects.toThrow();
   });
 
   it('waits for deletion acknowledgement at the exact escaped file resource', async () => {
     const remote = deferred<void>();
     mocks.remove.mockReturnValue(remote.promise);
     let finished = false;
-    const pending = settle(new GoogleService().deleteFile({ id: 'public/file?x', token: 'public-test-token' })).then((result) => { finished = true; return result; });
+    const service = new GoogleService();
+    const handle = await signedIn(service);
+    const pending = settle(service.deleteFile({ id: 'public/file?x', token: handle })).then((result) => { finished = true; return result; });
     await tick();
     expect(finished).toBe(false);
     expect(mocks.remove.mock.calls[0][0]).toBe('https://www.googleapis.com/drive/v3/files/public%2Ffile%3Fx');
@@ -147,7 +162,9 @@ describe('Google authorization ownership', () => {
     expect(await duplicate).toHaveProperty('error');
     expect(mocks.launch).toHaveBeenCalledOnce();
     expect(mocks.update).not.toHaveBeenCalled();
-    expect(mocks.create.mock.calls[0][0].url).toBe('chrome-extension://fixture/popup.html#/fearless/wallet/public%2Ftoken%3Fx%23y?wallet=public%2Fwallet%3Fname%3Dx');
+    // The tab carries a handle for the token (never the token) and the escaped wallet.
+    expect(mocks.create.mock.calls[0][0].url).toMatch(/^chrome-extension:\/\/fixture\/popup\.html#\/fearless\/wallet\/[0-9a-f-]{36}\?wallet=public%2Fwallet%3Fname%3Dx$/u);
+    expect(mocks.create.mock.calls[0][0].url).not.toContain('token');
     tab.resolve({ id: 1 });
     await first;
   });
@@ -161,5 +178,34 @@ describe('Google authorization ownership', () => {
     expect(await pending).toHaveProperty('error');
     expect(mocks.update).toHaveBeenCalledWith(0, expect.objectContaining({ active: true }));
     expect(mocks.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('Google access token custody', () => {
+  it('opens the wallet tab with a handle, never the token', async () => {
+    const service = new GoogleService();
+    const handle = await signedIn(service, 'ya29.public-access-token');
+    const { url } = mocks.create.mock.calls.at(-1)![0] as { url: string };
+    expect(url).not.toContain('ya29');
+    expect(handle).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u);
+    mocks.get.mockResolvedValueOnce({ data: { files: [] } });
+    await service.getFiles({ token: handle });
+    expect(mocks.get.mock.calls.at(-1)![1].headers.Authorization).toBe('Bearer ya29.public-access-token');
+  });
+
+  it('refuses a raw token, an unknown handle and an expired one', async () => {
+    const service = new GoogleService();
+    await expect(service.getFiles({ token: 'ya29.public-access-token' })).rejects.toThrow('google_session_unknown');
+    await expect(service.getFiles({ token: crypto.randomUUID() })).rejects.toThrow('google_session_expired');
+    expect(await service.verifyToken({ token: 'ya29.public-access-token' })).toBeNull();
+    const handle = await signedIn(service, 'ya29.public-short-token', 121);
+    const now = Date.now();
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(now + 62_000);
+    try {
+      await expect(service.getFile({ id: 'public-id', token: handle })).rejects.toThrow('google_session_expired');
+    } finally {
+      clock.mockRestore();
+    }
+    expect(mocks.get).not.toHaveBeenCalled();
   });
 });

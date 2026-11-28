@@ -66,8 +66,8 @@ describe('the asset page balance', () => {
   it('shows the last confirmed amount after a failed update, marked as out of date', async () => {
     const wrapper = await mountAssetInfo(tonCurrency({ state: APIItemState.ERROR, transferable: '3.5', total: '3.5' }));
 
-    expect(wrapper.get('[data-testid="assetBalance"]').text()).toBe('3.5 TON');
-    expect(wrapper.get('[data-testid="assetBalanceFailed"]').text()).toBe('$ 17.5 · portfolioPage.balanceStatus.failed');
+    expect(wrapper.get('[data-testid="assetBalance"]').text()).toBe('3.5000 TON');
+    expect(wrapper.get('[data-testid="assetBalanceFailed"]').text()).toBe('$ 17.50 · portfolioPage.balanceStatus.failed');
     expect(wrapper.find('[data-testid="assetBalanceUnavailable"]').exists()).toBe(false);
     wrapper.unmount();
   });
@@ -81,9 +81,22 @@ describe('the asset page balance', () => {
     pending.unmount();
 
     const ready = await mountAssetInfo(tonCurrency({ state: APIItemState.READY, transferable: '2', total: '2' }));
-    expect(ready.get('[data-testid="assetBalance"]').text()).toBe('2 TON');
-    expect(ready.get('[data-testid="fiatAssetBalance"]').text()).toBe('$ 10');
+    expect(ready.get('[data-testid="assetBalance"]').text()).toBe('2.0000 TON');
+    expect(ready.get('[data-testid="fiatAssetBalance"]').text()).toBe('$ 10.00');
     expect(ready.find('[data-testid="assetBalanceFailed"]').exists()).toBe(false);
     ready.unmount();
+  });
+
+  // The page rounded half up and showed only the transferable amount, unlike the portfolio list.
+  it.each([
+    ['rounds down, as the list does', { transferable: '0.99996', total: '0.99996' }, '0.9999 TON', '$ 4.99'],
+    ['never shows a held amount as 0', { transferable: '0.00004', total: '0.00004' }, '0.00004 TON', '$ 0.00'],
+    ['shows what the wallet holds, staked and locked funds included', { transferable: '7', total: '10' }, '10.0000 TON', '$ 50.00'],
+  ])('%s', async (_case, balance, amount, fiat) => {
+    const wrapper = await mountAssetInfo(tonCurrency({ state: APIItemState.READY, ...balance }));
+
+    expect(wrapper.get('[data-testid="assetBalance"]').text()).toBe(amount);
+    expect(wrapper.get('[data-testid="fiatAssetBalance"]').text()).toBe(fiat);
+    wrapper.unmount();
   });
 });

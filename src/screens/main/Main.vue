@@ -1,6 +1,8 @@
 <template>
   <div class="main">
+    <!-- data-fw-depth: how deep each part of the screen lies when the wallet flies up at launch (src/feel/launchOverlay.ts). -->
     <Header
+      data-fw-depth="2"
       :showSelectWalletPopup="showSelectWalletPopup"
       :highlightSettingsIcon="highlightSettingsIcon"
       :showSettingsButton="!showMenu"
@@ -9,6 +11,7 @@
     />
 
     <LegacyWalletUpgradeNotice />
+    <UniversalWalletPasswordNotice />
 
     <SelectWalletPopup
       v-if="showSelectWalletPopup"
@@ -38,7 +41,7 @@
 
     <main class="main-content">
       <router-view v-slot="{ Component, route }">
-        <keep-alive :max="20">
+        <keep-alive :include="keptAliveScreens" :max="5">
           <component
             :is="Component"
             :key="route.fullPath"
@@ -52,7 +55,7 @@
       </router-view>
     </main>
 
-    <Menu v-if="showMenu" />
+    <Menu v-if="showMenu" data-fw-depth="2" />
   </div>
 </template>
 
@@ -67,12 +70,18 @@ import FiatsPopup from './FiatsPopup.vue';
 import AboutPopup from './AboutPopup.vue';
 import LanguagePopup from './LanguagePopup.vue';
 import LegacyWalletUpgradeNotice from './LegacyWalletUpgradeNotice.vue';
+import UniversalWalletPasswordNotice from './UniversalWalletPasswordNotice.vue';
 import ManageAuths from '@/screens/extension-ui/ManageAuths.vue';
 import AccountAccessBanner from '@/components/AccountAccessBanner.vue';
 import LegacyExposureBanner from '@/components/LegacyExposureBanner.vue';
 import { IS_EXTENSION } from '@/consts/global';
 import { useAccountsStore } from '@/stores/accounts';
 import { isSelectedWalletRecoveryOnly } from '@/util/walletRecoveryPolicy';
+
+// A hidden screen keeps running, so only these stay alive: the wallet home (its list and scroll come back), the swap
+// form (kept across its disclaimer) and the DeFi and Settings tabs, which refresh themselves when shown again. Send
+// forms, export screens and asset pages mount fresh and never show the previous wallet's entries.
+const KEPT_ALIVE_SCREENS = ['Wallet', 'SwapForm', 'DeFiHub', 'SettingsPage'];
 
 export default defineComponent({ name: 'Main',
   components: {
@@ -87,10 +96,12 @@ export default defineComponent({ name: 'Main',
     SelectWalletPopup,
     WalletDetailsPopup,
     LegacyWalletUpgradeNotice,
+    UniversalWalletPasswordNotice,
   },
   data() {
     return {
       accountsStore: useAccountsStore(),
+      keptAliveScreens: KEPT_ALIVE_SCREENS,
       buttonTopClick: 0,
       selectedWalletAddress: '',
       showSettings: false,

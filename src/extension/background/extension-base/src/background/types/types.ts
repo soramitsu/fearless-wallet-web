@@ -14,6 +14,7 @@ import type { ApiPromise } from '@polkadot/api';
 import type { HexString } from '@polkadot/util/types';
 import type { KeyringPair$Json, KeyringPair, KeypairType as SubwalletKeypairType } from '@subwallet/keyring/types';
 import type { FWKeyringMeta, NetworkJson, PriceProvider } from '@extension-base/types';
+import type { SubstratePasswordRule } from '@extension-base/services/keyring-service/SubstratePassword';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { TypeRegistry } from '@polkadot/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
@@ -31,12 +32,15 @@ import type {
   WalletEcosystem,
 } from '@/interfaces';
 import type { WarningValueName } from '@/consts/messages';
-import type { AssetDiscoverySweepState } from '@extension-base/services/asset-discovery-service';
+import type { AssetDiscoveryProgress, AssetDiscoverySweepState } from '@extension-base/services/asset-discovery-service';
+import type { EvmTokenDiscoveryState } from '@extension-base/services/evm-token-discovery';
 import type { CrossChainRouteProviderId } from '@/cross-chain/reviewedRoutes';
 import type { CrossChainSendRecords } from '@/cross-chain/sendLedger';
 import type { ActionCapabilityConfig } from '@extension-base/services/action-capability-service';
 import type { SendKillSwitchState } from '@/util/sendKillSwitch';
+import type { DappSigningKillSwitchState } from '@/util/dappSigningKillSwitch';
 import type { TonImportChoice } from '@/util/tonKeyring';
+import type { UniversalWalletFunds, UniversalWalletPasswordNetwork } from '@/util/universalWalletPassphrase';
 import type { BitcoinPendingSend } from '@extension-base/api/bitcoin/pendingSends';
 import type { SolanaPendingSend } from '@extension-base/api/solana/pendingSends';
 import type { SigningRequestKind } from '@extension-base/services/request-service/signingRequestId';
@@ -115,6 +119,8 @@ export type AccountAuthType = 'substrate' | 'evm' | 'solana' | 'iroha' | 'both' 
 export interface SigningRequest {
   account: AccountJson;
   network?: SubstrateNetworkSnapshot;
+  /** The call as the wallet's own runtime decodes it, with every cross-chain transfer in it. */
+  callReview?: import('@extension-base/services/request-service/handlers/substrateCallReview').SubstrateCallReview;
   id: string;
   request: Pick<RequestSign, 'payload'>;
   url: string;
@@ -248,10 +254,24 @@ export interface RequestAccountCreateSuri {
   walletEcosystem: WalletEcosystem;
   /** TON imports: the address picked on the import screen and the derivation that opens it. */
   tonImport?: TonImportChoice;
+  /** Mnemonic imports: how the Substrate path password is read (SubstratePassword.ts). New words ignore it. */
+  substratePasswordRule?: SubstratePasswordRule;
 }
 
 export interface RequestTonImportCandidates {
   mnemonic: string;
+}
+
+export interface RequestSubstratePasswordAccounts {
+  suri: string;
+  type?: SubwalletKeypairType;
+}
+
+/** One Substrate account a typed phrase and path open; `inWallet` marks one already in the wallet list. */
+export interface SubstratePasswordAccountInfo {
+  rule: SubstratePasswordRule;
+  address: string;
+  inWallet?: boolean;
 }
 
 /** What the network says about a TON address; `unknown` when it could not be checked. */
@@ -269,6 +289,8 @@ export interface BalanceJson {
   reset?: boolean;
   details: TokenGroup[];
   scanStates?: Record<NetworkName, NetworkScanState>;
+  /** How far the search of every network for the wallets' tokens is (AssetDiscoverySweepService). */
+  discovery?: AssetDiscoveryProgress;
 }
 
 export interface RequestMobileSign {
@@ -656,6 +678,67 @@ export interface ResponseRecoverAccountWithPhrase {
   code?: 'phrase_mismatch' | 'locked' | 'not_found' | 'storage_failed';
 }
 
+/** A phrase about to be imported: its no-password Universal Wallet addresses are checked for funds. */
+export interface RequestUniversalWalletPasswordDiscovery {
+  mnemonic: string;
+}
+
+export interface UniversalWalletPasswordDiscoveryItem {
+  network: UniversalWalletPasswordNetwork;
+  address: string;
+  funds: UniversalWalletFunds;
+}
+
+export interface RequestUniversalWalletPasswordAccount {
+  address: string;
+}
+
+/** One account a password wallet still shows at the address its recovery words alone open. */
+export interface UniversalWalletPasswordRow {
+  network: UniversalWalletPasswordNetwork;
+  legacyAddress: string;
+  protectedAddress?: string;
+}
+
+/** Funds that reached an old address after the wallet moved to its protected account, which keeps its own. */
+export interface UniversalWalletArrivedRow {
+  network: UniversalWalletPasswordNetwork;
+  legacyAddress: string;
+}
+
+/**
+ * `legacy`: some accounts still open with the words alone; `password-unknown`: a wallet saved before passwords
+ * were kept whose key was made with a derivation path, which may include a password; `path-required`: a wallet
+ * restored from a JSON or Google Drive backup whose words open its key only with a derivation path, so it shows
+ * no Bitcoin, Solana, TON or Taira accounts until the path is entered.
+ */
+export type UniversalWalletPasswordStatus =
+  | { state: 'none' }
+  | { state: 'protected' }
+  | { state: 'legacy'; rows: UniversalWalletPasswordRow[]; arrived?: UniversalWalletArrivedRow[] }
+  | { state: 'password-unknown' }
+  | { state: 'path-required' };
+
+export interface RequestUniversalWalletPasswordPath {
+  address: string;
+  derivationPath: string;
+}
+
+export type ResponseUniversalWalletPasswordPath =
+  | { ok: true; status: UniversalWalletPasswordStatus }
+  | { ok: false; code: 'locked' | 'not_found' | 'path_mismatch' | 'no_password' | 'storage_failed' };
+
+/** `changed`: a watched old address went back into the wallet or newly reported funds. */
+export interface ResponseUniversalWalletWatchedCheck {
+  changed: boolean;
+  status: UniversalWalletPasswordStatus;
+}
+
+export interface UniversalWalletPasswordSwitchResult {
+  network: UniversalWalletPasswordNetwork;
+  outcome: 'switched' | 'funded' | 'unknown';
+}
+
 /** A wallet the user deleted whose keys are kept on the device (DeletedWallets.ts); not in the wallet list. */
 export interface DeletedWalletSummary {
   id: string;
@@ -696,6 +779,14 @@ export interface RequestValidateMnemonic {
 
 export interface ResponseExportSeed {
   seed: string;
+  /** The phrase alone opens another account: the wallet was made with a derivation path or password. */
+  restoresOtherAccount?: boolean;
+}
+
+/** Asks whether Raw seed export would open this wallet; the answer never carries the seed. */
+export interface RequestRawSeedAvailable {
+  address: string;
+  password: string;
 }
 
 export type EvmProvider = JsonRpcProvider | WebSocketProvider;
@@ -747,6 +838,30 @@ export interface RequestSigningApproveSignature {
 export interface RequestSigningCancel {
   id: string;
   kind?: SigningRequestKind;
+}
+
+export interface RequestTonConnectApprove {
+  id: string;
+  address: string;
+}
+
+export interface RequestTonConnectReject {
+  id: string;
+}
+
+export interface RequestTonConnectDisconnect {
+  origin: string;
+}
+
+/** What the page bridge sends to connect: the protocol version and the dApp's ConnectRequest, both unchecked. */
+export interface RequestTonConnectConnect {
+  protocolVersion: unknown;
+  request: unknown;
+}
+
+export interface RequestTonConnectEvents {
+  /** The page holds a connection, so a session that ended while it could not hear is reported at once. */
+  connected: boolean;
 }
 
 // Responses
@@ -923,8 +1038,11 @@ export type IState = {
   assetBalances: Record<WalletAddress, Record<string, BalanceItem & { chain: NetworkName }>>;
   networkScanStates: Record<WalletAddress, Record<NetworkName, NetworkScanState>>;
   assetDiscoverySweep: AssetDiscoverySweepState;
+  /** When each wallet's ERC-20 token list was last read on each network (EvmTokenDiscoveryService). */
+  evmTokenDiscovery: EvmTokenDiscoveryState;
   actionCapabilities: ActionCapabilityConfig;
   sendKillSwitch: SendKillSwitchState;
+  dappSigningKillSwitch: DappSigningKillSwitchState;
   bitcoinPendingSends: BitcoinPendingSend[];
   solanaPendingSends: SolanaPendingSend[];
   crossChainSendsInDoubt: CrossChainSendRecords;

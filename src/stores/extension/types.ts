@@ -1,5 +1,6 @@
-import { type SessionTypes } from '@walletconnect/types';
-import { type EvmRequests, type SolanaRequests } from '@extension-base/services/request-service/types';
+import { type EvmRequests, type SolanaRequests, type TonRequests } from '@extension-base/services/request-service/types';
+import type { TonConnectApprovalRequest, TonConnectSessionView } from '@extension-base/services/ton-connect-service';
+import type { WcSession } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type { MutableAction } from '@extension-base/services/action-capability-service';
 import type { AuthorizeRequest, MetadataRequest, SigningRequest } from '@extension-base/background/types/types';
 import type {
@@ -23,6 +24,7 @@ export type SignRequests = {
   substrate: SigningRequest[];
   evm: EvmRequests;
   solana: SolanaRequests;
+  ton: TonRequests;
 };
 
 export type RequestsPayload =
@@ -52,7 +54,7 @@ export type RequestsPayload =
     }
   | {
       type: 'wcSessions';
-      requests: SessionTypes.Struct[];
+      requests: WcSession[];
     }
   | {
       type: 'signEvmRequests';
@@ -61,4 +63,16 @@ export type RequestsPayload =
   | {
       type: 'signSolanaRequests';
       requests: SolanaRequests;
+    }
+  | {
+      type: 'signTonRequests';
+      requests: TonRequests;
+    }
+  | {
+      type: 'tonConnectRequests';
+      requests: TonConnectApprovalRequest[];
+    }
+  | {
+      type: 'tonConnectSessions';
+      requests: TonConnectSessionView[];
     };

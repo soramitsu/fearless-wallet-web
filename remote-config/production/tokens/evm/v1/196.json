@@ -1,0 +1,11 @@
+{
+  "format": "fearless-evm-token-list",
+  "version": 1,
+  "chainId": "196",
+  "network": "X Layer Mainnet",
+  "tokens": [
+    ["0x4ae46a509F6b1D9056937BA4500cb143933D2dc8","USDG","Global Dollar",6],
+    ["0x779Ded0c9e1022225f8E0630b35a9b54bE713736","USD₮0","USD₮0",6],
+    ["0xb7C00000bcDEeF966b20B3D884B98E64d2b06b4f","xBTC","OKX Wrapped BTC",8]
+  ]
+}

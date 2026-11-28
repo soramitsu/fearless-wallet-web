@@ -76,7 +76,7 @@
               text="assets.assetsAmount"
               data-testid="amountCC"
               :value="amountString"
-              :price="showValue ? valueString : ''"
+              :price="valueString"
             />
 
             <InfoRow text="assets.sendTo" data-testid="sendToCC" :value="cut(recipient)" />
@@ -113,6 +113,7 @@ import { defineComponent } from 'vue';
 
 import TransferForm from './TransferForm.vue';
 import { firstCharToUp, cut, isSora } from '@/helpers/';
+import { getTransferAssetPrice } from '@/helpers/currencies';
 import { formattedNumber } from '@/helpers/numbers';
 import { BRIDGE_MIN_VALUES_TO_SORA, BRIDGE_MIN_VALUES_FROM_SORA } from '@/consts/sora';
 import { useNetworksStore } from '@/stores/networks';
@@ -214,7 +215,14 @@ export default defineComponent({ name: 'CrossChainForm',
     amountString() {
       return `${this.amount} ${this.assetName}`;
     },
+    // The portfolio's trusted price for the asset this route moves on its origin network, or `null`.
+    assetPrice() {
+      return getTransferAssetPrice(this.currency, this.originNet, this.networksStore.assetsPrice?.tokenPriceMap ?? {});
+    },
     valueString() {
+      if (this.assetPrice === null) return this.$t('portfolioPage.priceUnavailable');
+      if (!this.showValue) return '';
+
       return `${this.accountsStore.fiatSymbol}${this.$n(+this.value, 'price')}`;
     },
     originalNetworkFeeString() {

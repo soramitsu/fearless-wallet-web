@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@polkadot/phishing', () => ({ checkIfDenied: vi.fn(async () => false) }));
 vi.mock('@/stores/networks', () => ({ useNetworksStore: () => ({ allNetworks: [] }) }));
 vi.mock('@/stores/extension', () => ({ useExtensionStore: () => mocks.store }));
+vi.mock('@/stores/dappSigningKillSwitch', () => ({ useDappSigningKillSwitchStore: () => ({ vetoes: {} }) }));
 vi.mock('@/extension/messaging', () => ({
   walletConnectRequestApprove: mocks.approve,
   walletConnectRequestReject: mocks.reject,

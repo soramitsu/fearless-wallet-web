@@ -1,7 +1,8 @@
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
-      NODE_ENV: 'development' | 'production';
+      /** One value for every bundle of a build: resolveBuildNodeEnv in vite.config.shared.mjs. */
+      NODE_ENV: 'development' | 'production' | 'test';
       PORT?: string;
       OAUTH_CLIENT_ID: string;
       EXTENSION_PUBLIC_KEY: string;

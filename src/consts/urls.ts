@@ -8,6 +8,10 @@ const CHAINS = IS_PRODUCTION
 
 const FIATS = `${BASE_URL}/production/fiat/fiats.json`;
 
+// The ERC-20 token lists that find tokens outside the registry (docs/evm-token-discovery.md). Every build reads the
+// production lists: they are keyed by chain id, and a test network has none.
+const EVM_TOKEN_LISTS = `${BASE_URL}/production/tokens/evm/v1`;
+
 const FEATURES = IS_PRODUCTION
   ? `${BASE_URL}/production/appConfigs/web_config.json`
   : `${BASE_URL}/development/appConfigs/web_config.json`;
@@ -44,6 +48,7 @@ const POLKASWAP_MIGRATION = 'https://polkaswap.io/#/migration'; // mainnet accou
 const URLS = {
   BASE_URL,
   FIATS,
+  EVM_TOKEN_LISTS,
   FEATURES,
   CHAINS,
   FEARLESS_TERMS,

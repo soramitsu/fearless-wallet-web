@@ -255,7 +255,7 @@ describe('background Bitcoin transfer adapter', () => {
     expect(client.getAddress).toHaveBeenCalledTimes(discoveredRequests * 2);
   });
 
-  // Three fresh BIP84 discoveries plus real signing can exceed five seconds on CI.
+  // Three fresh BIP84 discoveries plus real signing need headroom during local coverage runs.
   it('drops quote discovery before and after an ambiguous broadcast', async () => {
     const client = {
       broadcastTransaction: vi.fn(async () => { throw new TypeError('Failed to fetch'); }),
@@ -273,7 +273,7 @@ describe('background Bitcoin transfer adapter', () => {
     expect(client.getAddress).toHaveBeenCalledTimes(discoveredRequests * 2);
     await estimateBitcoinTransferFee(params, client, options);
     expect(client.getAddress).toHaveBeenCalledTimes(discoveredRequests * 3);
-  }, 15_000);
+  }, 60_000);
 
   it('retries discovery after a failed quote instead of caching its rejection', async () => {
     const client = {

@@ -27,6 +27,69 @@ const BITCOIN: MainAccount = { address: 'bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5
 // Shaped as getAllMainAccounts() returns an independently imported EVM account.
 const EVM: MainAccount = { address: EVM_ADDRESS, meta: { name: 'Imported EVM', walletEcosystem: WalletEcosystem.Evm, ethereumAddress: EVM_ADDRESS } };
 
+describe('choosing a wallet', () => {
+  function select(request: Parameters<State['updateCurrentAccount']>[0], stored: MainAccount['meta'], accounts = [SUBSTRATE, EVM]) {
+    const state = {
+      keyringService: {
+        getAllMainAccounts: () => accounts,
+        getAccount: () => ({ meta: stored }),
+        triggerWalletsSubscription: vi.fn(),
+      },
+      balanceService: { generateDefaultBalance: vi.fn() },
+      networkService: { selectedNetworks: {} },
+      nftService: { publishNfts: vi.fn() },
+      setCurrentAccount: vi.fn(async (_data: CurrentAccountState, callback?: () => void) => callback?.()),
+      saveCurrentAccountAddress: State.prototype.saveCurrentAccountAddress,
+    };
+
+    return { state, result: State.prototype.updateCurrentAccount.call(state as unknown as State, request, false) };
+  }
+  // The keyring's own record of an independently imported key names no Ethereum address.
+  const importedKey = { name: 'Imported EVM' };
+  const selection = (fields: object) => [expect.objectContaining(fields), expect.any(Function), undefined];
+
+  it.each([
+    ['names its ecosystem', { address: EVM_ADDRESS, walletEcosystem: WalletEcosystem.Evm }],
+    ['assumes a Substrate wallet', { address: EVM_ADDRESS }],
+  ])('selects a standalone Ethereum wallet as itself when the caller %s', async (_name, request) => {
+    const { state, result } = select(request, importedKey);
+
+    await expect(result).resolves.toBe(true);
+    expect(state.setCurrentAccount).toHaveBeenCalledExactlyOnceWith(
+      ...selection({ address: EVM_ADDRESS, ethereumAddress: EVM_ADDRESS, walletEcosystem: WalletEcosystem.Evm, name: 'Imported EVM' })
+    );
+    expect(state.balanceService.generateDefaultBalance).toHaveBeenCalledExactlyOnceWith(EVM_ADDRESS, WalletEcosystem.Evm);
+    expect(state.keyringService.triggerWalletsSubscription).toHaveBeenCalledExactlyOnceWith(EVM_ADDRESS, WalletEcosystem.Evm);
+  });
+
+  // The popup compares the selected address with the keyring's, so the stored one keeps the keyring's case.
+  it('stores the address as the keyring holds it, whatever the case of the request', async () => {
+    const upperCase = `0x${'AB'.repeat(20)}`;
+    const { state, result } = select({ address: upperCase.toLowerCase() }, importedKey, [SUBSTRATE, { ...EVM, address: upperCase }]);
+
+    await expect(result).resolves.toBe(true);
+    expect(state.setCurrentAccount).toHaveBeenCalledExactlyOnceWith(...selection({ address: upperCase, ethereumAddress: upperCase }));
+  });
+
+  // getAllMainAccounts() leaves a linked key out: its wallet is its parent.
+  it('refuses an Ethereum key that is not a wallet of its own, and writes nothing', async () => {
+    const { state, result } = select({ address: SUBSTRATE.meta.ethereumAddress!, walletEcosystem: WalletEcosystem.Evm }, importedKey);
+
+    await expect(result).resolves.toBe(false);
+    expect(state.setCurrentAccount).not.toHaveBeenCalled();
+    expect(state.balanceService.generateDefaultBalance).not.toHaveBeenCalled();
+  });
+
+  it('keeps the linked Ethereum address of a wallet with a parent key', async () => {
+    const { state, result } = select({ address: SUBSTRATE.address, walletEcosystem: WalletEcosystem.Substrate }, SUBSTRATE.meta);
+
+    await expect(result).resolves.toBe(true);
+    expect(state.setCurrentAccount).toHaveBeenCalledExactlyOnceWith(
+      ...selection({ address: SUBSTRATE.address, ethereumAddress: SUBSTRATE.meta.ethereumAddress, walletEcosystem: WalletEcosystem.Substrate })
+    );
+  });
+});
+
 describe('default current account', () => {
   it.each([
     ['a standalone EVM account listed first', [EVM, SUBSTRATE], SUBSTRATE],
@@ -124,7 +187,7 @@ describe('removing the current account', () => {
     const state = {
       keyringService: {
         archiveWallet: vi.fn(async () => undefined),
-        getPair: () => ({meta:SUBSTRATE.meta}),
+        getPair: () => ({meta:SUBSTRATE.meta}), isEthereumAccountLinkedElsewhere: () => false,
         forgetAccount: vi.fn(), forgetAddress:vi.fn(),
       },
       requestService: { mutateAuthorizations:vi.fn(async () => { throw new Error('Public permission write failure'); }) },
@@ -145,7 +208,7 @@ describe('removing the current account', () => {
       currentAccount: toCurrentAccountInfo(current) as ReturnType<typeof toCurrentAccountInfo> | null,
       keyringService: {
         currentAccountRevision: 0,
-        getPair: () => pair,
+        getPair: () => pair, isEthereumAccountLinkedElsewhere: () => false,
         forgetAccount: vi.fn(async (_address: string, beforeRemoval: () => Promise<void>) => beforeRemoval()),
         getAllMainAccounts: () => remaining,
       },
@@ -169,7 +232,7 @@ describe('removing the current account', () => {
     const state = {
       currentAccount: toCurrentAccountInfo(SUBSTRATE),
       keyringService: {
-        getPair: () => ({ meta: SUBSTRATE.meta }),
+        getPair: () => ({ meta: SUBSTRATE.meta }), isEthereumAccountLinkedElsewhere: () => false,
         forgetAccount: vi.fn(async () => { throw new Error('QUOTA_BYTES quota exceeded'); }),
         getAllMainAccounts: () => [TON],
       },
@@ -191,14 +254,10 @@ describe('removing the current account', () => {
     expect(state.setCurrentAccount).toHaveBeenCalledExactlyOnceWith(null, undefined, expect.any(Function));
   });
 
-  it('stores the remaining standalone EVM account instead of keeping the removed one selected', async () => {
+  it('selects the remaining standalone EVM account instead of keeping the removed one selected', async () => {
     const state = await forget(SUBSTRATE, [EVM]);
-    expect(state.updateCurrentAccount).not.toHaveBeenCalled();
-    expect(state.setCurrentAccount).toHaveBeenNthCalledWith(1, null, undefined, expect.any(Function));
-    expect(state.setCurrentAccount).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      address: EVM_ADDRESS,
-      walletEcosystem: WalletEcosystem.Evm,
-    }));
+    expect(state.updateCurrentAccount).toHaveBeenCalledExactlyOnceWith({ address: EVM_ADDRESS, walletEcosystem: WalletEcosystem.Evm });
+    expect(state.setCurrentAccount).toHaveBeenCalledExactlyOnceWith(null, undefined, expect.any(Function));
   });
 
   it('clears the selection when no account remains', async () => {

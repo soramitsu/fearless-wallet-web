@@ -12,7 +12,7 @@ let requests: ReturnType<typeof vi.fn>;
 let incoming: ReturnType<typeof vi.fn>;
 let mobile: ReturnType<typeof vi.fn>;
 let clear: ReturnType<typeof vi.fn>;
-let keyring: { isResetting: boolean; getPassword: ReturnType<typeof vi.fn>; exportAccountMnemonic: ReturnType<typeof vi.fn> };
+let keyring: { isResetting: boolean; getPassword: ReturnType<typeof vi.fn>; exportAccountMnemonic: ReturnType<typeof vi.fn>; accountExportRawSeed: ReturnType<typeof vi.fn> };
 beforeEach(() => {
   order = [];
   requests = vi.fn(async () => { order.push('requests'); });
@@ -20,7 +20,7 @@ beforeEach(() => {
   incoming = vi.fn(async () => { order.push('incoming'); });
   clear = vi.fn(async () => { order.push('selection'); });
   keyring = { isResetting: false, getPassword: vi.fn(() => 'Public fixture password'),
-    exportAccountMnemonic: vi.fn(async () => ({ seed: 'Public fixture phrase' })) };
+    exportAccountMnemonic: vi.fn(async () => ({ seed: 'Public fixture phrase' })), accountExportRawSeed: vi.fn(() => ({ seed: '0x00' })) };
   extension = new Extension({
     requestService: { resetWallet: requests }, walletConnectService: { resetWallet: incoming },
     walletConnectDappService: { resetWallet: mobile }, setCurrentAccount: clear,
@@ -57,12 +57,12 @@ describe('reset handler lifecycle prerequisites', () => {
     expect(wasSettled).toBe(false);
     expect(before).not.toContain('archive-and-remove');
   });
-  it.each(['pri(keyring.getPassword)', 'pri(keyring.export.mnemonic)'] as const)(
+  it.each(['pri(keyring.export.rowSeed)', 'pri(keyring.export.mnemonic)'] as const)(
     'does not admit %s while reset still retains live keys for failure recovery', async (type) => {
       keyring.isResetting = true;
       await expect(extension.handle('public-during-reset', type, { address: 'public-fixture' } as never))
         .rejects.toThrow('Wallet reset is in progress');
-      expect(keyring.getPassword).not.toHaveBeenCalled();
+      expect(keyring.accountExportRawSeed).not.toHaveBeenCalled();
       expect(keyring.exportAccountMnemonic).not.toHaveBeenCalled();
       expect(await extension.handle('public-ping', 'pri(app.port.ping)', null)).toBe(true);
     }

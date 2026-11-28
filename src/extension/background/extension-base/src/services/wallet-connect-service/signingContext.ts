@@ -1,7 +1,7 @@
 import { evmSigningAddress } from '@extension-base/services/request-service/handlers/evmSigningContext';
 import { assertWalletConnectRequestActive } from './requestValidity';
 import type State from '@extension-base/background/handlers/State';
-import type { SignClientTypes } from '@walletconnect/types';
+import type { WcSessionRequestEvent } from '@extension-base/services/wallet-connect-service/protocol/types';
 import type { WalletConnectSigningContext, WalletConnectTransactionRequest } from './types';
 import { evmMessageBytes } from '@/util/evmMessageBytes';
 import { evmTypedData } from '@/util/evmTypedData';
@@ -18,7 +18,7 @@ function origin(value: string): string {
 // session namespace can authorize a method and a complete chain/account tuple.
 export function captureWalletConnectSigningContext(
   state: State,
-  event: SignClientTypes.EventArguments['session_request']
+  event: WcSessionRequestEvent
 ): WalletConnectSigningContext {
   assertWalletConnectRequestActive(state.walletConnectService, event);
   const {

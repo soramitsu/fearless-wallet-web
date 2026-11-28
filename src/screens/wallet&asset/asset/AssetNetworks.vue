@@ -1,5 +1,4 @@
 <template>
-  <Fragment>
     <ContentForm :height="contentFormHeight">
       <div class="networks">
         <div class="networks-settings">
@@ -57,7 +56,6 @@
       @toggleValue="filterValueUpdate"
       @handlerClose="toggleSelectFilterPopupVisibility"
     />
-  </Fragment>
 </template>
 
 <script lang="ts">
@@ -69,6 +67,7 @@ import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
 import { Components } from '@/router/routes';
 import { FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { fetchEvmBalance } from '@/extension/messaging';
+import { getBalancePrice } from '@/portfolio/assetIdentity';
 import BaseApi from '@/util/BaseApi';
 import { useNetworksStore } from '@/stores/networks';
 import { useAccountsStore } from '@/stores/accounts';
@@ -125,20 +124,20 @@ export default defineComponent({ name: 'AssetNetworks',
       const baseFilter = this.currency.balances?.filter(({ name, state }) => {
             const network = this.networksStore.getNetwork(name);
 
-            if (state !== APIItemState.READY) return false;
+            if (!network || state !== APIItemState.READY) return false;
 
             if (this.accountsStore.selectedNetwork === POPULAR_NETWORKS) return network.rank !== undefined;
 
             if (this.accountsStore.selectedNetwork === FAVORITE_NETWORKS)
-              return network.favorite.some((address) => address === this.accountsStore.selectedWallet.address);
+              return (network.favorite ?? []).some((address) => address === this.accountsStore.selectedWallet.address);
 
             return this.networksStore.getNetwork(name).active;
           });
 
           if (this.activeTabName === 'MyAssets')
-            return baseFilter.filter(({ transferable }) => transferable && +transferable > 0);
+            return (baseFilter ?? []).filter(({ transferable }) => transferable && +transferable > 0);
 
-          return baseFilter;
+          return baseFilter ?? [];
     },
     sortedNetworks() {
       return this.filteredNetworks
@@ -161,14 +160,6 @@ export default defineComponent({ name: 'AssetNetworks',
           })
         : undefined;
     },
-    priceString() {
-      return `${this.accountsStore.fiatSymbol} ${this.$n(this.price, 'price')}`;
-    },
-    price() {
-      const price = this.networksStore.getAssetPrice(this.currency.priceId ?? '').price;
-
-          return +(price ?? 0);
-    },
     selectedAssetId() {
       return this.$route.params.assetId;
     },
@@ -179,6 +170,7 @@ export default defineComponent({ name: 'AssetNetworks',
   methods: {
     openAsset(name: string) {
       const network = this.networksStore.getNetwork(name);
+      if (!network) return;
 
           this.$router.push({
             name: Components.AssetHistory,
@@ -203,14 +195,36 @@ export default defineComponent({ name: 'AssetNetworks',
 
           return prepBalance;
     },
-    getFiatBalanceInNetwork(network: string) {
-      const balance = this.currency.balances.find((el) => el.name === network)?.transferable;
-          const prepBalance = balance ? Number(balance) : 0;
+    /**
+     * The price the portfolio trusts for the asset on this network, as the wallet's list shows it, or `null`. Each
+     * network has its own: the token group's price id is not a price for its members.
+     */
+    getPriceInNetwork(network: string): number | null {
+      const balance = this.currency.balances.find((el) => el.name === network);
+      const entry = balance ? this.networksStore.getNetwork(network) : undefined;
+      if (!balance || !entry) return null;
 
-          return prepBalance * +(this.price ?? 0);
+      const { unitPrice } = getBalancePrice({
+        network: entry,
+        balance,
+        group: this.currency,
+        prices: this.networksStore.assetsPrice.tokenPriceMap,
+      });
+
+      return unitPrice === null ? null : Number(unitPrice);
+    },
+    getFiatBalanceInNetwork(network: string): number | null {
+      const price = this.getPriceInNetwork(network);
+
+      return price === null ? null : this.getBalanceInNetwork(network) * price;
     },
     getFiatInNetworkString(network: string) {
-      return `${this.accountsStore.fiatSymbol} ${this.$n(this.getFiatBalanceInNetwork(network), 'price')}`;
+      const fiat = this.getFiatBalanceInNetwork(network);
+
+      // Never $0 for an amount nobody has a price for: that reads as worthless.
+      if (fiat === null) return this.$t('portfolioPage.priceUnavailable');
+
+      return `${this.accountsStore.fiatSymbol} ${this.$n(fiat, 'price')}`;
     },
     filterValueUpdate(name: string) {
       this.filterValue = name;

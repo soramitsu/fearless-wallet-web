@@ -1,4 +1,4 @@
-export type SigningRequestKind = 'substrate' | 'evm' | 'solana';
+export type SigningRequestKind = 'substrate' | 'evm' | 'solana' | 'ton';
 
 /**
  * The key a queued signing request is approved or cancelled by. It is minted here, unguessable, and never taken from

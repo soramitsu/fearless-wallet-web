@@ -1,7 +1,12 @@
 import english from '@/locales/en/translation.json';
+import { walletHomeMessages } from '@/locales/walletHomeMessages';
 import { dashboardMessages } from '@/portfolio/dashboard/messages';
 
-const messages: Record<string, unknown> = { ...english, portfolioDashboard: dashboardMessages['en-EN'] };
+const messages: Record<string, unknown> = {
+  ...english,
+  ...walletHomeMessages['en-EN'],
+  portfolioDashboard: dashboardMessages['en-EN'],
+};
 
 function lookup(key: string): string | undefined {
   let value: unknown = messages;

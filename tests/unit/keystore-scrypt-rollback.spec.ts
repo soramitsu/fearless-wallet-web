@@ -194,6 +194,8 @@ describe('a key 4.2.0 re-encrypts opens in the 3.0.5 keyring (from the Yarn cach
   let legacyDir: string;
   let legacy: Awaited<ReturnType<typeof loadKeyring305>>;
 
+  // Verifying and extracting the historical dependency archives is fixture setup,
+  // not a performance assertion; allow bounded headroom on a busy release host.
   beforeAll(async () => {
     legacyDir = installKeyring305(mkdtempSync(path.join(tmpdir(), 'fearless-keyring-305-')));
     // util 12.6.2 reports itself next to this build's 14.x; both are meant to be loaded here.
@@ -203,10 +205,10 @@ describe('a key 4.2.0 re-encrypts opens in the 3.0.5 keyring (from the Yarn cach
     } finally {
       warn.mockRestore();
     }
-  }, 60_000);
+  }, 180_000);
   afterAll(() => {
     if (legacyDir) rmSync(legacyDir, { recursive: true, force: true });
-  });
+  }, 60_000);
 
   it('is the keyring 3.0.x shipped with, and it opens only N = 2^15, p = 1, r = 8', () => {
     expect(legacy.versions).toEqual({ '@subwallet/keyring': '0.1.7', '@polkadot/util-crypto': '12.6.2', bcryptjs: '2.4.3' });

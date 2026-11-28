@@ -183,7 +183,7 @@ export async function checkSidePanel({
   stopServing();
   await evaluate(cdp, panelSession, `(document.querySelector('${SWITCH}').click(), true)`);
   await gone(isPanel, 'the side panel to close');
-  const popup = await appearing((target) => isPopup(target) && !beforePopup.has(target.targetId), 'the popup in place of the panel');
+  let popup = await appearing((target) => isPopup(target) && !beforePopup.has(target.targetId), 'the popup in place of the panel');
   await toolbarIs('after Switch to popup the toolbar opens the popup', {
     popup: 'popup.html#/',
     openPanelOnActionClick: false,
@@ -191,11 +191,53 @@ export async function checkSidePanel({
     status: 'working',
   });
 
+  const checkPopupHeader = async (sessionId) => {
+    await waitForExpression(cdp, sessionId, `Boolean(${APP}) && Boolean(document.querySelector('[data-testid="walletNameHeader"]'))`, 'the wallet in the popup');
+    const state = await evaluate(cdp, sessionId, `({
+      toolbarPopup: chrome.extension.getViews({ type: 'popup' }).includes(window),
+      width: innerWidth,
+      expand: Boolean(document.querySelector('.header button.expand')),
+      connection: Boolean(document.querySelector('.header .connection')),
+    })`);
+    if (!state.toolbarPopup || !state.expand || !state.connection) {
+      throw new Error(`The real toolbar popup lacks its surface controls: ${JSON.stringify(state)}`);
+    }
+  };
+
+  let popupSession = await open(popup);
+  await checkPopupHeader(popupSession);
+  await capture(popupSession, '03-popup-wallet', 'The real toolbar popup with its expand button and current-site connection indicator.');
+  checks.push('the real toolbar popup has both the expand button and current-site connection indicator');
+
+  // Expanding the popup must close that transient view, while keeping the full tab usable.
+  const beforeExpand = new Set((await targets()).map(({ targetId }) => targetId));
+  await evaluate(cdp, popupSession, `(document.querySelector('.header button.expand').click(), true)`);
+  const expandedPopup = await appearing((target) => isPopup(target) && !beforeExpand.has(target.targetId), 'the tab expanded from the popup');
+  await gone((target) => target.targetId === popup.targetId, 'the expanded popup to close');
+  const expandedSession = await open(expandedPopup);
+  await waitForExpression(cdp, expandedSession, `Boolean(document.querySelector('[data-testid="walletNameHeader"]'))`, 'the wallet in the expanded tab');
+  const expandedState = await evaluate(cdp, expandedSession, `({
+    toolbarPopup: chrome.extension.getViews({ type: 'popup' }).includes(window),
+    width: innerWidth,
+    expand: Boolean(document.querySelector('.header button.expand')),
+  })`);
+  if (expandedState.toolbarPopup || (expandedState.width > 561 && expandedState.expand)) {
+    throw new Error(`The expanded tab kept the toolbar-popup identity: ${JSON.stringify(expandedState)}`);
+  }
+  await capture(expandedSession, '04-popup-expanded-tab', 'The wallet expanded from the popup into a full tab.');
+  await cdp.send('Target.closeTarget', { targetId: expandedPopup.targetId });
+  checks.push('popup expand opens a usable full tab, closes the popup, and gives the tab its own layout');
+
+  await clickToolbar();
+  popup = await appearing((target) => isPopup(target) && !beforeExpand.has(target.targetId), 'the popup reopened by the toolbar');
+  popupSession = await open(popup);
+  await checkPopupHeader(popupSession);
+  checks.push('the toolbar reopens the saved popup mode with both header controls intact');
+
   // Switch to side panel, from that popup: the panel opens and the popup, which has no tab, closes.
-  const popupSession = await open(popup);
-  await waitForExpression(cdp, popupSession, `Boolean(${APP}) && Boolean(document.querySelector('[data-testid="walletNameHeader"]'))`, 'the wallet in the popup');
   const popupSwitch = await openSettings(popupSession);
   if (popupSwitch !== 'Switch to side panel') throw new Error(`The popup settings offer ${JSON.stringify(popupSwitch)}, not Switch to side panel`);
+  await capture(popupSession, '05-popup-settings', 'Settings in the reopened popup, with Switch to side panel.');
   await evaluate(cdp, popupSession, `(document.querySelector('${SWITCH}').click(), true)`);
   const reopened = await appearing(isPanel, 'the side panel opened from the popup');
   await gone((target) => target.targetId === popup.targetId, 'the popup to close');

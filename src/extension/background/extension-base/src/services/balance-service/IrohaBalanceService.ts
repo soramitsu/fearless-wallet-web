@@ -1,4 +1,5 @@
 import { APIItemState } from '@extension-base/api/types/networks';
+import { BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS } from '@extension-base/services/balance-service/publishTiming';
 import {
   createIrohaToriiWalletClient,
   type IrohaToriiPage,
@@ -11,9 +12,11 @@ import type { BalanceItem } from '@extension-base/api/evm/types';
 import type { FetchBalancePayload, ResponseBalanceRequest, TokenGroup } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
 import type { RelayChainName } from '@/interfaces';
+import type { UniversalWalletFunds } from '@/util/universalWalletPassphrase';
 import { UNIVERSAL_WALLET_IROHA_NETWORKS } from '@/consts/universalWallet';
 import { isSameString } from '@/helpers';
 import { parseIrohaI105Address } from '@/util/iroha';
+import { withTimeout } from '@/util/endpointFailover';
 
 type IrohaNetworkKey = keyof typeof UNIVERSAL_WALLET_IROHA_NETWORKS;
 
@@ -65,6 +68,7 @@ type IrohaBalanceClient = {
 type IrohaBalanceClientFactory = (network: NetworkJson, irohaNetwork: IrohaNetworkKey) => IrohaBalanceClient;
 
 const IROHA_FALLBACK_NETWORK = 'Taira';
+const IROHA_FUNDS_PROBE_TIMEOUT_MS = 6_000;
 const IROHA_NEXUS_FALLBACK_ASSET_ID = 'xor#sora';
 const IROHA_FALLBACK_ICON = 'iroha';
 const IROHA_FALLBACK_SYMBOL = 'XOR';
@@ -115,6 +119,31 @@ export default class IrohaBalanceService {
     return results.flat();
   }
 
+  /** Whether the Taira address holds any asset now (the Universal Wallet password checks). Read-only: nothing
+   * is cached, and a failed, slow or incomplete read is `unknown`. */
+  async probeAddressFunds(address: string): Promise<UniversalWalletFunds> {
+    const network = [
+      ...(this.state.networkService.activeNetworkByEcosystem.iroha ?? []),
+      ...Object.values(this.state.networkService.networkMap),
+    ].find((candidate) => candidate?.ecosystem === 'iroha' && candidate.chainId === UNIVERSAL_WALLET_IROHA_NETWORKS.taira.chainId);
+
+    if (!network || !this.isAddressForNetwork(address, 'taira')) return 'unknown';
+
+    try {
+      const items = await withTimeout(
+        this.fetchAllAccountAssets(this.clientFactory(network, 'taira'), address, 'taira'),
+        IROHA_FUNDS_PROBE_TIMEOUT_MS,
+        () => new Error('iroha_funds_probe_timeout')
+      );
+
+      return items.some((item) => /[1-9]/.test(this.getQuantity(item))) ? 'funded' : 'empty';
+    } catch (error) {
+      console.warn('Taira funds probe failed', error);
+
+      return 'unknown';
+    }
+  }
+
   private resolveWalletAddress(
     accountAddress: string,
     fallback: string | undefined,
@@ -141,7 +170,7 @@ export default class IrohaBalanceService {
     if (!walletAddress || !this.isAddressForNetwork(walletAddress, irohaNetwork)) {
       this.setNativeBalance(accountAddress, network, undefined, APIItemState.ERROR);
 
-      return [{ assetId: nativeAsset.id, balance: '0', network: network.name }];
+      return [];
     }
 
     try {
@@ -218,7 +247,7 @@ export default class IrohaBalanceService {
 
       console.warn('Failed to fetch Iroha balance', error);
 
-      return [{ assetId: nativeAsset.id, balance: '0', network: network.name }];
+      return [];
     }
   }
 
@@ -475,6 +504,12 @@ export default class IrohaBalanceService {
       source: 'registry',
     });
 
+    // A balance no read has confirmed is unknown, not 0, as on every other network: a failed first read used to
+    // show 0.
+    if (state === APIItemState.ERROR && balance === undefined) {
+      Object.assign(balanceItem, { free: undefined, total: undefined, transferable: undefined, timestamp: undefined });
+    }
+
     this.upsertBalanceItem(tokenGroup, balanceItem, network, address);
   }
 
@@ -592,21 +627,22 @@ export default class IrohaBalanceService {
     else tokenGroup.balances[existingIndex] = { ...tokenGroup.balances[existingIndex], ...balanceItem };
 
     this.state.balanceService.updateBalanceStore(network.name, balanceItem, address);
-    this.state.timeoutService.lazyNext('setIrohaBalanceItem', () => this.state.balanceService.publishBalance(), 500);
+    this.state.timeoutService.lazyNext('setIrohaBalanceItem', () => this.state.balanceService.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
   }
 
   private markCachedBalancesErrored(address: string, network: NetworkJson): ResponseBalanceRequest[] {
-    const groups = this.state.balanceService.balanceMap[address] ?? [];
     const balances: ResponseBalanceRequest[] = [];
 
-    groups
-      .filter(({ relayChain }) => isSameString(relayChain, 'iroha'))
+    this.irohaGroups(address, network)
       .forEach((group) => {
         const balanceIndex = group.balances.findIndex(({ name }) => isSameString(name, network.name));
 
         if (balanceIndex < 0) return;
 
         const existing = group.balances[balanceIndex];
+
+        // Only an amount a read confirmed is kept; a balance never read stays unknown.
+        if (existing.total === undefined || existing.total === null) return;
         const balanceItem = {
           ...existing,
           state: APIItemState.ERROR,
@@ -619,10 +655,23 @@ export default class IrohaBalanceService {
       });
 
     if (balances.length) {
-      this.state.timeoutService.lazyNext('setIrohaBalanceItem', () => this.state.balanceService.publishBalance(), 500);
+      this.state.timeoutService.lazyNext('setIrohaBalanceItem', () => this.state.balanceService.publishBalance(), BALANCE_PUBLISH_DELAY_MS, BALANCE_PUBLISH_MAX_WAIT_MS);
     }
 
     return balances;
+  }
+
+  /**
+   * The groups of Iroha assets: one per asset, under the relay chain "iroha". A group seeded from the registry is named
+   * after its network ("Taira Testnet") until the first read renames it, so it is found by its network too. Reads used
+   * to go into a second group while the seeded one stayed pending, and a failed read did not find the cached amount.
+   */
+  private irohaGroups(address: string, network: NetworkJson, assetId?: string): TokenGroup[] {
+    return (this.state.balanceService.balanceMap[address] ?? []).filter(
+      ({ groupId, relayChain, balances }) =>
+        (assetId === undefined || groupId === assetId) &&
+        (isSameString(relayChain, 'iroha') || balances.some(({ name }) => isSameString(name, network.name)))
+    );
   }
 
   private getOrCreateTokenGroup(
@@ -636,9 +685,7 @@ export default class IrohaBalanceService {
   ): TokenGroup {
     if (!this.state.balanceService.balanceMap[address]) this.state.balanceService.balanceMap[address] = [];
 
-    const existing = this.state.balanceService.balanceMap[address].find(
-      ({ groupId, relayChain }) => groupId === assetId && isSameString(relayChain, 'iroha')
-    );
+    const existing = this.irohaGroups(address, network, assetId)[0];
 
     if (existing) {
       existing.mainNetwork = network.name;

@@ -17,7 +17,8 @@
           @keypress="IsNumber"
         />
 
-        <div class="price" data-testid="fiatAmount">{{ accountsStore.fiatSymbol }}{{ valueCut }}</div>
+        <div v-if="priceUnavailable" class="price" data-testid="fiatAmount">{{ $t('portfolioPage.priceUnavailable') }}</div>
+        <div v-else class="price" data-testid="fiatAmount">{{ accountsStore.fiatSymbol }}{{ valueCut }}</div>
       </div>
 
       <div class="column right-column">
@@ -78,6 +79,7 @@ export default defineComponent({ name: 'SelectInput' ,
     asset: { default: '' },
     assetId: { default: '' },
     value: { default: '' },
+    priceUnavailable: { type: Boolean, default: false },
     totalAmount: { default: 0 },
     /** No provider could load the balance: `totalAmount` is not known and is not shown. */
     balanceUnavailable: { type: Boolean, default: false },

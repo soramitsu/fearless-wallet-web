@@ -87,6 +87,16 @@ describe('authenticated shell routes', () => {
     });
   });
 
+  it('opens Receive with just a network and preserves existing token links', async () => {
+    const { default: routes, Components } = await import('@/router/routes');
+    const router = createRouter({ history: createMemoryHistory(), routes });
+    const { fullPath } = router.resolve({ name: Components.ReceiveForm, params: { network: 'Polkadot AssetHub' } });
+
+    expect(fullPath).toBe('/fearless/portfolio/receive/Polkadot%20AssetHub');
+    expect(router.resolve(fullPath).params).toEqual({ network: 'Polkadot AssetHub' });
+    expect(router.resolve('/fearless/portfolio/receive/dot/Polkadot').params).toEqual({ assetId: 'dot', network: 'Polkadot' });
+  });
+
   it('retains redirects for released authenticated URLs', async () => {
     const { default: routes } = await import('@/router/routes');
     const router = createRouter({ history: createMemoryHistory(), routes });

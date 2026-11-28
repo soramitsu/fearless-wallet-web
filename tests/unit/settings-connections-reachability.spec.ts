@@ -57,6 +57,7 @@ vi.mock('@/router/routes', () => ({
     SecurityNoticeGuide: 'SecurityNoticeGuide',
     SettingsChangePassword: 'SettingsChangePassword',
     SettingsNetworksAssets: 'SettingsNetworksAssets',
+    TonConnectSessions: 'TonConnectSessions',
     Unlock: 'Unlock',
     WalletConnectInitAuth: 'WalletConnectInitAuth',
   },
@@ -69,8 +70,7 @@ vi.mock('@/locales/useI18n', () => ({
       ({
         'settingsPage.irohaConnectDescription': 'SORA 3 wallet sessions for Uranai and Iroha dApps',
         'settingsPage.irohaConnectUnavailable': 'IrohaConnect is not available in this version. Nothing was signed.',
-        'settingsPage.tonConnectDescription': 'TonConnect sessions are not supported in this build yet.',
-        'settingsPage.buildUnavailable': 'Build unavailable',
+        'settingsPage.tonConnectDescription': 'Sites connected to your TON wallets',
         'settingsPage.connectedDappsDescription': 'Substrate and EVM permissions',
         'authorize.unsupportedConnectionManagement':
           'Connection management for this protocol is unavailable in this build.',
@@ -238,18 +238,18 @@ describe('settings connection reachability', () => {
     expect(mocks.push).toHaveBeenCalledWith({ name: 'IrohaConnect', params: undefined });
   });
 
-  it('exposes an honest, non-actionable TonConnect state for TON wallets', async () => {
+  it('opens the TON Connect sites a TON wallet is connected to', async () => {
     mocks.accountsStore.selectedWallet = { address: 'ton-address', isTon: true };
     const wrapper = mountSettings();
     const tonConnect = wrapper.get('[data-testid="settings-ton-connect"]');
 
-    expect(tonConnect.attributes('disabled')).toBeDefined();
-    expect(tonConnect.text()).toContain('TonConnect sessions are not supported in this build yet.');
-    expect(tonConnect.text()).toContain('Build unavailable');
+    expect(tonConnect.attributes('disabled')).toBeUndefined();
+    expect(tonConnect.text()).toContain('TON Connect');
+    expect(tonConnect.text()).toContain('Sites connected to your TON wallets');
 
     await tonConnect.trigger('click');
 
-    expect(mocks.push).not.toHaveBeenCalled();
+    expect(mocks.push).toHaveBeenCalledWith({ name: 'TonConnectSessions', params: undefined });
   });
 
   it('detects TON capability on a hybrid wallet without advertising it to unrelated wallets', () => {

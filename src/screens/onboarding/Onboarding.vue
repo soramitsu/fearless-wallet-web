@@ -1,14 +1,12 @@
 <template>
-  <Fragment>
-    <div class="onboarding">
+    <div class="onboarding" :class="{ 'onboarding--start': showStartingScreen }">
       <template v-if="showStartingScreen">
         <link v-for="(story, index) in stories" rel="preload" as="image" :href="story.image" :key="index" />
-        <img class="onboarding__logo" src="@/assets/brand/winged-sun-colour.svg" :alt="$t('common.fearlessLogo')" />
-        <BrandSignature animated />
-        <h1 class="onboarding__header">
-          {{ $t('onboarding.titleFirst') }}
-          <span class="onboarding__header--red">{{ $t('onboarding.titleLast') }}</span>
-        </h1>
+        <WelcomeHero />
+        <div class="onboarding__brand">
+          <img class="onboarding__logo" src="@/assets/brand/fearless-lockup-stacked.svg" :alt="$t('common.fearlessLogo')" />
+          <BrandSignature as="h1" animated :text="`${$t('onboarding.titleFirst')} ${$t('onboarding.titleLast')}`" />
+        </div>
       </template>
 
       <template v-else>
@@ -31,7 +29,6 @@
       </div>
       <RecoveryDataLink />
     </div>
-  </Fragment>
 </template>
 
 <script lang="ts">
@@ -41,6 +38,7 @@ import OnboardingStory from './OnboardingStory.vue';
 import StoryCounter from './StoryCounter.vue';
 import RecoveryDataLink from '@/components/RecoveryDataLink.vue';
 import BrandSignature from '@/components/BrandSignature.vue';
+import WelcomeHero from '@/components/WelcomeHero.vue';
 import { Components } from '@/router/routes';
 import { getOnboardingStories, setOnboardingComplete } from '@/extension/messaging';
 
@@ -51,6 +49,7 @@ export default defineComponent({
     StoryCounter,
     RecoveryDataLink,
     BrandSignature,
+    WelcomeHero,
   },
   data() {
     return {
@@ -117,22 +116,34 @@ export default defineComponent({
     max-width: 100%;
   }
 
-  &__logo {
-    width: 100%;
-    height: auto;
-    padding-block: 24px;
+  // The start screen sits over the Yatagarasu hero: the crow fills the top, the lockup and actions the dark lower part.
+  &--start {
+    position: relative;
+    isolation: isolate;
+    justify-content: flex-end;
+
+    > :not(.welcome-hero) {
+      position: relative;
+      z-index: 1;
+    }
   }
 
-  &__header {
-    font-family: Unbounded, 'Noto Sans Egyptian Hieroglyphs', 'Noto Sans Cuneiform', sans-serif;
-    font-size: 2.875em;
-    font-weight: 700;
-    letter-spacing: 0.54px;
-    margin: 0;
+  &__brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: auto;
+  }
 
-    &--red {
-      color: $pink-color;
-    }
+  &__logo {
+    display: block;
+    width: 168px;
+    max-width: 60%;
+    height: auto;
+  }
+
+  &--start &__controls {
+    margin-top: 20px;
   }
 
   &__controls {

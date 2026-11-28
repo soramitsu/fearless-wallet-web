@@ -1,5 +1,6 @@
 import { keyring } from '@subwallet/ui-keyring';
 import { ecdsaPairKeys } from '@extension-base/stores/EcdsaAccountRecords';
+import { VAULT_KEY } from '../wallet-connect-service/protocol/vault';
 import {
   accountStoreKey, deletedWalletId, deletedWalletKey, walletAddressIdentity, walletRecordKeys, type DeletedWallet,
 } from './DeletedWallets';
@@ -63,5 +64,5 @@ export function walletResetMutation(current: Record<string, unknown>, livePairs:
   const publicRecords = Object.keys(current).filter((key) => /^(address|contract):0x[0-9a-f]*/.test(key));
   // TON ciphertext, existing recovery entries and unrecognized inert records
   // remain intact. The new password can recover TON with the previous password.
-  return { entries, remove: [...consumed, ...publicRecords, 'keyring', 'legacyPasswordPrompt'] };
+  return { entries, remove: [...consumed, ...publicRecords, ...(VAULT_KEY in current ? [VAULT_KEY] : []), 'keyring', 'legacyPasswordPrompt'] };
 }

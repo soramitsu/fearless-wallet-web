@@ -1,0 +1,10 @@
+# Inputs for rebuild-macos.sh, the native Apple silicon replay.
+# SHA-256  URL
+bed00f549a08030b232ad811728e3a5d7239e2e53b667df9cfb11eabf87f2cf3  https://static.rust-lang.org/dist/2024-09-05/rustc-1.81.0-aarch64-apple-darwin.tar.xz
+cc826e6592016db7a5750a97051b71b48aca2d79f146daf08e953d56000ae43d  https://static.rust-lang.org/dist/2024-09-05/cargo-1.81.0-aarch64-apple-darwin.tar.xz
+2dba5210a79617a9240570c1f7fcc24912a2c96689a3159324727e5a516c6326  https://static.rust-lang.org/dist/2024-09-05/rust-std-1.81.0-aarch64-apple-darwin.tar.xz
+9477ea9c64466d41b9928b7cfc1f974c912c5d2ebd0c0a9348fd02dbd19d004c  https://static.rust-lang.org/dist/2024-09-05/rust-std-1.81.0-wasm32-unknown-unknown.tar.xz
+4573b7f25f46d2a9c8882993f091c52f416c83271db6f5b213c93f0bd0346a10  https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang%2Bllvm-18.1.8-arm64-apple-macos11.tar.xz
+740e6c3b13bdfb47953f8f3ebf15c49d6531238e2b68e0d128a7a7968d38d0d5  https://github.com/WebAssembly/binaryen/releases/download/version_114/binaryen-version_114-arm64-macos.tar.gz
+79c2681d6594606957bbb8631c4b90a7fcaaa72cdb714743a437b156d6a7eedd  https://static.crates.io/crates/cc/cc-1.0.71.crate
+70a129b9e9efbfb223753b9163c4ab3b13cff7fd9c7f010fbac25ab4099fa07e  https://static.crates.io/crates/secp256k1-sys/secp256k1-sys-0.8.1.crate

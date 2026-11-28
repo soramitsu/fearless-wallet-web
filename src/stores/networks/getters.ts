@@ -6,6 +6,7 @@ import { WalletEcosystem, type GetHistory } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, NETWORKS_GROUPS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
+import { isPopularNetwork } from '@/helpers/networkSelection';
 
 type Getters = {
   networks(state: State): NetworkJson[];
@@ -43,6 +44,10 @@ export const getters: Getters = {
         !isSameString(ecosystem, WalletEcosystem.Bitcoin) &&
         !isSameString(ecosystem, WalletEcosystem.Iroha)
     );
+
+    // An independently imported Ethereum key has no account on a Substrate network.
+    if (walletEcosystem === WalletEcosystem.Evm)
+      return substrateAndEvmNetworks.filter(({ ecosystem }) => !isSameString(ecosystem, WalletEcosystem.Substrate));
 
     const substrateNetworks = substrateAndEvmNetworks.filter(({ ecosystem }) =>
       isSameString(ecosystem, WalletEcosystem.Substrate)
@@ -90,6 +95,7 @@ export const getters: Getters = {
       if (isSameString(ecosystem, WalletEcosystem.Solana)) return false;
       if (isSameString(ecosystem, WalletEcosystem.Bitcoin)) return false;
       if (isSameString(ecosystem, WalletEcosystem.Iroha)) return false;
+      if (selectedWallet.walletEcosystem === WalletEcosystem.Evm) return !isSameString(ecosystem, WalletEcosystem.Substrate);
 
       return selectedWallet.hasEthereum || isSameString(ecosystem, WalletEcosystem.Substrate);
     });
@@ -97,7 +103,7 @@ export const getters: Getters = {
     if (NETWORKS_GROUPS.includes(selectedNetwork)) {
       if (selectedNetwork === ALL_NETWORKS) return walletNetworks;
 
-      if (selectedNetwork === POPULAR_NETWORKS) return walletNetworks.filter(({ rank }) => rank);
+      if (selectedNetwork === POPULAR_NETWORKS) return walletNetworks.filter((network) => isPopularNetwork(network));
 
       if (selectedNetwork === FAVORITE_NETWORKS)
         return walletNetworks.filter(({ favorite }) => favorite.includes(selectedWallet.address));

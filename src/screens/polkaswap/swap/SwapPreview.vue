@@ -5,8 +5,8 @@
       :asset2="receiveAssetUP"
       :amount1="sendAmount"
       :amount2="receiveAmount"
-      :value1="sendValue"
-      :value2="receiveValue"
+      :value1="sendPriceUnavailable ? null : sendValue"
+      :value2="receivePriceUnavailable ? null : receiveValue"
     />
 
     <ContentForm>
@@ -44,6 +44,9 @@ export default defineComponent({ name: 'SwapPreview',
     receiveAmount: { default: '' },
     sendValue: { default: '' },
     receiveValue: { default: '' },
+    // An asset without a trusted price has no fiat value: the review says "Price unavailable" for it.
+    sendPriceUnavailable: Boolean,
+    receivePriceUnavailable: Boolean,
     minMaxAmount: { default: '' },
     minMaxAmountPrice: { default: '' },
     fee: { default: '' },

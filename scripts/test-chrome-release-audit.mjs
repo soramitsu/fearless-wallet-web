@@ -120,6 +120,13 @@ function baseManifest() {
   };
 }
 
+// What src/consts/urls.ts compiles into a production popup and worker (a test build names the development ones).
+const REMOTE_CONFIG = 'https://raw.githubusercontent.com/soramitsu/fearless-wallet-web/master/remote-config';
+const configModule = (tree) =>
+  tree === 'production'
+    ? `const b=${JSON.stringify(REMOTE_CONFIG)},c=\`\${b}/production/chains/v13/chains.json\`,f=\`\${b}/production/appConfigs/web_config.json\`;`
+    : `const b=${JSON.stringify(REMOTE_CONFIG)},c=\`\${b}/development/chains/v13/chains_dev.json\`,f=\`\${b}/development/appConfigs/web_config.json\`;`;
+
 function baseFiles(manifest, metadataOverrides = {}) {
   const compiledReleaseEnvironment = Object.values(TEST_RELEASE_ENVIRONMENT).join('|');
   const files = new Map([
@@ -155,13 +162,13 @@ function baseFiles(manifest, metadataOverrides = {}) {
       Buffer.from(
         `export const background = true; export const oauthClient = ${JSON.stringify(
           manifest.oauth2?.client_id ?? ''
-        )}; export const releaseEnvironment = ${JSON.stringify(compiledReleaseEnvironment)};\n`
+        )}; export const releaseEnvironment = ${JSON.stringify(compiledReleaseEnvironment)};\n${configModule('production')}\n`
       ),
     ],
     ['content.js', Buffer.from('globalThis.fearlessContent = true;\n')],
     ['page.js', Buffer.from('globalThis.fearlessPage = true;\n')],
     ['popup.html', Buffer.from('<!doctype html><html lang="en"><script type="module" src="./popup.js"></script>\n')],
-    ['popup.js', Buffer.from('export const popup = true;\n')],
+    ['popup.js', Buffer.from(`export const popup = true;\n${configModule('production')}\n`)],
     ['sidepanel.html', Buffer.from('<!doctype html><html lang="en" data-fw-surface="side-panel"><script type="module" src="./popup.js"></script>\n')],
   ]);
   for (const size of [16, 32, 48, 64, 128]) files.set(`icons/logo-${size}.png`, pngIcon(size));
@@ -317,6 +324,85 @@ async function run() {
     passed += 1;
 
     const clean = await expectPass(tempRoot, 'clean-release', {}, { release: true });
+    // Shipped WebAssembly must be a module rebuilt byte for byte from its tagged source.
+    const reproducedWasm = await fs.readFile(fileURLToPath(new URL('./secp256k1.wasm', import.meta.resolve('tiny-secp256k1'))));
+    await expectPass(tempRoot, 'reproduced-wasm', { extraFiles: [['assets/secp256k1.wasm', reproducedWasm]] });
+    const tamperedWasm = Buffer.from(reproducedWasm);
+    tamperedWasm[tamperedWasm.length - 1] ^= 1;
+    await expectFailure(
+      tempRoot,
+      'unreproduced-wasm',
+      { extraFiles: [['assets/secp256k1.wasm', tamperedWasm]] },
+      /Chrome directory artifact ships WebAssembly assets\/secp256k1\.wasm \(SHA-256 [0-9a-f]{64}\) that no recorded source rebuild reproduces/u
+    );
+    await expectFailure(
+      tempRoot,
+      'renamed-unreproduced-wasm',
+      { extraFiles: [['assets/data.bin', Buffer.from([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00])]] },
+      /ships WebAssembly assets\/data\.bin/u
+    );
+    await expectFailure(
+      tempRoot,
+      'unreproduced-wasm-only-in-archive',
+      {
+        mutateZipEntries: (entries) => [...entries, { data: tamperedWasm, name: 'assets/secp256k1.wasm' }],
+      },
+      /Chrome ZIP artifact ships WebAssembly assets\/secp256k1\.wasm/u
+    );
+    // One NODE_ENV per build (B35): a popup built without NODE_ENV=production read the development chain list and
+    // feature config while its worker read production, and the audit passed it.
+    await expectFailure(
+      tempRoot,
+      'popup-built-without-production-node-env',
+      { mutateFiles: (files) => files.set('popup.js', Buffer.from(`export const popup = true;\n${configModule('development')}\n`)) },
+      /Chrome directory artifact reads the development configuration, so it was built without NODE_ENV=production: popup\.js: \/development\/chains\/v13\/chains_dev\.json; popup\.js: \/development\/appConfigs\/web_config\.json/u
+    );
+    await expectFailure(
+      tempRoot,
+      'development-config-only-in-archive',
+      {
+        mutateZipEntries: (entries) =>
+          entries.map((entry) =>
+            entry.name === 'popup.js' ? { ...entry, data: Buffer.from(configModule('development')) } : entry
+          ),
+      },
+      /Chrome ZIP artifact reads the development configuration/u
+    );
+    await expectFailure(
+      tempRoot,
+      'popup-without-production-config',
+      { mutateFiles: (files) => files.set('popup.js', Buffer.from('export const popup = true;\n')) },
+      /Chrome release popup does not read the production chain list \(\/production\/chains\/v13\/chains\.json\)/u
+    );
+    await expectFailure(
+      tempRoot,
+      'popup-production-config-only-in-unreachable-decoy',
+      {
+        mutateFiles(files) {
+          files.set('decoy.js', files.get('popup.js'));
+          files.set('popup.js', Buffer.from('export const popup = true;\n'));
+        },
+      },
+      /Chrome release popup does not read the production chain list/u
+    );
+    await expectFailure(
+      tempRoot,
+      'worker-without-production-feature-config',
+      {
+        mutateFiles: (files) =>
+          files.set(
+            'background.js',
+            Buffer.from(files.get('background.js').toString('utf8').replace('/production/appConfigs/web_config.json', '/x'))
+          ),
+      },
+      /Chrome release service worker does not read the production feature config \(\/production\/appConfigs\/web_config\.json\)/u
+    );
+    await expectPass(tempRoot, 'production-config-in-lazy-popup-chunk', {
+      mutateFiles(files) {
+        files.set('chunks/config.js', files.get('popup.js'));
+        files.set('popup.js', Buffer.from('import("./chunks/config.js");\n'));
+      },
+    });
     await expectFailure(
       tempRoot,
       'secret-upload-in-nested-chunk',
@@ -454,7 +540,8 @@ async function run() {
       await expectPass(tempRoot, 'release-config-in-literal-lazy-popup-runtime', {
         mutateFiles(files) {
           files.set('chunks/runtime.js', files.get('background.js'));
-          files.set('background.js', Buffer.from('export const background = true;'));
+          // The worker keeps only its configuration; the release values are in the popup's lazy chunk alone.
+          files.set('background.js', Buffer.from(`export const background = true;\n${configModule('production')}`));
           files.set('popup.js', Buffer.from(source));
         },
       }, { release: true });

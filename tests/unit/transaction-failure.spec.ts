@@ -22,6 +22,7 @@ describe('transaction failure presentation', () => {
 
   it.each([
     ['cross_chain_send_in_progress', 'assets.transactionPending'],
+    ['cross_chain_send_record_unavailable', 'assets.crossChainRuntimeUnavailable'],
     ['cross_chain_fee_changed', 'assets.transferFeeApprovalRequired'],
     ['cross_chain_destination_fee_changed', 'assets.transferFeeApprovalRequired'],
     ['cross_chain_quote_token_required', 'assets.transferFeeApprovalRequired'],
@@ -59,6 +60,25 @@ describe('transaction failure presentation', () => {
     Object.defineProperty(response, 'transactionHash', { get: getter });
     expect(getUnknownTransactionHash(response)).toBeNull();
     expect(getter).not.toHaveBeenCalled();
+  });
+
+  it('accepts an EVM hash, shown with its 0x, as the hash of an unknown outcome', () => {
+    const hash = `0x${'ab'.repeat(32)}`;
+    const response = {
+      status: false,
+      outcome: 'unknown',
+      transactionHash: `0x${'AB'.repeat(32)}`,
+      errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: 'evm_broadcast_ambiguous' }],
+    };
+
+    expect(getUnknownTransactionHash(response)).toBe(hash);
+    expect(getTransactionOutcome(response)).toBe('unconfirmed');
+    expect(getTransactionFailurePresentation(response)).toEqual({ key: 'assets.transactionStatusUnknownDetails' });
+    expect(getUnknownTransactionHash({ ...response, transactionHash: hash.slice(0, -1) })).toBeNull();
+    expect(getUnknownTransactionHash({ ...response, transactionHash: `${hash}0` })).toBeNull();
+    expect(getUnknownTransactionHash({ ...response, transactionHash: `0x0x${'ab'.repeat(31)}` })).toBeNull();
+    // A settled cross-chain hash stays bare hex.
+    expect(getSettledTransactionHash({ status: true, transactionHash: hash })).toBeNull();
   });
 
   it('accepts a Solana signature, case preserved, as the hash of an unknown outcome', () => {

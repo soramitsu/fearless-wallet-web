@@ -22,6 +22,7 @@ import { walletEcosystemOf } from '@/extension/background/extension-base/src/bac
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { URLS } from '@/consts/urls';
 import { isSameString } from '@/helpers';
+import { isPopularNetwork } from '@/helpers/networkSelection';
 import { IS_PRODUCTION, IS_TEST_ONLY } from '@/consts/global';
 import {
   createAuthoritativeDiscoveryRegistryNetworks,
@@ -477,7 +478,7 @@ export class NetworkService {
 
       if (value === POPULAR_NETWORKS) {
         this.networkValues.forEach((network) => {
-          if (!network.rank) return;
+          if (!isPopularNetwork(network)) return;
 
           if (
             isSubstrateAddress &&

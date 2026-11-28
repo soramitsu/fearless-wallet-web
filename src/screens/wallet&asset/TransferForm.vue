@@ -318,6 +318,7 @@ import { withTimeout } from '@/util/endpointFailover';
 import { checkTransfer, checkCrossChain, checkScamAddress } from '@/extension/messaging';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 import { isNetworkGroup } from '@/helpers/common';
+import { isPopularNetwork } from '@/helpers/networkSelection';
 import { IS_POPUP } from '@/consts/globalClient';
 import { IS_EXTENSION } from '@/consts/global';
 import { useNetworksStore } from '@/stores/networks';
@@ -731,12 +732,13 @@ export default defineComponent({
         const prepBalances = balances ?? [];
 
         return prepBalances.some(({ name }) => {
-          const { active, rank, favorite } = this.networksStore.getNetwork(name);
+          const network = this.networksStore.getNetwork(name);
+          const { active, favorite } = network;
 
           if (!active || !this.isTransferEnabled(this.networksStore.getNetwork(name))) return false;
 
           if (this.isSelectedNetworkGroup) {
-            if (this.accountsStore.selectedNetwork === POPULAR_NETWORKS && rank) return true;
+            if (this.accountsStore.selectedNetwork === POPULAR_NETWORKS && isPopularNetwork(network)) return true;
 
             const isNetworkInFavorites = favorite.some((el) => el === this.accountsStore.selectedWallet.address);
 

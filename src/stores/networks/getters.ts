@@ -6,6 +6,7 @@ import { WalletEcosystem, type GetHistory } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, NETWORKS_GROUPS, POPULAR_NETWORKS } from '@/consts/networks';
 import { isSameString } from '@/helpers';
+import { isPopularNetwork } from '@/helpers/networkSelection';
 
 type Getters = {
   networks(state: State): NetworkJson[];
@@ -102,7 +103,7 @@ export const getters: Getters = {
     if (NETWORKS_GROUPS.includes(selectedNetwork)) {
       if (selectedNetwork === ALL_NETWORKS) return walletNetworks;
 
-      if (selectedNetwork === POPULAR_NETWORKS) return walletNetworks.filter(({ rank }) => rank);
+      if (selectedNetwork === POPULAR_NETWORKS) return walletNetworks.filter((network) => isPopularNetwork(network));
 
       if (selectedNetwork === FAVORITE_NETWORKS)
         return walletNetworks.filter(({ favorite }) => favorite.includes(selectedWallet.address));

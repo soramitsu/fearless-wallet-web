@@ -50,7 +50,7 @@
       "amountSat": "1000",
       "outpoint": "9a8e38c45106d2ab5f93a43f2ba57e2b9fe90a2ec756d0767db827b68a86a04d:1",
       "indexerUrl": "https://blockstream.info/testnet/api",
-      "timestamp": "2026-11-28T10:00:16Z",
+      "timestamp": "2026-11-28T10:22:41Z",
       "commit": "9852f02ec2262aa746b15c534984036dfc127a71",
       "operator": "Claude (Fearless Wallet QA live smoke)"
     }
